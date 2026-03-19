@@ -1,7 +1,9 @@
 # CustomGUI <img src="resource/customui/images/svg_images/mihoutao.svg" height = "200" alt="qtforpython" align=center />
 
 ## 简介 
-本项目同时也在<img src="ReadMeRes/gitee-logo-black.svg" height = "16" alt="Gitee" align=center />上开源:[CustomGUI](https://gitee.com/shilianlvke/CustomGUI).
+本项目在<img src="ReadMeRes/gitee-logo-black.svg" height = "16" alt="Gitee" align=center />上开源:[CustomGUI](https://gitee.com/shilianlvke/CustomGUI).
+
+本项目在<img src="ReadMeRes/github.svg" height = "16" alt="github" align=center />上开源:[CustomGUI_Qt_For_Python](https://github.com/shilianlvke/CustomGUI_Qt_For_Python).
 
 <img src="ReadMeRes/qtforpython.png" height = "16" alt="qtforpython" align=center />PySide6 构建的现代化通用 GUI
 框架，提供高度可定制的界面组件和模块化设计.
