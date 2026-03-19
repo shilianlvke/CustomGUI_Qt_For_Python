@@ -1,0 +1,282 @@
+from qt_core import (
+    QCursor,
+    QFrame,
+    QHBoxLayout,
+    QLabel,
+    QSize,
+    QSvgWidget,
+    QVBoxLayout,
+    Qt,
+    Signal,
+    QWidget,
+)
+from AppCore import ColorPalette, PathFactory, AppSettings
+from GuiCore.CustomUI.div import CVDiv
+from .title_button import CTitleButton
+
+_is_maximized = False
+_old_size = QSize()
+
+
+class CTitleBar(QWidget):
+    # SIGNALS
+    clicked = Signal(object)
+    released = Signal(object)
+
+    def __init__(
+        self,
+        parent,
+        app_parent,
+        logo_image=None,
+        logo_width=30,
+        is_custom_title_bar=True,
+        radius=8,
+        font_family="Segoe UI",
+        title_size=10,
+        custom_title_minimize_button_text="minmize defualt",
+        custom_title_maximize_button_text="maxmize defualt",
+        custom_title_close_text="close defualt",
+    ):
+        super().__init__()
+        self._parent = parent
+        self._app_parent = app_parent
+        self.settings = AppSettings
+
+        # 参数
+        self._logo_image = logo_image
+        self._dark_one = ColorPalette.custom_dark_one
+        self._bg_color = ColorPalette.custom_dark_three
+        self._div_color = ColorPalette.custom_bg_three
+        self._btn_bg_color = ColorPalette.custom_dark_three
+        self._btn_bg_color_hover = ColorPalette.custom_bg_three
+        self._btn_bg_color_pressed = ColorPalette.custom_bg_one
+        self._context_color = ColorPalette.custom_context_color
+        self._icon_color = ColorPalette.custom_icon_color
+        self._icon_color_hover = ColorPalette.custom_icon_hover
+        self._icon_color_pressed = ColorPalette.custom_icon_pressed
+        self._icon_color_active = ColorPalette.custom_icon_active
+        self._font_family = font_family
+        self._title_size = title_size
+        self._text_foreground = ColorPalette.custom_text_foreground
+        self._is_custom_title_bar = is_custom_title_bar
+        self.minimize_btn = custom_title_minimize_button_text
+        self.maximize_btn = custom_title_maximize_button_text
+        self.close_btn = custom_title_close_text
+        self.setup_ui()
+
+        # 添加背景色
+        # self.bg.setStyleSheet(f"background-color: {self._bg_color}; border-radius: {radius}px;")
+
+        # 设置logo宽度
+        self.top_logo.setMinimumWidth(logo_width)
+        self.top_logo.setMaximumWidth(logo_width)
+
+        # self.top_logo.setPixmap(Functions.set_svg_image(logo_image))
+
+        # 移动窗口/最大化/恢复
+        def moveWindow(event):
+            # 如果最大化改变为正常
+            if parent.isMaximized():
+                self.maximize_restore()
+                # self.resize(_old_size)
+                curso_x = parent.pos().x()
+                curso_y = event.globalPos().y() - QCursor.pos().y()
+                parent.move(curso_x, curso_y)
+            # 移动窗口
+            if event.buttons() == Qt.LeftButton:
+                parent.move(parent.pos() + event.globalPos() - parent.dragPos)
+                parent.dragPos = event.globalPos()
+                event.accept()
+            # parent_rect = parent.frameGeometry()
+            # screen_rect = parent.screen().geometry()
+            # # 不可超出屏幕顶部
+            # if parent.pos().y() < 0:
+            #     parent.move(parent.pos().x(), 0)
+            # if parent_rect.bottom() > screen_rect.bottom():
+            #     parent.move(parent.pos().x(), screen_rect.height() - parent_rect.height())
+
+        # 移动应用程序小部件
+        if is_custom_title_bar:
+            self.top_logo.mouseMoveEvent = moveWindow
+            self.div_1.mouseMoveEvent = moveWindow
+            self.title_label.mouseMoveEvent = moveWindow
+            self.div_2.mouseMoveEvent = moveWindow
+            self.div_3.mouseMoveEvent = moveWindow
+
+        # 最大化/恢复
+        if is_custom_title_bar:
+            self.top_logo.mouseDoubleClickEvent = self.maximize_restore
+            self.div_1.mouseDoubleClickEvent = self.maximize_restore
+            self.title_label.mouseDoubleClickEvent = self.maximize_restore
+            self.div_2.mouseDoubleClickEvent = self.maximize_restore
+
+        # 将小部件添加到标题栏
+        # ///////////////////////////////////////////////////////////////
+        self.bg_layout.addWidget(self.top_logo)
+        self.bg_layout.addWidget(self.div_1)
+        self.bg_layout.addWidget(self.title_label)
+        self.bg_layout.addWidget(self.div_2)
+
+        # 添加按钮按钮
+        # ///////////////////////////////////////////////////////////////
+        # Functions
+        self.minimize_button.released.connect(lambda: parent.showMinimized())
+        self.maximize_restore_button.released.connect(lambda: self.maximize_restore())
+        self.close_button.released.connect(lambda: parent.close())
+
+        # 额外BTN布局
+        self.bg_layout.addLayout(self.custom_buttons_layout)
+
+        # 添加按钮
+        if is_custom_title_bar:
+            self.bg_layout.addWidget(self.minimize_button)
+            self.bg_layout.addWidget(self.maximize_restore_button)
+            self.bg_layout.addWidget(self.close_button)
+
+    # 在标题栏中添加按钮
+    # 添加btns并发出信号
+    # ///////////////////////////////////////////////////////////////
+    def add_menus(self, parameters):
+        if parameters is not None and len(parameters) > 0:
+            for parameter in parameters:
+                _btn_icon = PathFactory.set_svg_icon(parameter["btn_icon"])
+                _btn_id = parameter["btn_id"]
+                _btn_tooltip = parameter["btn_tooltip"]
+                _is_active = parameter["is_active"]
+
+                self.menu = CTitleButton(
+                    self._parent,
+                    self._app_parent,
+                    btn_id=_btn_id,
+                    tooltip_text=_btn_tooltip,
+                    bg_color=self._bg_color,
+                    icon_color=self._icon_color,
+                    icon_path=_btn_icon,
+                    is_active=_is_active,
+                )
+                self.menu.clicked.connect(self.btn_clicked)
+                self.menu.released.connect(self.btn_released)
+
+                # ADD TO LAYOUT
+                self.custom_buttons_layout.addWidget(self.menu)
+
+            # ADD DIV
+            if self._is_custom_title_bar:
+                self.custom_buttons_layout.addWidget(self.div_3)
+
+    # 标题栏菜单发出信号
+    def btn_clicked(self):
+        self.clicked.emit(self.menu)
+
+    def btn_released(self):
+        self.released.emit(self.menu)
+
+    # 设置标题栏文本
+    # ///////////////////////////////////////////////////////////////
+    def set_title(self, title):
+        self.title_label.setText(title)
+
+    # 最大化/恢复
+    # 最大化并恢复父窗口
+    # ///////////////////////////////////////////////////////////////
+    def maximize_restore(self, e=None):
+        global _is_maximized
+        global _old_size
+
+        # 更改UI并调整夹点大小
+        def change_ui():
+            if hasattr(self._parent, "ui"):
+                if _is_maximized:
+                    self._parent.ui.central_widget_layout.setContentsMargins(0, 0, 0, 0)
+                    self._parent.ui.window.set_stylesheet(border_radius=0, border_size=0)
+                    self.maximize_restore_button.set_icon(PathFactory.set_svg_icon("icon_restore"))
+                else:
+                    self._parent.ui.central_widget_layout.setContentsMargins(10, 10, 10, 10)
+                    self._parent.ui.window.set_stylesheet(border_radius=10, border_size=2)
+                    self.maximize_restore_button.set_icon(PathFactory.set_svg_icon("icon_maximize"))
+
+        # 检查事件
+        if self._parent.isMaximized():
+            _is_maximized = False
+            self._parent.showNormal()
+            change_ui()
+        else:
+            _is_maximized = True
+            _old_size = QSize(self._parent.width(), self._parent.height())
+            self._parent.showMaximized()
+            change_ui()
+
+    # SETUP APP
+    # ///////////////////////////////////////////////////////////////
+    def setup_ui(self):
+        # ADD MENU LAYOUT
+        self.title_bar_layout = QVBoxLayout(self)
+        self.title_bar_layout.setContentsMargins(0, 0, 0, 0)
+
+        # ADD BG
+        self.bg = QFrame()
+        self.bg.setObjectName("CTitleBar_Bg_Frame")
+
+        # ADD BG LAYOUT
+        self.bg_layout = QHBoxLayout(self.bg)
+        self.bg_layout.setContentsMargins(10, 0, 5, 0)
+        self.bg_layout.setSpacing(0)
+
+        # DIVS
+        self.div_1 = CVDiv()
+        self.div_2 = CVDiv()
+        self.div_3 = CVDiv()
+
+        # LEFT FRAME WITH MOVE APP
+        self.top_logo = QLabel()
+        self.top_logo_layout = QVBoxLayout(self.top_logo)
+        self.top_logo_layout.setContentsMargins(0, 0, 0, 0)
+        self.logo_svg = QSvgWidget()
+        self.logo_svg.load(PathFactory.set_svg_image(self._logo_image))
+        self.top_logo_layout.addWidget(self.logo_svg, Qt.AlignCenter, Qt.AlignCenter)
+
+        # TITLE LABEL
+        self.title_label = QLabel()
+        self.title_label.setAlignment(Qt.AlignVCenter)
+        self.title_label.setStyleSheet(f'font: {self._title_size}pt "{self._font_family}"')
+
+        # CUSTOM BUTTONS LAYOUT
+        self.custom_buttons_layout = QHBoxLayout()
+        self.custom_buttons_layout.setContentsMargins(0, 0, 0, 0)
+        self.custom_buttons_layout.setSpacing(0)
+
+        # MINIMIZE BUTTON
+        self.minimize_button = CTitleButton(
+            self._parent,
+            self._app_parent,
+            tooltip_text=self.minimize_btn,
+            bg_color=self._btn_bg_color,
+            icon_color=self._icon_color,
+            radius=6,
+            icon_path=PathFactory.set_svg_icon("icon_minimize"),
+        )
+
+        # MAXIMIZE / RESTORE BUTTON
+        self.maximize_restore_button = CTitleButton(
+            self._parent,
+            self._app_parent,
+            tooltip_text=self.maximize_btn,
+            bg_color=self._btn_bg_color,
+            icon_color=self._icon_color,
+            radius=6,
+            icon_path=PathFactory.set_svg_icon("icon_maximize")
+        )
+
+        # CLOSE BUTTON
+        self.close_button = CTitleButton(
+            self._parent,
+            self._app_parent,
+            tooltip_text=self.close_btn,
+            bg_color=self._btn_bg_color,
+            icon_color=self._icon_color,
+            radius=6,
+            icon_path=PathFactory.set_svg_icon("icon_close"),
+        )
+
+        # ADD TO LAYOUT
+        self.title_bar_layout.addWidget(self.bg)

@@ -1,0 +1,7 @@
+language: zh_cn # 语言
+theme_name: default # 主题名称
+logo: icon
+logo_home: mihoutao
+logo_title: mihoutao
+logo_loading: zig
+

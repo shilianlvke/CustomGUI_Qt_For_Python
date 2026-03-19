@@ -1,0 +1,23 @@
+custom_dark_one: '#1a1d22'  # 略深于原版，但不是纯黑
+custom_dark_two: '#1d2128'  # 层级区分
+custom_dark_three: '#20242c' # 层级区分
+custom_dark_four: '#262b35'  # 卡片/模块背景
+custom_bg_one: '#2b303b'    # 更柔和的背景层
+custom_bg_two: '#333a47'
+custom_bg_three: '#3b4353'
+custom_icon_color: '#b8c2d5' # 略亮于原版，更清晰
+custom_icon_hover: '#d0d6e2' # 与标题色接近
+custom_icon_pressed: '#608edb' # 略微调整，保持活力
+custom_icon_active: '#e0e4eb' # 略暗于原版，更柔和
+custom_context_color: '#608edb' # 略微提亮，确保在深色背景下有足够的对比度
+custom_context_hover: '#76a5ed'
+custom_context_pressed: '#4a78c5'
+custom_text_title: '#d0d6e2' # 略暗于原版，更柔和
+custom_text_foreground: '#9ba5b8' # 略亮于原版，提高可读性
+custom_text_description: '#6d788b' # 略亮于原版，提高可读性
+custom_text_active: '#d0d6e2' # 活跃文本
+custom_white: '#eff2f7'    # 替代纯白，避免刺眼
+custom_pink: '#ff2a9b'     # 略微提亮
+custom_green: '#62a167'    # 略微提亮
+custom_red: '#d36565'      # 略微提亮
+custom_yellow: '#ffd76a'   # 略微提亮

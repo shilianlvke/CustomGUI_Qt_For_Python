@@ -1,0 +1,164 @@
+# 系统信息
+custom_ui:
+  sys_name: P2PTester
+  sys_version: T1.0.0
+  sys_author: YS
+  sys_author_email: 1352161062@qq.com
+  sys_copyright: P2PTester 开源测试管理工具 # 假数据，仅用于测试
+  sys_description: P2PTester 是一个开源的系统测试管理工具，用于系统测试的管理。
+  sys_license: MIT
+  sys_github: https://gitee.com/shilianlvke/CustomGUI
+PAGE:
+  widget_show:
+    title: 组件展示
+UI:
+  # 窗口
+  ui_Minimize: 最小化
+  ui_Maximize: 最大化
+  # 打开和关闭
+  ui_Open: 打开
+  ui_Close: 关闭
+  # 显示和隐藏
+  ui_Hide: 隐藏
+  ui_Show: 显示
+  # 增删改查
+  ui_Add: 添加
+  ui_Del: 删除
+  ui_Modify: 修改
+  ui_Search: 查找
+  ui_Save: 保存
+  # 开始和结束
+  ui_Start: 开始
+  ui_Over: 结束
+  # 运行和停止
+  ui_Run: 运行
+  ui_Running: 正在运行
+  ui_Stop: 停止
+  ui_Stopping: 正在停止
+  # 选择文件和文件夹
+  ui_SelectFolder: 选择文件夹
+  ui_SelectFolder_F: 选择的文件夹有误
+  ui_SelectFile: 选择文件
+  ui_SelectFile_F: 选择的文件有误
+  # 连接
+  ui_Connect: 连接
+  ui_Connect_S: 连接成功
+  ui_Connect_F: 连接失败
+  # 信息属性
+  ui_Info: 信息
+  ui_Property: 属性
+  # 其他
+  ui_Settings: 设置
+  ui_OpenFile: 打开文件
+  ui_UpdateLogs: 更新日志
+  ui_Welcome: Welcome!
+  ui_Fresh: 刷新
+  ui_HomePage: 首页
+
+  # 文件操作
+  ui_New: 新建
+  ui_SaveAs: 另存为
+  ui_Print: 打印
+  ui_Import: 导入
+  ui_Export: 导出
+  ui_RecentFiles: 最近文件
+
+  # 编辑功能
+  ui_Undo: 撤销
+  ui_Redo: 重做
+  ui_Cut: 剪切
+  ui_Copy: 复制
+  ui_Paste: 粘贴
+  ui_SelectAll: 全选
+  ui_FindReplace: 查找替换
+
+  # 视图设置
+  ui_ZoomIn: 放大
+  ui_ZoomOut: 缩小
+  ui_ResetZoom: 重置缩放
+  ui_FullScreen: 全屏
+  ui_ThemeLight: 浅色主题
+  ui_ThemeDark: 深色主题
+  ui_LayoutReset: 重置布局
+
+  # 窗口管理
+  ui_NewWindow: 新窗口
+  ui_SplitView: 分屏视图
+  ui_BringToFront: 窗口前置
+
+  # 通知与提示
+  ui_ConfirmSave: 是否保存更改？
+  ui_ConfirmExit: 确认退出程序？
+  ui_OperationFailed: 操作失败
+  ui_PermissionDenied: 权限不足
+  ui_FileCorrupted: 文件已损坏
+
+  # 偏好设置
+  ui_Language: 语言
+  ui_ShortcutKeys: 快捷键
+  ui_AutoSave: 自动保存
+  ui_ProxySettings: 代理设置
+  ui_ClearCache: 清除缓存
+
+  # 导航栏
+  ui_Previous: 上一项
+  ui_Next: 下一项
+  ui_Back: 返回
+  ui_Forward: 前进
+  ui_JumpTo: 跳转到
+
+  # 数据操作
+  ui_SortAsc: 升序排序
+  ui_SortDesc: 降序排序
+  ui_Filter: 筛选
+  ui_GroupBy: 分组依据
+  ui_Statistics: 统计信息
+
+  # 系统集成
+  ui_OpenContainingFolder: 打开所在文件夹
+  ui_SendTo: 发送到
+  ui_AddToFavorites: 加入收藏夹
+  ui_CreateShortcut: 创建快捷方式
+
+  # 帮助相关
+  ui_CheckDependencies: 检查依赖项
+  ui_Diagnostics: 诊断工具
+  ui_KeyboardShortcuts: 快捷键列表
+  ui_CheckForUpdates: 检测更新
+  ui_About: 关于
+
+TEXT:
+  home_page_welcome: 你好！我是P2PTester~
+  login: 登录到P2PTester
+
+P2PTester:
+  login:
+    username: 用户名
+    password: 密码
+    test_team: 归属团队
+    btn_login: 登录到团队
+    input_username: 输入你的用户名
+    input_password: 输入你的密码
+    team_combox_tooltip: 选择归属测试团队
+    team_create: 没有团队？点击创建团队
+    team_create_window: 团队创建
+    team_search: 已有团队！在网络中搜寻
+    team_search_window: 团队搜索
+  team_create_dialog:
+    team_name_label: 团队名称
+    team_name_input: 输入团队名称~
+    team_doc_label: 团队描述
+    team_doc_input: 输入团队描述~
+    team_create_btn: 创建团队
+  case_lib:
+    all_lib: 全部测试库
+    org_lib: 组织测试库
+    team_lib: 团队测试库
+  case_plan:
+    my_test_plan: 我负责的
+    my_join_plan: 我参与的
+    my_todo_plan: 进行中的
+  case_more:
+    storage_lib: 归档测试库
+    config_center: 配置中心
+

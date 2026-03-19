@@ -1,0 +1,23 @@
+custom_dark_one: '#e0f0e8'  # 主背景色，非常浅的淡绿色，明亮而清新
+custom_dark_two: '#d5e8df'  # 次级背景，如卡片背景，略深一点
+custom_dark_three: '#cbe0d6' # 更深的背景层，如侧边栏
+custom_dark_four: '#c0d8ce'  # 边框/分割线，或更深的背景元素
+custom_bg_one: '#b5d0c5'    # 较深的背景层，用于区分
+custom_bg_two: '#aac8bd'
+custom_bg_three: '#a0c0b5'
+custom_icon_color: '#608878' # 中等深度的图标色，带有明显的绿色调
+custom_icon_hover: '#4c7868' # 悬停时略深
+custom_icon_pressed: '#40907c' # 按压状态，更鲜明的青绿色
+custom_icon_active: '#347a68' # 活跃图标，更深沉的青绿色
+custom_context_color: '#4cb89e' # 柔和的青绿色，作为主要交互色，更具活力
+custom_context_hover: '#5cd0b0'
+custom_context_pressed: '#3e9c88'
+custom_text_title: '#305048' # 较深的文本色，带有绿灰色调，用于标题
+custom_text_foreground: '#486860' # 中等深度的文本色，带有绿灰色调，用于正文
+custom_text_description: '#608078' # 浅一些的文本色，带有绿灰色调，用于描述性文字
+custom_text_active: '#305048' # 活跃文本与标题色一致
+custom_white: '#f5fcf8'    # 替代纯白，带有非常明显的绿色底蕴，更显清新
+custom_pink: '#e080af'     # 柔和粉，作为次要强调色，饱和度降低 (保持不变，与绿色协调)
+custom_green: '#4cb89e'    # 主要的“成功”或“积极”状态色，与 context_color 保持一致，强调绿色
+custom_red: '#d37d7d'      # 柔和红，作为“错误”或“警告”状态色，饱和度降低 (保持不变)
+custom_yellow: '#e0c07c'   # 柔和黄，作为“警告”或“提示”状态色，饱和度降低 (保持不变)

@@ -1,0 +1,50 @@
+# WINDOW SIZE 窗口大小
+startup_size: # 初始化窗口大小
+  - 960
+  - 540
+minimum_size: # 最小窗口大小
+  - 960
+  - 540
+
+# ICON SIZE 图标大小
+icon_size: 32
+
+# CUSTOM WINDOW
+custom_title_bar: True # 自定义标题栏
+hide_grips: True # 隐藏调试边界
+window_margin: 2
+window_space: 2
+window_border_size: 2
+window_border_radius: 10
+window_shadow: True
+
+# LEFT MENU
+lef_menu_size: # 左侧菜单大小✅
+  minimum: 50
+  maximum: 200
+left_menu_content_margins: 2 # 左侧菜单边距✅
+left_column_size: # 左侧菜单页大小
+  minimum: 0
+  maximum: 240
+
+# RIGHT MENU
+right_column_size: # 右侧菜单页大小
+  minimum: 0
+  maximum: 240
+
+# CREDITS BAR
+custom_padding: 10
+custom_border: 3
+
+# TOOLTIP
+tooltip_border_radius: 17
+tooltip_font: 300
+
+# ANIMATION
+time_animation: 500 # 动画时长
+
+# FONT
+family: 微软雅黑
+title_size: 18 # 标题大小
+subtitle_size: 15 # 副标题大小
+text_size: 12 # 正文大小 ✅

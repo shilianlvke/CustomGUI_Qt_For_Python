@@ -1,0 +1,51 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  checks:
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install uv
+        run: python -m pip install uv
+
+      - name: Install project dependencies
+        run: uv sync
+
+      - name: Install dev tools
+        run: uv pip install "pytest>=8.3.5" "ruff>=0.11.2"
+
+      - name: Lint (critical checks)
+        run: uv run ruff check . --select E9,F63,F7,F82
+
+      - name: Smoke tests
+        run: uv run pytest -q tests/test_smoke.py
+
+      - name: Architecture boundary tests
+        run: uv run pytest -q tests/test_architecture_boundaries.py
+
+      - name: Runtime cwd policy tests
+        run: uv run pytest -q tests/test_no_cwd_runtime_dependency.py
+
+      - name: Main window interaction tests
+        run: uv run pytest -q tests/test_main_window_use_cases.py tests/test_main_window_controller.py tests/test_main_window_integration.py
+
+      - name: Plugin lifecycle tests
+        run: uv run pytest -q tests/test_plugin_protocol.py
+
+      - name: Naming consistency tests
+        run: uv run pytest -q tests/test_naming_consistency.py
+
+      - name: Legacy import policy tests
+        run: uv run pytest -q tests/test_legacy_import_policy.py

@@ -1,0 +1,15 @@
+logs: 
+  - date: 20241127 
+    version: V1.00
+    docs:
+      .完成...
+
+  - date: 20241211 
+    version: V1.00-1
+    docs: 
+      .修复...
+
+  - date: 20241220
+    version: V1.00-2
+    docs:
+      .添加...

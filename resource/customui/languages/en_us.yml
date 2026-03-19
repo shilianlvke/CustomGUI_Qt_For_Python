@@ -1,0 +1,164 @@
+# System Information
+custom_ui:
+  sys_name: P2PTester
+  sys_version: T1.0.0
+  sys_author: YS
+  sys_author_email: 1352161062@qq.com
+  sys_copyright: P2PTester Open-source Test Management Tool # Mock data for testing only
+  sys_description: P2PTester is an open-source system test management tool for managing system testing.
+  sys_license: MIT
+  sys_github: https://gitee.com/shilianlvke/CustomGUI
+PAGE:
+  widget_show:
+    title: Component Showcase
+UI:
+  # Window
+  ui_Minimize: Minimize
+  ui_Maximize: Maximize
+  # Open and Close
+  ui_Open: Open
+  ui_Close: Close
+  # Show and Hide
+  ui_Hide: Hide
+  ui_Show: Show
+  # CRUD
+  ui_Add: Add
+  ui_Del: Delete
+  ui_Modify: Modify
+  ui_Search: Search
+  ui_Save: Save
+  # Start and End
+  ui_Start: Start
+  ui_Over: End
+  # Run and Stop
+  ui_Run: Run
+  ui_Running: Running
+  ui_Stop: Stop
+  ui_Stopping: Stopping
+  # Select File and Folder
+  ui_SelectFolder: Select Folder
+  ui_SelectFolder_F: Selected folder is invalid
+  ui_SelectFile: Select File
+  ui_SelectFile_F: Selected file is invalid
+  # Connection
+  ui_Connect: Connect
+  ui_Connect_S: Connected successfully
+  ui_Connect_F: Connection failed
+  # Information and Properties
+  ui_Info: Info
+  ui_Property: Property
+  # Others
+  ui_Settings: Settings
+  ui_OpenFile: Open File
+  ui_UpdateLogs: Update Logs
+  ui_Welcome: Welcome!
+  ui_Fresh: Refresh
+  ui_HomePage: Home
+
+  # File Operations
+  ui_New: New
+  ui_SaveAs: Save As
+  ui_Print: Print
+  ui_Import: Import
+  ui_Export: Export
+  ui_RecentFiles: Recent Files
+
+  # Editing
+  ui_Undo: Undo
+  ui_Redo: Redo
+  ui_Cut: Cut
+  ui_Copy: Copy
+  ui_Paste: Paste
+  ui_SelectAll: Select All
+  ui_FindReplace: Find and Replace
+
+  # View Settings
+  ui_ZoomIn: Zoom In
+  ui_ZoomOut: Zoom Out
+  ui_ResetZoom: Reset Zoom
+  ui_FullScreen: Full Screen
+  ui_ThemeLight: Light Theme
+  ui_ThemeDark: Dark Theme
+  ui_LayoutReset: Reset Layout
+
+  # Window Management
+  ui_NewWindow: New Window
+  ui_SplitView: Split View
+  ui_BringToFront: Bring to Front
+
+  # Notifications and Prompts
+  ui_ConfirmSave: Save changes?
+  ui_ConfirmExit: Confirm exit?
+  ui_OperationFailed: Operation failed
+  ui_PermissionDenied: Permission denied
+  ui_FileCorrupted: File is corrupted
+
+  # Preferences
+  ui_Language: Language
+  ui_ShortcutKeys: Shortcut Keys
+  ui_AutoSave: Auto Save
+  ui_ProxySettings: Proxy Settings
+  ui_ClearCache: Clear Cache
+
+  # Navigation
+  ui_Previous: Previous
+  ui_Next: Next
+  ui_Back: Back
+  ui_Forward: Forward
+  ui_JumpTo: Jump To
+
+  # Data Operations
+  ui_SortAsc: Sort Ascending
+  ui_SortDesc: Sort Descending
+  ui_Filter: Filter
+  ui_GroupBy: Group By
+  ui_Statistics: Statistics
+
+  # System Integration
+  ui_OpenContainingFolder: Open Containing Folder
+  ui_SendTo: Send To
+  ui_AddToFavorites: Add to Favorites
+  ui_CreateShortcut: Create Shortcut
+
+  # Help
+  ui_CheckDependencies: Check Dependencies
+  ui_Diagnostics: Diagnostics
+  ui_KeyboardShortcuts: Keyboard Shortcuts
+  ui_CheckForUpdates: Check for Updates
+  ui_About: About
+
+TEXT:
+  home_page_welcome: Hello! I am P2PTester~
+  login: Log in to P2PTester
+
+P2PTester:
+  login:
+    username: Username
+    password: Password
+    test_team: Team
+    btn_login: Log in to Team
+    input_username: Enter your username
+    input_password: Enter your password
+    team_combox_tooltip: Select your test team
+    team_create: No team? Click to create one
+    team_create_window: Create Team
+    team_search: Already have a team? Search on network
+    team_search_window: Team Search
+  team_create_dialog:
+    team_name_label: Team Name
+    team_name_input: Enter team name~
+    team_doc_label: Team Description
+    team_doc_input: Enter team description~
+    team_create_btn: Create Team
+  case_lib:
+    all_lib: All Test Libraries
+    org_lib: Organization Test Library
+    team_lib: Team Test Library
+  case_plan:
+    my_test_plan: Assigned to Me
+    my_join_plan: Joined by Me
+    my_todo_plan: In Progress
+  case_more:
+    storage_lib: Archived Test Library
+    config_center: Configuration Center
+
