@@ -1,12 +1,15 @@
 # CustomGUI
 
 #### 简介
+本项目同时也在Gitee上开源:[CustomGUI](https://gitee.com/shilianlvke/CustomGUI)
 
-一个基于 PySide6 构建的现代化通用 GUI
-框架，提供高度可定制的界面组件和模块化设计。项目灵感来源于开源项目 [PyOneDark_Qt_Widgets_Modern_GUI](https://github.com/Wanderson-Magalhaes/PyOneDark_Qt_Widgets_Modern_GUI)
-，并在此基础上进行了功能增强和易用性优化。
+PySide6 构建的现代化通用 GUI
+框架，提供高度可定制的界面组件和模块化设计。
+
+项目灵感来源于开源项目 [PyOneDark_Qt_Widgets_Modern_GUI](https://github.com/Wanderson-Magalhaes/PyOneDark_Qt_Widgets_Modern_GUI)。
 
 ![image](ReadMeRes/概览.png)
+
 
 **核心特性**：
 
@@ -44,14 +47,20 @@
    ```bash
    git clone https://gitee.com/shilianlvke/CustomGUI.git
    cd CustomGUI
+   
+   or
+   
+   git clone https://github.com/shilianlvke/CustomGUI_Qt_For_Python.git
+   cd CustomGUI_Qt_For_Python
    ```
 
 2. 创建虚拟环境和安装依赖
    ```bash
    # Windows PowerShell(项目路径下)
    1. uv python install 3.12
-   2. uv venv
-   3. uv sync
+   2. uv python pin 3.12
+   3. uv venv
+   4. uv sync
    ```
 
 3. 安装可选硬件依赖（仅 Windows 串口/HID/网卡扫描功能需要）
@@ -109,7 +118,7 @@ dist/CustomGUI/
 
 - `CI` 工作流：用于 lint + 测试
 - `Release Build` 工作流：
-   - 支持 Windows/Linux 矩阵打包
+   - 支持 Windows 打包
    - 推送 `v*` tag 自动触发
    - 自动上传构建产物到 GitHub Release
 
