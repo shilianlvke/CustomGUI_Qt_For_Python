@@ -1,23 +1,24 @@
-# CustomGUI
+# CustomGUI <img src="resource/customui/images/svg_images/mihoutao.svg" height = "200" alt="qtforpython" align=center />
 
-#### 简介
-本项目同时也在Gitee上开源:[CustomGUI](https://gitee.com/shilianlvke/CustomGUI)
+## 简介 
+本项目同时也在<img src="ReadMeRes/gitee-logo-black.svg" height = "16" alt="Gitee" align=center />上开源:[CustomGUI](https://gitee.com/shilianlvke/CustomGUI).
 
-PySide6 构建的现代化通用 GUI
-框架，提供高度可定制的界面组件和模块化设计。
+<img src="ReadMeRes/qtforpython.png" height = "16" alt="qtforpython" align=center />PySide6 构建的现代化通用 GUI
+框架，提供高度可定制的界面组件和模块化设计.
 
-项目灵感来源于开源项目 [PyOneDark_Qt_Widgets_Modern_GUI](https://github.com/Wanderson-Magalhaes/PyOneDark_Qt_Widgets_Modern_GUI)。
+项目灵感来源于开源项目<img src="ReadMeRes/PyOneDark_icon.ico" height = "16" alt="qtforpython" align=center /> [PyOneDark](https://github.com/Wanderson-Magalhaes/PyOneDark_Qt_Widgets_Modern_GUI).
+
 
 ![image](ReadMeRes/概览.png)
 
-
-**核心特性**：
+## **核心特性**：
 
 - 🎨 内置暗色/亮色主题切换
 - 📦 预置现代化 UI 组件（按钮、输入框、表格等）
 - 🛠️ 模块化架构，轻松扩展自定义组件
 - 📱 响应式布局适配不同分辨率
-- 默认黑暗主题：default
+### 主题概览
+- 黑暗主题：default
 
 
   ![image](ReadMeRes/默认主题.png)
@@ -42,7 +43,7 @@ PySide6 构建的现代化通用 GUI
 
 ---
 
-#### 技术栈
+## 技术栈
 
 - **编程语言**: Python >= 3.12
 - **GUI 框架**: PySide6 >= 6.10
@@ -53,9 +54,9 @@ PySide6 构建的现代化通用 GUI
 
 ---
 
-#### 快速开始
+## 快速开始
 
-##### 环境配置
+### 环境配置
 
 1. 克隆仓库
    ```bash
@@ -83,7 +84,7 @@ PySide6 构建的现代化通用 GUI
    uv sync --extra windows-hardware
    ```
 
-##### 运行示例
+### 运行示例
 
 ```bash
 uv python main.py
@@ -91,7 +92,7 @@ uv python main.py
 
 ---
 
-#### 应用打包
+### 应用打包
 
 使用 [auto-py-to-exe](https://github.com/brentvollebregt/auto-py-to-exe) 生成独立可执行文件：
 
@@ -110,7 +111,7 @@ uv python main.py
 • 启用 `One Directory` 打包模式
 • 添加 `ui` 和 `themes` 目录到附加文件
 
-##### 命令行打包（跨平台）
+### 命令行打包（跨平台）
 
 ```bash
 uv pip install "pyinstaller>=6.10.0"
@@ -123,7 +124,7 @@ uv run python scripts/build_package.py
 dist/CustomGUI/
 ```
 
-##### CI/CD 发布流水线
+### CI/CD 发布流水线
 
 - `CI` 工作流：用于 lint + 测试
 - `Release Build` 工作流：
@@ -131,7 +132,7 @@ dist/CustomGUI/
    - 推送 `v*` tag 自动触发
    - 自动上传构建产物到 GitHub Release
 
-##### 文档自动化（架构图/API）
+### 文档自动化（架构图/API）
 
 本地生成文档：
 
@@ -147,7 +148,7 @@ docs/
 
 `Docs` 工作流会在核心代码或脚本变更时自动生成文档，并上传 `docs/` 作为构建产物，同时检查仓库内文档是否与代码保持同步。
 
-##### 迁移与兼容状态（2026-03）
+### 迁移与兼容状态（2026-03）
 
 - 历史兼容入口已全部移除：`config_module`、`languge_module`、`ui_mian`
 - 规范入口：
@@ -158,7 +159,7 @@ docs/
 
 ---
 
-#### 开发指南
+## 开发指南
 
 1. **项目结构**
    ```
@@ -208,7 +209,7 @@ docs/
 
 ---
 
-#### 参与贡献
+## 参与贡献
 
 欢迎通过 Issue 和 PR 参与项目开发，流程如下：
 
@@ -222,17 +223,17 @@ docs/
 
 ---
 
-#### 许可证
+## 许可证
 
 本项目采用 [MIT License](LICENSE)，请自由使用并保留原始作者信息。
 
-#### 代码分支
+## 代码分支
 
    ```
-master: 主分支-稳定版本
-develop：开发分支-最新
+main: 主分支-稳定版本
    ```
-#### 常用指令
+
+## 常用指令
 ### Windows
    ```PowerShell 清除Python产生的所有__pycache__文件夹
 Get-ChildItem -Recurse -Directory -Filter '__pycache__' | Remove-Item -Recurse -Force
