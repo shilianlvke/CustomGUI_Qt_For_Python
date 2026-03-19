@@ -1,4 +1,4 @@
-# CustomGUI <img src="resource/customui/images/svg_images/mihoutao.svg" height = "200" alt="qtforpython" align=center />
+# CustomGUI <img src="resource/customui/images/svg_images/mihoutao.svg" height = "200" alt="qtforpython" align=center /> PySide6
 
 ## 简介 
 本项目在<img src="ReadMeRes/gitee-logo-black.svg" height = "16" alt="Gitee" align=center />上开源:[CustomGUI_Qt_For_Python](https://gitee.com/shilianlvke/CustomGUI_Qt_For_Python).
