@@ -18,12 +18,26 @@ PySide6 构建的现代化通用 GUI
 - 🛠️ 模块化架构，轻松扩展自定义组件
 - 📱 响应式布局适配不同分辨率
 - 默认黑暗主题：default
+
+
   ![image](ReadMeRes/默认主题.png)
+
+
 - 明亮主题：bright
+
+
   ![image](ReadMeRes/明亮主题.png)
+
+
 - 护眼主题：eye
+
+
   ![image](ReadMeRes/护眼主题.png)
+
+
 - 梦幻主题：dracula
+
+
   ![image](ReadMeRes/梦幻主题.png)
 
 ---
@@ -32,7 +46,7 @@ PySide6 构建的现代化通用 GUI
 
 - **编程语言**: Python >= 3.12
 - **GUI 框架**: PySide6 >= 6.10
-- **依赖管理**: uv
+- **依赖管理**: uv ----> [安装教程](https://uv.doczh.com/getting-started/installation/)
    ```
   详情可查看pyproject.toml
    ```
@@ -57,21 +71,16 @@ PySide6 构建的现代化通用 GUI
 2. 创建虚拟环境和安装依赖
    ```bash
    # Windows PowerShell(项目路径下)
-   1. uv python install 3.12
-   2. uv python pin 3.12
-   3. uv venv
-   4. uv sync
+   1. uv python install 3.12 (下载python3.12)
+   2. uv python pin 3.12 (将python版本固定到3.12)
+   3. uv venv (创建虚拟环境)
+   4. .\.venv\Scripts\Activate (激活虚拟环境)
+   4. uv sync (同步依赖包)
    ```
 
-3. 安装可选硬件依赖（仅 Windows 串口/HID/网卡扫描功能需要）
+3. *安装可选硬件依赖（仅 Windows 串口/HID/网卡扫描功能需要）
    ```bash
    uv sync --extra windows-hardware
-   ```
-
-4. 激活虚拟环境
-   ```bash
-   # Windows PowerShell(项目路径下)
-   .\.venv\Scripts\Activate
    ```
 
 ##### 运行示例
