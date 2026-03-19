@@ -3,11 +3,11 @@
 #### 简介
 
 一个基于 PySide6 构建的现代化通用 GUI
-框架，提供高度可定制的界面组件和模块化设计。项目灵感来源于开源项目 [PyOneDark_Qt_Widgets_Modern_GUI](https://github.com/Wanderson-Magalhaes/PyOneDark_Qt_Widgets_Modern_GUI)
-，并在此基础上进行了功能增强和易用性优化。
+框架，提供高度可定制的界面组件和模块化设计。项目灵感来源于开源项目 [PyOneDark_Qt_Widgets_Modern_GUI](https://github.com/Wanderson-Magalhaes/PyOneDark_Qt_Widgets_Modern_GUI)。
 
 ![image](ReadMeRes/概览.png)
 
+本项目也在Gitee上开源:[CustomGUI](https://gitee.com/shilianlvke/CustomGUI)
 **核心特性**：
 
 - 🎨 内置暗色/亮色主题切换
