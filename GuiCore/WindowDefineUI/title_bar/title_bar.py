@@ -10,7 +10,7 @@ from qt_core import (
     Signal,
     QWidget,
 )
-from AppCore import ColorPalette, PathFactory, AppSettings
+from AppCore import ColorPalette, PathFactory, AppSettings, Language
 from GuiCore.CustomUI.div import CVDiv
 from .title_button import CTitleButton
 
@@ -23,27 +23,14 @@ class CTitleBar(QWidget):
     clicked = Signal(object)
     released = Signal(object)
 
-    def __init__(
-        self,
-        parent,
-        app_parent,
-        logo_image=None,
-        logo_width=30,
-        is_custom_title_bar=True,
-        radius=8,
-        font_family="Segoe UI",
-        title_size=10,
-        custom_title_minimize_button_text="minmize defualt",
-        custom_title_maximize_button_text="maxmize defualt",
-        custom_title_close_text="close defualt",
-    ):
+    def __init__(self, parent, app_parent):
         super().__init__()
         self._parent = parent
         self._app_parent = app_parent
         self.settings = AppSettings
 
         # 参数
-        self._logo_image = logo_image
+        self._logo_image = AppSettings.logo_title
         self._dark_one = ColorPalette.custom_dark_one
         self._bg_color = ColorPalette.custom_dark_three
         self._div_color = ColorPalette.custom_bg_three
@@ -55,21 +42,21 @@ class CTitleBar(QWidget):
         self._icon_color_hover = ColorPalette.custom_icon_hover
         self._icon_color_pressed = ColorPalette.custom_icon_pressed
         self._icon_color_active = ColorPalette.custom_icon_active
-        self._font_family = font_family
-        self._title_size = title_size
+        self._font_family = AppSettings.family
+        self._title_size = AppSettings.title_size
         self._text_foreground = ColorPalette.custom_text_foreground
-        self._is_custom_title_bar = is_custom_title_bar
-        self.minimize_btn = custom_title_minimize_button_text
-        self.maximize_btn = custom_title_maximize_button_text
-        self.close_btn = custom_title_close_text
+        self._is_custom_title_bar = AppSettings.custom_title_bar
+        self.minimize_btn = Language.UI.ui_Minimize
+        self.maximize_btn = Language.UI.ui_Maximize
+        self.close_btn = Language.UI.ui_Close
         self.setup_ui()
 
         # 添加背景色
         # self.bg.setStyleSheet(f"background-color: {self._bg_color}; border-radius: {radius}px;")
 
         # 设置logo宽度
-        self.top_logo.setMinimumWidth(logo_width)
-        self.top_logo.setMaximumWidth(logo_width)
+        self.top_logo.setMinimumWidth(AppSettings.icon_size)
+        self.top_logo.setMaximumWidth(AppSettings.icon_size)
 
         # self.top_logo.setPixmap(Functions.set_svg_image(logo_image))
 
@@ -96,7 +83,7 @@ class CTitleBar(QWidget):
             #     parent.move(parent.pos().x(), screen_rect.height() - parent_rect.height())
 
         # 移动应用程序小部件
-        if is_custom_title_bar:
+        if self._is_custom_title_bar:
             self.top_logo.mouseMoveEvent = moveWindow
             self.div_1.mouseMoveEvent = moveWindow
             self.title_label.mouseMoveEvent = moveWindow
@@ -104,7 +91,7 @@ class CTitleBar(QWidget):
             self.div_3.mouseMoveEvent = moveWindow
 
         # 最大化/恢复
-        if is_custom_title_bar:
+        if self._is_custom_title_bar:
             self.top_logo.mouseDoubleClickEvent = self.maximize_restore
             self.div_1.mouseDoubleClickEvent = self.maximize_restore
             self.title_label.mouseDoubleClickEvent = self.maximize_restore
@@ -128,7 +115,7 @@ class CTitleBar(QWidget):
         self.bg_layout.addLayout(self.custom_buttons_layout)
 
         # 添加按钮
-        if is_custom_title_bar:
+        if self._is_custom_title_bar:
             self.bg_layout.addWidget(self.minimize_button)
             self.bg_layout.addWidget(self.maximize_restore_button)
             self.bg_layout.addWidget(self.close_button)
@@ -264,7 +251,7 @@ class CTitleBar(QWidget):
             bg_color=self._btn_bg_color,
             icon_color=self._icon_color,
             radius=6,
-            icon_path=PathFactory.set_svg_icon("icon_maximize")
+            icon_path=PathFactory.set_svg_icon("icon_maximize"),
         )
 
         # CLOSE BUTTON

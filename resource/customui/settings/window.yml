@@ -31,7 +31,10 @@ left_column_size: # 左侧菜单页大小
 right_column_size: # 右侧菜单页大小
   minimum: 0
   maximum: 240
-
+right_menu_content_margins: 3 # 左侧菜单边距✅
+right_title_bar_height: 40
+right_content_space: 6
+right_credits_height: 40
 # CREDITS BAR
 custom_padding: 10
 custom_border: 3

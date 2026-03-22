@@ -11,7 +11,7 @@ from qt_core import (
 from .menu_button import CLeftMenuButton
 from GuiCore.CustomUI.div import CHDiv
 
-from AppCore import PathFactory, ColorPalette
+from AppCore import PathFactory, ColorPalette, AppSettings, Language
 
 
 class CLeftMenu(QWidget):
@@ -20,18 +20,12 @@ class CLeftMenu(QWidget):
     released = Signal(object)
 
     def __init__(
-        self,
-        parent=None,
-        app_parent=None,
-        duration_time=500,
-        radius=8,
-        minimum_width=50,
-        maximum_width=240,
-        icon_path="icon_menu",
-        icon_path_close="icon_menu_close",
-        toggle_text="defualt",
-        toggle_tooltip="defualt",
-        font_family=None,
+            self,
+            parent=None,
+            app_parent=None,
+            radius=8,
+            icon_path="icon_menu",
+            icon_path_close="icon_menu_close"
     ):
         super().__init__()
         self.setObjectName("CLeftMenu_QWidget")
@@ -48,13 +42,13 @@ class CLeftMenu(QWidget):
         self._context_color = ColorPalette.custom_context_color
         self._text_foreground = ColorPalette.custom_text_foreground
         self._text_active = ColorPalette.custom_text_active
-        self._duration_time = duration_time
+        self._duration_time = AppSettings.time_animation
         self._radius = radius
-        self._minimum_width = minimum_width
-        self._maximum_width = maximum_width
+        self._minimum_width = AppSettings.lef_menu_size.minimum
+        self._maximum_width = AppSettings.lef_menu_size.maximum
         self._icon_path = PathFactory.set_svg_icon(icon_path)
         self._icon_path_close = PathFactory.set_svg_icon(icon_path_close)
-        self._font_family = font_family
+        self._font_family = AppSettings.family
         # 获取父类
         self._parent = parent
         self._app_parent = app_parent
@@ -68,8 +62,8 @@ class CLeftMenu(QWidget):
         # 切换按钮和DIV菜单
         self.toggle_button = CLeftMenuButton(
             app_parent,
-            text=toggle_text,
-            tooltip_text=toggle_tooltip,
+            text=Language.UI.ui_Hide,
+            tooltip_text=Language.UI.ui_Show,
             icon_path=icon_path,
             minimum_width=self._minimum_width,
             maximum_width=self._maximum_width,

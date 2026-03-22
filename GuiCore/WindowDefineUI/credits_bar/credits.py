@@ -1,15 +1,13 @@
 from qt_core import QFrame, QHBoxLayout, QLabel, QSizePolicy, QSpacerItem, Qt, QWidget
+from AppCore import Language
+
 
 class CCredits(QWidget):
-    def __init__(
-        self,
-        copyright,
-        version
-    ):
+    def __init__(self):
         super().__init__()
         # PROPERTIES
-        self._copyright = copyright
-        self._version = version
+        self._copyright = Language.custom_ui.sys_copyright
+        self._version = Language.custom_ui.sys_version
 
         # SETUP UI
         self.setup_ui()

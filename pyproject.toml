@@ -19,6 +19,7 @@ windows-hardware = [
 dev = [
     "pytest>=8.3.5",
     "ruff>=0.11.2",
+    "black"
 ]
 
 [tool.ruff]
