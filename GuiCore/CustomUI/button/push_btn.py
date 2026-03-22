@@ -9,6 +9,7 @@ class CPushButton(QPushButton):
         size: QSize = QSize(64, 32),
         text: str | None = None,
         icon: QIcon | str | None = None,
+        is_trans: bool = False,
     ):
         super().__init__()
         self.setObjectName("CPushButton_PushButton")

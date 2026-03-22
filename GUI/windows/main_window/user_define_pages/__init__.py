@@ -5,242 +5,256 @@ from .p2ptest_report_manage import P2PTestReportPage
 from .p2ptest_tester_manage import P2PTestTesterPage
 from .p2ptest_database_manage import P2PTestDataBasePage
 from .p2ptest_home_manage import P2PTestHomePage
-from AppCore import MenuPlugin, PagePlugin, get_plugin_registry
+from .normal_widget_show import NormalWidgetShowPage
+from AppCore import MenuPlugin, PagePlugin, get_plugin_registry, Logger
 
 BUILTIN_MENU_PLUGINS = [
-	MenuPlugin(
-		plugin_id="builtin.menu.left.home",
-		target="LeftMenu",
-		item={
-			"btn_icon": "icon_home",
-			"btn_id": "btn_home",
-			"btn_text": "CustomUI",
-			"btn_tooltip": "CustomUI",
-			"show_top": True,
-			"is_active": True,
-		},
-	),
-	MenuPlugin(
-		plugin_id="builtin.menu.left.case_lib",
-		target="LeftMenu",
-		item={
-			"btn_icon": "icon_case_lib",
-			"btn_id": "btn_test_case_lib",
-			"btn_text": "测试用例库",
-			"btn_tooltip": "测试用例库",
-			"show_top": True,
-			"is_active": False,
-		},
-	),
-	MenuPlugin(
-		plugin_id="builtin.menu.left.plan",
-		target="LeftMenu",
-		item={
-			"btn_icon": "icon_plan",
-			"btn_id": "btn_test_plan",
-			"btn_text": "测试计划",
-			"btn_tooltip": "测试计划",
-			"show_top": True,
-			"is_active": False,
-		},
-	),
-	MenuPlugin(
-		plugin_id="builtin.menu.left.report",
-		target="LeftMenu",
-		item={
-			"btn_icon": "icon_report",
-			"btn_id": "btn_test_result",
-			"btn_text": "测试报告",
-			"btn_tooltip": "测试报告",
-			"show_top": True,
-			"is_active": False,
-		},
-	),
-	MenuPlugin(
-		plugin_id="builtin.menu.left.analysis",
-		target="LeftMenu",
-		item={
-			"btn_icon": "icon_analysis",
-			"btn_id": "btn_test_plan_show",
-			"btn_text": "测试分析",
-			"btn_tooltip": "测试分析",
-			"show_top": True,
-			"is_active": False,
-		},
-	),
-	MenuPlugin(
-		plugin_id="builtin.menu.left.users",
-		target="LeftMenu",
-		item={
-			"btn_icon": "icon_users",
-			"btn_id": "btn_test_users",
-			"btn_text": "用户管理",
-			"btn_tooltip": "用户管理",
-			"show_top": True,
-			"is_active": False,
-		},
-	),
-	MenuPlugin(
-		plugin_id="builtin.menu.left.database",
-		target="LeftMenu",
-		item={
-			"btn_icon": "icon_database",
-			"btn_id": "btn_test_database",
-			"btn_text": "归档及配置",
-			"btn_tooltip": "归档及配置",
-			"show_top": True,
-			"is_active": False,
-		},
-	),
-	MenuPlugin(
-		plugin_id="builtin.menu.left.wiki",
-		target="LeftMenu",
-		item={
-			"btn_icon": "icon_books",
-			"btn_id": "btn_test_wiki",
-			"btn_text": "测试 wiki",
-			"btn_tooltip": "测试 wiki",
-			"show_top": True,
-			"is_active": False,
-		},
-	),
-	MenuPlugin(
-		plugin_id="builtin.menu.left.info",
-		target="LeftMenu",
-		item={
-			"btn_icon": "icon_setting",
-			"btn_id": "btn_info",
-			"btn_text": "信息",
-			"btn_tooltip": "软件信息",
-			"show_top": False,
-			"is_active": False,
-		},
-	),
+    MenuPlugin(
+        plugin_id="builtin.menu.left.widget_show",
+        target="LeftMenu",
+        item={
+            "btn_icon": "icon_home",
+            "btn_id": "btn_widget_show",
+            "btn_text": "组件展示",
+            "btn_tooltip": "组件展示",
+            "show_top": True,
+            "is_active": True,
+        },
+    ),
+    MenuPlugin(
+        plugin_id="builtin.menu.left.home",
+        target="LeftMenu",
+        item={
+            "btn_icon": "icon_home",
+            "btn_id": "btn_home",
+            "btn_text": "CustomUI",
+            "btn_tooltip": "CustomUI",
+            "show_top": True,
+            "is_active": False,
+        },
+    ),
+    MenuPlugin(
+        plugin_id="builtin.menu.left.case_lib",
+        target="LeftMenu",
+        item={
+            "btn_icon": "icon_case_lib",
+            "btn_id": "btn_test_case_lib",
+            "btn_text": "测试用例库",
+            "btn_tooltip": "测试用例库",
+            "show_top": True,
+            "is_active": False,
+        },
+    ),
+    MenuPlugin(
+        plugin_id="builtin.menu.left.plan",
+        target="LeftMenu",
+        item={
+            "btn_icon": "icon_plan",
+            "btn_id": "btn_test_plan",
+            "btn_text": "测试计划",
+            "btn_tooltip": "测试计划",
+            "show_top": True,
+            "is_active": False,
+        },
+    ),
+    MenuPlugin(
+        plugin_id="builtin.menu.left.report",
+        target="LeftMenu",
+        item={
+            "btn_icon": "icon_report",
+            "btn_id": "btn_test_result",
+            "btn_text": "测试报告",
+            "btn_tooltip": "测试报告",
+            "show_top": True,
+            "is_active": False,
+        },
+    ),
+    MenuPlugin(
+        plugin_id="builtin.menu.left.analysis",
+        target="LeftMenu",
+        item={
+            "btn_icon": "icon_analysis",
+            "btn_id": "btn_test_plan_show",
+            "btn_text": "测试分析",
+            "btn_tooltip": "测试分析",
+            "show_top": True,
+            "is_active": False,
+        },
+    ),
+    MenuPlugin(
+        plugin_id="builtin.menu.left.users",
+        target="LeftMenu",
+        item={
+            "btn_icon": "icon_users",
+            "btn_id": "btn_test_users",
+            "btn_text": "用户管理",
+            "btn_tooltip": "用户管理",
+            "show_top": True,
+            "is_active": False,
+        },
+    ),
+    MenuPlugin(
+        plugin_id="builtin.menu.left.database",
+        target="LeftMenu",
+        item={
+            "btn_icon": "icon_database",
+            "btn_id": "btn_test_database",
+            "btn_text": "归档及配置",
+            "btn_tooltip": "归档及配置",
+            "show_top": True,
+            "is_active": False,
+        },
+    ),
+    MenuPlugin(
+        plugin_id="builtin.menu.left.wiki",
+        target="LeftMenu",
+        item={
+            "btn_icon": "icon_books",
+            "btn_id": "btn_test_wiki",
+            "btn_text": "测试 wiki",
+            "btn_tooltip": "测试 wiki",
+            "show_top": True,
+            "is_active": False,
+        },
+    ),
+    MenuPlugin(
+        plugin_id="builtin.menu.left.info",
+        target="LeftMenu",
+        item={
+            "btn_icon": "icon_setting",
+            "btn_id": "btn_info",
+            "btn_text": "信息",
+            "btn_tooltip": "软件信息",
+            "show_top": False,
+            "is_active": False,
+        },
+    ),
 ]
 
 BUILTIN_PAGE_PLUGINS = [
-	PagePlugin(
-		plugin_id="builtin.page.home",
-		button_id="btn_home",
-		page_object="p2pTestHomePage",
-		title_getter=lambda language: language.custom_ui.sys_name,
-		loader=P2PTestHomePage.load_page,
-		default=True,
-	),
-	PagePlugin(
-		plugin_id="builtin.page.case_lib",
-		button_id="btn_test_case_lib",
-		page_object="p2pTestCaseLibPage",
-		title_getter=lambda language: language.custom_ui.sys_name,
-		loader=P2PTestCaseLibPage.load_page,
-	),
-	PagePlugin(
-		plugin_id="builtin.page.plan",
-		button_id="btn_test_plan",
-		page_object="p2pTestPlanPage",
-		title_getter=lambda language: language.custom_ui.sys_name,
-		loader=P2PTestPlanPage.load_page,
-	),
-	PagePlugin(
-		plugin_id="builtin.page.report",
-		button_id="btn_test_result",
-		page_object="p2pTestReportPage",
-		title_getter=lambda language: language.custom_ui.sys_name,
-		loader=P2PTestReportPage.load_page,
-	),
-	PagePlugin(
-		plugin_id="builtin.page.analysis",
-		button_id="btn_test_plan_show",
-		page_object="p2pTestAnalysisPage",
-		title_getter=lambda language: language.custom_ui.sys_name,
-		loader=P2PTestAnalysisPage.load_page,
-	),
-	PagePlugin(
-		plugin_id="builtin.page.tester",
-		button_id="btn_test_users",
-		page_object="p2pTestTesterPage",
-		title_getter=lambda language: language.custom_ui.sys_name,
-		loader=P2PTestTesterPage.load_page,
-	),
-	PagePlugin(
-		plugin_id="builtin.page.database",
-		button_id="btn_test_database",
-		page_object="p2pTestDataBasePage",
-		title_getter=lambda language: language.custom_ui.sys_name,
-		loader=P2PTestDataBasePage.load_page,
-	),
-	PagePlugin(
-		plugin_id="builtin.page.widget",
-		button_id="btn_widget_show",
-		page_object="widget_show",
-		title_getter=lambda language: language.PAGE.widget_show.title,
-	),
+    PagePlugin(
+        plugin_id="builtin.page.widget_show",
+        button_id="btn_widget_show",
+        page_object="normalWidgetShowPage",
+        title_getter=lambda language: language.PAGE.widget_show.title,
+        loader=NormalWidgetShowPage.load_page,
+        default=True,
+    ),
+    PagePlugin(
+        plugin_id="builtin.page.home",
+        button_id="btn_home",
+        page_object="p2pTestHomePage",
+        title_getter=lambda language: language.custom_ui.sys_name,
+        loader=P2PTestHomePage.load_page,
+    ),
+    PagePlugin(
+        plugin_id="builtin.page.case_lib",
+        button_id="btn_test_case_lib",
+        page_object="p2pTestCaseLibPage",
+        title_getter=lambda language: language.custom_ui.sys_name,
+        loader=P2PTestCaseLibPage.load_page,
+    ),
+    PagePlugin(
+        plugin_id="builtin.page.plan",
+        button_id="btn_test_plan",
+        page_object="p2pTestPlanPage",
+        title_getter=lambda language: language.custom_ui.sys_name,
+        loader=P2PTestPlanPage.load_page,
+    ),
+    PagePlugin(
+        plugin_id="builtin.page.report",
+        button_id="btn_test_result",
+        page_object="p2pTestReportPage",
+        title_getter=lambda language: language.custom_ui.sys_name,
+        loader=P2PTestReportPage.load_page,
+    ),
+    PagePlugin(
+        plugin_id="builtin.page.analysis",
+        button_id="btn_test_plan_show",
+        page_object="p2pTestAnalysisPage",
+        title_getter=lambda language: language.custom_ui.sys_name,
+        loader=P2PTestAnalysisPage.load_page,
+    ),
+    PagePlugin(
+        plugin_id="builtin.page.tester",
+        button_id="btn_test_users",
+        page_object="p2pTestTesterPage",
+        title_getter=lambda language: language.custom_ui.sys_name,
+        loader=P2PTestTesterPage.load_page,
+    ),
+    PagePlugin(
+        plugin_id="builtin.page.database",
+        button_id="btn_test_database",
+        page_object="p2pTestDataBasePage",
+        title_getter=lambda language: language.custom_ui.sys_name,
+        loader=P2PTestDataBasePage.load_page,
+    ),
 ]
 
 
 def _default_title_by_button(button_id):
-	defaults = {
-		"btn_widget_show": "Widget Show",
-	}
-	return defaults.get(button_id, "CustomUI")
+    defaults = {
+        "btn_widget_show": "Widget Show",
+    }
+    return defaults.get(button_id, "CustomUI")
 
 
 def register_builtin_pages():
-	registry = get_plugin_registry()
-	for plugin in BUILTIN_PAGE_PLUGINS:
-		if not registry.has_page(plugin.plugin_id):
-			registry.register_page(plugin)
+    registry = get_plugin_registry()
+    for plugin in BUILTIN_PAGE_PLUGINS:
+        if not registry.has_page(plugin.plugin_id):
+            registry.register_page(plugin)
 
 
 def register_builtin_menus():
-	registry = get_plugin_registry()
-	for plugin in BUILTIN_MENU_PLUGINS:
-		# MenuPlugin 目前没有 has_menu 接口，按 plugin_id 判重可直接重用底层容器
-		if plugin.plugin_id not in registry._menus:
-			registry.register_menu(plugin)
+    registry = get_plugin_registry()
+    for plugin in BUILTIN_MENU_PLUGINS:
+        # MenuPlugin 目前没有 has_menu 接口，按 plugin_id 判重可直接重用底层容器
+        if plugin.plugin_id not in registry._menus:
+            registry.register_menu(plugin)
 
 
 def _as_legacy_registry():
-	registry = get_plugin_registry()
-	result = []
-	for plugin in registry.page_plugins():
-		result.append(
-			{
-				"button_id": plugin.button_id,
-				"page_object": plugin.page_object,
-				"title_getter": plugin.title_getter,
-				"loader": plugin.loader,
-				"default": plugin.default,
-			}
-		)
-	return result
+    registry = get_plugin_registry()
+    result = []
+    for plugin in registry.page_plugins():
+        result.append(
+            {
+                "button_id": plugin.button_id,
+                "page_object": plugin.page_object,
+                "title_getter": plugin.title_getter,
+                "loader": plugin.loader,
+                "default": plugin.default,
+            }
+        )
+    return result
 
 
 def load_registered_pages(window):
-	register_builtin_menus()
-	register_builtin_pages()
-	registry = get_plugin_registry()
-	registry.load_page_plugins(window)
+    register_builtin_menus()
+    register_builtin_pages()
+    registry = get_plugin_registry()
+    registry.load_page_plugins(window)
 
 
 def get_page_routes(language):
-	register_builtin_menus()
-	register_builtin_pages()
-	registry = get_plugin_registry()
-	return registry.build_page_routes(language, _default_title_by_button)
+    register_builtin_menus()
+    register_builtin_pages()
+    registry = get_plugin_registry()
+    return registry.build_page_routes(language, _default_title_by_button)
 
 
 def get_default_page_object():
-	register_builtin_menus()
-	register_builtin_pages()
-	registry = get_plugin_registry()
-	return registry.get_default_page_object()
+    register_builtin_menus()
+    register_builtin_pages()
+    registry = get_plugin_registry()
+    return registry.get_default_page_object()
 
 
 def get_menu_items(target: str):
-	register_builtin_menus()
-	registry = get_plugin_registry()
-	return registry.apply_menu_plugins([], target)
+    register_builtin_menus()
+    registry = get_plugin_registry()
+    return registry.apply_menu_plugins([], target)
 
 
 register_builtin_menus()
@@ -249,16 +263,17 @@ PAGE_REGISTRY = _as_legacy_registry()
 
 
 __all__ = [
-	"P2PTestCaseLibPage",
-	"P2PTestPlanPage",
-	"P2PTestAnalysisPage",
-	"P2PTestReportPage",
-	"P2PTestTesterPage",
-	"P2PTestDataBasePage",
-	"P2PTestHomePage",
-	"PAGE_REGISTRY",
-	"load_registered_pages",
-	"get_page_routes",
-	"get_default_page_object",
-	"get_menu_items",
+    "P2PTestCaseLibPage",
+    "P2PTestPlanPage",
+    "P2PTestAnalysisPage",
+    "P2PTestReportPage",
+    "P2PTestTesterPage",
+    "P2PTestDataBasePage",
+    "P2PTestHomePage",
+    "NormalWidgetShowPage",
+    "PAGE_REGISTRY",
+    "load_registered_pages",
+    "get_page_routes",
+    "get_default_page_object",
+    "get_menu_items",
 ]

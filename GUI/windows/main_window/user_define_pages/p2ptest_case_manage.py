@@ -29,18 +29,25 @@ class P2PTestCaseLibPage:
         left_card_layout.setAlignment(Qt.AlignmentFlag.AlignCenter | Qt.AlignmentFlag.AlignTop)
         left_card_layout.setContentsMargins(QMargins(0, 6, 0, 0))
         left_scroller_area = QScrollArea()
+        left_scroller_area.setObjectName("widget_show_scroller_area")
         left_scroller_area.setWidget(left_card)
         left_scroller_area.setWidgetResizable(True)
-        left_scroller_area.setStyleSheet(f"background:{ColorPalette.custom_dark_three};")
+        left_scroller_area.setStyleSheet(f"#widget_show_scroller_area{{background:{ColorPalette.custom_dark_three}}};")
         left_scroller_area.setVerticalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
         left_scroller_area.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
         left_back_layout.addWidget(left_scroller_area)
 
         label_1 = QLabel("测试库")
 
-        case_lib_btn1 = CPushButton(size=QSize(144, 32), text="全部测试库", icon=QIcon(PathFactory.set_svg_icon("icon_all")))
-        case_lib_btn2 = CPushButton(size=QSize(144, 32), text="组织测试库", icon=QIcon(PathFactory.set_svg_icon("icon_tree")))
-        case_lib_btn3 = CPushButton(size=QSize(144, 32), text="团队测试库", icon=QIcon(PathFactory.set_svg_icon("icon_team")))
+        case_lib_btn1 = CPushButton(
+            size=QSize(144, 32), text="全部测试库", icon=QIcon(PathFactory.set_svg_icon("icon_all"))
+        )
+        case_lib_btn2 = CPushButton(
+            size=QSize(144, 32), text="组织测试库", icon=QIcon(PathFactory.set_svg_icon("icon_tree"))
+        )
+        case_lib_btn3 = CPushButton(
+            size=QSize(144, 32), text="团队测试库", icon=QIcon(PathFactory.set_svg_icon("icon_team"))
+        )
 
         left_card_layout.addWidget(label_1)
         left_card_layout.addWidget(case_lib_btn1)
@@ -68,7 +75,9 @@ class P2PTestCaseLibPage:
         font = QFont(AppSettings.family, AppSettings.title_size)
         label_4.setFont(font)
 
-        case_lib_btn9 = CPushButton(size=QSize(144, 32), text="新建测试库", icon=QIcon(PathFactory.set_svg_icon("icon_add")))
+        case_lib_btn9 = CPushButton(
+            size=QSize(144, 32), text="新建测试库", icon=QIcon(PathFactory.set_svg_icon("icon_add"))
+        )
 
         right_top_layout.addWidget(label_4)
         right_top_layout.addStretch()

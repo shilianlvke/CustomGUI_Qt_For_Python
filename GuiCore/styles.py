@@ -6,6 +6,7 @@ class Styles(object):
 
     def __init__(self):
         self.tokens = get_design_tokens()
+        print(self.tokens)
         self.style = f"""
             #CWindow_Frame {{
                 background-color: {self.tokens.colors.surface_app};
@@ -89,8 +90,8 @@ class Styles(object):
                 color: {self.tokens.colors.text_primary};
             }}
             #CPushButton_PushButton:hover {{
-                border-color: {self.tokens.colors.surface_interactive_hover};
                 background-color: {self.tokens.colors.surface_interactive_hover};
+                border-color: {self.tokens.colors.surface_interactive_hover};
             }}
             #CPushButton_PushButton:pressed {{
                 background-color: {self.tokens.colors.surface_interactive_pressed};

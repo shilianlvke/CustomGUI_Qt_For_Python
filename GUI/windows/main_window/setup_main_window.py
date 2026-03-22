@@ -6,7 +6,6 @@ from .user_define_pages import get_default_page_object, get_menu_items, load_reg
 from GuiCore import CCard, CComboBox, CGrips, CMenu, CMenuButton, CPushButton, CShowCard, CStatusButton
 from AppCore import AppSettings, ColorPalette, Language, Logger, MenuPlugin, PathFactory, get_plugin_registry
 
-
 BUILTIN_TITLE_MENU_PLUGINS = [
     MenuPlugin(
         plugin_id="builtin.menu.title.search",
@@ -59,7 +58,6 @@ class SetupMainWindow:
         return None
 
     def setup_gui(self):
-        register_builtin_title_menus()
         # 添加标题描述
         self.setWindowTitle(Language.custom_ui.sys_name)
         self.ui.title_bar.set_title(Language.custom_ui.sys_name)
@@ -81,7 +79,6 @@ class SetupMainWindow:
         SetupMainWindow.menu_add_btn(self)
         # PAGES
         load_registered_pages(self)
-        SetupMainWindow.load_left_column_menu1(self)
         # 设置初始页面/设置左右列菜单
         default_page = get_default_page_object()
         MainFunctions.set_page(self, self.ui.load_pages.pages.findChild(QWidget, default_page))
@@ -121,7 +118,9 @@ class SetupMainWindow:
         icon_btn.clicked.connect(lambda: Logger.info("点击了图片按钮"))
         trans_btn = CPushButton(text="透明按钮", is_transparent=True)
         trans_btn.clicked.connect(lambda: Logger.info("点击了透明按钮"))
-        text_icon_btn = CPushButton(size=QSize(128, 32), icon=QIcon(PathFactory.set_svg_icon("icon_heart")), text="QIcon-文字按钮")
+        text_icon_btn = CPushButton(
+            size=QSize(128, 32), icon=QIcon(PathFactory.set_svg_icon("icon_heart")), text="QIcon-文字按钮"
+        )
         text_icon_btn.clicked.connect(lambda: Logger.info("点击了文字按钮"))
         two_btn = CStatusButton(
             size=QSize(64, 32),
@@ -175,9 +174,6 @@ class SetupMainWindow:
         card_layout.addWidget(card_7)
         card_layout.addWidget(card_8)
 
-    def load_left_column_menu1(self):
-        pass
-
     def resize_grips(self):
         self.left_grip.setGeometry(5, 10, 10, self.height())
         self.right_grip.setGeometry(self.width() - 15, 10, 10, self.height())
@@ -190,17 +186,14 @@ class SetupMainWindow:
 
     def menu_add_btn(self):
         register_builtin_title_menus()
-        registry = get_plugin_registry()
         left_menu_items = get_menu_items("LeftMenu")
-        title_menu_items = registry.apply_menu_plugins([], "TitleMenu")
-
-        # 添加左侧菜单按钮
+        title_menu_items = get_menu_items("TitleMenu")
         self.ui.left_menu.add_menus(left_menu_items)
+        self.ui.title_bar.add_menus(title_menu_items)
+        # 按钮绑定
         self.ui.left_menu.clicked.connect(self.btn_clicked)
         self.ui.left_menu.released.connect(self.btn_released)
-        # 添加标题菜单按钮
-        self.ui.title_bar.add_menus(title_menu_items)
-        self.ui.title_bar.clicked.connect(self.btn_clicked)
-        self.ui.title_bar.released.connect(self.btn_released)
         self.ui.left_column.clicked.connect(self.btn_clicked)
         self.ui.left_column.released.connect(self.btn_released)
+        self.ui.title_bar.clicked.connect(self.btn_clicked)
+        self.ui.title_bar.released.connect(self.btn_released)

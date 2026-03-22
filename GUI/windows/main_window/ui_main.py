@@ -7,34 +7,6 @@ from AppCore import PathFactory, ColorPalette, Language, AppSettings
 
 class UiMainWindow(object):
 
-    def __init__(self):
-        self.parent = None
-        self.credits = None
-        self.credits_layout = None
-        self.credits_frame = None
-        self.right_column = None
-        self.content_area_right_bg_frame = None
-        self.content_area_right_layout = None
-        self.right_column_frame = None
-        self.load_pages = None
-        self.content_area_left_frame = None
-        self.content_area_layout = None
-        self.content_area_frame = None
-        self.title_bar = None
-        self.title_bar_layout = None
-        self.title_bar_frame = None
-        self.right_app_layout = None
-        self.right_app_frame = None
-        self.left_column = None
-        self.left_column_layout = None
-        self.left_column_frame = None
-        self.left_menu = None
-        self.left_menu_layout = None
-        self.left_menu_frame = None
-        self.window = None
-        self.central_widget_layout = None
-        self.central_widget = None
-
     def setup_ui(self, parent):
         self.parent = parent
         # 界面主体
@@ -150,7 +122,6 @@ class UiMainWindow(object):
         self.right_app_layout.addWidget(self.credits_frame)
 
     def add_widget_to_window(self):
-        # 将控件添加到“PyWindow”
         self.window.layout.addWidget(self.left_menu_frame)
         self.window.layout.addWidget(self.left_column_frame)
         self.window.layout.addWidget(self.right_app_frame)

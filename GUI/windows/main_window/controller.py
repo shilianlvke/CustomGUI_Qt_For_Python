@@ -136,6 +136,7 @@ class MainWindowController:
             pass
 
         route = self.page_router.route_for(btn_name)
+        Logger.debug(route)
         decision = self._button_use_case.decide(btn_name, route)
 
         if decision.kind == "page_route":
