@@ -21,14 +21,6 @@ class CDialog(QDialog):
             self.title_bar = CTitleBar(
                 self,
                 self,
-                logo_image=AppSettings.logo_title,
-                radius=8,
-                font_family=AppSettings.family,
-                title_size=AppSettings.title_size,
-                is_custom_title_bar=AppSettings.custom_title_bar,
-                custom_title_minimize_button_text=Language.UI.ui_Minimize,
-                custom_title_maximize_button_text=Language.UI.ui_Maximize,
-                custom_title_close_text=Language.UI.ui_Close,
             )
             self.title_bar.setMaximumHeight(40)
             self.title_bar.set_title(title)
