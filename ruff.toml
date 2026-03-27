@@ -10,7 +10,6 @@ ignore = ["D203", "D213", "D400", "D415", "RUF001", "RUF002", "RUF003", "COM812"
 "tests/**/*.py" = ["S101"]
 "GuiCore/**/__init__.py" = ["N999"]
 "GuiCore/**/*.py" = [
-	"ARG002",
 	"C901",
 	"FBT001",
 	"FBT002",
