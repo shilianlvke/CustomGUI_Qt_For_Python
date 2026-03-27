@@ -12,7 +12,7 @@ from guicore.CustomUI.div import CHDiv
 class P2PTestReportPage:
     """P2P 测试报告页面定义。"""
 
-    def load_page(self: object) -> None:  # noqa: PLR0915
+    def load_page(self: object) -> None:
         """构建并注册测试报告页面。
 
         返回:
@@ -27,13 +27,20 @@ class P2PTestReportPage:
         page_layout.setContentsMargins(QMargins(0, 0, 0, 0))
         page_layout.setSpacing(3)
 
+        right_back_layout = self._build_right_container(page_layout)
+        self._build_top_section(right_back_layout)
+        self._build_filter_section(right_back_layout)
+        self._build_report_cards(right_back_layout)
+
+    def _build_right_container(self, page_layout: QHBoxLayout) -> QVBoxLayout:
         right_back_card = CCard()
         right_back_layout = QVBoxLayout(right_back_card)
         right_back_layout.setContentsMargins(QMargins(2, 2, 2, 2))
         right_back_layout.setAlignment(Qt.AlignmentFlag.AlignTop)
         page_layout.addWidget(right_back_card)
+        return right_back_layout
 
-        # layout
+    def _build_top_section(self, right_back_layout: QVBoxLayout) -> None:
         right_top_card = CCard()
         right_top_layout = QHBoxLayout(right_top_card)
         right_top_layout.setContentsMargins(QMargins(0, 0, 0, 0))
@@ -52,9 +59,9 @@ class P2PTestReportPage:
         right_top_layout.addStretch()
         right_top_layout.addWidget(case_lib_btn9)
         right_back_layout.addWidget(CHDiv())
-
         case_lib_btn9.clicked.connect(lambda: Logger.info("点击了'新建测试报告'"))
 
+    def _build_filter_section(self, right_back_layout: QVBoxLayout) -> None:
         right_middle_card = CCard()
         right_middle_layout = QHBoxLayout(right_middle_card)
         right_middle_layout.setContentsMargins(QMargins(0, 0, 0, 0))
@@ -76,6 +83,7 @@ class P2PTestReportPage:
         case_lib_btn_b.clicked.connect(lambda: Logger.info("点击了'星标'"))
         case_lib_btn_c.clicked.connect(lambda: Logger.info("点击了'最近'"))
 
+    def _build_report_cards(self, right_back_layout: QVBoxLayout) -> None:
         right_bottom_card = CCard()
         right_bottom_layout = QGridLayout(right_bottom_card)
         right_bottom_layout.setContentsMargins(QMargins(0, 0, 0, 0))
@@ -90,19 +98,16 @@ class P2PTestReportPage:
         right_bottom_scroller_area.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
         right_back_layout.addWidget(right_bottom_scroller_area)
 
-        card_1 = CShowCard(QSize(230, 128), Language.custom_ui.sys_github, "功能测试报告")
-        card_2 = CShowCard(QSize(230, 128), Language.custom_ui.sys_github, "性能测试报告")
-        card_3 = CShowCard(QSize(230, 128), Language.custom_ui.sys_github, "硬件测试报告")
-        card_4 = CShowCard(QSize(230, 128), Language.custom_ui.sys_github, "软件测试报告1")
-        card_5 = CShowCard(QSize(230, 128), Language.custom_ui.sys_github, "软件测试报告2")
-        card_6 = CShowCard(QSize(230, 128), Language.custom_ui.sys_github, "软件测试报告3")
-        card_7 = CShowCard(QSize(230, 128), Language.custom_ui.sys_github, "软件测试报告4")
-        card_8 = CShowCard(QSize(230, 128), Language.custom_ui.sys_github, "软件测试报告5")
-        right_bottom_layout.addWidget(card_1, 0, 0)
-        right_bottom_layout.addWidget(card_2, 0, 1)
-        right_bottom_layout.addWidget(card_3, 0, 2)
-        right_bottom_layout.addWidget(card_4, 1, 0)
-        right_bottom_layout.addWidget(card_5, 1, 1)
-        right_bottom_layout.addWidget(card_6, 1, 2)
-        right_bottom_layout.addWidget(card_7, 2, 0)
-        right_bottom_layout.addWidget(card_8, 2, 1)
+        cards = [
+            CShowCard(QSize(230, 128), Language.custom_ui.sys_github, "功能测试报告"),
+            CShowCard(QSize(230, 128), Language.custom_ui.sys_github, "性能测试报告"),
+            CShowCard(QSize(230, 128), Language.custom_ui.sys_github, "硬件测试报告"),
+            CShowCard(QSize(230, 128), Language.custom_ui.sys_github, "软件测试报告1"),
+            CShowCard(QSize(230, 128), Language.custom_ui.sys_github, "软件测试报告2"),
+            CShowCard(QSize(230, 128), Language.custom_ui.sys_github, "软件测试报告3"),
+            CShowCard(QSize(230, 128), Language.custom_ui.sys_github, "软件测试报告4"),
+            CShowCard(QSize(230, 128), Language.custom_ui.sys_github, "软件测试报告5"),
+        ]
+        positions = [(0, 0), (0, 1), (0, 2), (1, 0), (1, 1), (1, 2), (2, 0), (2, 1)]
+        for card, (row, col) in zip(cards, positions, strict=False):
+            right_bottom_layout.addWidget(card, row, col)
