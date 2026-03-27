@@ -19,14 +19,16 @@ def test_to_user_message_for_app_error() -> None:
     """
     err = DomainErrorBoundary(code="DOMAIN_X", message="业务失败", details="detail")
 
-    assert to_user_message(err) == "业务失败 (DOMAIN_X)"
+    if to_user_message(err) != "业务失败 (DOMAIN_X)":
+        pytest.fail("Assertion failed")
 
 
 def test_to_user_message_for_unknown_error() -> None:
     """测试用例：test_to_user_message_for_unknown_error。"""
     err = RuntimeError("boom")
 
-    assert "未知错误" in to_user_message(err)
+    if "未知错误" not in to_user_message(err):
+        pytest.fail("Assertion failed")
 
 
 def test_yaml_handler_missing_file_raises_io_boundary() -> None:
@@ -41,6 +43,9 @@ def test_error_boundary_layers() -> None:
     domain_err = DomainErrorBoundary("DOMAIN_X", "domain")
     ui_err = UIErrorBoundary("UI_X", "ui")
 
-    assert io_err.layer == "io"
-    assert domain_err.layer == "domain"
-    assert ui_err.layer == "ui"
+    if io_err.layer != "io":
+        pytest.fail("Assertion failed")
+    if domain_err.layer != "domain":
+        pytest.fail("Assertion failed")
+    if ui_err.layer != "ui":
+        pytest.fail("Assertion failed")

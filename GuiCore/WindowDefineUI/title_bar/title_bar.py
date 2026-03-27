@@ -113,9 +113,9 @@ class CTitleBar(QWidget):
         # 添加按钮按钮
         # ///////////////////////////////////////////////////////////////
         # Functions
-        self.minimize_button.released.connect(lambda: parent.showMinimized())
-        self.maximize_restore_button.released.connect(lambda: self.maximize_restore())
-        self.close_button.released.connect(lambda: parent.close())
+        self.minimize_button.released.connect(parent.showMinimized)
+        self.maximize_restore_button.released.connect(self.maximize_restore)
+        self.close_button.released.connect(parent.close)
 
         # 额外BTN布局
         self.bg_layout.addLayout(self.custom_buttons_layout)
@@ -199,6 +199,7 @@ class CTitleBar(QWidget):
         返回:
         - None
         """
+        _ = e
         state = globals()
 
         # 更改UI并调整夹点大小

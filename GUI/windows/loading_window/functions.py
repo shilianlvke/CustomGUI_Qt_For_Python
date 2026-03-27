@@ -115,7 +115,7 @@ class ResourceLoader:
                 payload={"code": e.code, "layer": e.layer},
             )
             self.bus.error_occurred.emit(to_user_message(e))
-        except Exception as e:
+        except (AttributeError, KeyError, TypeError, ValueError, RuntimeError, OSError) as e:
             wrapped = UIErrorBoundary(
                 code="LOADING_UNEXPECTED_ERROR",
                 message="加载流程发生未预期错误",

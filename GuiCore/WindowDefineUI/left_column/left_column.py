@@ -1,7 +1,7 @@
 """模块说明。"""
 
 from AppCore import ColorPalette
-from GUI import Ui_LeftColumn
+from GUI import UiLeftColumn
 from qt_core import (
     QFrame,
     QHBoxLayout,
@@ -77,8 +77,8 @@ class CLeftColumn(QWidget):
         self.setup_ui()
 
         # 在BG框架中添加左列
-        self.menus = Ui_LeftColumn()
-        self.menus.setupUi(self.content_frame)
+        self.menus = UiLeftColumn()
+        self.menus.setup_ui(self.content_frame)
 
         # CONNECT SIGNALS
         self.btn_close.clicked.connect(self.btn_clicked)

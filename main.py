@@ -36,6 +36,7 @@ class MainWindow(QMainWindow):
         返回:
         - None
         """
+        _ = args
         super().__init__()
         # 启动遥测：主窗口初始化
         record_event("app.main_window.init", category="app")
@@ -95,6 +96,7 @@ class MainWindow(QMainWindow):
         返回:
         - None
         """
+        _ = event
         SetupMainWindow.resize_grips(self)
 
     def mousePressEvent(self, event: QMouseEvent) -> None:

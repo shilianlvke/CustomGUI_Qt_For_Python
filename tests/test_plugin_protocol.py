@@ -54,13 +54,16 @@ def test_plugin_registry_page_menu_command_flow() -> None:
     )
 
     routes = registry.build_page_routes(language=None, title_fallback=lambda _bid: "fallback")
-    assert routes["btn_demo"][0] == "demo_page"
+    if routes["btn_demo"][0] != "demo_page":
+        pytest.fail("Assertion failed")
 
     left = registry.apply_menu_plugins([], "LeftMenu")
-    assert left[0]["btn_id"] == "btn_demo"
+    if left[0]["btn_id"] != "btn_demo":
+        pytest.fail("Assertion failed")
 
     registry.execute_command("cmd_demo")
-    assert state["ran"] is True
+    if state["ran"] is not True:
+        pytest.fail("Assertion failed")
 
 
 def test_plugin_registry_duplicate_registration_raises() -> None:
@@ -76,7 +79,8 @@ def test_plugin_registry_duplicate_registration_raises() -> None:
     registry.register_page(plugin)
     with pytest.raises(DomainErrorBoundary) as exc_info:
         registry.register_page(plugin)
-    assert exc_info.value.code == "PLUGIN_DUPLICATE_PAGE"
+    if exc_info.value.code != "PLUGIN_DUPLICATE_PAGE":
+        pytest.fail("Assertion failed")
 
 
 def test_plugin_lifecycle_enable_disable_and_unregister() -> None:
@@ -91,16 +95,23 @@ def test_plugin_lifecycle_enable_disable_and_unregister() -> None:
         ),
     )
 
-    assert registry.execute_command("cmd_lifecycle") == "ok"
+    if registry.execute_command("cmd_lifecycle") != "ok":
+        pytest.fail("Assertion failed")
 
-    assert registry.disable_plugin("test.cmd.lifecycle") is True
-    assert registry.execute_command("cmd_lifecycle") is None
+    if registry.disable_plugin("test.cmd.lifecycle") is not True:
+        pytest.fail("Assertion failed")
+    if registry.execute_command("cmd_lifecycle") is not None:
+        pytest.fail("Assertion failed")
 
-    assert registry.enable_plugin("test.cmd.lifecycle") is True
-    assert registry.execute_command("cmd_lifecycle") == "ok"
+    if registry.enable_plugin("test.cmd.lifecycle") is not True:
+        pytest.fail("Assertion failed")
+    if registry.execute_command("cmd_lifecycle") != "ok":
+        pytest.fail("Assertion failed")
 
-    assert registry.unregister_plugin("test.cmd.lifecycle") is True
-    assert registry.execute_command("cmd_lifecycle") is None
+    if registry.unregister_plugin("test.cmd.lifecycle") is not True:
+        pytest.fail("Assertion failed")
+    if registry.execute_command("cmd_lifecycle") is not None:
+        pytest.fail("Assertion failed")
 
 
 def test_plugin_protocol_version_mismatch_raises() -> None:
@@ -117,7 +128,8 @@ def test_plugin_protocol_version_mismatch_raises() -> None:
                 protocol_version="2",
             ),
         )
-    assert exc_info.value.code == "PLUGIN_PROTOCOL_UNSUPPORTED"
+    if exc_info.value.code != "PLUGIN_PROTOCOL_UNSUPPORTED":
+        pytest.fail("Assertion failed")
 
 
 def test_plugin_load_and_command_fault_isolation() -> None:
@@ -140,12 +152,17 @@ def test_plugin_load_and_command_fault_isolation() -> None:
     )
 
     expected_loaded = 2
-    assert report["loaded"] == expected_loaded
-    assert report["failed"] == 0
+    if report["loaded"] != expected_loaded:
+        pytest.fail("Assertion failed")
+    if report["failed"] != 0:
+        pytest.fail("Assertion failed")
 
-    assert registry.execute_command("cmd_ok") == "ok"
-    assert registry.execute_command("cmd_bad") is None
-    assert any("test.cmd.bad" in msg for msg in registry.load_errors)
+    if registry.execute_command("cmd_ok") != "ok":
+        pytest.fail("Assertion failed")
+    if registry.execute_command("cmd_bad") is not None:
+        pytest.fail("Assertion failed")
+    if not (any("test.cmd.bad" in msg for msg in registry.load_errors)):
+        pytest.fail("Assertion failed")
 
 
 def test_page_plugin_loader_fault_isolation() -> None:
@@ -183,17 +200,22 @@ def test_page_plugin_loader_fault_isolation() -> None:
     marker = object()
     registry.load_page_plugins(marker)
 
-    assert calls == [("ok", marker)]
-    assert any("test.page.bad" in msg for msg in registry.load_errors)
+    if calls != [("ok", marker)]:
+        pytest.fail("Assertion failed")
+    if not (any("test.page.bad" in msg for msg in registry.load_errors)):
+        pytest.fail("Assertion failed")
 
 
 def test_plugin_protocol_compatibility_helpers() -> None:
     """测试用例：test_plugin_protocol_compatibility_helpers。"""
     registry = get_plugin_registry(reset=True)
 
-    assert registry.is_protocol_supported("1") is True
-    assert registry.is_protocol_supported("2") is False
-    assert "1" in registry.supported_protocol_versions
+    if registry.is_protocol_supported("1") is not True:
+        pytest.fail("Assertion failed")
+    if registry.is_protocol_supported("2") is not False:
+        pytest.fail("Assertion failed")
+    if "1" not in registry.supported_protocol_versions:
+        pytest.fail("Assertion failed")
 
 
 def test_discover_plugin_modules_from_manifest(tmp_path: Path) -> None:
@@ -214,7 +236,8 @@ plugins:
 
     modules = registry.discover_plugin_modules(str(manifest))
 
-    assert modules == ["demo_plugin_a", "demo_plugin_b"]
+    if modules != ["demo_plugin_a", "demo_plugin_b"]:
+        pytest.fail("Assertion failed")
 
 
 def test_discover_and_load_plugins_from_module_register_function(
@@ -260,8 +283,10 @@ def register_plugins(registry):
 
     report = registry.discover_and_load_plugins(str(manifest))
 
-    assert report["modules_loaded"] == 1
-    assert registry.execute_command("cmd_demo") == "ok"
+    if report["modules_loaded"] != 1:
+        pytest.fail("Assertion failed")
+    if registry.execute_command("cmd_demo") != "ok":
+        pytest.fail("Assertion failed")
 
 
 def test_load_plugins_from_module_missing_entry_records_error(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
@@ -282,8 +307,10 @@ def test_load_plugins_from_module_missing_entry_records_error(tmp_path: Path, mo
 
     report = registry.load_plugins_from_modules(["bad_plugin"])
 
-    assert report["modules_failed"] == 1
-    assert any("bad_plugin" in msg for msg in registry.load_errors)
+    if report["modules_failed"] != 1:
+        pytest.fail("Assertion failed")
+    if not (any("bad_plugin" in msg for msg in registry.load_errors)):
+        pytest.fail("Assertion failed")
 
 
 def test_plugin_protocol_adapter_migrates_legacy_plugin() -> None:
@@ -309,7 +336,8 @@ def test_plugin_protocol_adapter_migrates_legacy_plugin() -> None:
     )
     registry.register_command(legacy)
 
-    assert registry.execute_command("cmd_legacy") == "legacy-ok"
+    if registry.execute_command("cmd_legacy") != "legacy-ok":
+        pytest.fail("Assertion failed")
 
 
 def test_plugin_protocol_adapter_failure_raises_boundary() -> None:
@@ -327,4 +355,5 @@ def test_plugin_protocol_adapter_failure_raises_boundary() -> None:
 
     with pytest.raises(DomainErrorBoundary) as exc_info:
         registry.register_command(legacy)
-    assert exc_info.value.code == "PLUGIN_PROTOCOL_ADAPT_FAILED"
+    if exc_info.value.code != "PLUGIN_PROTOCOL_ADAPT_FAILED":
+        pytest.fail("Assertion failed")

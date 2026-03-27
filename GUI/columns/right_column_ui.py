@@ -19,19 +19,19 @@ from PySide6.QtGui import (
 from PySide6.QtWidgets import QLabel, QStackedWidget, QVBoxLayout, QWidget
 
 
-class Ui_RightColumn:
+class UiRightColumn:
     """右侧列 UI 生成类。"""
 
-    def setupUi(self, RightColumn: QWidget) -> None:
+    def setup_ui(self, right_column: QWidget) -> None:
         """构建右侧列界面。"""
-        if not RightColumn.objectName():
-            RightColumn.setObjectName("RightColumn")
-        RightColumn.resize(240, 600)
-        self.main_pages_layout = QVBoxLayout(RightColumn)
+        if not right_column.objectName():
+            right_column.setObjectName("RightColumn")
+        right_column.resize(240, 600)
+        self.main_pages_layout = QVBoxLayout(right_column)
         self.main_pages_layout.setSpacing(0)
         self.main_pages_layout.setObjectName("main_pages_layout")
         self.main_pages_layout.setContentsMargins(5, 5, 5, 5)
-        self.menus = QStackedWidget(RightColumn)
+        self.menus = QStackedWidget(right_column)
         self.menus.setObjectName("menus")
         self.menu_1 = QWidget()
         self.menu_1.setObjectName("menu_1")
@@ -68,18 +68,18 @@ class Ui_RightColumn:
 
         self.main_pages_layout.addWidget(self.menus)
 
-        self.retranslateUi(RightColumn)
+        self.retranslate_ui(right_column)
 
         self.menus.setCurrentIndex(0)
 
-        QMetaObject.connectSlotsByName(RightColumn)
+        QMetaObject.connectSlotsByName(right_column)
 
-    # setupUi
+    # setup_ui
 
-    def retranslateUi(self, RightColumn: QWidget) -> None:
+    def retranslate_ui(self, right_column: QWidget) -> None:
         """刷新界面文本。"""
-        RightColumn.setWindowTitle(QCoreApplication.translate("RightColumn", "Form", None))
+        right_column.setWindowTitle(QCoreApplication.translate("RightColumn", "Form", None))
         self.label_1.setText(QCoreApplication.translate("RightColumn", "Menu 1 - Right Menu", None))
         self.label_2.setText(QCoreApplication.translate("RightColumn", "Menu 2 - Right Menu", None))
 
-    # retranslateUi
+    # retranslate_ui

@@ -29,7 +29,7 @@ class CStatusButton(QPushButton):
     - 根据状态同步文本、图标与样式。
     """
 
-    statusChanged = Signal(int)
+    status_changed = Signal(int)
 
     def __init__(
         self,
@@ -42,6 +42,7 @@ class CStatusButton(QPushButton):
         icon_positive: QIcon | str | None = None,
         radius: int = 8,
         border_size: int = 2,
+        *,
         is_normal: bool = False,  # 三态开关
     ) -> None:
         """初始化状态按钮。
@@ -209,7 +210,7 @@ class CStatusButton(QPushButton):
         """
         super().mousePressEvent(event)
         self.status = self.status_list[(self.status_list.index(self.status) + 1) % len(self.status_list)]
-        self.statusChanged.emit(self.status)
+        self.status_changed.emit(self.status)
         self.text_change()
         self.icon_change()
         self.style_change()

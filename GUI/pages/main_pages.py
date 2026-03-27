@@ -12,37 +12,37 @@ from PySide6.QtCore import QCoreApplication, QMetaObject
 from PySide6.QtWidgets import QStackedWidget, QVBoxLayout, QWidget
 
 
-class Ui_MainPages:
+class UiMainPages:
     """主页面容器 UI 生成类。"""
 
-    def setupUi(self, MainPages: QWidget) -> None:
+    def setup_ui(self, main_pages: QWidget) -> None:
         """构建主页面容器界面。"""
-        if not MainPages.objectName():
-            MainPages.setObjectName("MainPages")
-        MainPages.resize(838, 517)
-        self.Main_layout = QVBoxLayout(MainPages)
-        self.Main_layout.setSpacing(0)
-        self.Main_layout.setObjectName("Main_layout")
-        self.Main_layout.setContentsMargins(0, 0, 0, 0)
-        self.pages = QStackedWidget(MainPages)
+        if not main_pages.objectName():
+            main_pages.setObjectName("MainPages")
+        main_pages.resize(838, 517)
+        self.main_layout = QVBoxLayout(main_pages)
+        self.main_layout.setSpacing(0)
+        self.main_layout.setObjectName("Main_layout")
+        self.main_layout.setContentsMargins(0, 0, 0, 0)
+        self.pages = QStackedWidget(main_pages)
         self.pages.setObjectName("pages")
-        self.Main_Page = QWidget()
-        self.Main_Page.setObjectName("Main_Page")
-        self.pages.addWidget(self.Main_Page)
+        self.main_page = QWidget()
+        self.main_page.setObjectName("Main_Page")
+        self.pages.addWidget(self.main_page)
         self.widget_show = QWidget()
         self.widget_show.setObjectName("widget_show")
         self.pages.addWidget(self.widget_show)
 
-        self.Main_layout.addWidget(self.pages)
+        self.main_layout.addWidget(self.pages)
 
-        self.retranslateUi(MainPages)
+        self.retranslate_ui(main_pages)
 
-        QMetaObject.connectSlotsByName(MainPages)
+        QMetaObject.connectSlotsByName(main_pages)
 
-    # setupUi
+    # setup_ui
 
-    def retranslateUi(self, MainPages: QWidget) -> None:
+    def retranslate_ui(self, main_pages: QWidget) -> None:
         """刷新界面文本。"""
-        MainPages.setWindowTitle(QCoreApplication.translate("MainPages", "Form", None))
+        main_pages.setWindowTitle(QCoreApplication.translate("MainPages", "Form", None))
 
-    # retranslateUi
+    # retranslate_ui

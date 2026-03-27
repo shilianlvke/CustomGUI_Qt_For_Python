@@ -2,6 +2,8 @@
 
 from threading import Thread
 
+import pytest
+
 from AppCore import AppSettings, get_app_context, initialize_app_context
 
 
@@ -13,19 +15,26 @@ def test_lazy_context_view_access() -> None:
     """
     initialize_app_context(force_reload=True)
 
-    assert hasattr(AppSettings, "theme_name")
-    assert isinstance(AppSettings.theme_name, str)
+    if not (hasattr(AppSettings, "theme_name")):
+        pytest.fail("Assertion failed")
+    if not (isinstance(AppSettings.theme_name, str)):
+        pytest.fail("Assertion failed")
 
 
 def test_context_reload_returns_loaded_context() -> None:
     """测试用例：test_context_reload_returns_loaded_context。"""
     ctx = get_app_context(force_reload=True)
 
-    assert ctx.settings is not None
-    assert ctx.themes is not None
-    assert ctx.languages is not None
-    assert ctx.others is not None
-    assert not hasattr(ctx, "menu")
+    if not (ctx.settings is not None):
+        pytest.fail("Assertion failed")
+    if not (ctx.themes is not None):
+        pytest.fail("Assertion failed")
+    if not (ctx.languages is not None):
+        pytest.fail("Assertion failed")
+    if not (ctx.others is not None):
+        pytest.fail("Assertion failed")
+    if hasattr(ctx, "menu"):
+        pytest.fail("Assertion failed")
 
 
 def test_get_app_context_thread_safe_initialization() -> None:
@@ -43,6 +52,8 @@ def test_get_app_context_thread_safe_initialization() -> None:
     for thread in threads:
         thread.join()
 
-    assert contexts
+    if not (contexts):
+        pytest.fail("Assertion failed")
     first = contexts[0]
-    assert all(ctx is first for ctx in contexts)
+    if not (all(ctx is first for ctx in contexts)):
+        pytest.fail("Assertion failed")

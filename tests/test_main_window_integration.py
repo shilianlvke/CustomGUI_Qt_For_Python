@@ -2,6 +2,8 @@
 
 from types import SimpleNamespace
 
+import pytest
+
 from GUI.windows.main_window.controller import ColumnController, MainWindowController, PageRouterController
 
 
@@ -169,10 +171,14 @@ def test_button_to_page_route_chain() -> None:
 
     controller.handle_button(_FakeButton("btn_home"))
 
-    assert window.selected_page == "home_page"
-    assert left_menu.selected_page_btn == "btn_home"
-    assert title_state["text"] == "Home"
-    assert plugin_calls == []
+    if window.selected_page != "home_page":
+        pytest.fail("Assertion failed")
+    if left_menu.selected_page_btn != "btn_home":
+        pytest.fail("Assertion failed")
+    if title_state["text"] != "Home":
+        pytest.fail("Assertion failed")
+    if plugin_calls != []:
+        pytest.fail("Assertion failed")
 
 
 def test_button_to_column_action_chain() -> None:
@@ -219,11 +225,15 @@ def test_button_to_column_action_chain() -> None:
 
     controller.handle_button(_FakeButton("btn_info"))
 
-    assert left_menu.selected_tab_btn == "btn_info"
-    assert main_functions.left_toggle_count == 1
-    assert main_functions.left_menu_payloads
+    if left_menu.selected_tab_btn != "btn_info":
+        pytest.fail("Assertion failed")
+    if main_functions.left_toggle_count != 1:
+        pytest.fail("Assertion failed")
+    if not (main_functions.left_menu_payloads):
+        pytest.fail("Assertion failed")
     menu, _title, _icon = main_functions.left_menu_payloads[-1]
-    assert menu == "menu_2"
+    if menu != "menu_2":
+        pytest.fail("Assertion failed")
 
 
 def test_unhandled_button_falls_back_to_plugin_command_chain() -> None:
@@ -267,4 +277,5 @@ def test_unhandled_button_falls_back_to_plugin_command_chain() -> None:
 
     controller.handle_button(_FakeButton("cmd_custom"))
 
-    assert plugin_calls == ["cmd_custom"]
+    if plugin_calls != ["cmd_custom"]:
+        pytest.fail("Assertion failed")

@@ -16,8 +16,10 @@ def test_resource_locator_resolves_from_project_root() -> None:
     """
     path = ResourceLocator.resolve("resource/CustomUI/settings")
 
-    assert path.exists()
-    assert path.is_dir()
+    if not (path.exists()):
+        pytest.fail("Assertion failed")
+    if not (path.is_dir()):
+        pytest.fail("Assertion failed")
 
 
 def test_path_factory_is_independent_from_cwd(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
@@ -27,5 +29,7 @@ def test_path_factory_is_independent_from_cwd(tmp_path: Path, monkeypatch: pytes
     icon = PathFinder.set_svg_icon("icon_setting")
     icon_path = Path(icon)
 
-    assert icon_path.exists()
-    assert "resource" in icon_path.as_posix()
+    if not (icon_path.exists()):
+        pytest.fail("Assertion failed")
+    if "resource" not in icon_path.as_posix():
+        pytest.fail("Assertion failed")

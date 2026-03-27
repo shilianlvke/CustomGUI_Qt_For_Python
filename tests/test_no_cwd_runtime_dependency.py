@@ -4,6 +4,8 @@ import ast
 from collections.abc import Iterator
 from pathlib import Path
 
+import pytest
+
 ROOT = Path(__file__).resolve().parents[1]
 RUNTIME_DIRS = ["AppCore", "GUI", "GuiCore"]
 RUNTIME_FILES = ["main.py"]
@@ -56,4 +58,5 @@ def test_runtime_code_must_not_use_os_getcwd() -> None:
                 elif isinstance(func, ast.Name) and func.id == "getcwd":
                     violations.append(f"{file_path.relative_to(ROOT).as_posix()} -> getcwd()")
 
-    assert not violations, "Runtime code must not depend on os.getcwd:\n" + "\n".join(violations)
+    if violations:
+        pytest.fail("Runtime code must not depend on os.getcwd:\n" + "\n".join(violations))

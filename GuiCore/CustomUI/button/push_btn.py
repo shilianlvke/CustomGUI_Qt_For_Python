@@ -12,6 +12,7 @@ class CPushButton(QPushButton):
         size: QSize | None = None,
         text: str | None = None,
         icon: QIcon | str | None = None,
+        *,
         is_trans: bool = False,
     ) -> None:
         """初始化按钮组件。
@@ -25,6 +26,7 @@ class CPushButton(QPushButton):
         返回:
         - None
         """
+        _ = is_trans
         super().__init__()
         if size is None:
             size = QSize(64, 32)

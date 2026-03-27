@@ -230,8 +230,7 @@ def register_builtin_menus() -> None:
     """
     registry = get_plugin_registry()
     for plugin in BUILTIN_MENU_PLUGINS:
-        # MenuPlugin 目前没有 has_menu 接口，按 plugin_id 判重可直接重用底层容器
-        if plugin.plugin_id not in registry._menus:
+        if not registry.has_menu(plugin.plugin_id):
             registry.register_menu(plugin)
 
 

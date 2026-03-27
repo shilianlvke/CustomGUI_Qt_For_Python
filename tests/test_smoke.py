@@ -2,6 +2,8 @@
 
 import importlib
 
+import pytest
+
 
 def test_core_config_smoke() -> None:
     """测试用例：test_core_config_smoke。
@@ -14,10 +16,14 @@ def test_core_config_smoke() -> None:
     app_settings = appcore.AppSettings
     app_themes = appcore.AppThemes
 
-    assert hasattr(app_settings, "theme_name")
-    assert hasattr(app_settings, "language")
-    assert app_settings.theme_name in app_themes
-    assert app_settings.language in app_languages
+    if not (hasattr(app_settings, "theme_name")):
+        pytest.fail("Assertion failed")
+    if not (hasattr(app_settings, "language")):
+        pytest.fail("Assertion failed")
+    if app_settings.theme_name not in app_themes:
+        pytest.fail("Assertion failed")
+    if app_settings.language not in app_languages:
+        pytest.fail("Assertion failed")
 
 
 def test_public_imports_smoke() -> None:
@@ -26,9 +32,12 @@ def test_public_imports_smoke() -> None:
     gui = importlib.import_module("GUI")
     guicore = importlib.import_module("GuiCore")
 
-    assert hasattr(appcore, "Logger")
-    assert hasattr(gui, "UiMainWindow")
-    assert hasattr(guicore, "Styles")
+    if not (hasattr(appcore, "Logger")):
+        pytest.fail("Assertion failed")
+    if not (hasattr(gui, "UiMainWindow")):
+        pytest.fail("Assertion failed")
+    if not (hasattr(guicore, "Styles")):
+        pytest.fail("Assertion failed")
 
 
 def test_logger_api_smoke() -> None:

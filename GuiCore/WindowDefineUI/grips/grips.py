@@ -11,7 +11,7 @@ class CGrips(QWidget):
     - 响应鼠标拖动调整窗口尺寸。
     """
 
-    def __init__(self, parent: QWidget, position: str, disable_color: bool = False) -> None:
+    def __init__(self, parent: QWidget, position: str, *, disable_color: bool = False) -> None:
         """初始化夹点组件。
 
         参数:
@@ -171,6 +171,7 @@ class CGrips(QWidget):
         返回:
         - None
         """
+        _ = event
         self.mousePos = None
 
     # RESIZE EVENT
@@ -184,6 +185,7 @@ class CGrips(QWidget):
         返回:
         - None
         """
+        _ = event
         if hasattr(self.wi, "top_grip"):
             self.wi.top_grip.setGeometry(0, 0, self.width(), 10)
 

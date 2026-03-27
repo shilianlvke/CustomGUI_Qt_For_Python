@@ -1,6 +1,6 @@
 """Package initialization module."""
 
-from .main_pages import Ui_MainPages as Ui_MainPages
+from .main_pages import UiMainPages as UiMainPages
 
-__all__ = ["Ui_MainPages"]
+__all__ = ["UiMainPages"]
 

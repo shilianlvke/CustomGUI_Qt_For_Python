@@ -36,6 +36,7 @@ class CMenu(QMenu):
         radius: int = 8,
         border_size: int = 2,
         colorpalette: object | None = None,
+        *,
         is_transparent: bool = False,
     ) -> None:
         """初始化菜单组件。

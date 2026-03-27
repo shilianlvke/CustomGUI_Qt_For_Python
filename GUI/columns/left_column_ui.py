@@ -29,19 +29,19 @@ from PySide6.QtWidgets import (
 )
 
 
-class Ui_LeftColumn:
+class UiLeftColumn:
     """左侧列 UI 生成类。"""
 
-    def setupUi(self, LeftColumn: QWidget) -> None:
+    def setup_ui(self, left_column: QWidget) -> None:
         """构建左侧列界面。"""
-        if not LeftColumn.objectName():
-            LeftColumn.setObjectName("LeftColumn")
-        LeftColumn.resize(288, 600)
-        self.main_pages_layout = QVBoxLayout(LeftColumn)
+        if not left_column.objectName():
+            left_column.setObjectName("LeftColumn")
+        left_column.resize(288, 600)
+        self.main_pages_layout = QVBoxLayout(left_column)
         self.main_pages_layout.setSpacing(0)
         self.main_pages_layout.setObjectName("main_pages_layout")
         self.main_pages_layout.setContentsMargins(0, 0, 0, 0)
-        self.menus = QStackedWidget(LeftColumn)
+        self.menus = QStackedWidget(left_column)
         self.menus.setObjectName("menus")
         self.menu_1 = QWidget()
         self.menu_1.setObjectName("menu_1")
@@ -138,17 +138,17 @@ class Ui_LeftColumn:
 
         self.main_pages_layout.addWidget(self.menus)
 
-        self.retranslateUi(LeftColumn)
+        self.retranslate_ui(left_column)
 
         self.menus.setCurrentIndex(0)
 
-        QMetaObject.connectSlotsByName(LeftColumn)
+        QMetaObject.connectSlotsByName(left_column)
 
-    # setupUi
+    # setup_ui
 
-    def retranslateUi(self, LeftColumn: QWidget) -> None:
+    def retranslate_ui(self, left_column: QWidget) -> None:
         """刷新界面文本。"""
-        LeftColumn.setWindowTitle(QCoreApplication.translate("LeftColumn", "Form", None))
+        left_column.setWindowTitle(QCoreApplication.translate("LeftColumn", "Form", None))
         self.label_2.setText(QCoreApplication.translate("LeftColumn", "Menu 2 - Left Menu", None))
         self.label_3.setText(
             QCoreApplication.translate(
@@ -158,4 +158,4 @@ class Ui_LeftColumn:
             ),
         )
 
-    # retranslateUi
+    # retranslate_ui

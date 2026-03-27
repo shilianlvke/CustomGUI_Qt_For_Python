@@ -2,6 +2,8 @@
 
 from types import SimpleNamespace
 
+import pytest
+
 from GUI.windows.main_window.controller import MainWindowController, PageRouterController, ThemeController
 
 
@@ -69,13 +71,17 @@ def test_page_router_switch_page_routes_target_widget() -> None:
     )
 
     route = router.route_for("btn_home")
-    assert route == ("home_page", "Home")
+    if route != ("home_page", "Home"):
+        pytest.fail("Assertion failed")
 
     router.switch_page("btn_home", route[0], route[1])
 
-    assert selected["btn"] == "btn_home"
-    assert title["text"] == "Home"
-    assert window.selected_page == "home_page"
+    if selected["btn"] != "btn_home":
+        pytest.fail("Assertion failed")
+    if title["text"] != "Home":
+        pytest.fail("Assertion failed")
+    if window.selected_page != "home_page":
+        pytest.fail("Assertion failed")
 
 
 def test_theme_controller_cycles_expected_theme_sequence() -> None:
@@ -117,8 +123,10 @@ def test_theme_controller_cycles_expected_theme_sequence() -> None:
     controller.cycle_theme()
     controller.cycle_theme()
 
-    assert updates == [{"theme": "eye"}, {"theme": "bright"}, {"theme": "default"}]
-    assert style_calls == ["demo-style", "demo-style", "demo-style"]
+    if updates != [{"theme": "eye"}, {"theme": "bright"}, {"theme": "default"}]:
+        pytest.fail("Assertion failed")
+    if style_calls != ["demo-style", "demo-style", "demo-style"]:
+        pytest.fail("Assertion failed")
 
 
 def test_main_window_controller_dispatches_plugin_command_when_unhandled() -> None:
@@ -181,5 +189,7 @@ def test_main_window_controller_dispatches_plugin_command_when_unhandled() -> No
     btn = _FakeButton("cmd_custom")
     controller.handle_button(btn)
 
-    assert calls
-    assert calls[0][0] == "cmd_custom"
+    if not (calls):
+        pytest.fail("Assertion failed")
+    if calls[0][0] != "cmd_custom":
+        pytest.fail("Assertion failed")

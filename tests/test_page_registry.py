@@ -1,5 +1,7 @@
 """模块说明。"""
 
+import pytest
+
 from AppCore import Language, get_plugin_registry
 from GUI.windows.main_window.user_define_pages import (
     PAGE_REGISTRY,
@@ -15,16 +17,20 @@ def test_registry_button_ids_unique() -> None:
     - 验证目标行为符合预期。
     """
     ids = [item["button_id"] for item in PAGE_REGISTRY]
-    assert len(ids) == len(set(ids))
+    if len(ids) != len(set(ids)):
+        pytest.fail("Assertion failed")
 
 
 def test_page_routes_contains_core_entries() -> None:
     """测试用例：test_page_routes_contains_core_entries。"""
     routes = get_page_routes(Language)
 
-    assert "btn_home" in routes
-    assert "btn_test_case_lib" in routes
-    assert "btn_test_plan" in routes
+    if "btn_home" not in routes:
+        pytest.fail("Assertion failed")
+    if "btn_test_case_lib" not in routes:
+        pytest.fail("Assertion failed")
+    if "btn_test_plan" not in routes:
+        pytest.fail("Assertion failed")
 
 
 def test_default_page_exists_in_routes() -> None:
@@ -33,7 +39,8 @@ def test_default_page_exists_in_routes() -> None:
     default_page = get_default_page_object()
 
     page_names = {page for page, _ in routes.values()}
-    assert default_page in page_names
+    if default_page not in page_names:
+        pytest.fail("Assertion failed")
 
 
 def test_builtin_page_plugins_registered() -> None:
@@ -41,4 +48,5 @@ def test_builtin_page_plugins_registered() -> None:
     registry = get_plugin_registry()
     pages = registry.page_plugins()
 
-    assert any(plugin.plugin_id == "builtin.page.home" for plugin in pages)
+    if not (any(plugin.plugin_id == "builtin.page.home" for plugin in pages)):
+        pytest.fail("Assertion failed")

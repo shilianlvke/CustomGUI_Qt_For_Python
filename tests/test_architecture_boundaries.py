@@ -4,6 +4,8 @@ import ast
 from collections.abc import Iterator
 from pathlib import Path
 
+import pytest
+
 ROOT = Path(__file__).resolve().parents[1]
 
 
@@ -42,7 +44,8 @@ def test_appcore_does_not_depend_on_presentation_layers() -> None:
                 rel = path.relative_to(ROOT).as_posix()
                 violations.append(f"{rel} -> {module}")
 
-    assert not violations, "AppCore must not import GUI/GuiCore:\n" + "\n".join(violations)
+    if violations:
+        pytest.fail("AppCore must not import GUI/GuiCore:\n" + "\n".join(violations))
 
 
 def test_presentation_layer_uses_appcore_public_api_only() -> None:
@@ -57,4 +60,5 @@ def test_presentation_layer_uses_appcore_public_api_only() -> None:
                     rel = path.relative_to(ROOT).as_posix()
                     violations.append(f"{rel} -> {module}")
 
-    assert not violations, "Presentation code must not import AppCore.SYS internals:\n" + "\n".join(violations)
+    if violations:
+        pytest.fail("Presentation code must not import AppCore.SYS internals:\n" + "\n".join(violations))

@@ -4,6 +4,8 @@ import re
 from collections.abc import Iterator
 from pathlib import Path
 
+import pytest
+
 ROOT = Path(__file__).resolve().parents[1]
 RUNTIME_DIRS = ["AppCore", "GUI", "GuiCore"]
 RUNTIME_FILES = ["main.py"]
@@ -55,4 +57,5 @@ def test_runtime_code_does_not_add_new_legacy_imports() -> None:
             if any(pattern.search(line) for pattern in LEGACY_IMPORT_PATTERNS):
                 violations.append(f"{rel}:{index}: {line.strip()}")
 
-    assert not violations, "New legacy imports are not allowed:\n" + "\n".join(violations)
+    if violations:
+        pytest.fail("New legacy imports are not allowed:\n" + "\n".join(violations))

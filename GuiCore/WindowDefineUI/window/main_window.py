@@ -15,7 +15,7 @@ class CWindow(QFrame):
     - 按配置决定是否启用阴影效果。
     """
 
-    def __init__(self, horizontal: bool = True) -> None:
+    def __init__(self, *, horizontal: bool = True) -> None:
         """初始化窗口容器。
 
         参数:

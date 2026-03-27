@@ -58,11 +58,7 @@ class PyIcon(QWidget):
         - None
         """
         # GET COLOR
-        color = ""
-        if icon_color is not None:
-            color = icon_color
-        else:
-            color = self._icon_color
+        color = icon_color if icon_color is not None else self._icon_color
 
         # PAINTER / PIXMAP
         icon = QPixmap(icon_path)

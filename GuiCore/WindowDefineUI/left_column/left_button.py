@@ -32,6 +32,7 @@ class PyLeftButton(QPushButton):
         height: int = 30,
         radius: int = 8,
         icon_path: str = "no_icon.svg",
+        *,
         is_active: bool = False,
         font_family: str = "",
     ) -> None:
@@ -90,9 +91,9 @@ class PyLeftButton(QPushButton):
 
     # SET ACTIVE MENU
     # ///////////////////////////////////////////////////////////////
-    def set_active(self, is_active: bool) -> None:
+    def set_active(self, is_active: object) -> None:
         """设置按钮激活状态。"""
-        self._is_active = is_active
+        self._is_active = bool(is_active)
         self.repaint()
 
     # RETURN IF IS ACTIVE MENU
@@ -113,17 +114,13 @@ class PyLeftButton(QPushButton):
         返回:
         - None
         """
+        _ = event
         # PAINTER
         paint = QPainter()
         paint.begin(self)
         paint.setRenderHint(QPainter.RenderHint.Antialiasing)
 
-        if self._is_active:
-            # BRUSH
-            brush = QBrush(QColor(self._bg_color_pressed))
-        else:
-            # BRUSH
-            brush = QBrush(QColor(self._set_bg_color))
+        brush = QBrush(QColor(self._bg_color_pressed)) if self._is_active else QBrush(QColor(self._set_bg_color))
 
         # CREATE RECTANGLE
         rect = QRect(0, 0, self.width(), self.height())
@@ -171,6 +168,7 @@ class PyLeftButton(QPushButton):
     # ///////////////////////////////////////////////////////////////
     def enterEvent(self, event: object) -> None:
         """处理鼠标进入事件。"""
+        _ = event
         self.change_style(QEvent.Enter)
 
     # MOUSE LEAVE
@@ -178,6 +176,7 @@ class PyLeftButton(QPushButton):
     # ///////////////////////////////////////////////////////////////
     def leaveEvent(self, event: object) -> None:
         """处理鼠标离开事件。"""
+        _ = event
         self.change_style(QEvent.Leave)
 
     # MOUSE PRESS

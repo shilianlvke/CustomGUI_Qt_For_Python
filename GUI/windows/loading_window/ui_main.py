@@ -12,7 +12,7 @@ from .functions import LoadingTask, ResourceLoader
 class Loading(QWidget):
     """加载进度展示组件。"""
 
-    stopRequested = Signal()
+    stop_requested = Signal()
 
     def __init__(self, image_path: str | None = None) -> None:
         """初始化加载进度组件。"""
@@ -57,7 +57,7 @@ class LoadingWindow(QWidget):
         layout = QHBoxLayout()
         self.setLayout(layout)
         self.progress = Loading(image_path)
-        self.progress.stopRequested.connect(self.handle_stop)
+        self.progress.stop_requested.connect(self.handle_stop)
         layout.addWidget(self.progress)
 
         self.setWindowFlag(Qt.FramelessWindowHint)
@@ -93,7 +93,8 @@ class LoadingWindow(QWidget):
 
     def open_main_window(self) -> None:
         """加载完成后关闭窗口。"""
-        self.loaded.emit(True)
+        loaded_ok = True
+        self.loaded.emit(loaded_ok)
         self.close()
 
     def handle_error(self, message: str) -> None:
@@ -133,6 +134,7 @@ class LoadingWindow(QWidget):
 
     def mouseReleaseEvent(self, event: QMouseEvent) -> None:
         """结束窗口拖拽。"""
+        _ = event
         self.dragging = False
 
 

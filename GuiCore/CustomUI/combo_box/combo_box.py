@@ -11,6 +11,7 @@ class CComboBox(QComboBox):
         size: QSize | None = None,
         placeholder_text: str | None = None,
         items: list[str] | None = None,
+        *,
         is_editable: bool = False,
     ) -> None:
         """初始化下拉框。

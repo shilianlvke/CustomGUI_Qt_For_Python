@@ -33,6 +33,7 @@ class CTitleButton(QPushButton):
         bg_color: str = "#343b48",
         icon_color: str = "#c3ccdf",
         icon_path: str = "no_icon.svg",
+        *,
         is_active: bool = False,
     ) -> None:
         """初始化标题栏按钮。
@@ -78,9 +79,9 @@ class CTitleButton(QPushButton):
 
     # SET ACTIVE MENU
     # ///////////////////////////////////////////////////////////////
-    def set_active(self, is_active: bool) -> None:
+    def set_active(self, is_active: object) -> None:
         """设置按钮激活状态。"""
-        self._is_active = is_active
+        self._is_active = bool(is_active)
         self.repaint()
 
     # RETURN IF IS ACTIVE MENU
@@ -94,6 +95,7 @@ class CTitleButton(QPushButton):
     # ///////////////////////////////////////////////////////////////
     def paintEvent(self, event: object) -> None:
         """绘制按钮背景与图标。"""
+        _ = event
         # PAINTER
         paint = QPainter()
         paint.begin(self)
@@ -144,6 +146,7 @@ class CTitleButton(QPushButton):
     # ///////////////////////////////////////////////////////////////
     def enterEvent(self, event: object) -> None:
         """处理鼠标进入并显示提示框。"""
+        _ = event
         self._icon_enter = True
         self.change_style(QEvent.Enter)
         self.move_tooltip()
@@ -154,6 +157,7 @@ class CTitleButton(QPushButton):
     # ///////////////////////////////////////////////////////////////
     def leaveEvent(self, event: object) -> None:
         """处理鼠标离开并隐藏提示框。"""
+        _ = event
         self._icon_enter = False
         self.change_style(QEvent.Leave)
         self.move_tooltip()

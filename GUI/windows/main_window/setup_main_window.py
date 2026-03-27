@@ -52,7 +52,7 @@ def register_builtin_title_menus() -> None:
     """
     registry = get_plugin_registry()
     for plugin in BUILTIN_TITLE_MENU_PLUGINS:
-        if plugin.plugin_id not in registry._menus:
+        if not registry.has_menu(plugin.plugin_id):
             registry.register_menu(plugin)
 
 

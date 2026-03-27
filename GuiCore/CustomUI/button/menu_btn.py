@@ -46,6 +46,7 @@ class CMenuButton(QPushButton):
         radius: int = 8,
         border_size: int = 2,
         colorpalette: object | None = None,
+        *,
         is_transparent: bool = False,
     ) -> None:
         """初始化菜单按钮。
@@ -62,6 +63,7 @@ class CMenuButton(QPushButton):
         返回:
         - None
         """
+        _ = is_transparent
         super().__init__()
         if size is None:
             size = QSize(64, 32)

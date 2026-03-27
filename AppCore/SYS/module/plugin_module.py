@@ -463,6 +463,17 @@ class PluginRegistry:
         """
         return plugin_id in self._pages
 
+    def has_menu(self, plugin_id: str) -> bool:
+        """判断菜单插件是否已注册。
+
+        参数:
+        - plugin_id: 菜单插件标识。
+
+        返回:
+        - bool: 是否存在对应菜单插件。
+        """
+        return plugin_id in self._menus
+
     def page_plugins(self) -> list[PagePlugin]:
         """获取启用状态的页面插件列表。
 

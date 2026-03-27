@@ -35,6 +35,7 @@ class CLeftMenuButton(QPushButton):
         margin: int = 4,
         icon_path: str = "icon_add_user",
         icon_active_menu: str = "active_menu",
+        *,
         is_active: bool = False,
         is_active_tab: bool = False,
         is_toggle_active: bool = False,
@@ -91,6 +92,7 @@ class CLeftMenuButton(QPushButton):
     # 绘制事件
     def paintEvent(self, event: object) -> None:
         """绘制按钮背景、文本与图标。"""
+        _ = event
         # PAINTER
         p = QPainter()
         p.begin(self)
@@ -176,19 +178,19 @@ class CLeftMenuButton(QPushButton):
         p.end()
 
     # 设置活跃的界面
-    def set_active(self, is_active: bool) -> None:
+    def set_active(self, is_active: object) -> None:
         """设置页面激活状态。"""
-        self._is_active = is_active
-        if not is_active:
+        self._is_active = bool(is_active)
+        if not self._is_active:
             self._set_icon_color = ColorPalette.custom_icon_color
             self._set_bg_color = ColorPalette.custom_dark_one
         self.repaint()
 
     # 设置活跃的导航栏
-    def set_active_tab(self, is_active: bool) -> None:
+    def set_active_tab(self, is_active: object) -> None:
         """设置标签激活状态。"""
-        self._is_active_tab = is_active
-        if not is_active:
+        self._is_active_tab = bool(is_active)
+        if not self._is_active_tab:
             self._set_icon_color = ColorPalette.custom_icon_color
             self._set_bg_color = ColorPalette.custom_dark_one
         self.repaint()
@@ -204,9 +206,9 @@ class CLeftMenuButton(QPushButton):
         return self._is_active_tab
 
     # 设置活动切换
-    def set_active_toggle(self, is_active: bool) -> None:
+    def set_active_toggle(self, is_active: object) -> None:
         """设置切换按钮激活状态。"""
-        self._is_toggle_active = is_active
+        self._is_toggle_active = bool(is_active)
 
     # 设置图标
     def set_icon(self, icon_path: str) -> None:
@@ -255,6 +257,7 @@ class CLeftMenuButton(QPushButton):
     # 当鼠标位于BTN上时触发的事件
     def enterEvent(self, event: object) -> None:
         """处理鼠标进入并显示提示框。"""
+        _ = event
         self._icon_enter = True
         self.change_style(QEvent.Enter)
         if self.width() in range(self._minimum_width - 5, self._minimum_width + 5) and self._tooltip_text:
@@ -265,6 +268,7 @@ class CLeftMenuButton(QPushButton):
     # 鼠标离开BTN时触发的事件
     def leaveEvent(self, event: object) -> None:
         """处理鼠标离开并隐藏提示框。"""
+        _ = event
         self._icon_enter = False
         self.change_style(QEvent.Leave)
         self.tooltip.hide()

@@ -3,7 +3,7 @@
 from PySide6.QtWidgets import QFrame, QHBoxLayout, QVBoxLayout, QWidget
 
 from AppCore import AppSettings, PathFactory
-from GUI import Ui_MainPages, Ui_RightColumn
+from GUI import UiMainPages, UiRightColumn
 from GuiCore import CCredits, CLeftColumn, CLeftMenu, CTitleBar, CWindow
 
 
@@ -85,8 +85,8 @@ class UiMainWindow:
         # 左侧内容
         self.content_area_left_frame = QFrame()
         # 将主页导入到内容区域
-        self.load_pages = Ui_MainPages()
-        self.load_pages.setupUi(self.content_area_left_frame)
+        self.load_pages = UiMainPages()
+        self.load_pages.setup_ui(self.content_area_left_frame)
         # 右侧工具栏
         self.right_column_frame = QFrame()
         self.right_column_frame.setMinimumWidth(AppSettings.right_column_size.minimum)
@@ -100,8 +100,8 @@ class UiMainWindow:
         # ADD BG
         self.content_area_right_layout.addWidget(self.content_area_right_bg_frame)
         # ADD RIGHT PAGES TO RIGHT COLUMN
-        self.right_column = Ui_RightColumn()
-        self.right_column.setupUi(self.content_area_right_bg_frame)
+        self.right_column = UiRightColumn()
+        self.right_column.setup_ui(self.content_area_right_bg_frame)
         # ADD TO LAYOUTS
         self.content_area_layout.addWidget(self.content_area_left_frame)
         self.content_area_layout.addWidget(self.right_column_frame)
