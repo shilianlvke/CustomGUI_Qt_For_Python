@@ -73,44 +73,40 @@ class CStatusButton(QPushButton):
         self.border_size = border_size
         self.color = ColorPalette
 
-        if text_negative is not None:
-            self.text_negative = text_negative
-        if text_positive is not None:
-            self.text_positive = text_positive
-        if text_normal is not None:
-            self.text_normal = text_normal
-        if icon_negative is not None:
-            if isinstance(icon_negative, str):
-                pixmap = QPixmap(icon_negative)
-                rounded_pixmap = PathFactory.create_rounded_pixmap(pixmap, pixmap.height() / 2)
-                self.icon_negative = QIcon(rounded_pixmap)
-                self.icon_size_negative = QSize(int(size.width() * 0.8), int(size.height() * 0.8))
-            elif isinstance(icon_negative, QIcon):
-                self.icon_negative = icon_negative
-        if icon_positive is not None:
-            if isinstance(icon_positive, str):
-                pixmap = QPixmap(icon_positive)
-                rounded_pixmap = PathFactory.create_rounded_pixmap(pixmap, pixmap.height() / 2)
-                self.icon_positive = QIcon(rounded_pixmap)
-                self.icon_size_size = QSize(int(size.width() * 0.8), int(size.height() * 0.8))
-            elif isinstance(icon_positive, QIcon):
-                self.icon_positive = icon_positive
-        if icon_normal is not None:
-            if isinstance(icon_normal, str):
-                pixmap = QPixmap(icon_normal)
-                rounded_pixmap = PathFactory.create_rounded_pixmap(pixmap, pixmap.height() / 2)
-                self.icon_normal = QIcon(rounded_pixmap)
-                self.icon_size_normal = QSize(int(size.width() * 0.8), int(size.height() * 0.8))
-            elif isinstance(icon_normal, QIcon):
-                self.icon_normal = icon_normal
-        if size is not None:
-            self.setFixedSize(size)
+        self._apply_optional_text("negative", text_negative)
+        self._apply_optional_text("positive", text_positive)
+        self._apply_optional_text("normal", text_normal)
+
+        self._apply_optional_icon("negative", icon_negative, size)
+        self._apply_optional_icon("positive", icon_positive, size)
+        self._apply_optional_icon("normal", icon_normal, size)
+
+        self.setFixedSize(size)
         # 绘制
         self.text_change()
         self.icon_change()
         self.style_change()
         # 禁用虚线焦点框
         self.setFocusPolicy(Qt.StrongFocus)
+
+    def _apply_optional_text(self, state_name: str, value: str | None) -> None:
+        """按状态写入可选文本配置。"""
+        if value is None:
+            return
+        setattr(self, f"text_{state_name}", value)
+
+    def _apply_optional_icon(self, state_name: str, icon: QIcon | str | None, size: QSize) -> None:
+        """按状态写入可选图标与尺寸配置。"""
+        if icon is None:
+            return
+        if isinstance(icon, str):
+            pixmap = QPixmap(icon)
+            rounded_pixmap = PathFactory.create_rounded_pixmap(pixmap, pixmap.height() / 2)
+            setattr(self, f"icon_{state_name}", QIcon(rounded_pixmap))
+            setattr(self, f"icon_size_{state_name}", QSize(int(size.width() * 0.8), int(size.height() * 0.8)))
+            return
+        if isinstance(icon, QIcon):
+            setattr(self, f"icon_{state_name}", icon)
 
     def set_stylesheet(
         self,
