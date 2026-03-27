@@ -23,7 +23,7 @@ from qt_core import (
 class CTitleButton(QPushButton):
     """标题栏控制按钮组件。"""
 
-    def __init__(
+    def __init__(  # noqa: PLR0913
         self,
         parent: object,
         app_parent: object = None,

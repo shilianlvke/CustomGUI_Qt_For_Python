@@ -29,7 +29,7 @@ QMenu::icon {{
 class CMenu(QMenu):
     """自定义菜单组件。"""
 
-    def __init__(
+    def __init__(  # noqa: PLR0913
         self,
         parent: object | None = None,
         width: int = 64 + 36,
@@ -68,7 +68,7 @@ class CMenu(QMenu):
             colorpalette.custom_bg_three,
         )
 
-    def set_stylesheet(
+    def set_stylesheet(  # noqa: PLR0913
         self,
         radius: int,
         border_size: int,

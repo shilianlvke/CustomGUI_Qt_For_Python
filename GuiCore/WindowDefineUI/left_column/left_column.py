@@ -28,7 +28,7 @@ class CLeftColumn(QWidget):
     clicked = Signal(object)
     released = Signal(object)
 
-    def __init__(
+    def __init__(  # noqa: PLR0913
         self,
         # parent,
         app_parent: object,

@@ -33,7 +33,7 @@ class CStatusButton(QPushButton):
 
     status_changed = Signal(int)
 
-    def __init__(
+    def __init__(  # noqa: PLR0913
         self,
         size: QSize | None = None,
         text_negative: str | None = None,
@@ -108,7 +108,7 @@ class CStatusButton(QPushButton):
         if isinstance(icon, QIcon):
             setattr(self, f"icon_{state_name}", icon)
 
-    def set_stylesheet(
+    def set_stylesheet(  # noqa: PLR0913
         self,
         radius: int,
         border_size: int,

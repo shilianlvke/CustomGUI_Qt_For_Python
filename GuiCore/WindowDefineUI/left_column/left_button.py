@@ -25,7 +25,7 @@ class PyLeftButton(QPushButton):
     - 支持悬停、按压反馈与提示信息显示。
     """
 
-    def __init__(
+    def __init__(  # noqa: PLR0913
         self,
         app_parent: object = None,
         tooltip_text: str = "",
@@ -267,7 +267,7 @@ class _ToolTip(QLabel):
     }}
     """
 
-    def __init__(
+    def __init__(  # noqa: PLR0913
         self,
         parent: object,
         tooltip: str,

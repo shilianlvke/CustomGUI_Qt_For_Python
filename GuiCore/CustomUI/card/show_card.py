@@ -25,7 +25,7 @@ class CShowCard(QFrame):
     - 提供统一卡片样式与链接跳转行为。
     """
 
-    def __init__(
+    def __init__(  # noqa: PLR0913
         self,
         size: QSize | None = None,
         source_url: str = "https://example.com",

@@ -28,7 +28,7 @@ class CLeftMenuButton(QPushButton):
 
     style_change = Slot("style_change")
 
-    def __init__(
+    def __init__(  # noqa: PLR0913
         self,
         app_parent: object,
         text: str,

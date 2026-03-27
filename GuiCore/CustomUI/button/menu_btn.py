@@ -38,7 +38,7 @@ QPushButton::menu-indicator:pressed, QPushButton::menu-indicator:open {{
 class CMenuButton(QPushButton):
     """带菜单指示器的按钮组件。"""
 
-    def __init__(
+    def __init__(  # noqa: PLR0913
         self,
         size: QSize | None = None,
         text: str | None = None,
@@ -96,7 +96,7 @@ class CMenuButton(QPushButton):
         # 禁用虚线焦点框
         self.setFocusPolicy(Qt.StrongFocus)
 
-    def set_stylesheet(
+    def set_stylesheet(  # noqa: PLR0913
         self,
         radius: int,
         border_size: int,
