@@ -38,17 +38,7 @@ QPushButton::menu-indicator:pressed, QPushButton::menu-indicator:open {{
 class CMenuButton(QPushButton):
     """带菜单指示器的按钮组件。"""
 
-    def __init__(  # noqa: PLR0913
-        self,
-        size: QSize | None = None,
-        text: str | None = None,
-        icon: QIcon | str | None = None,
-        radius: int = 8,
-        border_size: int = 2,
-        colorpalette: object | None = None,
-        *,
-        is_transparent: bool = False,
-    ) -> None:
+    def __init__(self, size: QSize | None = None, **options: object) -> None:
         """初始化菜单按钮。
 
         参数:
@@ -63,7 +53,12 @@ class CMenuButton(QPushButton):
         返回:
         - None
         """
-        _ = is_transparent
+        text = options.get("text")
+        icon = options.get("icon")
+        radius = int(options.get("radius", 8))
+        border_size = int(options.get("border_size", 2))
+        colorpalette = options.get("colorpalette")
+        _ = options.get("is_transparent", False)
         super().__init__()
         if size is None:
             size = QSize(64, 32)
@@ -96,15 +91,7 @@ class CMenuButton(QPushButton):
         # 禁用虚线焦点框
         self.setFocusPolicy(Qt.StrongFocus)
 
-    def set_stylesheet(  # noqa: PLR0913
-        self,
-        radius: int,
-        border_size: int,
-        bg_color: str,
-        text_color: str,
-        hover_color: str,
-        press_active: str,
-    ) -> None:
+    def set_stylesheet(self, style_tokens: dict[str, object]) -> None:
         """设置菜单按钮样式表。
 
         参数:
@@ -119,11 +106,11 @@ class CMenuButton(QPushButton):
         - None
         """
         style_format = style.format(
-            _radius=radius,
-            _border_size=border_size,
-            _bg_color=bg_color,
-            _text_color=text_color,
-            _hover_color=hover_color,
-            _press_color=press_active,
+            _radius=style_tokens["radius"],
+            _border_size=style_tokens["border_size"],
+            _bg_color=style_tokens["bg_color"],
+            _text_color=style_tokens["text_color"],
+            _hover_color=style_tokens["hover_color"],
+            _press_color=style_tokens["press_active"],
         )
         self.setStyleSheet(style_format)

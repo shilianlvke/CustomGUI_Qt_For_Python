@@ -33,20 +33,7 @@ class CStatusButton(QPushButton):
 
     status_changed = Signal(int)
 
-    def __init__(  # noqa: PLR0913
-        self,
-        size: QSize | None = None,
-        text_negative: str | None = None,
-        text_normal: str | None = None,
-        text_positive: str | None = None,
-        icon_negative: QIcon | str | None = None,
-        icon_normal: QIcon | str | None = None,
-        icon_positive: QIcon | str | None = None,
-        radius: int = 8,
-        border_size: int = 2,
-        *,
-        is_normal: bool = False,  # 三态开关
-    ) -> None:
+    def __init__(self, size: QSize | None = None, **options: object) -> None:
         """初始化状态按钮。
 
         参数:
@@ -67,6 +54,15 @@ class CStatusButton(QPushButton):
         super().__init__()
         if size is None:
             size = QSize(64, 32)
+        text_negative = options.get("text_negative")
+        text_normal = options.get("text_normal")
+        text_positive = options.get("text_positive")
+        icon_negative = options.get("icon_negative")
+        icon_normal = options.get("icon_normal")
+        icon_positive = options.get("icon_positive")
+        radius = int(options.get("radius", 8))
+        border_size = int(options.get("border_size", 2))
+        is_normal = bool(options.get("is_normal", False))
         self.status_list = [-1, 0, 1] if is_normal else [0, 1]
         self.status = self.status_list[0]
         self.radius = radius
@@ -108,16 +104,7 @@ class CStatusButton(QPushButton):
         if isinstance(icon, QIcon):
             setattr(self, f"icon_{state_name}", icon)
 
-    def set_stylesheet(  # noqa: PLR0913
-        self,
-        radius: int,
-        border_size: int,
-        bg_color: str,
-        text_color: str,
-        hover_color: str,
-        press_active: str,
-        border_hover_color: str,
-    ) -> None:
+    def set_stylesheet(self, style_tokens: dict[str, object]) -> None:
         """设置按钮样式表。
 
         参数:
@@ -133,13 +120,13 @@ class CStatusButton(QPushButton):
         - None
         """
         style_format = style.format(
-            _radius=radius,
-            _border_size=border_size,
-            _bg_color=bg_color,
-            _text_color=text_color,
-            _hover_color=hover_color,
-            _press_color=press_active,
-            _border_hover_color=border_hover_color,
+            _radius=style_tokens["radius"],
+            _border_size=style_tokens["border_size"],
+            _bg_color=style_tokens["bg_color"],
+            _text_color=style_tokens["text_color"],
+            _hover_color=style_tokens["hover_color"],
+            _press_color=style_tokens["press_active"],
+            _border_hover_color=style_tokens["border_hover_color"],
         )
         self.setStyleSheet(style_format)
 
@@ -188,13 +175,15 @@ class CStatusButton(QPushButton):
         elif self.status == -1:
             border_haver_color = self.color.custom_bg_active_one
         self.set_stylesheet(
-            self.radius,
-            self.border_size,
-            self.color.custom_bg_one,
-            self.color.custom_text_foreground,
-            self.color.custom_bg_two,
-            self.color.custom_bg_three,
-            border_haver_color,
+            {
+                "radius": self.radius,
+                "border_size": self.border_size,
+                "bg_color": self.color.custom_bg_one,
+                "text_color": self.color.custom_text_foreground,
+                "hover_color": self.color.custom_bg_two,
+                "press_active": self.color.custom_bg_three,
+                "border_hover_color": border_haver_color,
+            }
         )
 
     @override

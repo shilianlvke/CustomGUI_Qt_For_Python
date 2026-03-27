@@ -29,16 +29,7 @@ QMenu::icon {{
 class CMenu(QMenu):
     """自定义菜单组件。"""
 
-    def __init__(  # noqa: PLR0913
-        self,
-        parent: object | None = None,
-        width: int = 64 + 36,
-        radius: int = 8,
-        border_size: int = 2,
-        colorpalette: object | None = None,
-        *,
-        is_transparent: bool = False,
-    ) -> None:
+    def __init__(self, parent: object | None = None, **options: object) -> None:
         """初始化菜单组件。
 
         参数:
@@ -52,6 +43,11 @@ class CMenu(QMenu):
         返回:
         - None
         """
+        width = int(options.get("width", 64 + 36))
+        radius = int(options.get("radius", 8))
+        border_size = int(options.get("border_size", 2))
+        colorpalette = options.get("colorpalette")
+        is_transparent = bool(options.get("is_transparent", False))
         super().__init__(parent)
         self.setFixedWidth(width)
         self.radius = radius
@@ -60,23 +56,17 @@ class CMenu(QMenu):
         bg = "transparent" if is_transparent else colorpalette.custom_bg_one
         # 设置样式
         self.set_stylesheet(
-            radius,
-            border_size,
-            bg,
-            colorpalette.custom_text_foreground,
-            colorpalette.custom_bg_two,
-            colorpalette.custom_bg_three,
+            {
+                "radius": radius,
+                "border_size": border_size,
+                "bg_color": bg,
+                "text_color": colorpalette.custom_text_foreground,
+                "hover_color": colorpalette.custom_bg_two,
+                "press_active": colorpalette.custom_bg_three,
+            }
         )
 
-    def set_stylesheet(  # noqa: PLR0913
-        self,
-        radius: int,
-        border_size: int,
-        bg_color: str,
-        text_color: str,
-        hover_color: str,
-        press_active: str,
-    ) -> None:
+    def set_stylesheet(self, style_tokens: dict[str, object]) -> None:
         """设置菜单样式表。
 
         参数:
@@ -91,11 +81,11 @@ class CMenu(QMenu):
         - None
         """
         style_format = style.format(
-            _radius=radius,
-            _border_size=border_size,
-            _bg_color=bg_color,
-            _text_color=text_color,
-            _hover_color=hover_color,
-            _press_color=press_active,
+            _radius=style_tokens["radius"],
+            _border_size=style_tokens["border_size"],
+            _bg_color=style_tokens["bg_color"],
+            _text_color=style_tokens["text_color"],
+            _hover_color=style_tokens["hover_color"],
+            _press_color=style_tokens["press_active"],
         )
         self.setStyleSheet(style_format)
