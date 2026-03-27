@@ -32,7 +32,7 @@ from PySide6.QtWidgets import (
 class UiLeftColumn:
     """左侧列 UI 生成类。"""
 
-    def setup_ui(self, left_column: QWidget) -> None:  # noqa: PLR0915
+    def setup_ui(self, left_column: QWidget) -> None:
         """构建左侧列界面。"""
         if not left_column.objectName():
             left_column.setObjectName("LeftColumn")
@@ -43,12 +43,25 @@ class UiLeftColumn:
         self.main_pages_layout.setContentsMargins(0, 0, 0, 0)
         self.menus = QStackedWidget(left_column)
         self.menus.setObjectName("menus")
+        self._build_menu_1()
+        self._build_menu_2()
+
+        self.main_pages_layout.addWidget(self.menus)
+
+        self.retranslate_ui(left_column)
+
+        self.menus.setCurrentIndex(0)
+
+        QMetaObject.connectSlotsByName(left_column)
+
+    def _build_menu_1(self) -> None:
         self.menu_1 = QWidget()
         self.menu_1.setObjectName("menu_1")
         self.verticalLayout = QVBoxLayout(self.menu_1)
         self.verticalLayout.setSpacing(5)
         self.verticalLayout.setObjectName("verticalLayout")
         self.verticalLayout.setContentsMargins(5, 5, 5, 5)
+
         self.btn_1_widget = QWidget(self.menu_1)
         self.btn_1_widget.setObjectName("btn_1_widget")
         size_policy = QSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed)
@@ -60,7 +73,6 @@ class UiLeftColumn:
         self.btn_1_layout.setSpacing(0)
         self.btn_1_layout.setObjectName("btn_1_layout")
         self.btn_1_layout.setContentsMargins(0, 0, 0, 0)
-
         self.verticalLayout.addWidget(self.btn_1_widget)
 
         self.btn_2_widget = QWidget(self.menu_1)
@@ -71,7 +83,6 @@ class UiLeftColumn:
         self.btn_2_layout.setSpacing(0)
         self.btn_2_layout.setObjectName("btn_2_layout")
         self.btn_2_layout.setContentsMargins(0, 0, 0, 0)
-
         self.verticalLayout.addWidget(self.btn_2_widget)
 
         self.btn_3_widget = QWidget(self.menu_1)
@@ -81,10 +92,11 @@ class UiLeftColumn:
         self.btn_3_layout.setSpacing(0)
         self.btn_3_layout.setObjectName("btn_3_layout")
         self.btn_3_layout.setContentsMargins(0, 0, 0, 0)
-
         self.verticalLayout.addWidget(self.btn_3_widget)
 
         self.menus.addWidget(self.menu_1)
+
+    def _build_menu_2(self) -> None:
         self.menu_2 = QWidget()
         self.menu_2.setObjectName("menu_2")
         self.verticalLayout_2 = QVBoxLayout(self.menu_2)
@@ -117,7 +129,6 @@ class UiLeftColumn:
         font.setPointSize(16)
         self.label_2.setFont(font)
         self.label_2.setStyleSheet("font-size: 16pt")
-
         self.verticalLayout_3.addWidget(self.label_2)
 
         self.label_3 = QLabel(self.left_column_info)
@@ -127,22 +138,11 @@ class UiLeftColumn:
         self.label_3.setFont(font1)
         self.label_3.setStyleSheet("font-size: 9pt")
         self.label_3.setWordWrap(True)
-
         self.verticalLayout_3.addWidget(self.label_3)
 
         self.scrollArea.setWidget(self.left_column_info)
-
         self.verticalLayout_2.addWidget(self.scrollArea)
-
         self.menus.addWidget(self.menu_2)
-
-        self.main_pages_layout.addWidget(self.menus)
-
-        self.retranslate_ui(left_column)
-
-        self.menus.setCurrentIndex(0)
-
-        QMetaObject.connectSlotsByName(left_column)
 
     # setup_ui
 
