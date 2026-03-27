@@ -75,7 +75,7 @@ class CTitleBar(QWidget):
         self.top_logo.setMaximumWidth(AppSettings.icon_size)
 
         # 移动窗口/最大化/恢复
-        def moveWindow(event: object) -> None:
+        def move_window(event: object) -> None:
             # 如果最大化改变为正常
             if parent.isMaximized():
                 self.maximize_restore()
@@ -90,11 +90,11 @@ class CTitleBar(QWidget):
 
         # 移动应用程序小部件
         if self._is_custom_title_bar:
-            self.top_logo.mouseMoveEvent = moveWindow
-            self.div_1.mouseMoveEvent = moveWindow
-            self.title_label.mouseMoveEvent = moveWindow
-            self.div_2.mouseMoveEvent = moveWindow
-            self.div_3.mouseMoveEvent = moveWindow
+            self.top_logo.mouseMoveEvent = move_window
+            self.div_1.mouseMoveEvent = move_window
+            self.title_label.mouseMoveEvent = move_window
+            self.div_2.mouseMoveEvent = move_window
+            self.div_3.mouseMoveEvent = move_window
 
         # 最大化/恢复
         if self._is_custom_title_bar:

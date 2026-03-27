@@ -1,5 +1,7 @@
 """模块说明。"""
 
+from typing import override
+
 from AppCore import AppSettings
 from GuiCore.CustomUI import CCard
 from GuiCore.WindowDefineUI import CTitleBar, CWindow
@@ -50,6 +52,7 @@ class CDialog(QDialog):
         self.content_layout.setAlignment(Qt.AlignmentFlag.AlignTop)
         self.BG.layout.addWidget(content)
 
+    @override
     def mousePressEvent(self, event: QMouseEvent) -> None:
         """记录拖拽起点并转移焦点。
 

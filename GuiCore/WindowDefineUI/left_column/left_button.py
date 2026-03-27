@@ -1,5 +1,7 @@
 """左侧栏按钮组件模块。"""
 
+from typing import override
+
 from AppCore import ColorPalette
 from qt_core import (
     QBrush,
@@ -105,6 +107,7 @@ class PyLeftButton(QPushButton):
     # PAINT EVENT
     # painting the button and the icon
     # ///////////////////////////////////////////////////////////////
+    @override
     def paintEvent(self, event: object) -> None:
         """绘制按钮背景与图标。
 
@@ -166,6 +169,7 @@ class PyLeftButton(QPushButton):
     # MOUSE OVER
     # Event triggered when the mouse is over the BTN
     # ///////////////////////////////////////////////////////////////
+    @override
     def enterEvent(self, event: object) -> None:
         """处理鼠标进入事件。"""
         _ = event
@@ -174,6 +178,7 @@ class PyLeftButton(QPushButton):
     # MOUSE LEAVE
     # Event fired when the mouse leaves the BTN
     # ///////////////////////////////////////////////////////////////
+    @override
     def leaveEvent(self, event: object) -> None:
         """处理鼠标离开事件。"""
         _ = event
@@ -182,6 +187,7 @@ class PyLeftButton(QPushButton):
     # MOUSE PRESS
     # Event triggered when the left button is pressed
     # ///////////////////////////////////////////////////////////////
+    @override
     def mousePressEvent(self, event: object) -> None:
         """处理鼠标按下事件并发射点击信号。"""
         if event.button() == Qt.LeftButton:
@@ -194,6 +200,7 @@ class PyLeftButton(QPushButton):
     # MOUSE RELEASED
     # Event triggered after the mouse button is released
     # ///////////////////////////////////////////////////////////////
+    @override
     def mouseReleaseEvent(self, event: object) -> None:
         """处理鼠标释放事件并发射释放信号。"""
         if event.button() == Qt.LeftButton:

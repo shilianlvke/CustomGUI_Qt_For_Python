@@ -1,5 +1,7 @@
 """模块说明。"""
 
+from typing import override
+
 from AppCore import ColorPalette, PathFactory
 from qt_core import QIcon, QPixmap, QPushButton, QSize, Qt, Signal
 
@@ -199,6 +201,7 @@ class CStatusButton(QPushButton):
             border_haver_color,
         )
 
+    @override
     def mousePressEvent(self, event: object) -> None:
         """处理鼠标点击并推进状态机。
 

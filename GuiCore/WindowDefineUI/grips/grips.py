@@ -1,5 +1,7 @@
 """模块说明。"""
 
+from typing import override
+
 from qt_core import QCursor, QFrame, QRect, QSize, QSizeGrip, Qt, QWidget
 
 
@@ -162,6 +164,7 @@ class CGrips(QWidget):
 
     # MOUSE RELEASE
     # ///////////////////////////////////////////////////////////////
+    @override
     def mouseReleaseEvent(self, event: object) -> None:
         """处理鼠标释放事件。
 
@@ -176,6 +179,7 @@ class CGrips(QWidget):
 
     # RESIZE EVENT
     # ///////////////////////////////////////////////////////////////
+    @override
     def resizeEvent(self, event: object) -> None:
         """处理组件缩放并同步内部夹点几何。
 

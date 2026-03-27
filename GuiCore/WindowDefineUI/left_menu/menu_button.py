@@ -1,5 +1,7 @@
 """模块说明。"""
 
+from typing import override
+
 from AppCore import ColorPalette, PathFactory, get_design_tokens
 from qt_core import (
     QColor,
@@ -90,6 +92,7 @@ class CLeftMenuButton(QPushButton):
         self.tooltip.hide()
 
     # 绘制事件
+    @override
     def paintEvent(self, event: object) -> None:
         """绘制按钮背景、文本与图标。"""
         _ = event
@@ -255,6 +258,7 @@ class CLeftMenuButton(QPushButton):
 
     # 鼠标悬停
     # 当鼠标位于BTN上时触发的事件
+    @override
     def enterEvent(self, event: object) -> None:
         """处理鼠标进入并显示提示框。"""
         _ = event
@@ -266,6 +270,7 @@ class CLeftMenuButton(QPushButton):
 
     # 鼠标离开
     # 鼠标离开BTN时触发的事件
+    @override
     def leaveEvent(self, event: object) -> None:
         """处理鼠标离开并隐藏提示框。"""
         _ = event
@@ -275,6 +280,7 @@ class CLeftMenuButton(QPushButton):
 
     # 鼠标按下
     # 按下左键时触发的事件
+    @override
     def mousePressEvent(self, event: object) -> None:
         """处理鼠标按下并发射点击信号。"""
         if event.button() == Qt.LeftButton:
@@ -285,6 +291,7 @@ class CLeftMenuButton(QPushButton):
 
     # 鼠标释放
     # 松开鼠标按钮后触发的事件
+    @override
     def mouseReleaseEvent(self, event: object) -> None:
         """处理鼠标释放并发射释放信号。"""
         if event.button() == Qt.LeftButton:
