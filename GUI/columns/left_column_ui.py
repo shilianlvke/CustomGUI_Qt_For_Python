@@ -32,7 +32,7 @@ from PySide6.QtWidgets import (
 class UiLeftColumn:
     """左侧列 UI 生成类。"""
 
-    def setup_ui(self, left_column: QWidget) -> None:
+    def setup_ui(self, left_column: QWidget) -> None:  # noqa: PLR0915
         """构建左侧列界面。"""
         if not left_column.objectName():
             left_column.setObjectName("LeftColumn")

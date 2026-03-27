@@ -25,7 +25,7 @@ from .dialogs.team_search import TeamSearchDialog
 class P2PTestHomePage:
     """P2P 测试首页页面定义。"""
 
-    def load_page(self: object) -> None:
+    def load_page(self: object) -> None:  # noqa: PLR0915
         """构建并注册 P2P 测试首页。
 
         返回:

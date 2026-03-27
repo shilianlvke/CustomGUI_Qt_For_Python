@@ -112,7 +112,7 @@ class SetupMainWindow:
     def load_page1(self) -> None:
         """预留页面加载入口。"""
 
-    def load_page2(self) -> None:
+    def load_page2(self) -> None:  # noqa: PLR0915
         """构建组件展示页示例内容。
 
         返回:

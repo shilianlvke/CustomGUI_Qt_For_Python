@@ -18,7 +18,7 @@ from qt_core import (
 class NormalWidgetShowPage:
     """组件展示页定义。"""
 
-    def load_page(self: object) -> None:
+    def load_page(self: object) -> None:  # noqa: PLR0915
         """构建并注册组件展示页面。
 
         返回:

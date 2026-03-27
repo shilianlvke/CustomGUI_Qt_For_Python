@@ -13,7 +13,6 @@ ignore = ["D203", "D213", "D400", "D415", "RUF001", "RUF002", "RUF003", "COM812"
 ]
 "GUI/**/__init__.py" = ["N999"]
 "GUI/**/*.py" = [
-	"PLR0915",
 ]
 
 [format]

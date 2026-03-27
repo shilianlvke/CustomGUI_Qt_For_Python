@@ -12,7 +12,7 @@ from GuiCore.CustomUI.div import CHDiv
 class P2PTestDataBasePage:
     """P2P 测试数据库页面定义。"""
 
-    def load_page(self: object) -> None:
+    def load_page(self: object) -> None:  # noqa: PLR0915
         """构建并注册测试数据库页面。
 
         返回:
