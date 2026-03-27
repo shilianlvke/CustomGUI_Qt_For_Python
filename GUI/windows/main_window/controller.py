@@ -1,6 +1,7 @@
 """模块说明。"""
 
 from collections.abc import Callable
+from dataclasses import dataclass
 
 from PySide6.QtWidgets import QWidget
 
@@ -226,13 +227,19 @@ class MainWindowController:
     - 根据用例决策分发到页面、动作或插件命令。
     """
 
+    @dataclass(frozen=True)
+    class Runtime:
+        """主窗口控制器运行时依赖。"""
+
+        plugin_registry_getter: Callable[[], object] = get_plugin_registry
+        event_recorder: Callable[..., object] = record_event
+        logger: object = Logger
+
     def __init__(
         self,
         window: object,
         main_functions: object = MainFunctions,
-        plugin_registry_getter: Callable[[], object] = get_plugin_registry,
-        event_recorder: Callable[..., object] = record_event,
-        logger: object = Logger,
+        runtime: Runtime | None = None,
         button_use_case: object | None = None,
     ) -> None:
         """初始化主窗口控制器。
@@ -240,19 +247,18 @@ class MainWindowController:
         参数:
         - window: 主窗口对象。
         - main_functions: 主窗口功能函数集合。
-        - plugin_registry_getter: 插件注册中心获取函数。
-        - event_recorder: 遥测记录函数。
-        - logger: 日志对象。
+        - runtime: 运行时依赖集合（插件注册、遥测、日志）。
         - button_use_case: 按钮决策用例实例。
 
         返回:
         - None
         """
+        runtime = runtime or MainWindowController.Runtime()
         self._window = window
         self._main_functions = main_functions
-        self._plugin_registry_getter = plugin_registry_getter
-        self._record_event = event_recorder
-        self._logger = logger
+        self._plugin_registry_getter = runtime.plugin_registry_getter
+        self._record_event = runtime.event_recorder
+        self._logger = runtime.logger
         self._button_use_case = button_use_case or MainWindowButtonUseCase()
         self.page_router = PageRouterController(window=window, main_functions=main_functions)
         self.theme_controller = ThemeController(window=window)

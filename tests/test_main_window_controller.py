@@ -152,9 +152,11 @@ def _build_controller_for_plugin_dispatch(calls: list[tuple[str, object, str]]) 
     controller = MainWindowController(
         window=window,
         main_functions=_StubMainFunctions,
-        plugin_registry_getter=lambda: _PluginDispatchRegistry(calls),
-        event_recorder=lambda *_args, **_kwargs: None,
-        logger=SimpleNamespace(debug=lambda *_args, **_kwargs: None),
+        runtime=MainWindowController.Runtime(
+            plugin_registry_getter=lambda: _PluginDispatchRegistry(calls),
+            event_recorder=lambda *_args, **_kwargs: None,
+            logger=SimpleNamespace(debug=lambda *_args, **_kwargs: None),
+        ),
     )
     controller.page_router = SimpleNamespace(route_for=lambda _name: None, switch_page=lambda *_args: None)
     controller.column_controller = SimpleNamespace(

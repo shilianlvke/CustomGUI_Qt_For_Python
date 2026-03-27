@@ -158,9 +158,11 @@ def test_button_to_page_route_chain() -> None:
     controller = MainWindowController(
         window=window,
         main_functions=main_functions,
-        plugin_registry_getter=_plugin_registry_getter,
-        event_recorder=_record_event,
-        logger=SimpleNamespace(debug=_debug_log),
+        runtime=MainWindowController.Runtime(
+            plugin_registry_getter=_plugin_registry_getter,
+            event_recorder=_record_event,
+            logger=SimpleNamespace(debug=_debug_log),
+        ),
     )
     controller.page_router = PageRouterController(
         window=window,
@@ -204,9 +206,11 @@ def test_button_to_column_action_chain() -> None:
     controller = MainWindowController(
         window=window,
         main_functions=main_functions,
-        plugin_registry_getter=_plugin_registry_getter,
-        event_recorder=_record_event,
-        logger=SimpleNamespace(debug=_debug_log),
+        runtime=MainWindowController.Runtime(
+            plugin_registry_getter=_plugin_registry_getter,
+            event_recorder=_record_event,
+            logger=SimpleNamespace(debug=_debug_log),
+        ),
     )
     controller.page_router = PageRouterController(
         window=window,
@@ -264,9 +268,11 @@ def test_unhandled_button_falls_back_to_plugin_command_chain() -> None:
     controller = MainWindowController(
         window=window,
         main_functions=main_functions,
-        plugin_registry_getter=_plugin_registry_getter,
-        event_recorder=_record_event,
-        logger=SimpleNamespace(debug=_debug_log),
+        runtime=MainWindowController.Runtime(
+            plugin_registry_getter=_plugin_registry_getter,
+            event_recorder=_record_event,
+            logger=SimpleNamespace(debug=_debug_log),
+        ),
     )
     controller.page_router = PageRouterController(
         window=window,
