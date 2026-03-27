@@ -1,5 +1,7 @@
 """模块说明。"""
 
+from typing import override
+
 from PySide6.QtCore import Property, QPropertyAnimation, Qt, QThreadPool, Signal
 from PySide6.QtGui import QMouseEvent, QShowEvent
 from PySide6.QtWidgets import QHBoxLayout, QProgressBar, QWidget
@@ -114,6 +116,7 @@ class LoadingWindow(QWidget):
         self.loader.stop()
         self.close()
 
+    @override
     def showEvent(self, event: QShowEvent) -> None:
         """显示时启动异步加载任务。"""
         if not self._task_started:
@@ -121,17 +124,20 @@ class LoadingWindow(QWidget):
             self.thread_pool.start(LoadingTask(self.loader))
         super().showEvent(event)
 
+    @override
     def mousePressEvent(self, event: QMouseEvent) -> None:
         """记录拖拽起点。"""
         if event.button() == Qt.LeftButton:
             self.dragging = True
             self.offset = event.globalPosition().toPoint() - self.pos()
 
+    @override
     def mouseMoveEvent(self, event: QMouseEvent) -> None:
         """处理窗口拖拽。"""
         if self.dragging and self.offset:
             self.move(event.globalPosition().toPoint() - self.offset)
 
+    @override
     def mouseReleaseEvent(self, event: QMouseEvent) -> None:
         """结束窗口拖拽。"""
         _ = event
