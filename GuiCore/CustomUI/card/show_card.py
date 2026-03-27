@@ -1,4 +1,8 @@
+"""模块说明。"""
+
 import webbrowser
+
+from AppCore import ColorPalette, PathFactory
 from qt_core import (
     QCursor,
     QFrame,
@@ -7,11 +11,10 @@ from qt_core import (
     QPixmap,
     QSize,
     QSizePolicy,
+    Qt,
     QVBoxLayout,
     QWidget,
-    Qt,
 )
-from AppCore import PathFactory, ColorPalette
 
 
 class CShowCard(QFrame):
@@ -24,13 +27,13 @@ class CShowCard(QFrame):
 
     def __init__(
         self,
-        size: QSize = None,
-        source_url="https://example.com",
-        bottom_text="查看源代码",
-        widget=None,
+        size: QSize | None = None,
+        source_url: str = "https://example.com",
+        bottom_text: str = "查看源代码",
+        widget: QWidget | None = None,
         radius: int = 8,
         border_size: int = 12,
-    ):
+    ) -> None:
         """初始化展示卡片。
 
         参数:
@@ -44,7 +47,6 @@ class CShowCard(QFrame):
         返回:
         - None
         """
-
         super().__init__()
         self.setObjectName("CShowCard")
         if size is not None:
@@ -94,13 +96,12 @@ class CShowCard(QFrame):
         # 绑定点击事件
         self.bottom_area.mousePressEvent = self._on_source_click
 
-    def _setup_style(self):
+    def _setup_style(self) -> None:
         """设置卡片样式表。
 
         返回:
         - None
         """
-
         self.setStyleSheet(f"""
             #CShowCard {{
                 border: {self.border_size}px solid transparent;
@@ -125,7 +126,7 @@ class CShowCard(QFrame):
             }}
         """)
 
-    def set_top_widget(self, widget):
+    def set_top_widget(self, widget: QWidget) -> None:
         """设置上半区组件内容。
 
         参数:
@@ -134,7 +135,6 @@ class CShowCard(QFrame):
         返回:
         - None
         """
-
         # 清空原有内容
         if self.top_area.layout():
             for i in reversed(range(self.top_area.layout().count())):
@@ -147,10 +147,9 @@ class CShowCard(QFrame):
         # 设置上半部分布局（居中+内边距）
         top_layout = self.top_area.layout()
         top_layout.setContentsMargins(0, 0, 0, 0)
-        # top_layout.setAlignment(Qt.AlignCenter)
         top_layout.addWidget(widget)
 
-    def _on_source_click(self, event):
+    def _on_source_click(self, _event: object) -> None:
         """处理底部区域点击并打开链接。
 
         参数:
@@ -159,5 +158,4 @@ class CShowCard(QFrame):
         返回:
         - None
         """
-
         webbrowser.open(self.source_url)

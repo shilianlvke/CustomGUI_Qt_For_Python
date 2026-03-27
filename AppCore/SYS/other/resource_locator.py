@@ -1,3 +1,5 @@
+"""模块说明。"""
+
 import os
 from pathlib import Path
 
@@ -19,7 +21,6 @@ class ResourceLocator:
         返回:
         - Path: 项目根目录绝对路径。
         """
-
         custom_root = os.getenv(cls._ROOT_ENV, "").strip()
         if custom_root:
             return Path(custom_root).expanduser().resolve()
@@ -35,7 +36,6 @@ class ResourceLocator:
         返回:
         - Path: 解析后的绝对路径。
         """
-
         rel = Path(relative_path)
         return (cls.project_root() / rel).resolve()
 
@@ -50,14 +50,9 @@ class ResourceLocator:
         返回:
         - list[str]: 匹配文件的绝对路径字符串列表。
         """
-
         suffix = extension if extension.startswith(".") else f".{extension}"
         base_dir = cls.resolve(directory)
         if not base_dir.exists():
             return []
 
-        matched: list[str] = []
-        for path in base_dir.rglob(f"*{suffix}"):
-            if path.is_file():
-                matched.append(str(path.resolve()))
-        return matched
+        return [str(path.resolve()) for path in base_dir.rglob(f"*{suffix}") if path.is_file()]

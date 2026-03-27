@@ -1,4 +1,7 @@
+"""模块说明。"""
+
 from dataclasses import dataclass
+from typing import ClassVar
 
 
 @dataclass(frozen=True)
@@ -25,7 +28,7 @@ class MainWindowButtonUseCase:
     - 根据按钮与路由信息返回标准化决策结果。
     """
 
-    ACTION_MAP = {
+    ACTION_MAP: ClassVar[dict[str, str]] = {
         "btn_info": "btn_info",
         "btn_more": "btn_more",
         "btn_close_left_column": "btn_more",
@@ -44,7 +47,6 @@ class MainWindowButtonUseCase:
         返回:
         - bool: ``True`` 表示需要重置，``False`` 表示保持当前状态。
         """
-
         return btn_name != "btn_settings"
 
     @classmethod
@@ -59,7 +61,6 @@ class MainWindowButtonUseCase:
         返回:
         - ButtonDecision: 包含决策类型与载荷的不可变对象。
         """
-
         if route is not None:
             return ButtonDecision(kind="page_route", payload=route)
 

@@ -1,34 +1,29 @@
+"""模块说明。"""
+
+from AppCore import ColorPalette, Language, Logger, PathFactory
+from GuiCore import CCard, CComboBox, CMenu, CMenuButton, CPushButton, CShowCard, CStatusButton
 from qt_core import (
     QGridLayout,
-    QHBoxLayout,
     QIcon,
-    QLabel,
-    QLineEdit,
     QMargins,
+    QScrollArea,
     QSize,
     QSizePolicy,
-    QSvgWidget,
+    Qt,
     QVBoxLayout,
     QWidget,
-    Qt,
-    QScrollArea,
 )
-from GuiCore import CCard, CComboBox, CStatusButton, CPushButton, CMenuButton, CMenu, CShowCard, CLineEdit, CHDiv
-from AppCore import PathFactory, Language, Logger, ColorPalette, AppSettings
-from .dialogs.team_create import TeamCreateDialog
-from .dialogs.team_search import TeamSearchDialog
 
 
 class NormalWidgetShowPage:
     """组件展示页定义。"""
 
-    def load_page(self):
+    def load_page(self: object) -> None:
         """构建并注册组件展示页面。
 
         返回:
         - None
         """
-
         # 新增页面
         page = QWidget()
         page.setObjectName("normalWidgetShowPage")
@@ -45,14 +40,14 @@ class NormalWidgetShowPage:
         page_card_layout.setAlignment(Qt.AlignmentFlag.AlignCenter)
         page_layout.addWidget(page_card)
 
-        Card = CCard()
-        page_card_layout.addWidget(Card)
-        welcome_card_layout = QGridLayout(Card)
+        card = CCard()
+        page_card_layout.addWidget(card)
+        welcome_card_layout = QGridLayout(card)
         welcome_card_layout.setContentsMargins(QMargins(0, 0, 0, 0))
 
         scroller_area = QScrollArea()
         scroller_area.setObjectName("widget_show_scroller_area")
-        scroller_area.setWidget(Card)
+        scroller_area.setWidget(card)
         scroller_area.setWidgetResizable(True)
         scroller_area.setVerticalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
         scroller_area.setStyleSheet(f"#widget_show_scroller_area{{background:{ColorPalette.custom_dark_three}}};")
@@ -63,7 +58,9 @@ class NormalWidgetShowPage:
         icon_btn = CPushButton(size=QSize(64, 64), icon=PathFactory.set_jpg_image("托盘"))
         icon_btn.clicked.connect(lambda: Logger.info("点击了图片按钮"))
         text_icon_btn = CPushButton(
-            size=QSize(128, 32), icon=QIcon(PathFactory.set_svg_icon("icon_heart")), text="QIcon-文字按钮"
+            size=QSize(128, 32),
+            icon=QIcon(PathFactory.set_svg_icon("icon_heart")),
+            text="QIcon-文字按钮",
         )
         text_icon_btn.clicked.connect(lambda: Logger.info("点击了文字按钮"))
         two_btn = CStatusButton(

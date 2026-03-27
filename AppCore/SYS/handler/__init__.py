@@ -1,4 +1,9 @@
-from .yaml_handler import YamlHandler as YamlHandler
-from .json_handler import JsonHandler as JsonHandler
+"""Package initialization module."""
 
-__all__ = ["YamlHandler", "JsonHandler"]
+# ruff: noqa: N999
+
+from .json_handler import JsonHandler as JsonHandler
+from .yaml_handler import YamlHandler as YamlHandler
+
+__all__ = ["JsonHandler", "YamlHandler"]
+

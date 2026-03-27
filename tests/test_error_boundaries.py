@@ -1,4 +1,6 @@
-﻿import pytest
+"""模块说明。"""
+
+import pytest
 
 from AppCore.SYS.handler.yaml_handler import YamlHandler
 from AppCore.SYS.module.error_module import (
@@ -9,7 +11,7 @@ from AppCore.SYS.module.error_module import (
 )
 
 
-def test_to_user_message_for_app_error():
+def test_to_user_message_for_app_error() -> None:
     """测试用例：test_to_user_message_for_app_error。
 
     职责:
@@ -20,21 +22,21 @@ def test_to_user_message_for_app_error():
     assert to_user_message(err) == "业务失败 (DOMAIN_X)"
 
 
-def test_to_user_message_for_unknown_error():
-    "测试用例：test_to_user_message_for_unknown_error。"
+def test_to_user_message_for_unknown_error() -> None:
+    """测试用例：test_to_user_message_for_unknown_error。"""
     err = RuntimeError("boom")
 
     assert "未知错误" in to_user_message(err)
 
 
-def test_yaml_handler_missing_file_raises_io_boundary():
-    "测试用例：test_yaml_handler_missing_file_raises_io_boundary。"
+def test_yaml_handler_missing_file_raises_io_boundary() -> None:
+    """测试用例：test_yaml_handler_missing_file_raises_io_boundary。"""
     with pytest.raises(IOErrorBoundary, match="YAML_FILE_NOT_FOUND"):
         YamlHandler("resource/not_exists.yml")
 
 
-def test_error_boundary_layers():
-    "测试用例：test_error_boundary_layers。"
+def test_error_boundary_layers() -> None:
+    """测试用例：test_error_boundary_layers。"""
     io_err = IOErrorBoundary("IO_X", "io")
     domain_err = DomainErrorBoundary("DOMAIN_X", "domain")
     ui_err = UIErrorBoundary("UI_X", "ui")
@@ -42,4 +44,3 @@ def test_error_boundary_layers():
     assert io_err.layer == "io"
     assert domain_err.layer == "domain"
     assert ui_err.layer == "ui"
-

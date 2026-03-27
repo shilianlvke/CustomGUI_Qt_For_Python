@@ -35,9 +35,9 @@ jobs:
       - name: Install build dependencies
         run: uv pip install "pyinstaller>=6.10.0"
 
-      - name: Run quality checks
+      - name: Run quality checks (strict Ruff)
         run: |
-          uv run ruff check . --select E9,F63,F7,F82
+          uv run ruff check .
           uv run pytest -q
 
       - name: Build package

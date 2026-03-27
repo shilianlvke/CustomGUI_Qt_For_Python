@@ -1,8 +1,14 @@
-﻿from AppCore import CommandPlugin, MenuPlugin, PagePlugin, get_plugin_registry
+"""模块说明。"""
+
+from pathlib import Path
+
+import pytest
+
+from AppCore import CommandPlugin, MenuPlugin, PagePlugin, get_plugin_registry
 from AppCore.SYS.module.error_module import DomainErrorBoundary
 
 
-def test_plugin_registry_page_menu_command_flow():
+def test_plugin_registry_page_menu_command_flow() -> None:
     """测试用例：test_plugin_registry_page_menu_command_flow。
 
     职责:
@@ -15,8 +21,8 @@ def test_plugin_registry_page_menu_command_flow():
             plugin_id="test.page.demo",
             button_id="btn_demo",
             page_object="demo_page",
-            title_getter=lambda language: "Demo",
-        )
+            title_getter=lambda _language: "Demo",
+        ),
     )
     registry.register_menu(
         MenuPlugin(
@@ -30,13 +36,13 @@ def test_plugin_registry_page_menu_command_flow():
                 "show_top": True,
                 "is_active": False,
             },
-        )
+        ),
     )
 
     state = {"ran": False}
 
-    def _handler(*args, **kwargs):
-        "函数：_handler。"
+    def _handler(*_args: object, **_kwargs: object) -> None:
+        """函数：_handler。"""
         state["ran"] = True
 
     registry.register_command(
@@ -44,7 +50,7 @@ def test_plugin_registry_page_menu_command_flow():
             plugin_id="test.cmd.demo",
             command_id="cmd_demo",
             handler=_handler,
-        )
+        ),
     )
 
     routes = registry.build_page_routes(language=None, title_fallback=lambda _bid: "fallback")
@@ -57,26 +63,24 @@ def test_plugin_registry_page_menu_command_flow():
     assert state["ran"] is True
 
 
-def test_plugin_registry_duplicate_registration_raises():
-    "测试用例：test_plugin_registry_duplicate_registration_raises。"
+def test_plugin_registry_duplicate_registration_raises() -> None:
+    """测试用例：test_plugin_registry_duplicate_registration_raises。"""
     registry = get_plugin_registry(reset=True)
     plugin = PagePlugin(
         plugin_id="dup.page",
         button_id="btn_dup",
         page_object="dup_page",
-        title_getter=lambda language: "Dup",
+        title_getter=lambda _language: "Dup",
     )
 
     registry.register_page(plugin)
-    try:
+    with pytest.raises(DomainErrorBoundary) as exc_info:
         registry.register_page(plugin)
-        raise AssertionError("Expected duplicate registration to raise")
-    except DomainErrorBoundary as exc:
-        assert exc.code == "PLUGIN_DUPLICATE_PAGE"
+    assert exc_info.value.code == "PLUGIN_DUPLICATE_PAGE"
 
 
-def test_plugin_lifecycle_enable_disable_and_unregister():
-    "测试用例：test_plugin_lifecycle_enable_disable_and_unregister。"
+def test_plugin_lifecycle_enable_disable_and_unregister() -> None:
+    """测试用例：test_plugin_lifecycle_enable_disable_and_unregister。"""
     registry = get_plugin_registry(reset=True)
 
     registry.register_command(
@@ -84,7 +88,7 @@ def test_plugin_lifecycle_enable_disable_and_unregister():
             plugin_id="test.cmd.lifecycle",
             command_id="cmd_lifecycle",
             handler=lambda *_args, **_kwargs: "ok",
-        )
+        ),
     )
 
     assert registry.execute_command("cmd_lifecycle") == "ok"
@@ -99,11 +103,11 @@ def test_plugin_lifecycle_enable_disable_and_unregister():
     assert registry.execute_command("cmd_lifecycle") is None
 
 
-def test_plugin_protocol_version_mismatch_raises():
-    "测试用例：test_plugin_protocol_version_mismatch_raises。"
+def test_plugin_protocol_version_mismatch_raises() -> None:
+    """测试用例：test_plugin_protocol_version_mismatch_raises。"""
     registry = get_plugin_registry(reset=True)
 
-    try:
+    with pytest.raises(DomainErrorBoundary) as exc_info:
         registry.register_page(
             PagePlugin(
                 plugin_id="test.page.incompatible",
@@ -111,15 +115,13 @@ def test_plugin_protocol_version_mismatch_raises():
                 page_object="page_incompatible",
                 title_getter=lambda _language: "Incompatible",
                 protocol_version="2",
-            )
+            ),
         )
-        raise AssertionError("Expected unsupported protocol to raise")
-    except DomainErrorBoundary as exc:
-        assert exc.code == "PLUGIN_PROTOCOL_UNSUPPORTED"
+    assert exc_info.value.code == "PLUGIN_PROTOCOL_UNSUPPORTED"
 
 
-def test_plugin_load_and_command_fault_isolation():
-    "测试用例：test_plugin_load_and_command_fault_isolation。"
+def test_plugin_load_and_command_fault_isolation() -> None:
+    """测试用例：test_plugin_load_and_command_fault_isolation。"""
     registry = get_plugin_registry(reset=True)
 
     report = registry.load_plugins(
@@ -134,10 +136,11 @@ def test_plugin_load_and_command_fault_isolation():
                 command_id="cmd_bad",
                 handler=lambda *_args, **_kwargs: (_ for _ in ()).throw(RuntimeError("boom")),
             ),
-        ]
+        ],
     )
 
-    assert report["loaded"] == 2
+    expected_loaded = 2
+    assert report["loaded"] == expected_loaded
     assert report["failed"] == 0
 
     assert registry.execute_command("cmd_ok") == "ok"
@@ -145,18 +148,18 @@ def test_plugin_load_and_command_fault_isolation():
     assert any("test.cmd.bad" in msg for msg in registry.load_errors)
 
 
-def test_page_plugin_loader_fault_isolation():
-    "测试用例：test_page_plugin_loader_fault_isolation。"
+def test_page_plugin_loader_fault_isolation() -> None:
+    """测试用例：test_page_plugin_loader_fault_isolation。"""
     registry = get_plugin_registry(reset=True)
     calls = []
 
-    def _ok_loader(window):
-        "函数：_ok_loader。"
+    def _ok_loader(window: object) -> None:
+        """函数：_ok_loader。"""
         calls.append(("ok", window))
 
-    def _bad_loader(_window):
-        "函数：_bad_loader。"
-        raise RuntimeError("load failed")
+    def _bad_loader(_window: object) -> None:
+        """函数：_bad_loader。"""
+        raise RuntimeError
 
     registry.load_plugins(
         [
@@ -174,7 +177,7 @@ def test_page_plugin_loader_fault_isolation():
                 title_getter=lambda _language: "BAD",
                 loader=_bad_loader,
             ),
-        ]
+        ],
     )
 
     marker = object()
@@ -184,8 +187,8 @@ def test_page_plugin_loader_fault_isolation():
     assert any("test.page.bad" in msg for msg in registry.load_errors)
 
 
-def test_plugin_protocol_compatibility_helpers():
-    "测试用例：test_plugin_protocol_compatibility_helpers。"
+def test_plugin_protocol_compatibility_helpers() -> None:
+    """测试用例：test_plugin_protocol_compatibility_helpers。"""
     registry = get_plugin_registry(reset=True)
 
     assert registry.is_protocol_supported("1") is True
@@ -193,8 +196,8 @@ def test_plugin_protocol_compatibility_helpers():
     assert "1" in registry.supported_protocol_versions
 
 
-def test_discover_plugin_modules_from_manifest(tmp_path):
-    "测试用例：test_discover_plugin_modules_from_manifest。"
+def test_discover_plugin_modules_from_manifest(tmp_path: Path) -> None:
+    """测试用例：test_discover_plugin_modules_from_manifest。"""
     registry = get_plugin_registry(reset=True)
     manifest = tmp_path / "plugins.yml"
     manifest.write_text(
@@ -214,8 +217,11 @@ plugins:
     assert modules == ["demo_plugin_a", "demo_plugin_b"]
 
 
-def test_discover_and_load_plugins_from_module_register_function(tmp_path, monkeypatch):
-    "测试用例：test_discover_and_load_plugins_from_module_register_function。"
+def test_discover_and_load_plugins_from_module_register_function(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """测试用例：test_discover_and_load_plugins_from_module_register_function。"""
     registry = get_plugin_registry(reset=True)
 
     plugin_dir = tmp_path / "plugins"
@@ -258,7 +264,7 @@ def register_plugins(registry):
     assert registry.execute_command("cmd_demo") == "ok"
 
 
-def test_load_plugins_from_module_missing_entry_records_error(tmp_path, monkeypatch):
+def test_load_plugins_from_module_missing_entry_records_error(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     """测试用例：test_load_plugins_from_module_missing_entry_records_error。
 
     职责:
@@ -280,8 +286,8 @@ def test_load_plugins_from_module_missing_entry_records_error(tmp_path, monkeypa
     assert any("bad_plugin" in msg for msg in registry.load_errors)
 
 
-def test_plugin_protocol_adapter_migrates_legacy_plugin():
-    "测试用例：test_plugin_protocol_adapter_migrates_legacy_plugin。"
+def test_plugin_protocol_adapter_migrates_legacy_plugin() -> None:
+    """测试用例：test_plugin_protocol_adapter_migrates_legacy_plugin。"""
     registry = get_plugin_registry(reset=True)
 
     registry.register_protocol_adapter(
@@ -306,8 +312,8 @@ def test_plugin_protocol_adapter_migrates_legacy_plugin():
     assert registry.execute_command("cmd_legacy") == "legacy-ok"
 
 
-def test_plugin_protocol_adapter_failure_raises_boundary():
-    "测试用例：test_plugin_protocol_adapter_failure_raises_boundary。"
+def test_plugin_protocol_adapter_failure_raises_boundary() -> None:
+    """测试用例：test_plugin_protocol_adapter_failure_raises_boundary。"""
     registry = get_plugin_registry(reset=True)
 
     registry.register_protocol_adapter("0", lambda _plugin: (_ for _ in ()).throw(RuntimeError("cannot adapt")))
@@ -319,9 +325,6 @@ def test_plugin_protocol_adapter_failure_raises_boundary():
         protocol_version="0",
     )
 
-    try:
+    with pytest.raises(DomainErrorBoundary) as exc_info:
         registry.register_command(legacy)
-        raise AssertionError("Expected protocol adapt failure")
-    except DomainErrorBoundary as exc:
-        assert exc.code == "PLUGIN_PROTOCOL_ADAPT_FAILED"
-
+    assert exc_info.value.code == "PLUGIN_PROTOCOL_ADAPT_FAILED"

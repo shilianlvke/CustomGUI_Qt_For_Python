@@ -1,6 +1,9 @@
-from qt_core import QDialog, QPoint, QVBoxLayout, Qt
-from AppCore import AppSettings, Language
-from GuiCore import CCard, CTitleBar, CWindow
+"""模块说明。"""
+
+from AppCore import AppSettings
+from GuiCore.CustomUI import CCard
+from GuiCore.WindowDefineUI import CTitleBar, CWindow
+from qt_core import QDialog, QMouseEvent, QPoint, Qt, QVBoxLayout
 
 
 class CDialog(QDialog):
@@ -11,7 +14,7 @@ class CDialog(QDialog):
     - 支持无边框拖拽体验。
     """
 
-    def __init__(self, title):
+    def __init__(self, title: str) -> None:
         """初始化对话框。
 
         参数:
@@ -20,12 +23,10 @@ class CDialog(QDialog):
         返回:
         - None
         """
-
         super().__init__()
         self.dragPos = QPoint(0, 0)
         layout = QVBoxLayout()
         self.setLayout(layout)
-        # self.setFixedSize(QSize(500, 600))
         if AppSettings.custom_title_bar:
             self.setWindowFlag(Qt.WindowType.FramelessWindowHint)
             self.setAttribute(Qt.WidgetAttribute.WA_TranslucentBackground)
@@ -49,7 +50,7 @@ class CDialog(QDialog):
         self.content_layout.setAlignment(Qt.AlignmentFlag.AlignTop)
         self.BG.layout.addWidget(content)
 
-    def mousePressEvent(self, event):
+    def mousePressEvent(self, event: QMouseEvent) -> None:
         """记录拖拽起点并转移焦点。
 
         参数:
@@ -58,7 +59,6 @@ class CDialog(QDialog):
         返回:
         - None
         """
-
         self.dragPos = event.globalPosition().toPoint()
         # 点击窗口其他区域时转移焦点
         self.focusNextChild()

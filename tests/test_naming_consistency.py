@@ -1,33 +1,36 @@
-﻿import pytest
+"""模块说明。"""
+
+import importlib
+
+import pytest
 
 
-def test_canonical_language_module_imports():
+def test_canonical_language_module_imports() -> None:
     """测试用例：test_canonical_language_module_imports。
 
     职责:
     - 验证目标行为符合预期。
     """
-    from AppCore.SYS.module.language_module import Language, LanguageHandler
+    language_module = importlib.import_module("AppCore.SYS.module.language_module")
 
-    assert Language is not None
-    assert LanguageHandler is not None
+    assert language_module.Language is not None
+    assert language_module.LanguageHandler is not None
 
 
-def test_legacy_language_module_is_removed():
-    "测试用例：test_legacy_language_module_is_removed。"
+def test_legacy_language_module_is_removed() -> None:
+    """测试用例：test_legacy_language_module_is_removed。"""
     with pytest.raises(ModuleNotFoundError):
-        from AppCore.SYS.module.languge_module import Language  # noqa: F401
+        importlib.import_module("AppCore.SYS.module.languge_module")
 
 
-def test_canonical_loading_ui_module_imports():
-    "测试用例：test_canonical_loading_ui_module_imports。"
-    from GUI.windows.loading_window.ui_main import LoadingWindow
+def test_canonical_loading_ui_module_imports() -> None:
+    """测试用例：test_canonical_loading_ui_module_imports。"""
+    ui_module = importlib.import_module("GUI.windows.loading_window.ui_main")
 
-    assert LoadingWindow is not None
+    assert ui_module.LoadingWindow is not None
 
 
-def test_legacy_loading_ui_module_is_removed():
-    "测试用例：test_legacy_loading_ui_module_is_removed。"
+def test_legacy_loading_ui_module_is_removed() -> None:
+    """测试用例：test_legacy_loading_ui_module_is_removed。"""
     with pytest.raises(ModuleNotFoundError):
-        from GUI.windows.loading_window.ui_mian import LoadingWindow  # noqa: F401
-
+        importlib.import_module("GUI.windows.loading_window.ui_mian")

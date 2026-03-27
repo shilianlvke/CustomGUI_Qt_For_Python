@@ -1,4 +1,4 @@
-# -*- coding: utf-8 -*-
+"""模块说明。"""
 
 ################################################################################
 ## Form generated from reading UI file 'right_column.ui'
@@ -19,8 +19,11 @@ from PySide6.QtGui import (
 from PySide6.QtWidgets import QLabel, QStackedWidget, QVBoxLayout, QWidget
 
 
-class Ui_RightColumn(object):
-    def setupUi(self, RightColumn):
+class Ui_RightColumn:
+    """右侧列 UI 生成类。"""
+
+    def setupUi(self, RightColumn: QWidget) -> None:
+        """构建右侧列界面。"""
         if not RightColumn.objectName():
             RightColumn.setObjectName("RightColumn")
         RightColumn.resize(240, 600)
@@ -73,7 +76,8 @@ class Ui_RightColumn(object):
 
     # setupUi
 
-    def retranslateUi(self, RightColumn):
+    def retranslateUi(self, RightColumn: QWidget) -> None:
+        """刷新界面文本。"""
         RightColumn.setWindowTitle(QCoreApplication.translate("RightColumn", "Form", None))
         self.label_1.setText(QCoreApplication.translate("RightColumn", "Menu 1 - Right Menu", None))
         self.label_2.setText(QCoreApplication.translate("RightColumn", "Menu 2 - Right Menu", None))

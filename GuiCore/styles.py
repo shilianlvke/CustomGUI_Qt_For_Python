@@ -1,8 +1,10 @@
+"""模块说明。"""
+
 # 这里决定整个window的总体样式
 from AppCore import get_design_tokens
 
 
-class Styles(object):
+class Styles:
     """全局样式生成器。
 
     职责:
@@ -10,11 +12,9 @@ class Styles(object):
     - 聚合按钮、输入框、下拉框等组件样式。
     """
 
-    def __init__(self):
+    def __init__(self) -> None:
         """初始化样式生成器并构建样式文本。"""
-
         self.tokens = get_design_tokens()
-        print(self.tokens)
         self.style = f"""
             #CWindow_Frame {{
                 background-color: {self.tokens.colors.surface_app};
@@ -51,7 +51,7 @@ class Styles(object):
             #CVDiv_Frame {{
                 background: {self.tokens.colors.surface_app};
             }}
-            QFrame {{ 
+            QFrame {{
                 color: {self.tokens.colors.text_primary};
                 font: {self.tokens.typography.family};
             }}
@@ -60,13 +60,12 @@ class Styles(object):
         self.update_lineedit_style()
         self.update_combobox_style()
 
-    def update_btn_style(self):
+    def update_btn_style(self) -> None:
         """追加按钮相关样式片段。
 
         返回:
         - None
         """
-
         self.style += f"""
             #CMenuButton_PushButton {{
                 border: {self.tokens.border.width}px solid {self.tokens.colors.surface_interactive};
@@ -81,7 +80,7 @@ class Styles(object):
             #CMenuButton_PushButton:pressed {{
                 background-color: {self.tokens.colors.surface_interactive_pressed};
             }}
-            #CMenuButton_PushButton::menu-indicator {{ 
+            #CMenuButton_PushButton::menu-indicator {{
                 image: url(resource/CustomUI/images/svg_icons/icon_arrow_right.svg);
                 width: {self.tokens.size.icon}px;
                 height: {self.tokens.size.icon}px;
@@ -115,13 +114,12 @@ class Styles(object):
             }}
         """
 
-    def update_lineedit_style(self):
+    def update_lineedit_style(self) -> None:
         """追加输入框相关样式片段。
 
         返回:
         - None
         """
-
         self.style += f"""
             #CLineEdit_LineEdit {{
                 background-color: {self.tokens.colors.surface_interactive};
@@ -144,13 +142,12 @@ class Styles(object):
             }}
         """
 
-    def update_combobox_style(self):
+    def update_combobox_style(self) -> None:
         """追加下拉框相关样式片段。
 
         返回:
         - None
         """
-
         self.style += f"""
             #CComboBox_ComboBox {{
                 border: {self.tokens.border.width}px solid {self.tokens.colors.surface_interactive};

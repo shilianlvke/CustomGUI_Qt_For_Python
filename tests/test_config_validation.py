@@ -1,4 +1,6 @@
-﻿import pytest
+"""模块说明。"""
+
+import pytest
 
 from AppCore.SYS.module.settings_module import (
     validate_language_data,
@@ -7,7 +9,7 @@ from AppCore.SYS.module.settings_module import (
 )
 
 
-def _base_settings():
+def _base_settings() -> dict[str, object]:
     """函数：_base_settings。
 
     参数:
@@ -36,15 +38,15 @@ def _base_settings():
         "tooltip_border_radius": 17,
         "tooltip_font": 300,
         "time_animation": 500,
-        "family": "寰蒋闆呴粦",
+        "family": "微软雅黑",
         "title_size": 18,
         "subtitle_size": 15,
         "text_size": 12,
     }
 
 
-def _base_theme():
-    "函数：_base_theme。"
+def _base_theme() -> dict[str, str]:
+    """函数：_base_theme。"""
     return {
         "custom_dark_one": "#1a1d22",
         "custom_dark_two": "#1d2128",
@@ -76,8 +78,8 @@ def _base_theme():
     }
 
 
-def _base_language():
-    "函数：_base_language。"
+def _base_language() -> dict[str, object]:
+    """函数：_base_language。"""
     return {
         "custom_ui": {
             "sys_name": "CustomGUI",
@@ -90,13 +92,13 @@ def _base_language():
     }
 
 
-def test_settings_validation_passes_for_valid_data():
-    "测试用例：test_settings_validation_passes_for_valid_data。"
+def test_settings_validation_passes_for_valid_data() -> None:
+    """测试用例：test_settings_validation_passes_for_valid_data。"""
     validate_settings_data(_base_settings())
 
 
-def test_settings_validation_fails_when_required_field_missing():
-    "测试用例：test_settings_validation_fails_when_required_field_missing。"
+def test_settings_validation_fails_when_required_field_missing() -> None:
+    """测试用例：test_settings_validation_fails_when_required_field_missing。"""
     payload = _base_settings()
     payload.pop("time_animation")
 
@@ -104,13 +106,13 @@ def test_settings_validation_fails_when_required_field_missing():
         validate_settings_data(payload)
 
 
-def test_theme_validation_passes_for_valid_data():
-    "测试用例：test_theme_validation_passes_for_valid_data。"
+def test_theme_validation_passes_for_valid_data() -> None:
+    """测试用例：test_theme_validation_passes_for_valid_data。"""
     validate_theme_data(_base_theme(), "default")
 
 
-def test_theme_validation_passes_when_optional_keys_missing():
-    "测试用例：test_theme_validation_passes_when_optional_keys_missing。"
+def test_theme_validation_passes_when_optional_keys_missing() -> None:
+    """测试用例：test_theme_validation_passes_when_optional_keys_missing。"""
     payload = _base_theme()
     payload.pop("custom_bg_active_one")
     payload.pop("custom_bg_active_two")
@@ -120,8 +122,8 @@ def test_theme_validation_passes_when_optional_keys_missing():
     validate_theme_data(payload, "bright")
 
 
-def test_theme_validation_fails_when_color_key_missing():
-    "测试用例：test_theme_validation_fails_when_color_key_missing。"
+def test_theme_validation_fails_when_color_key_missing() -> None:
+    """测试用例：test_theme_validation_fails_when_color_key_missing。"""
     payload = _base_theme()
     payload.pop("custom_text_active")
 
@@ -129,16 +131,15 @@ def test_theme_validation_fails_when_color_key_missing():
         validate_theme_data(payload, "default")
 
 
-def test_language_validation_passes_for_valid_data():
-    "测试用例：test_language_validation_passes_for_valid_data。"
+def test_language_validation_passes_for_valid_data() -> None:
+    """测试用例：test_language_validation_passes_for_valid_data。"""
     validate_language_data(_base_language(), "en_us")
 
 
-def test_language_validation_fails_when_required_group_missing():
-    "测试用例：test_language_validation_fails_when_required_group_missing。"
+def test_language_validation_fails_when_required_group_missing() -> None:
+    """测试用例：test_language_validation_fails_when_required_group_missing。"""
     payload = _base_language()
     payload.pop("UI")
 
     with pytest.raises(ValueError, match="缺少关键字段"):
         validate_language_data(payload, "en_us")
-

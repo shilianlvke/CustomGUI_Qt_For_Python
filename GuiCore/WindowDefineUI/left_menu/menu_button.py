@@ -1,3 +1,6 @@
+"""模块说明。"""
+
+from AppCore import ColorPalette, PathFactory, get_design_tokens
 from qt_core import (
     QColor,
     QEvent,
@@ -11,7 +14,6 @@ from qt_core import (
     Qt,
     Slot,
 )
-from AppCore import PathFactory, ColorPalette, get_design_tokens
 
 
 class CLeftMenuButton(QPushButton):
@@ -26,20 +28,20 @@ class CLeftMenuButton(QPushButton):
 
     def __init__(
         self,
-        app_parent,
-        text,
-        btn_id=None,
-        tooltip_text="",
-        margin=4,
-        icon_path="icon_add_user",
-        icon_active_menu="active_menu",
-        is_active=False,
-        is_active_tab=False,
-        is_toggle_active=False,
-        minimum_width=50,
-        maximum_width=240,
-        font_family=None,
-    ):
+        app_parent: object,
+        text: str,
+        btn_id: str | None = None,
+        tooltip_text: str = "",
+        margin: int = 4,
+        icon_path: str = "icon_add_user",
+        icon_active_menu: str = "active_menu",
+        is_active: bool = False,
+        is_active_tab: bool = False,
+        is_toggle_active: bool = False,
+        minimum_width: int = 50,
+        maximum_width: int = 240,
+        font_family: object = None,
+    ) -> None:
         """初始化左侧菜单按钮。
 
         参数:
@@ -60,7 +62,6 @@ class CLeftMenuButton(QPushButton):
         返回:
         - None
         """
-
         super().__init__()
         self.setText(text)
         self.setFont(font_family)
@@ -88,9 +89,8 @@ class CLeftMenuButton(QPushButton):
         self.tooltip.hide()
 
     # 绘制事件
-    def paintEvent(self, event):
+    def paintEvent(self, event: object) -> None:
         """绘制按钮背景、文本与图标。"""
-
         # PAINTER
         p = QPainter()
         p.begin(self)
@@ -99,7 +99,6 @@ class CLeftMenuButton(QPushButton):
         p.setFont(self.font())
 
         # RECTANGLES
-        # rect = QRect(4, 5, self.width(), self.height() - 10)
         rect_inside = QRect(4, 5, self.width() - 8, self.height() - 10)
         rect_icon = QRect(0, 0, 50, self.height())
         rect_blue = QRect(4, 5, 20, self.height() - 10)
@@ -149,38 +148,36 @@ class CLeftMenuButton(QPushButton):
             self.icon_paint(p, self._icon_path, rect_icon, self._set_icon_color)
 
         # NORMAL BG
+        elif self._is_toggle_active:
+            # BG INSIDE
+            p.setBrush(QColor(ColorPalette.custom_dark_three))
+            p.drawRoundedRect(rect_inside, 8, 8)
+
+            # DRAW TEXT
+            p.setPen(QColor(ColorPalette.custom_text_foreground))
+            p.drawText(rect_text, Qt.AlignVCenter, self.text())
+
+            self.icon_paint(p, self._icon_path, rect_icon, ColorPalette.custom_context_color)
         else:
-            if self._is_toggle_active:
-                # BG INSIDE
-                p.setBrush(QColor(ColorPalette.custom_dark_three))
-                p.drawRoundedRect(rect_inside, 8, 8)
+            if not self._icon_enter:
+                self._set_icon_color = ColorPalette.custom_icon_color  # Set icon color
+                self._set_bg_color = ColorPalette.custom_dark_one  # Set BG color
+            # BG INSIDE
+            p.setBrush(QColor(self._set_bg_color))
+            p.drawRoundedRect(rect_inside, 8, 8)
 
-                # DRAW TEXT
-                p.setPen(QColor(ColorPalette.custom_text_foreground))
-                p.drawText(rect_text, Qt.AlignVCenter, self.text())
+            # DRAW TEXT
+            p.setPen(QColor(ColorPalette.custom_text_foreground))
+            p.drawText(rect_text, Qt.AlignVCenter, self.text())
 
-                self.icon_paint(p, self._icon_path, rect_icon, ColorPalette.custom_context_color)
-            else:
-                if not self._icon_enter:
-                    self._set_icon_color = ColorPalette.custom_icon_color  # Set icon color
-                    self._set_bg_color = ColorPalette.custom_dark_one  # Set BG color
-                # BG INSIDE
-                p.setBrush(QColor(self._set_bg_color))
-                p.drawRoundedRect(rect_inside, 8, 8)
-
-                # DRAW TEXT
-                p.setPen(QColor(ColorPalette.custom_text_foreground))
-                p.drawText(rect_text, Qt.AlignVCenter, self.text())
-
-                # DRAW ICONS
-                self.icon_paint(p, self._icon_path, rect_icon, self._set_icon_color)
+            # DRAW ICONS
+            self.icon_paint(p, self._icon_path, rect_icon, self._set_icon_color)
 
         p.end()
 
     # 设置活跃的界面
-    def set_active(self, is_active):
+    def set_active(self, is_active: bool) -> None:
         """设置页面激活状态。"""
-
         self._is_active = is_active
         if not is_active:
             self._set_icon_color = ColorPalette.custom_icon_color
@@ -188,9 +185,8 @@ class CLeftMenuButton(QPushButton):
         self.repaint()
 
     # 设置活跃的导航栏
-    def set_active_tab(self, is_active):
+    def set_active_tab(self, is_active: bool) -> None:
         """设置标签激活状态。"""
-
         self._is_active_tab = is_active
         if not is_active:
             self._set_icon_color = ColorPalette.custom_icon_color
@@ -198,34 +194,29 @@ class CLeftMenuButton(QPushButton):
         self.repaint()
 
     # 返回是否是活跃界面
-    def is_active(self):
+    def is_active(self) -> bool:
         """返回页面激活状态。"""
-
         return self._is_active
 
     # 返回是否是活跃导航
-    def is_active_tab(self):
+    def is_active_tab(self) -> bool:
         """返回标签激活状态。"""
-
         return self._is_active_tab
 
     # 设置活动切换
-    def set_active_toggle(self, is_active):
+    def set_active_toggle(self, is_active: bool) -> None:
         """设置切换按钮激活状态。"""
-
         self._is_toggle_active = is_active
 
     # 设置图标
-    def set_icon(self, icon_path):
+    def set_icon(self, icon_path: str) -> None:
         """设置按钮图标并刷新。"""
-
         self._icon_path = icon_path
         self.repaint()
 
     # 用颜色绘制图标
-    def icon_paint(self, qp, image, rect, color):
+    def icon_paint(self, qp: object, image: str, rect: QRect, color: object) -> None:
         """按指定颜色绘制图标。"""
-
         icon = QPixmap(image)
         painter = QPainter(icon)
         painter.setCompositionMode(QPainter.CompositionMode_SourceIn)
@@ -234,9 +225,8 @@ class CLeftMenuButton(QPushButton):
         painter.end()
 
     # 绘制活动图标/右侧
-    def icon_active(self, qp, image, width):
+    def icon_active(self, qp: object, image: str, width: int) -> None:
         """绘制右侧激活标识图标。"""
-
         icon = QPixmap(image)
         painter = QPainter(icon)
         painter.setCompositionMode(QPainter.CompositionMode_SourceIn)
@@ -246,31 +236,25 @@ class CLeftMenuButton(QPushButton):
 
     # 更改样式
     # 具有自定义样式的函数
-    def change_style(self, event):
+    def change_style(self, event: QEvent) -> None:
         """根据事件更新按钮颜色状态。"""
-
-        if event == QEvent.Enter:
-            if not self._is_active:
-                self._set_icon_color = ColorPalette.custom_icon_hover
-                self._set_bg_color = ColorPalette.custom_dark_three
-        elif event == QEvent.Leave:
-            if not self._is_active:
-                self._set_icon_color = ColorPalette.custom_icon_color
-                self._set_bg_color = ColorPalette.custom_dark_one
-        elif event == QEvent.MouseButtonPress:
-            if not self._is_active:
-                self._set_icon_color = ColorPalette.custom_context_color
-                self._set_bg_color = ColorPalette.custom_dark_four
-        elif event == QEvent.MouseButtonRelease:
-            if not self._is_active:
-                self._set_icon_color = ColorPalette.custom_icon_hover
-                self._set_bg_color = ColorPalette.custom_dark_three
+        if not self._is_active and event == QEvent.Enter:
+            self._set_icon_color = ColorPalette.custom_icon_hover
+            self._set_bg_color = ColorPalette.custom_dark_three
+        elif not self._is_active and event == QEvent.Leave:
+            self._set_icon_color = ColorPalette.custom_icon_color
+            self._set_bg_color = ColorPalette.custom_dark_one
+        elif not self._is_active and event == QEvent.MouseButtonPress:
+            self._set_icon_color = ColorPalette.custom_context_color
+            self._set_bg_color = ColorPalette.custom_dark_four
+        elif not self._is_active and event == QEvent.MouseButtonRelease:
+            self._set_icon_color = ColorPalette.custom_icon_hover
+            self._set_bg_color = ColorPalette.custom_dark_three
 
     # 鼠标悬停
     # 当鼠标位于BTN上时触发的事件
-    def enterEvent(self, event):
+    def enterEvent(self, event: object) -> None:
         """处理鼠标进入并显示提示框。"""
-
         self._icon_enter = True
         self.change_style(QEvent.Enter)
         if self.width() in range(self._minimum_width - 5, self._minimum_width + 5) and self._tooltip_text:
@@ -279,18 +263,16 @@ class CLeftMenuButton(QPushButton):
 
     # 鼠标离开
     # 鼠标离开BTN时触发的事件
-    def leaveEvent(self, event):
+    def leaveEvent(self, event: object) -> None:
         """处理鼠标离开并隐藏提示框。"""
-
         self._icon_enter = False
         self.change_style(QEvent.Leave)
         self.tooltip.hide()
 
     # 鼠标按下
     # 按下左键时触发的事件
-    def mousePressEvent(self, event):
+    def mousePressEvent(self, event: object) -> None:
         """处理鼠标按下并发射点击信号。"""
-
         if event.button() == Qt.LeftButton:
             self.tooltip.hide()
             self.clicked.emit()
@@ -299,17 +281,15 @@ class CLeftMenuButton(QPushButton):
 
     # 鼠标释放
     # 松开鼠标按钮后触发的事件
-    def mouseReleaseEvent(self, event):
+    def mouseReleaseEvent(self, event: object) -> None:
         """处理鼠标释放并发射释放信号。"""
-
         if event.button() == Qt.LeftButton:
             self.change_style(QEvent.MouseButtonRelease)
             self.released.emit()
 
     # 移动工具提示
-    def move_tooltip(self):
+    def move_tooltip(self) -> None:
         """计算并移动提示框位置。"""
-
         # 获取主窗口父窗口
         gp = self.mapToGlobal(QPoint(0, 0))
 
@@ -334,9 +314,8 @@ class _ToolTip(QLabel):
 
     # TOOLTIP / LABEL StyleSheet
 
-    def __init__(self, parent, tooltip):
+    def __init__(self, parent: object, tooltip: str) -> None:
         """初始化提示框。"""
-
         QLabel.__init__(self)
         # LABEL SETUP
         self.setObjectName("label_tooltip")
@@ -354,19 +333,17 @@ class _ToolTip(QLabel):
         self.shadow.setColor(QColor(0, 0, 0, 80))
         self.setGraphicsEffect(self.shadow)
 
-    def show(self):
+    def show(self) -> None:
         """显示提示框前刷新样式。"""
-
         self.update_style()
         super().show()
 
-    def update_style(self):
+    def update_style(self) -> None:
         """根据设计令牌更新提示框样式。"""
-
         tokens = get_design_tokens()
         self.style = f"""
             QLabel {{
-                background-color: {tokens.colors.surface_sidebar};	
+                background-color: {tokens.colors.surface_sidebar};
                 color: {tokens.colors.text_primary};
                 padding-left: {tokens.spacing.padding_md}px;
                 padding-right: {tokens.spacing.padding_md}px;

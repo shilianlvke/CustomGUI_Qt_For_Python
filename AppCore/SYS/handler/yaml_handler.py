@@ -1,9 +1,12 @@
+"""模块说明。"""
+
+import json
+from pathlib import Path
+
 import yaml
 from easydict import EasyDict
-import os
-from typing import Any, Dict, Union, Optional
-import json
-from ..module.error_module import IOErrorBoundary
+
+from AppCore.SYS.module.error_module import IOErrorBoundary
 
 
 class YamlHandler:
@@ -14,7 +17,7 @@ class YamlHandler:
     - 提供 EasyDict 与 dict 之间的转换能力。
     """
 
-    def __init__(self, file_path: str, auto_load: bool = True):
+    def __init__(self, file_path: str, *, auto_load: bool = True) -> None:
         """初始化 YAML 处理器。
 
         参数:
@@ -30,7 +33,7 @@ class YamlHandler:
         if auto_load:
             self.load()
 
-    def load(self, file_path: Optional[str] = None) -> EasyDict:
+    def load(self, file_path: str | None = None) -> EasyDict:
         """加载 YAML 文件。
 
         参数:
@@ -42,7 +45,8 @@ class YamlHandler:
         if file_path:
             self.file_path = file_path
 
-        if not os.path.exists(self.file_path):
+        yaml_path = Path(self.file_path)
+        if not yaml_path.exists():
             raise IOErrorBoundary(
                 code="YAML_FILE_NOT_FOUND",
                 message="配置文件不存在",
@@ -50,7 +54,7 @@ class YamlHandler:
             )
 
         try:
-            with open(self.file_path, "r", encoding="utf-8") as f:
+            with yaml_path.open(encoding="utf-8") as f:
                 raw_data = yaml.safe_load(f) or {}
         except yaml.YAMLError as exc:
             raise IOErrorBoundary(
@@ -69,7 +73,12 @@ class YamlHandler:
         self.data = self._dict_to_easydict(raw_data)
         return self.data
 
-    def save(self, data: Optional[Union[Dict, EasyDict]] = None, file_path: Optional[str] = None, **kwargs):
+    def save(
+        self,
+        data: dict[str, object] | EasyDict | None = None,
+        file_path: str | None = None,
+        **kwargs: object,
+    ) -> None:
         """保存数据到 YAML 文件。
 
         参数:
@@ -80,13 +89,10 @@ class YamlHandler:
         返回:
         - None
         """
-        if file_path:
-            save_path = file_path
-        else:
-            save_path = self.file_path
+        save_path = file_path or self.file_path
 
         # 确保目录存在
-        os.makedirs(os.path.dirname(os.path.abspath(save_path)), exist_ok=True)
+        Path(save_path).resolve().parent.mkdir(parents=True, exist_ok=True)
 
         if data is None:
             data = self.data
@@ -96,7 +102,7 @@ class YamlHandler:
             data = self._easydict_to_dict(data)
 
         try:
-            with open(save_path, "w", encoding="utf-8") as f:
+            with Path(save_path).open("w", encoding="utf-8") as f:
                 yaml.dump(data, f, default_flow_style=False, allow_unicode=True, **kwargs)
         except OSError as exc:
             raise IOErrorBoundary(
@@ -105,7 +111,7 @@ class YamlHandler:
                 details=f"{save_path}: {exc}",
             ) from exc
 
-    def update(self, new_data: Union[Dict, EasyDict], merge: bool = True):
+    def update(self, new_data: dict[str, object] | EasyDict, *, merge: bool = True) -> None:
         """更新内存中的配置数据。
 
         参数:
@@ -124,7 +130,7 @@ class YamlHandler:
         else:
             self.data = self._dict_to_easydict(new_data)
 
-    def get(self, key: str, default: Any = None) -> Any:
+    def get(self, key: str, default: object = None) -> object:
         """获取配置值，支持点路径。
 
         参数:
@@ -147,7 +153,7 @@ class YamlHandler:
 
         return value
 
-    def set(self, key: str, value: Any):
+    def set(self, key: str, value: object) -> None:
         """设置配置值，支持点路径。
 
         参数:
@@ -175,7 +181,7 @@ class YamlHandler:
 
         setattr(current, last_key, value)
 
-    def to_dict(self) -> Dict:
+    def to_dict(self) -> dict[str, object]:
         """将当前数据转换为普通字典。
 
         返回:
@@ -202,7 +208,7 @@ class YamlHandler:
         """
         return self.load()
 
-    def _dict_to_easydict(self, data: Dict) -> EasyDict:
+    def _dict_to_easydict(self, data: dict[str, object] | object) -> EasyDict | object:
         """递归将字典转换为 EasyDict。
 
         参数:
@@ -224,7 +230,10 @@ class YamlHandler:
                 result[key] = value
         return result
 
-    def _easydict_to_dict(self, data: Union[EasyDict, Any]) -> Dict:
+    def _easydict_to_dict(
+        self,
+        data: EasyDict | dict[str, object] | list[object] | object,
+    ) -> dict[str, object] | list[object] | object:
         """递归将 EasyDict 转换为普通字典。
 
         参数:
@@ -233,16 +242,13 @@ class YamlHandler:
         返回:
         - Dict: 转换结果。
         """
-        if isinstance(data, EasyDict):
+        if isinstance(data, (EasyDict, dict)):
             return {key: self._easydict_to_dict(value) for key, value in data.items()}
-        elif isinstance(data, dict):
-            return {key: self._easydict_to_dict(value) for key, value in data.items()}
-        elif isinstance(data, list):
+        if isinstance(data, list):
             return [self._easydict_to_dict(item) for item in data]
-        else:
-            return data
+        return data
 
-    def _deep_update(self, original: EasyDict, new_data: Dict):
+    def _deep_update(self, original: EasyDict, new_data: dict[str, object]) -> None:
         """深度更新字典对象。
 
         参数:
@@ -257,31 +263,27 @@ class YamlHandler:
                 self._deep_update(original[key], value)
             else:
                 # 如果值是字典，转换为EasyDict
+                updated_value = value
                 if isinstance(value, dict):
-                    value = self._dict_to_easydict(value)
-                original[key] = value
+                    updated_value = self._dict_to_easydict(value)
+                original[key] = updated_value
 
-    def __getitem__(self, key):
+    def __getitem__(self, key: str) -> object:
         """支持字典式读取。"""
-
         return getattr(self.data, key)
 
-    def __setitem__(self, key, value):
+    def __setitem__(self, key: str, value: object) -> None:
         """支持字典式写入。"""
-
         setattr(self.data, key, value)
 
-    def __getattr__(self, name):
+    def __getattr__(self, name: str) -> object:
         """将属性访问代理到内部 data 对象。"""
-
         return getattr(self.data, name)
 
-    def __str__(self):
+    def __str__(self) -> str:
         """返回字符串表示。"""
-
         return str(self.data)
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         """返回调试表示字符串。"""
-
         return f"YamlHandler(file_path='{self.file_path}')"

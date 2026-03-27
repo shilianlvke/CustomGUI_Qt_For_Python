@@ -1,5 +1,7 @@
+"""模块说明。"""
+
+from AppCore import ColorPalette, PathFactory
 from qt_core import QIcon, QPixmap, QPushButton, QSize, Qt, Signal
-from AppCore import PathFactory, ColorPalette
 
 style = """
 /* 主控件样式 */
@@ -31,7 +33,7 @@ class CStatusButton(QPushButton):
 
     def __init__(
         self,
-        size: QSize = QSize(64, 32),
+        size: QSize | None = None,
         text_negative: str | None = None,
         text_normal: str | None = None,
         text_positive: str | None = None,
@@ -41,7 +43,7 @@ class CStatusButton(QPushButton):
         radius: int = 8,
         border_size: int = 2,
         is_normal: bool = False,  # 三态开关
-    ):
+    ) -> None:
         """初始化状态按钮。
 
         参数:
@@ -59,8 +61,9 @@ class CStatusButton(QPushButton):
         返回:
         - None
         """
-
         super().__init__()
+        if size is None:
+            size = QSize(64, 32)
         self.status_list = [-1, 0, 1] if is_normal else [0, 1]
         self.status = self.status_list[0]
         self.radius = radius
@@ -106,7 +109,16 @@ class CStatusButton(QPushButton):
         # 禁用虚线焦点框
         self.setFocusPolicy(Qt.StrongFocus)
 
-    def set_stylesheet(self, radius, border_size, bg_color, text_color, hover_color, press_active, border_hover_color):
+    def set_stylesheet(
+        self,
+        radius: int,
+        border_size: int,
+        bg_color: str,
+        text_color: str,
+        hover_color: str,
+        press_active: str,
+        border_hover_color: str,
+    ) -> None:
         """设置按钮样式表。
 
         参数:
@@ -121,7 +133,6 @@ class CStatusButton(QPushButton):
         返回:
         - None
         """
-
         style_format = style.format(
             _radius=radius,
             _border_size=border_size,
@@ -133,9 +144,8 @@ class CStatusButton(QPushButton):
         )
         self.setStyleSheet(style_format)
 
-    def text_change(self):
+    def text_change(self) -> None:
         """根据当前状态更新按钮文本。"""
-
         if self.status == 1:
             if hasattr(self, "text_positive"):
                 self.setText(self.text_positive)
@@ -152,9 +162,8 @@ class CStatusButton(QPushButton):
             else:
                 self.setText("")
 
-    def icon_change(self):
+    def icon_change(self) -> None:
         """根据当前状态更新按钮图标。"""
-
         if self.status == 1:
             if hasattr(self, "icon_positive"):
                 self.setIcon(self.icon_positive)
@@ -171,9 +180,8 @@ class CStatusButton(QPushButton):
             if hasattr(self, "icon_size_normal"):
                 self.setIconSize(self.icon_size_normal)
 
-    def style_change(self):
+    def style_change(self) -> None:
         """根据当前状态更新按钮样式。"""
-
         if self.status == 1:
             border_haver_color = self.color.custom_context_color
         elif self.status == 0:
@@ -190,7 +198,7 @@ class CStatusButton(QPushButton):
             border_haver_color,
         )
 
-    def mousePressEvent(self, event):
+    def mousePressEvent(self, event: object) -> None:
         """处理鼠标点击并推进状态机。
 
         参数:
@@ -199,7 +207,6 @@ class CStatusButton(QPushButton):
         返回:
         - None
         """
-
         super().mousePressEvent(event)
         self.status = self.status_list[(self.status_list.index(self.status) + 1) % len(self.status_list)]
         self.statusChanged.emit(self.status)

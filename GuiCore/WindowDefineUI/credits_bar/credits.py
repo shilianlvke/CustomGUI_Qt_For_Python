@@ -1,17 +1,18 @@
-from qt_core import QFrame, QHBoxLayout, QLabel, QSizePolicy, QSpacerItem, Qt, QWidget
+"""模块说明。"""
+
 from AppCore import Language
+from qt_core import QFrame, QHBoxLayout, QLabel, QSizePolicy, QSpacerItem, Qt, QWidget
 
 
 class CCredits(QWidget):
     """底部版权信息栏组件。"""
 
-    def __init__(self):
+    def __init__(self) -> None:
         """初始化版权信息栏。
 
         返回:
         - None
         """
-
         super().__init__()
         # PROPERTIES
         self._copyright = Language.custom_ui.sys_copyright
@@ -20,13 +21,12 @@ class CCredits(QWidget):
         # SETUP UI
         self.setup_ui()
 
-    def setup_ui(self):
+    def setup_ui(self) -> None:
         """构建版权信息栏布局。
 
         返回:
         - None
         """
-
         # ADD LAYOUT
         self.widget_layout = QHBoxLayout(self)
         self.widget_layout.setContentsMargins(0, 0, 0, 0)

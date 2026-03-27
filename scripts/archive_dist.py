@@ -1,6 +1,10 @@
-﻿import shutil
+"""模块说明。"""
+
+import shutil
 import sys
 from pathlib import Path
+
+EXPECTED_ARGC = 2
 
 
 def main() -> int:
@@ -12,8 +16,8 @@ def main() -> int:
     返回:
     - 按函数实现返回。
     """
-    if len(sys.argv) != 2:
-        print("Usage: python scripts/archive_dist.py <target-name>")
+    if len(sys.argv) != EXPECTED_ARGC:
+        sys.stdout.write("Usage: python scripts/archive_dist.py <target-name>\n")
         return 2
 
     target_name = sys.argv[1]
@@ -23,15 +27,14 @@ def main() -> int:
     releases_dir.mkdir(parents=True, exist_ok=True)
 
     if not dist_app.exists():
-        print(f"Build output not found: {dist_app}")
+        sys.stdout.write(f"Build output not found: {dist_app}\n")
         return 1
 
     archive_base = releases_dir / f"CustomGUI-{target_name}"
     archive_path = shutil.make_archive(str(archive_base), "zip", root_dir=dist_app)
-    print(f"Created archive: {archive_path}")
+    sys.stdout.write(f"Created archive: {archive_path}\n")
     return 0
 
 
 if __name__ == "__main__":
     raise SystemExit(main())
-

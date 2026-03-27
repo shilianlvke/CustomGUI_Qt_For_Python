@@ -1,3 +1,6 @@
+"""左侧栏按钮组件模块。"""
+
+from AppCore import ColorPalette
 from qt_core import (
     QBrush,
     QColor,
@@ -10,7 +13,6 @@ from qt_core import (
     QRect,
     Qt,
 )
-from AppCore import ColorPalette
 
 
 class PyLeftButton(QPushButton):
@@ -23,17 +25,16 @@ class PyLeftButton(QPushButton):
 
     def __init__(
         self,
-        # parent,
-        app_parent=None,
-        tooltip_text="",
-        btn_id=None,
-        width=30,
-        height=30,
-        radius=8,
-        icon_path="no_icon.svg",
-        is_active=False,
-        font_family="",
-    ):
+        app_parent: object = None,
+        tooltip_text: str = "",
+        btn_id: str | None = None,
+        width: int = 30,
+        height: int = 30,
+        radius: int = 8,
+        icon_path: str = "no_icon.svg",
+        is_active: bool = False,
+        font_family: str = "",
+    ) -> None:
         """初始化左侧栏按钮。
 
         参数:
@@ -50,7 +51,6 @@ class PyLeftButton(QPushButton):
         返回:
         - None
         """
-
         super().__init__()
 
         # SET DEFAULT PARAMETERS
@@ -74,8 +74,6 @@ class PyLeftButton(QPushButton):
         self._set_icon_path = icon_path
         self._set_icon_color = ColorPalette.custom_icon_color
         self._set_border_radius = radius
-        # Parent
-        # self._parent = parent
         self._app_parent = app_parent
 
         # TOOLTIP
@@ -92,23 +90,21 @@ class PyLeftButton(QPushButton):
 
     # SET ACTIVE MENU
     # ///////////////////////////////////////////////////////////////
-    def set_active(self, is_active):
+    def set_active(self, is_active: bool) -> None:
         """设置按钮激活状态。"""
-
         self._is_active = is_active
         self.repaint()
 
     # RETURN IF IS ACTIVE MENU
     # ///////////////////////////////////////////////////////////////
-    def is_active(self):
+    def is_active(self) -> bool:
         """返回按钮是否处于激活状态。"""
-
         return self._is_active
 
     # PAINT EVENT
     # painting the button and the icon
     # ///////////////////////////////////////////////////////////////
-    def paintEvent(self, event):
+    def paintEvent(self, event: object) -> None:
         """绘制按钮背景与图标。
 
         参数:
@@ -117,7 +113,6 @@ class PyLeftButton(QPushButton):
         返回:
         - None
         """
-
         # PAINTER
         paint = QPainter()
         paint.begin(self)
@@ -145,7 +140,7 @@ class PyLeftButton(QPushButton):
     # CHANGE STYLES
     # Functions with custom styles
     # ///////////////////////////////////////////////////////////////
-    def change_style(self, event):
+    def change_style(self, event: QEvent) -> None:
         """根据交互事件切换样式。
 
         参数:
@@ -154,7 +149,6 @@ class PyLeftButton(QPushButton):
         返回:
         - None
         """
-
         if event == QEvent.Enter:
             self._set_bg_color = self._bg_color_hover
             self._set_icon_color = self._icon_color_hover
@@ -175,50 +169,42 @@ class PyLeftButton(QPushButton):
     # MOUSE OVER
     # Event triggered when the mouse is over the BTN
     # ///////////////////////////////////////////////////////////////
-    def enterEvent(self, event):
+    def enterEvent(self, event: object) -> None:
         """处理鼠标进入事件。"""
-
         self.change_style(QEvent.Enter)
-        # self.move_tooltip()
-        # self._tooltip.show()
 
     # MOUSE LEAVE
     # Event fired when the mouse leaves the BTN
     # ///////////////////////////////////////////////////////////////
-    def leaveEvent(self, event):
+    def leaveEvent(self, event: object) -> None:
         """处理鼠标离开事件。"""
-
         self.change_style(QEvent.Leave)
-        # self.move_tooltip()
-        # self._tooltip.hide()
 
     # MOUSE PRESS
     # Event triggered when the left button is pressed
     # ///////////////////////////////////////////////////////////////
-    def mousePressEvent(self, event):
+    def mousePressEvent(self, event: object) -> None:
         """处理鼠标按下事件并发射点击信号。"""
-
         if event.button() == Qt.LeftButton:
             self.change_style(QEvent.MouseButtonPress)
             # SET FOCUS
             self.setFocus()
             # EMIT SIGNAL
-            return self.clicked.emit()
+            self.clicked.emit()
 
     # MOUSE RELEASED
     # Event triggered after the mouse button is released
     # ///////////////////////////////////////////////////////////////
-    def mouseReleaseEvent(self, event):
+    def mouseReleaseEvent(self, event: object) -> None:
         """处理鼠标释放事件并发射释放信号。"""
-
         if event.button() == Qt.LeftButton:
             self.change_style(QEvent.MouseButtonRelease)
             # EMIT SIGNAL
-            return self.released.emit()
+            self.released.emit()
 
     # DRAW ICON WITH COLORS
     # ///////////////////////////////////////////////////////////////
-    def icon_paint(self, qp, image, rect):
+    def icon_paint(self, qp: object, image: str, rect: QRect) -> None:
         """按当前状态绘制图标颜色。
 
         参数:
@@ -229,7 +215,6 @@ class PyLeftButton(QPushButton):
         返回:
         - None
         """
-
         icon = QPixmap(image)
         painter = QPainter(icon)
         painter.setCompositionMode(QPainter.CompositionMode_SourceIn)
@@ -242,37 +227,19 @@ class PyLeftButton(QPushButton):
 
     # SET ICON
     # ///////////////////////////////////////////////////////////////
-    def set_icon(self, icon_path):
+    def set_icon(self, icon_path: str) -> None:
         """设置按钮图标路径并刷新。"""
-
         self._set_icon_path = icon_path
         self.repaint()
 
     # MOVE TOOLTIP
     # ///////////////////////////////////////////////////////////////
-    def move_tooltip(self):
+    def move_tooltip(self) -> None:
         """计算并移动提示框位置。
 
         返回:
         - None
         """
-
-        # # GET MAIN WINDOW PARENT
-        # gp = self.mapToGlobal(QPoint(0, 0))
-        #
-        # # SET WIDGET TO GET POSTION
-        # # Return absolute position of widget inside app
-        # pos = self._parent.mapFromGlobal(gp)
-        #
-        # # FORMAT POSITION
-        # # Adjust tooltip position with offset
-        # pos_x = (pos.x() - self._tooltip.width()) + self.width() + 5
-        # pos_y = pos.y() + self._top_margin
-        #
-        # # SET POSITION TO WIDGET
-        # # Move tooltip position
-        # self._tooltip.move(pos_x, pos_y)
-        pass
 
 
 # TOOLTIP
@@ -281,9 +248,9 @@ class _ToolTip(QLabel):
     """左侧按钮提示框组件。"""
 
     # TOOLTIP / LABEL StyleSheet
-    style_tooltip = """ 
-    QLabel {{		
-        background-color: {_dark_one};	
+    style_tooltip = """
+    QLabel {{
+        background-color: {_dark_one};
         color: {_text_foreground};
         padding-left: 10px;
         padding-right: 10px;
@@ -294,7 +261,15 @@ class _ToolTip(QLabel):
     }}
     """
 
-    def __init__(self, parent, tooltip, dark_one, context_color, text_foreground, family):
+    def __init__(
+        self,
+        parent: object,
+        tooltip: str,
+        dark_one: str,
+        context_color: str,
+        text_foreground: str,
+        family: str,
+    ) -> None:
         """初始化提示框。
 
         参数:
@@ -305,7 +280,6 @@ class _ToolTip(QLabel):
         - text_foreground: 文本色。
         - family: 字体名。
         """
-
         QLabel.__init__(self)
 
         # LABEL SETUP

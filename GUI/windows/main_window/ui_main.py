@@ -1,13 +1,17 @@
-from GUI import Ui_RightColumn
-from GUI import Ui_MainPages
-from GuiCore import CLeftMenu, CLeftColumn, CWindow, CTitleBar, CCredits
+"""主窗口 UI 组装模块。"""
+
 from PySide6.QtWidgets import QFrame, QHBoxLayout, QVBoxLayout, QWidget
-from AppCore import PathFactory, ColorPalette, Language, AppSettings
+
+from AppCore import AppSettings, PathFactory
+from GUI import Ui_MainPages, Ui_RightColumn
+from GuiCore import CCredits, CLeftColumn, CLeftMenu, CTitleBar, CWindow
 
 
-class UiMainWindow(object):
+class UiMainWindow:
+    """主窗口 UI 装配类。"""
 
-    def setup_ui(self, parent):
+    def setup_ui(self, parent: QWidget) -> None:
+        """初始化并装配主窗口界面。"""
         self.parent = parent
         # 界面主体
         self.set_up_main_widget()
@@ -20,7 +24,8 @@ class UiMainWindow(object):
         # window 配置
         self.config_enable()
 
-    def set_up_main_widget(self):
+    def set_up_main_widget(self) -> None:
+        """构建主窗口根容器。"""
         # 设置主体
         self.central_widget = QWidget()
         self.central_widget_layout = QVBoxLayout(self.central_widget)
@@ -29,7 +34,8 @@ class UiMainWindow(object):
         # 将PyWindow添加到中心小部件
         self.central_widget_layout.addWidget(self.window)
 
-    def set_up_left_widget(self):
+    def set_up_left_widget(self) -> None:
+        """构建左侧菜单与抽屉区域。"""
         # 左侧菜单
         margin = AppSettings.left_menu_content_margins
         size = AppSettings.lef_menu_size.minimum
@@ -57,7 +63,8 @@ class UiMainWindow(object):
         )
         self.left_column_layout.addWidget(self.left_column)
 
-    def set_up_right_widget(self):
+    def set_up_right_widget(self) -> None:
+        """构建右侧标题、内容与状态栏区域。"""
         self.right_app_frame = QFrame()
         self.right_app_layout = QVBoxLayout(self.right_app_frame)
         margin = AppSettings.right_menu_content_margins
@@ -90,13 +97,6 @@ class UiMainWindow(object):
         self.content_area_right_layout.setSpacing(0)
         # 右背景
         self.content_area_right_bg_frame = QFrame()
-        # self.content_area_right_bg_frame.setObjectName("content_area_right_bg_frame")
-        # self.content_area_right_bg_frame.setStyleSheet(f"""
-        # #content_area_right_bg_frame {{
-        #     border-radius: 8px;
-        #     background-color: {ColorPalette.custom_bg_two};
-        # }}
-        # """)
         # ADD BG
         self.content_area_right_layout.addWidget(self.content_area_right_bg_frame)
         # ADD RIGHT PAGES TO RIGHT COLUMN
@@ -121,12 +121,14 @@ class UiMainWindow(object):
         self.right_app_layout.addWidget(self.content_area_frame)
         self.right_app_layout.addWidget(self.credits_frame)
 
-    def add_widget_to_window(self):
+    def add_widget_to_window(self) -> None:
+        """将左右区域挂载到主窗口。"""
         self.window.layout.addWidget(self.left_menu_frame)
         self.window.layout.addWidget(self.left_column_frame)
         self.window.layout.addWidget(self.right_app_frame)
 
-    def config_enable(self):
+    def config_enable(self) -> None:
+        """应用窗口最终配置。"""
         # 添加中心小部件并设置内容边距
         self.parent.setCentralWidget(self.central_widget)
         if AppSettings.custom_title_bar:

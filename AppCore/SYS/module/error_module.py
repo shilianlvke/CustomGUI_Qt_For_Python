@@ -1,3 +1,5 @@
+"""模块说明。"""
+
 from dataclasses import dataclass
 
 
@@ -15,17 +17,16 @@ class AppError(Exception):
     layer: str
     details: str = ""
 
-    def __str__(self):
+    def __str__(self) -> str:
         """返回结构化错误字符串表示。"""
-
         detail = f" ({self.details})" if self.details else ""
         return f"[{self.layer}:{self.code}] {self.message}{detail}"
 
 
-class IOErrorBoundary(AppError):
+class IoError(AppError):
     """I/O 层错误边界。"""
 
-    def __init__(self, code: str, message: str, details: str = ""):
+    def __init__(self, code: str, message: str, details: str = "") -> None:
         """初始化 I/O 错误对象。
 
         参数:
@@ -33,14 +34,13 @@ class IOErrorBoundary(AppError):
         - message: 面向开发者的错误消息。
         - details: 可选附加信息。
         """
-
         super().__init__(code=code, message=message, layer="io", details=details)
 
 
-class DomainErrorBoundary(AppError):
+class DomainError(AppError):
     """领域层错误边界。"""
 
-    def __init__(self, code: str, message: str, details: str = ""):
+    def __init__(self, code: str, message: str, details: str = "") -> None:
         """初始化领域错误对象。
 
         参数:
@@ -48,14 +48,13 @@ class DomainErrorBoundary(AppError):
         - message: 面向开发者的错误消息。
         - details: 可选附加信息。
         """
-
         super().__init__(code=code, message=message, layer="domain", details=details)
 
 
-class UIErrorBoundary(AppError):
+class UIError(AppError):
     """界面层错误边界。"""
 
-    def __init__(self, code: str, message: str, details: str = ""):
+    def __init__(self, code: str, message: str, details: str = "") -> None:
         """初始化界面错误对象。
 
         参数:
@@ -63,7 +62,6 @@ class UIErrorBoundary(AppError):
         - message: 面向开发者的错误消息。
         - details: 可选附加信息。
         """
-
         super().__init__(code=code, message=message, layer="ui", details=details)
 
 
@@ -76,7 +74,12 @@ def to_user_message(error: Exception) -> str:
     返回:
     - str: 用户可读的错误提示文本。
     """
-
     if isinstance(error, AppError):
         return f"{error.message} ({error.code})"
     return f"未知错误: {error}"
+
+
+# Backward compatibility aliases.
+IOErrorBoundary = IoError
+DomainErrorBoundary = DomainError
+UIErrorBoundary = UIError

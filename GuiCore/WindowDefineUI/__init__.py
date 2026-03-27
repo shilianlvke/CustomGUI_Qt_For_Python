@@ -1,8 +1,11 @@
-from .left_menu import CLeftMenu as CLeftMenu
+"""Package initialization module."""
+
+from .credits_bar import CCredits as CCredits
+from .grips import CGrips as CGrips
 from .left_column import CLeftColumn as CLeftColumn
+from .left_menu import CLeftMenu as CLeftMenu
 from .title_bar import CTitleBar as CTitleBar
 from .window import CWindow as CWindow
-from .grips import CGrips as CGrips
-from .credits_bar import CCredits as CCredits
 
-__all__ = ["CLeftMenu", "CLeftColumn", "CTitleBar", "CWindow", "CGrips", "CCredits"]
+__all__ = ["CCredits", "CGrips", "CLeftColumn", "CLeftMenu", "CTitleBar", "CWindow"]
+

@@ -1,6 +1,8 @@
-﻿import re
-from pathlib import Path
+"""模块说明。"""
 
+import re
+from collections.abc import Iterator
+from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 RUNTIME_DIRS = ["AppCore", "GUI", "GuiCore"]
@@ -20,7 +22,7 @@ ALLOWED_FILES = {
 }
 
 
-def _iter_runtime_files():
+def _iter_runtime_files() -> Iterator[Path]:
     """函数：_iter_runtime_files。
 
     参数:
@@ -39,8 +41,8 @@ def _iter_runtime_files():
             yield path
 
 
-def test_runtime_code_does_not_add_new_legacy_imports():
-    "测试用例：test_runtime_code_does_not_add_new_legacy_imports。"
+def test_runtime_code_does_not_add_new_legacy_imports() -> None:
+    """测试用例：test_runtime_code_does_not_add_new_legacy_imports。"""
     violations = []
 
     for path in _iter_runtime_files():
@@ -54,4 +56,3 @@ def test_runtime_code_does_not_add_new_legacy_imports():
                 violations.append(f"{rel}:{index}: {line.strip()}")
 
     assert not violations, "New legacy imports are not allowed:\n" + "\n".join(violations)
-

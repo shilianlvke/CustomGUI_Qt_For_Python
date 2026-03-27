@@ -1,14 +1,15 @@
-from qt_core import QHBoxLayout, QIcon, QLabel, QSize, QVBoxLayout, Qt
+"""模块说明。"""
 
-from AppCore import PathFactory, Language
-from GuiCore import CDialog, CCard, CPushButton, CLineEdit
+from AppCore import Language, PathFactory
+from GuiCore import CCard, CDialog, CLineEdit, CPushButton
+from qt_core import QHBoxLayout, QIcon, QLabel, QSize, Qt, QVBoxLayout
 
 
 class TeamSearchDialog:
     """团队检索对话框。"""
 
     @staticmethod
-    def setup_ui(title) -> None:
+    def setup_ui(title: str) -> None:
         """构建并展示团队检索对话框。
 
         参数:
@@ -17,7 +18,6 @@ class TeamSearchDialog:
         返回:
         - None
         """
-
         create_team = CDialog(title)
 
         team_name = CCard()

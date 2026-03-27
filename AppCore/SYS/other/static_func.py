@@ -1,8 +1,12 @@
-import os
+"""模块说明。"""
+
+from pathlib import Path
+
+from PySide6.QtCore import QRectF, Qt
+from PySide6.QtGui import QPainter, QPainterPath, QPixmap
+
 from AppCore.SYS import Logger
 from AppCore.SYS.other.resource_locator import ResourceLocator
-from PySide6.QtCore import QRectF, Qt
-from PySide6.QtGui import QPixmap, QPainter, QPainterPath
 
 
 class PathFinder:
@@ -19,7 +23,7 @@ class PathFinder:
     others = r"resource/CustomUI/others/"
 
     @classmethod
-    def __get_path(cls, folder, icon_name):
+    def __get_path(cls, folder: str, icon_name: str) -> str:
         """解析目标文件路径并在缺失时返回兜底图标路径。
 
         参数:
@@ -29,22 +33,19 @@ class PathFinder:
         返回:
         - str: 可用文件路径。
         """
-
         path = ResourceLocator.resolve(folder)
-        result = os.path.normpath(os.path.join(str(path), icon_name))
-        if os.path.exists(result):
+        result = str(path / icon_name)
+        if Path(result).exists():
             return result
-        else:
-            Logger.error(f"路径文件不存在{result}")
-            result = str(
-                ResourceLocator.resolve(
-                    os.path.join(cls.images, "icon_pic_not_found.svg")
-                )
-            )
-            return result
+        Logger.error(f"路径文件不存在{result}")
+        return str(
+            ResourceLocator.resolve(
+                str(Path(cls.images) / "icon_pic_not_found.svg"),
+            ),
+        )
 
     @classmethod
-    def set_svg_icon(cls, name):
+    def set_svg_icon(cls, name: str) -> str:
         """获取 SVG 图标路径。
 
         参数:
@@ -53,11 +54,10 @@ class PathFinder:
         返回:
         - str: SVG 图标绝对路径。
         """
-
-        return cls.__get_path(os.path.join(cls.images, r"svg_icons/"), name + ".svg")
+        return cls.__get_path(str(Path(cls.images) / "svg_icons"), name + ".svg")
 
     @classmethod
-    def set_svg_image(cls, name):
+    def set_svg_image(cls, name: str) -> str:
         """获取 SVG 图片路径。
 
         参数:
@@ -66,11 +66,10 @@ class PathFinder:
         返回:
         - str: SVG 图片绝对路径。
         """
-
-        return cls.__get_path(os.path.join(cls.images, r"svg_images/"), name + ".svg")
+        return cls.__get_path(str(Path(cls.images) / "svg_images"), name + ".svg")
 
     @classmethod
-    def set_png_image(cls, name):
+    def set_png_image(cls, name: str) -> str:
         """获取 PNG 图片路径。
 
         参数:
@@ -79,11 +78,10 @@ class PathFinder:
         返回:
         - str: PNG 图片绝对路径。
         """
-
-        return cls.__get_path(os.path.join(cls.images, r"png_images/"), name + ".png")
+        return cls.__get_path(str(Path(cls.images) / "png_images"), name + ".png")
 
     @classmethod
-    def set_ico(cls, name):
+    def set_ico(cls, name: str) -> str:
         """获取 ICO 图标路径。
 
         参数:
@@ -92,11 +90,10 @@ class PathFinder:
         返回:
         - str: ICO 图标绝对路径。
         """
-
-        return cls.__get_path(os.path.join(cls.images, r"ico/"), name + ".ico")
+        return cls.__get_path(str(Path(cls.images) / "ico"), name + ".ico")
 
     @classmethod
-    def set_jpg_image(cls, name):
+    def set_jpg_image(cls, name: str) -> str:
         """获取 JPG 图片路径。
 
         参数:
@@ -105,11 +102,10 @@ class PathFinder:
         返回:
         - str: JPG 图片绝对路径。
         """
-
-        return cls.__get_path(os.path.join(cls.images, r"jpg_images"), name + ".jpg")
+        return cls.__get_path(str(Path(cls.images) / "jpg_images"), name + ".jpg")
 
     @classmethod
-    def set_themes(cls, name):
+    def set_themes(cls, name: str) -> str:
         """获取主题配置文件路径。
 
         参数:
@@ -118,11 +114,10 @@ class PathFinder:
         返回:
         - str: 主题配置绝对路径。
         """
-
         return cls.__get_path(cls.themes, name + ".yml")
 
     @classmethod
-    def set_languages(cls, name):
+    def set_languages(cls, name: str) -> str:
         """获取语言配置文件路径。
 
         参数:
@@ -131,34 +126,32 @@ class PathFinder:
         返回:
         - str: 语言配置绝对路径。
         """
-
         return cls.__get_path(cls.languages, name + ".yml")
 
     @classmethod
-    def set_settings(cls):
+    def set_settings(cls) -> str:
         """获取主设置文件路径。
 
         返回:
         - str: settings.yml 绝对路径。
         """
-
         return cls.__get_path(cls.settings, "settings" + ".yml")
 
     @classmethod
-    def set_update_log(cls):
+    def set_update_log(cls) -> str:
         """获取更新日志配置文件路径。
 
         返回:
         - str: UpdateLog.yml 绝对路径。
         """
-
         return cls.__get_path(cls.others, "UpdateLog" + ".yml")
 
 
 class PicFixFactory:
     """图片处理工厂。"""
 
-    def create_rounded_pixmap(pixmap: QPixmap, radius: int | float) -> QPixmap:
+    @staticmethod
+    def create_rounded_pixmap(pixmap: QPixmap, radius: float) -> QPixmap:
         """将图片裁剪为圆角图。
 
         参数:
@@ -168,7 +161,6 @@ class PicFixFactory:
         返回:
         - QPixmap: 处理后的圆角图片。
         """
-
         # 不处理空数据或者错误数据
         if pixmap.isNull():
             return pixmap
@@ -184,7 +176,7 @@ class PicFixFactory:
                 image_width if image_height == 0 else image_height,
                 Qt.IgnoreAspectRatio,
                 Qt.SmoothTransformation,
-            )
+            ),
         )
         dest_image = QPixmap(image_width, image_height)
         dest_image.fill(Qt.transparent)

@@ -1,17 +1,19 @@
+"""模块说明。"""
+
+from AppCore import AppSettings, ColorPalette, Language, PathFactory
+from GuiCore.CustomUI.div import CHDiv
 from qt_core import (
     QEasingCurve,
     QFrame,
     QPropertyAnimation,
     QPushButton,
-    QVBoxLayout,
     Qt,
-    Signal,
+    QVBoxLayout,
     QWidget,
+    Signal,
 )
-from .menu_button import CLeftMenuButton
-from GuiCore.CustomUI.div import CHDiv
 
-from AppCore import PathFactory, ColorPalette, AppSettings, Language
+from .menu_button import CLeftMenuButton
 
 
 class CLeftMenu(QWidget):
@@ -27,13 +29,13 @@ class CLeftMenu(QWidget):
     released = Signal(object)
 
     def __init__(
-            self,
-            parent=None,
-            app_parent=None,
-            radius=8,
-            icon_path="icon_menu",
-            icon_path_close="icon_menu_close"
-    ):
+        self,
+        parent: QWidget | None = None,
+        app_parent: object | None = None,
+        radius: int = 8,
+        icon_path: str = "icon_menu",
+        icon_path_close: str = "icon_menu_close",
+    ) -> None:
         """初始化左侧菜单组件。
 
         参数:
@@ -46,7 +48,6 @@ class CLeftMenu(QWidget):
         返回:
         - None
         """
-
         super().__init__()
         self.setObjectName("CLeftMenu_QWidget")
         self.parent = parent
@@ -77,7 +78,6 @@ class CLeftMenu(QWidget):
         self.setup_ui()
 
         # 设置背景颜色
-        # self.bg.setStyleSheet(f"background: {self._dark_one}; border-radius: {radius};")
 
         # 切换按钮和DIV菜单
         self.toggle_button = CLeftMenuButton(
@@ -103,7 +103,7 @@ class CLeftMenu(QWidget):
 
     # 为左侧菜单添加按钮
     # 添加按钮并设置信号
-    def add_menus(self, parameters):
+    def add_menus(self, parameters: list[dict[str, object]] | None) -> None:
         """批量添加菜单按钮。
 
         参数:
@@ -112,7 +112,6 @@ class CLeftMenu(QWidget):
         返回:
         - None
         """
-
         if parameters is not None:
             for parameter in parameters:
                 _btn_icon = parameter["btn_icon"]
@@ -142,24 +141,21 @@ class CLeftMenu(QWidget):
                     self.bottom_layout.addWidget(self.menu)
 
     # 左侧菜单发射信号
-    def btn_clicked(self):
+    def btn_clicked(self) -> None:
         """处理按钮点击并发射信号。"""
-
         self.clicked.emit(self.menu)
 
-    def btn_released(self):
+    def btn_released(self) -> None:
         """处理按钮释放并发射信号。"""
-
         self.released.emit(self.menu)
 
     # 展开/缩回左菜单
-    def toggle_animation(self):
+    def toggle_animation(self) -> None:
         """执行菜单展开或收起动画。
 
         返回:
         - None
         """
-
         # CREATE ANIMATION
         self.animation = QPropertyAnimation(self._parent, b"minimumWidth")
         self.animation.stop()
@@ -178,7 +174,7 @@ class CLeftMenu(QWidget):
         self.animation.start()
 
     # 仅选择一个BTN
-    def select_only_one(self, widget: str):
+    def select_only_one(self, widget: str) -> None:
         """仅激活一个菜单按钮。
 
         参数:
@@ -187,7 +183,6 @@ class CLeftMenu(QWidget):
         返回:
         - None
         """
-
         for btn in self.findChildren(QPushButton):
             if btn.objectName() == widget:
                 btn.set_active(True)
@@ -195,7 +190,7 @@ class CLeftMenu(QWidget):
                 btn.set_active(False)
 
     # 仅选择一个选项卡BTN
-    def select_only_one_tab(self, widget: str):
+    def select_only_one_tab(self, widget: str) -> None:
         """仅激活一个标签态按钮。
 
         参数:
@@ -204,7 +199,6 @@ class CLeftMenu(QWidget):
         返回:
         - None
         """
-
         for btn in self.findChildren(QPushButton):
             if btn.objectName() == widget:
                 btn.set_active_tab(True)
@@ -212,28 +206,25 @@ class CLeftMenu(QWidget):
                 btn.set_active_tab(False)
 
     # 取消选择所有BTN
-    def deselect_all(self):
+    def deselect_all(self) -> None:
         """取消所有按钮激活状态。"""
-
         for btn in self.findChildren(QPushButton):
             btn.set_active(False)
 
     # 取消选择所有标签
-    def deselect_all_tab(self):
+    def deselect_all_tab(self) -> None:
         """取消所有按钮标签激活状态。"""
-
         for btn in self.findChildren(QPushButton):
             btn.set_active_tab(False)
 
     # SETUP APP
     # ///////////////////////////////////////////////////////////////
-    def setup_ui(self):
+    def setup_ui(self) -> None:
         """构建左侧菜单界面结构。
 
         返回:
         - None
         """
-
         # 添加菜单布局
         self.left_menu_layout = QVBoxLayout(self)
         self.left_menu_layout.setContentsMargins(0, 0, 0, 0)

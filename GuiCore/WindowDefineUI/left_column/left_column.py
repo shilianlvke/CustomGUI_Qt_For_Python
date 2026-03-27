@@ -1,16 +1,19 @@
+"""模块说明。"""
+
+from AppCore import ColorPalette
+from GUI import Ui_LeftColumn
 from qt_core import (
     QFrame,
     QHBoxLayout,
     QLabel,
-    QVBoxLayout,
     Qt,
-    Signal,
+    QVBoxLayout,
     QWidget,
+    Signal,
 )
-from .left_button import PyLeftButton
+
 from .icon import PyIcon
-from GUI import Ui_LeftColumn
-from AppCore import ColorPalette
+from .left_button import PyLeftButton
 
 
 class CLeftColumn(QWidget):
@@ -28,14 +31,14 @@ class CLeftColumn(QWidget):
     def __init__(
         self,
         # parent,
-        app_parent,
-        text_title,
-        text_title_size,
-        icon_path,
-        icon_close_path,
-        font_family,
-        radius=8,
-    ):
+        app_parent: object,
+        text_title: str,
+        text_title_size: int,
+        icon_path: str,
+        icon_close_path: str,
+        font_family: str,
+        radius: int = 8,
+    ) -> None:
         """初始化左侧栏组件。
 
         参数:
@@ -50,11 +53,9 @@ class CLeftColumn(QWidget):
         返回:
         - None
         """
-
         super().__init__()
 
         # 参数
-        # self._parent = parent
         self._app_parent = app_parent
         self.ColorPalette = ColorPalette
         self._text_title = text_title
@@ -84,23 +85,20 @@ class CLeftColumn(QWidget):
         self.btn_close.released.connect(self.btn_released)
 
     # 标题左列发出信号
-    def btn_clicked(self):
+    def btn_clicked(self) -> None:
         """处理关闭按钮点击并发射信号。"""
-
         self.clicked.emit(self.btn_close)
 
-    def btn_released(self):
+    def btn_released(self) -> None:
         """处理关闭按钮释放并发射信号。"""
-
         self.released.emit(self.btn_close)
 
-    def setup_ui(self):
+    def setup_ui(self) -> None:
         """构建左侧栏界面结构。
 
         返回:
         - None
         """
-
         # 基础布局
         self.base_layout = QVBoxLayout(self)
         self.base_layout.setContentsMargins(0, 0, 0, 0)

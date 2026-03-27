@@ -1,3 +1,5 @@
+"""模块说明。"""
+
 from qt_core import QLineEdit
 
 
@@ -6,7 +8,7 @@ from qt_core import QLineEdit
 class CLineEdit(QLineEdit):
     """自定义输入框组件。"""
 
-    def __init__(self, text="", place_holder_text=""):
+    def __init__(self, text: str = "", place_holder_text: str = "") -> None:
         """初始化输入框。
 
         参数:
@@ -16,7 +18,6 @@ class CLineEdit(QLineEdit):
         返回:
         - None
         """
-
         super().__init__()
         self.setObjectName("CLineEdit_LineEdit")
 

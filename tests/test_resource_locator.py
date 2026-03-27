@@ -1,10 +1,14 @@
-﻿from pathlib import Path
+"""模块说明。"""
+
+from pathlib import Path
+
+import pytest
 
 from AppCore.SYS.other.resource_locator import ResourceLocator
 from AppCore.SYS.other.static_func import PathFinder
 
 
-def test_resource_locator_resolves_from_project_root():
+def test_resource_locator_resolves_from_project_root() -> None:
     """测试用例：test_resource_locator_resolves_from_project_root。
 
     职责:
@@ -16,8 +20,8 @@ def test_resource_locator_resolves_from_project_root():
     assert path.is_dir()
 
 
-def test_path_factory_is_independent_from_cwd(tmp_path, monkeypatch):
-    "测试用例：test_path_factory_is_independent_from_cwd。"
+def test_path_factory_is_independent_from_cwd(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    """测试用例：test_path_factory_is_independent_from_cwd。"""
     monkeypatch.chdir(tmp_path)
 
     icon = PathFinder.set_svg_icon("icon_setting")
@@ -25,4 +29,3 @@ def test_path_factory_is_independent_from_cwd(tmp_path, monkeypatch):
 
     assert icon_path.exists()
     assert "resource" in icon_path.as_posix()
-

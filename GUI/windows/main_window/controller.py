@@ -1,11 +1,15 @@
+"""模块说明。"""
+
+from collections.abc import Callable
+
 from PySide6.QtWidgets import QWidget
 
 from AppCore import (
     AppThemes,
-    MainWindowButtonUseCase,
     ColorPalette,
     Language,
     Logger,
+    MainWindowButtonUseCase,
     PathFactory,
     get_plugin_registry,
     record_event,
@@ -24,7 +28,13 @@ class PageRouterController:
     - 执行页面切换与标题更新。
     """
 
-    def __init__(self, window, main_functions=MainFunctions, language=Language, get_routes=get_page_routes):
+    def __init__(
+        self,
+        window: object,
+        main_functions: object = MainFunctions,
+        language: object = Language,
+        get_routes: Callable[[object], dict[str, tuple[str, str]]] = get_page_routes,
+    ) -> None:
         """初始化页面路由控制器。
 
         参数:
@@ -36,13 +46,12 @@ class PageRouterController:
         返回:
         - None
         """
-
         self._window = window
         self._main_functions = main_functions
         self._language = language
         self._get_routes = get_routes
 
-    def route_for(self, btn_name: str):
+    def route_for(self, btn_name: str) -> tuple[str, str] | None:
         """获取按钮对应路由。
 
         参数:
@@ -51,10 +60,9 @@ class PageRouterController:
         返回:
         - tuple[str, str] | None: 页面对象名与标题元组，未命中时为 None。
         """
-
         return self._get_routes(self._language).get(btn_name)
 
-    def switch_page(self, btn_name: str, page_name: str, title: str):
+    def switch_page(self, btn_name: str, page_name: str, title: str) -> None:
         """切换页面并更新标题。
 
         参数:
@@ -65,7 +73,6 @@ class PageRouterController:
         返回:
         - None
         """
-
         self._window.ui.left_menu.select_only_one(btn_name)
         self._main_functions.set_page(self._window, self._window.ui.load_pages.pages.findChild(QWidget, page_name))
         self._window.ui.title_bar.set_title(title)
@@ -81,7 +88,13 @@ class ThemeController:
 
     _THEME_SEQUENCE = ("eye", "bright", "default")
 
-    def __init__(self, window, color_palette=ColorPalette, app_themes=AppThemes, style_factory=Styles):
+    def __init__(
+        self,
+        window: object,
+        color_palette: object = ColorPalette,
+        app_themes: object = AppThemes,
+        style_factory: object = Styles,
+    ) -> None:
         """初始化主题控制器。
 
         参数:
@@ -93,20 +106,18 @@ class ThemeController:
         返回:
         - None
         """
-
         self._window = window
         self._color_palette = color_palette
         self._app_themes = app_themes
         self._style_factory = style_factory
         self._theme_index = -1
 
-    def cycle_theme(self):
+    def cycle_theme(self) -> None:
         """轮换到下一个主题并应用样式。
 
         返回:
         - None
         """
-
         self._theme_index = (self._theme_index + 1) % len(self._THEME_SEQUENCE)
         theme_name = self._THEME_SEQUENCE[self._theme_index]
         self._color_palette.update(self._app_themes[theme_name].data)
@@ -122,7 +133,7 @@ class ColumnController:
     - 处理顶部设置按钮触发的右侧栏显示逻辑。
     """
 
-    def __init__(self, window, main_functions=MainFunctions, language=Language):
+    def __init__(self, window: object, main_functions: object = MainFunctions, language: object = Language) -> None:
         """初始化侧栏控制器。
 
         参数:
@@ -133,12 +144,11 @@ class ColumnController:
         返回:
         - None
         """
-
         self._window = window
         self._main_functions = main_functions
         self._language = language
 
-    def handle_info_button(self, btn_name: str):
+    def handle_info_button(self, btn_name: str) -> None:
         """处理信息按钮点击逻辑。
 
         参数:
@@ -147,7 +157,6 @@ class ColumnController:
         返回:
         - None
         """
-
         if not self._main_functions.left_column_is_visible(self._window):
             self._window.ui.left_menu.select_only_one_tab(btn_name)
             self._main_functions.toggle_left_column(self._window)
@@ -165,7 +174,7 @@ class ColumnController:
                 icon_path=PathFactory.set_svg_icon("icon_setting"),
             )
 
-    def handle_more_button(self, btn_name: str):
+    def handle_more_button(self, btn_name: str) -> None:
         """处理更多按钮点击逻辑。
 
         参数:
@@ -174,7 +183,6 @@ class ColumnController:
         返回:
         - None
         """
-
         if not self._main_functions.left_column_is_visible(self._window):
             self._main_functions.toggle_left_column(self._window)
             self._window.ui.left_menu.select_only_one_tab(btn_name)
@@ -191,7 +199,7 @@ class ColumnController:
                 icon_path=PathFactory.set_svg_icon("icon_more"),
             )
 
-    def handle_top_settings_button(self, btn):
+    def handle_top_settings_button(self, btn: object) -> None:
         """处理顶部设置按钮逻辑。
 
         参数:
@@ -200,7 +208,6 @@ class ColumnController:
         返回:
         - None
         """
-
         if not self._main_functions.right_column_is_visible(self._window):
             btn.set_active(True)
             self._main_functions.toggle_right_column(self._window)
@@ -221,13 +228,13 @@ class MainWindowController:
 
     def __init__(
         self,
-        window,
-        main_functions=MainFunctions,
-        plugin_registry_getter=get_plugin_registry,
-        event_recorder=record_event,
-        logger=Logger,
-        button_use_case=None,
-    ):
+        window: object,
+        main_functions: object = MainFunctions,
+        plugin_registry_getter: Callable[[], object] = get_plugin_registry,
+        event_recorder: Callable[..., object] = record_event,
+        logger: object = Logger,
+        button_use_case: object | None = None,
+    ) -> None:
         """初始化主窗口控制器。
 
         参数:
@@ -241,7 +248,6 @@ class MainWindowController:
         返回:
         - None
         """
-
         self._window = window
         self._main_functions = main_functions
         self._plugin_registry_getter = plugin_registry_getter
@@ -252,7 +258,7 @@ class MainWindowController:
         self.theme_controller = ThemeController(window=window)
         self.column_controller = ColumnController(window=window, main_functions=main_functions)
 
-    def handle_button(self, btn):
+    def handle_button(self, btn: object) -> None:
         """处理主窗口按钮点击事件。
 
         参数:
@@ -261,9 +267,8 @@ class MainWindowController:
         返回:
         - None
         """
-
         btn_name = btn.objectName()
-        self._logger.debug(f"{btn_name} is clicked")
+        self._logger.debug("%s is clicked", btn_name)
         self._record_event("ui.button_click", category="ui", payload={"button_id": btn_name})
 
         if self._button_use_case.should_reset_left_tab(btn_name):

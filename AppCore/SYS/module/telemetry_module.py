@@ -1,11 +1,13 @@
+"""模块说明。"""
+
 import json
 import os
 import threading
 import time
+from collections.abc import Generator
 from contextlib import contextmanager
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
-
 
 # 遥测写入使用进程内互斥锁，避免并发写文件时数据竞争。
 _LOCK = threading.Lock()
@@ -17,8 +19,7 @@ def _utc_now_iso() -> str:
     返回:
     - str: ISO8601 格式时间文本。
     """
-
-    return datetime.now(timezone.utc).isoformat()
+    return datetime.now(UTC).isoformat()
 
 
 def _resolve_diagnostics_dir() -> Path:
@@ -33,10 +34,7 @@ def _resolve_diagnostics_dir() -> Path:
     - Path: 可写入的遥测目录路径。
     """
     custom_dir = os.getenv("CUSTOMGUI_DIAGNOSTICS_DIR", "").strip()
-    if custom_dir:
-        path = Path(custom_dir)
-    else:
-        path = Path(__file__).resolve().parents[3] / "logs" / "diagnostics"
+    path = Path(custom_dir) if custom_dir else Path(__file__).resolve().parents[3] / "logs" / "diagnostics"
     path.mkdir(parents=True, exist_ok=True)
     return path
 
@@ -47,7 +45,6 @@ def _event_file_path() -> Path:
     返回:
     - Path: ``events.jsonl`` 文件路径。
     """
-
     return _resolve_diagnostics_dir() / "events.jsonl"
 
 
@@ -57,11 +54,10 @@ def _metric_file_path() -> Path:
     返回:
     - Path: ``metrics.json`` 文件路径。
     """
-
     return _resolve_diagnostics_dir() / "metrics.json"
 
 
-def _safe_dump_json(path: Path, data: dict):
+def _safe_dump_json(path: Path, data: dict[str, object]) -> None:
     """将 JSON 数据安全写入文件。
 
     参数:
@@ -71,7 +67,6 @@ def _safe_dump_json(path: Path, data: dict):
     返回:
     - None
     """
-
     path.write_text(json.dumps(data, ensure_ascii=False, indent=2), encoding="utf-8")
 
 
@@ -84,23 +79,23 @@ def _read_metrics(path: Path) -> dict:
     返回:
     - dict: 指标字典；文件不存在或损坏时返回默认结构。
     """
-
     if not path.exists():
         return {"updated_at": _utc_now_iso(), "events": {}, "categories": {}}
     try:
         content = path.read_text(encoding="utf-8")
         loaded = json.loads(content)
+    except (OSError, json.JSONDecodeError):
+        return {"updated_at": _utc_now_iso(), "events": {}, "categories": {}}
+    else:
         if not isinstance(loaded, dict):
             return {"updated_at": _utc_now_iso(), "events": {}, "categories": {}}
         loaded.setdefault("events", {})
         loaded.setdefault("categories", {})
         loaded.setdefault("updated_at", _utc_now_iso())
         return loaded
-    except (OSError, json.JSONDecodeError):
-        return {"updated_at": _utc_now_iso(), "events": {}, "categories": {}}
 
 
-def _append_event(payload: dict):
+def _append_event(payload: dict[str, object]) -> None:
     """追加单条事件到日志文件。
 
     参数:
@@ -109,14 +104,13 @@ def _append_event(payload: dict):
     返回:
     - None
     """
-
     event_path = _event_file_path()
     line = json.dumps(payload, ensure_ascii=False)
     with event_path.open("a", encoding="utf-8") as f:
         f.write(line + "\n")
 
 
-def _update_metrics(name: str, category: str):
+def _update_metrics(name: str, category: str) -> None:
     """更新指标计数聚合。
 
     参数:
@@ -126,7 +120,6 @@ def _update_metrics(name: str, category: str):
     返回:
     - None
     """
-
     metric_path = _metric_file_path()
     metrics = _read_metrics(metric_path)
     metrics["events"][name] = int(metrics["events"].get(name, 0)) + 1
@@ -135,7 +128,12 @@ def _update_metrics(name: str, category: str):
     _safe_dump_json(metric_path, metrics)
 
 
-def record_event(name: str, category: str = "app", level: str = "info", payload: dict | None = None):
+def record_event(
+    name: str,
+    category: str = "app",
+    level: str = "info",
+    payload: dict[str, object] | None = None,
+) -> None:
     """记录一条遥测事件并更新聚合指标。
 
     参数:
@@ -160,7 +158,11 @@ def record_event(name: str, category: str = "app", level: str = "info", payload:
 
 
 @contextmanager
-def track_timing(name: str, category: str = "perf", payload: dict | None = None):
+def track_timing(
+    name: str,
+    category: str = "perf",
+    payload: dict[str, object] | None = None,
+) -> Generator[None, None, None]:
     """上下文计时器。
 
     参数:
@@ -191,7 +193,6 @@ def read_recent_events(limit: int = 20) -> list[dict]:
     返回:
     - list[dict]: 最近事件集合，按写入顺序返回末尾片段。
     """
-
     if limit <= 0:
         return []
     path = _event_file_path()

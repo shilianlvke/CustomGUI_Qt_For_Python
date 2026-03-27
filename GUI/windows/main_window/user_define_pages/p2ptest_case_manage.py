@@ -1,21 +1,23 @@
-from PySide6.QtCore import Qt, QMargins, QSize
-from PySide6.QtGui import QIcon, QFont
-from PySide6.QtWidgets import QVBoxLayout, QLabel, QWidget, QScrollArea, QHBoxLayout
+"""模块说明。"""
+
+from PySide6.QtCore import QMargins, QSize, Qt
+from PySide6.QtGui import QFont, QIcon
+from PySide6.QtWidgets import QHBoxLayout, QLabel, QScrollArea, QVBoxLayout, QWidget
+
+from AppCore import AppSettings, ColorPalette, Language, Logger, PathFactory
 from GuiCore import CCard, CPushButton, CShowCard, CStatusButton
-from AppCore import PathFactory, ColorPalette, Logger, AppSettings, Language
 from GuiCore.CustomUI.div import CHDiv
 
 
 class P2PTestCaseLibPage:
     """P2P 测试用例库页面定义。"""
 
-    def load_page(self):
+    def load_page(self: object) -> None:
         """构建并注册测试用例库页面。
 
         返回:
         - None
         """
-
         # 新增页面
         page = QWidget()
         page.setObjectName("p2pTestCaseLibPage")
@@ -47,13 +49,19 @@ class P2PTestCaseLibPage:
         label_1 = QLabel("测试库")
 
         case_lib_btn1 = CPushButton(
-            size=QSize(144, 32), text="全部测试库", icon=QIcon(PathFactory.set_svg_icon("icon_all"))
+            size=QSize(144, 32),
+            text="全部测试库",
+            icon=QIcon(PathFactory.set_svg_icon("icon_all")),
         )
         case_lib_btn2 = CPushButton(
-            size=QSize(144, 32), text="组织测试库", icon=QIcon(PathFactory.set_svg_icon("icon_tree"))
+            size=QSize(144, 32),
+            text="组织测试库",
+            icon=QIcon(PathFactory.set_svg_icon("icon_tree")),
         )
         case_lib_btn3 = CPushButton(
-            size=QSize(144, 32), text="团队测试库", icon=QIcon(PathFactory.set_svg_icon("icon_team"))
+            size=QSize(144, 32),
+            text="团队测试库",
+            icon=QIcon(PathFactory.set_svg_icon("icon_team")),
         )
 
         left_card_layout.addWidget(label_1)
@@ -83,7 +91,9 @@ class P2PTestCaseLibPage:
         label_4.setFont(font)
 
         case_lib_btn9 = CPushButton(
-            size=QSize(144, 32), text="新建测试库", icon=QIcon(PathFactory.set_svg_icon("icon_add"))
+            size=QSize(144, 32),
+            text="新建测试库",
+            icon=QIcon(PathFactory.set_svg_icon("icon_add")),
         )
 
         right_top_layout.addWidget(label_4)
@@ -101,18 +111,18 @@ class P2PTestCaseLibPage:
 
         label_5 = QLabel("筛选:")
 
-        case_lib_btnA = CStatusButton(size=QSize(64, 32), text_negative="全部", text_positive="全部")
-        case_lib_btnB = CStatusButton(size=QSize(64, 32), text_negative="星标", text_positive="星标")
-        case_lib_btnC = CStatusButton(size=QSize(64, 32), text_negative="最近", text_positive="最近")
+        case_lib_btn_a = CStatusButton(size=QSize(64, 32), text_negative="全部", text_positive="全部")
+        case_lib_btn_b = CStatusButton(size=QSize(64, 32), text_negative="星标", text_positive="星标")
+        case_lib_btn_c = CStatusButton(size=QSize(64, 32), text_negative="最近", text_positive="最近")
         right_middle_layout.addWidget(label_5)
-        right_middle_layout.addWidget(case_lib_btnA)
-        right_middle_layout.addWidget(case_lib_btnB)
-        right_middle_layout.addWidget(case_lib_btnC)
+        right_middle_layout.addWidget(case_lib_btn_a)
+        right_middle_layout.addWidget(case_lib_btn_b)
+        right_middle_layout.addWidget(case_lib_btn_c)
         right_back_layout.addWidget(CHDiv())
 
-        case_lib_btnA.clicked.connect(lambda: Logger.info("点击了'全部'"))
-        case_lib_btnB.clicked.connect(lambda: Logger.info("点击了'星标'"))
-        case_lib_btnC.clicked.connect(lambda: Logger.info("点击了'最近'"))
+        case_lib_btn_a.clicked.connect(lambda: Logger.info("点击了'全部'"))
+        case_lib_btn_b.clicked.connect(lambda: Logger.info("点击了'星标'"))
+        case_lib_btn_c.clicked.connect(lambda: Logger.info("点击了'最近'"))
 
         right_bottom_card = CCard()
         right_bottom_layout = QVBoxLayout(right_bottom_card)

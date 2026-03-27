@@ -1,0 +1,43 @@
+line-length = 120
+target-version = "py312"
+
+[lint]
+# 严格模式：启用 Ruff 全规则。
+select = ["ALL"]
+ignore = ["D400", "D415", "RUF001", "RUF002", "RUF003", "COM812"]
+
+[lint.per-file-ignores]
+"tests/**/*.py" = ["S101"]
+"GuiCore/**/__init__.py" = ["N999"]
+"GuiCore/**/*.py" = [
+	"ARG002",
+	"C901",
+	"FBT001",
+	"FBT002",
+	"N802",
+	"N815",
+	"PLR0912",
+	"PLR0913",
+	"PLR0915",
+	"PLW0108",
+	"SIM108",
+]
+"GUI/**/__init__.py" = ["N999"]
+"GUI/**/*.py" = [
+	"ARG002",
+	"BLE001",
+	"FBT003",
+	"N801",
+	"N802",
+	"N803",
+	"N815",
+	"PLR0913",
+	"PLR0915",
+	"SLF001",
+]
+"main.py" = ["ARG002", "N802"]
+
+[format]
+quote-style = "double"
+indent-style = "space"
+line-ending = "auto"

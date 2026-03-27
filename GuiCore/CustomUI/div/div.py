@@ -1,4 +1,6 @@
-from PySide6.QtWidgets import QHBoxLayout, QFrame, QWidget
+"""模块说明。"""
+
+from PySide6.QtWidgets import QFrame, QHBoxLayout, QWidget
 
 
 # CUSTOM LEFT MENU
@@ -6,15 +8,13 @@ from PySide6.QtWidgets import QHBoxLayout, QFrame, QWidget
 class CHDiv(QWidget):
     """水平分割线组件。"""
 
-    def __init__(self):
+    def __init__(self) -> None:
         """初始化水平分割线。"""
-
         super().__init__()
         self.layout = QHBoxLayout(self)
         self.layout.setContentsMargins(5, 0, 5, 0)
         self.frame_line = QFrame()
         self.frame_line.setObjectName("CHDiv_Frame")
-        # self.frame_line.setStyleSheet(f"background: {ColorPalette.custom_bg_one};")
         self.frame_line.setMaximumHeight(1)
         self.frame_line.setMinimumHeight(1)
         self.layout.addWidget(self.frame_line)
@@ -24,9 +24,8 @@ class CHDiv(QWidget):
 class CVDiv(QWidget):
     """垂直分割线组件。"""
 
-    def __init__(self):
+    def __init__(self) -> None:
         """初始化垂直分割线。"""
-
         super().__init__()
         self.layout = QHBoxLayout(self)
         self.layout.setContentsMargins(0, 5, 0, 5)

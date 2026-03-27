@@ -1,24 +1,28 @@
+"""模块说明。"""
+
+# ruff: noqa: N999
+
 from AppCore.SYS.logger import Logger
 
 try:
     import serial.tools.list_ports as serial_list_ports
-except Exception:
+except ImportError:
     serial_list_ports = None
 
 try:
     import hid
-except Exception:
+except ImportError:
     hid = None
 
 try:
     import wmi
-except Exception:
+except ImportError:
     wmi = None
 
 
-def get_com_port():
-    """
-    获取windwos所有USB(COM)设备列表
+def get_com_port() -> list[str]:
+    """获取windwos所有USB(COM)设备列表
+
     :return:USB(COM)设备列表
     """
     if serial_list_ports is None:
@@ -28,9 +32,9 @@ def get_com_port():
     return [f"{dev.device} - {dev.description}" for dev in ports]
 
 
-def get_hid_port():
-    """
-    获取windwos所有USB(HID)设备列表
+def get_hid_port() -> list[str]:
+    """获取windwos所有USB(HID)设备列表
+
     :return:USB(HID)设备列表
     """
     if hid is None:
@@ -40,9 +44,9 @@ def get_hid_port():
     return [f"{dev['vendor_id']} - {dev['product_id']} - {dev['manufacturer_string']}" for dev in devices]
 
 
-def get_net_adapter():
-    """
-    获取windwos所有网卡设备列表
+def get_net_adapter() -> list[str]:
+    """获取windwos所有网卡设备列表
+
     :return:网卡设备列表
     """
     if wmi is None:
@@ -55,4 +59,4 @@ def get_net_adapter():
 if __name__ == "__main__":
     ad_list = get_net_adapter()
     for i in ad_list:
-        print(i)
+        Logger.info(str(i))

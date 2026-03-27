@@ -1,5 +1,7 @@
-from qt_core import QIcon, QPixmap, QPushButton, QSize, Qt
+"""模块说明。"""
+
 from AppCore import PathFactory
+from qt_core import QIcon, QPixmap, QPushButton, QSize, Qt
 
 style = """
 /* 主控件样式 */
@@ -16,7 +18,7 @@ QPushButton:hover {{
 QPushButton:pressed {{
     background-color: {_press_color};
 }}
-QPushButton::menu-indicator {{ 
+QPushButton::menu-indicator {{
     image: url(resource/CustomUI/images/svg_icons/icon_arrow_right.svg);
     width: 16px;
     height: 16px;
@@ -38,14 +40,14 @@ class CMenuButton(QPushButton):
 
     def __init__(
         self,
-        size: QSize = QSize(64, 32),
+        size: QSize | None = None,
         text: str | None = None,
         icon: QIcon | str | None = None,
         radius: int = 8,
         border_size: int = 2,
-        colorpalette=None,
+        colorpalette: object | None = None,
         is_transparent: bool = False,
-    ):
+    ) -> None:
         """初始化菜单按钮。
 
         参数:
@@ -60,8 +62,9 @@ class CMenuButton(QPushButton):
         返回:
         - None
         """
-
         super().__init__()
+        if size is None:
+            size = QSize(64, 32)
         self.setObjectName("CMenuButton_PushButton")
         if text is not None:
             self.setText(text)
@@ -87,20 +90,19 @@ class CMenuButton(QPushButton):
         #     colorpalette.custom_text_foreground,
         #     colorpalette.custom_bg_one,
         #     colorpalette.custom_bg_three,
-        # )
 
         # 禁用虚线焦点框
         self.setFocusPolicy(Qt.StrongFocus)
 
     def set_stylesheet(
         self,
-        radius,
-        border_size,
-        bg_color,
-        text_color,
-        hover_color,
-        press_active,
-    ):
+        radius: int,
+        border_size: int,
+        bg_color: str,
+        text_color: str,
+        hover_color: str,
+        press_active: str,
+    ) -> None:
         """设置菜单按钮样式表。
 
         参数:
@@ -114,7 +116,6 @@ class CMenuButton(QPushButton):
         返回:
         - None
         """
-
         style_format = style.format(
             _radius=radius,
             _border_size=border_size,

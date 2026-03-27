@@ -1,3 +1,6 @@
+"""模块说明。"""
+
+from AppCore import AppSettings, ColorPalette
 from qt_core import (
     QBrush,
     QColor,
@@ -11,7 +14,6 @@ from qt_core import (
     QRect,
     Qt,
 )
-from AppCore import ColorPalette, AppSettings
 
 
 # PY TITLE BUTTON
@@ -21,18 +23,18 @@ class CTitleButton(QPushButton):
 
     def __init__(
         self,
-        parent,
-        app_parent=None,
-        tooltip_text="",
-        btn_id=None,
-        width=30,
-        height=30,
-        radius=8,
-        bg_color="#343b48",
-        icon_color="#c3ccdf",
-        icon_path="no_icon.svg",
-        is_active=False,
-    ):
+        parent: object,
+        app_parent: object = None,
+        tooltip_text: str = "",
+        btn_id: str | None = None,
+        width: int = 30,
+        height: int = 30,
+        radius: int = 8,
+        bg_color: str = "#343b48",
+        icon_color: str = "#c3ccdf",
+        icon_path: str = "no_icon.svg",
+        is_active: bool = False,
+    ) -> None:
         """初始化标题栏按钮。
 
         参数:
@@ -51,7 +53,6 @@ class CTitleButton(QPushButton):
         返回:
         - None
         """
-
         super().__init__()
 
         # SET DEFAULT PARAMETERS
@@ -77,25 +78,22 @@ class CTitleButton(QPushButton):
 
     # SET ACTIVE MENU
     # ///////////////////////////////////////////////////////////////
-    def set_active(self, is_active):
+    def set_active(self, is_active: bool) -> None:
         """设置按钮激活状态。"""
-
         self._is_active = is_active
         self.repaint()
 
     # RETURN IF IS ACTIVE MENU
     # ///////////////////////////////////////////////////////////////
-    def is_active(self):
+    def is_active(self) -> bool:
         """返回按钮是否激活。"""
-
         return self._is_active
 
     # PAINT EVENT
     # painting the button and the icon
     # ///////////////////////////////////////////////////////////////
-    def paintEvent(self, event):
+    def paintEvent(self, event: object) -> None:
         """绘制按钮背景与图标。"""
-
         # PAINTER
         paint = QPainter()
         paint.begin(self)
@@ -126,9 +124,8 @@ class CTitleButton(QPushButton):
     # CHANGE STYLES
     # Functions with custom styles
     # ///////////////////////////////////////////////////////////////
-    def change_style(self, event):
+    def change_style(self, event: QEvent) -> None:
         """根据交互事件更新样式状态。"""
-
         if event == QEvent.Enter:
             self._set_bg_color = ColorPalette.custom_bg_three
             self._set_icon_color = ColorPalette.custom_icon_hover
@@ -145,9 +142,8 @@ class CTitleButton(QPushButton):
     # MOUSE OVER
     # Event triggered when the mouse is over the BTN
     # ///////////////////////////////////////////////////////////////
-    def enterEvent(self, event):
+    def enterEvent(self, event: object) -> None:
         """处理鼠标进入并显示提示框。"""
-
         self._icon_enter = True
         self.change_style(QEvent.Enter)
         self.move_tooltip()
@@ -156,9 +152,8 @@ class CTitleButton(QPushButton):
     # MOUSE LEAVE
     # Event fired when the mouse leaves the BTN
     # ///////////////////////////////////////////////////////////////
-    def leaveEvent(self, event):
+    def leaveEvent(self, event: object) -> None:
         """处理鼠标离开并隐藏提示框。"""
-
         self._icon_enter = False
         self.change_style(QEvent.Leave)
         self.move_tooltip()
@@ -167,9 +162,8 @@ class CTitleButton(QPushButton):
     # MOUSE PRESS
     # Event triggered when the left button is pressed
     # ///////////////////////////////////////////////////////////////
-    def mousePressEvent(self, event):
+    def mousePressEvent(self, event: object) -> None:
         """处理鼠标按下并发射点击信号。"""
-
         if event.button() == Qt.LeftButton:
             # SET FOCUS
             self.setFocus()
@@ -181,9 +175,8 @@ class CTitleButton(QPushButton):
     # MOUSE RELEASED
     # Event triggered after the mouse button is released
     # ///////////////////////////////////////////////////////////////
-    def mouseReleaseEvent(self, event):
+    def mouseReleaseEvent(self, event: object) -> None:
         """处理鼠标释放并发射释放信号。"""
-
         if event.button() == Qt.LeftButton:
             self.change_style(QEvent.MouseButtonRelease)
             # EMIT SIGNAL
@@ -191,9 +184,8 @@ class CTitleButton(QPushButton):
 
     # DRAW ICON WITH COLORS
     # ///////////////////////////////////////////////////////////////
-    def icon_paint(self, qp, image, rect):
+    def icon_paint(self, qp: object, image: str, rect: QRect) -> None:
         """按当前状态绘制图标颜色。"""
-
         icon = QPixmap(image)
         painter = QPainter(icon)
         painter.setCompositionMode(QPainter.CompositionMode_SourceIn)
@@ -206,17 +198,15 @@ class CTitleButton(QPushButton):
 
     # SET ICON
     # ///////////////////////////////////////////////////////////////
-    def set_icon(self, icon_path):
+    def set_icon(self, icon_path: str) -> None:
         """设置按钮图标并刷新。"""
-
         self._set_icon_path = icon_path
         self.repaint()
 
     # MOVE TOOLTIP
     # ///////////////////////////////////////////////////////////////
-    def move_tooltip(self):
+    def move_tooltip(self) -> None:
         """计算并移动提示框位置。"""
-
         # GET MAIN WINDOW PARENT
         gp = self.mapToGlobal(QPoint(0, 0))
 
@@ -241,9 +231,8 @@ class _ToolTip(QLabel):
 
     # TOOLTIP / LABEL StyleSheet
 
-    def __init__(self, parent, tooltip):
+    def __init__(self, parent: object, tooltip: str) -> None:
         """初始化提示框。"""
-
         QLabel.__init__(self)
         # LABEL SETUP
         self.setObjectName("label_tooltip")
@@ -261,18 +250,16 @@ class _ToolTip(QLabel):
         self.shadow.setColor(QColor(0, 0, 0, 80))
         self.setGraphicsEffect(self.shadow)
 
-    def show(self):
+    def show(self) -> None:
         """显示提示框前刷新样式。"""
-
         self.update_style()
         super().show()
 
-    def update_style(self):
+    def update_style(self) -> None:
         """更新提示框样式文本。"""
-
         self.style = f"""
             QLabel {{
-                background-color: {ColorPalette.custom_dark_one};	
+                background-color: {ColorPalette.custom_dark_one};
                 color: {ColorPalette.custom_text_foreground};
                 padding-left: {AppSettings.custom_padding}px;
                 padding-right: {AppSettings.custom_padding}px;

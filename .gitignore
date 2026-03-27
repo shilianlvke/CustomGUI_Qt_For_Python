@@ -9,6 +9,12 @@ output/
 .file-status/
 .ruff_cache/
 logs/
+docs/
+# ui
+*.ui
+# Markdown
+*.md
+!README.md
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]

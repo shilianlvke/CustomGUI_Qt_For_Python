@@ -1,10 +1,14 @@
+"""主窗口装配流程模块。"""
+
 from PySide6.QtCore import QMargins, QSize, Qt
 from PySide6.QtGui import QIcon
 from PySide6.QtWidgets import QGridLayout, QScrollArea, QVBoxLayout, QWidget
+
+from AppCore import AppSettings, ColorPalette, Language, Logger, MenuPlugin, PathFactory, get_plugin_registry
+from GuiCore import CCard, CComboBox, CGrips, CMenu, CMenuButton, CPushButton, CShowCard, CStatusButton
+
 from .functions import MainFunctions
 from .user_define_pages import get_default_page_object, get_menu_items, load_registered_pages
-from GuiCore import CCard, CComboBox, CGrips, CMenu, CMenuButton, CPushButton, CShowCard, CStatusButton
-from AppCore import AppSettings, ColorPalette, Language, Logger, MenuPlugin, PathFactory, get_plugin_registry
 
 BUILTIN_TITLE_MENU_PLUGINS = [
     MenuPlugin(
@@ -40,13 +44,12 @@ BUILTIN_TITLE_MENU_PLUGINS = [
 ]
 
 
-def register_builtin_title_menus():
+def register_builtin_title_menus() -> None:
     """注册内置标题栏菜单插件。
 
     返回:
     - None
     """
-
     registry = get_plugin_registry()
     for plugin in BUILTIN_TITLE_MENU_PLUGINS:
         if plugin.plugin_id not in registry._menus:
@@ -61,28 +64,26 @@ class SetupMainWindow:
     - 提供窗口尺寸夹点与按钮来源解析等辅助能力。
     """
 
-    def setup_btns(self):
+    def setup_btns(self) -> object | None:
         """获取当前触发信号的按钮对象。
 
         返回:
         - QObject | None: 发送信号的按钮对象。
         """
-
         if self.ui.title_bar.sender() is not None:
             return self.ui.title_bar.sender()
-        elif self.ui.left_menu.sender() is not None:
+        if self.ui.left_menu.sender() is not None:
             return self.ui.left_menu.sender()
-        elif self.ui.left_column.sender() is not None:
+        if self.ui.left_column.sender() is not None:
             return self.ui.left_column.sender()
         return None
 
-    def setup_gui(self):
+    def setup_gui(self) -> None:
         """执行主窗口 UI 装配流程。
 
         返回:
         - None
         """
-
         # 添加标题描述
         self.setWindowTitle(Language.custom_ui.sys_name)
         self.ui.title_bar.set_title(Language.custom_ui.sys_name)
@@ -107,26 +108,16 @@ class SetupMainWindow:
         # 设置初始页面/设置左右列菜单
         default_page = get_default_page_object()
         MainFunctions.set_page(self, self.ui.load_pages.pages.findChild(QWidget, default_page))
-        # MainFunctions.set_left_column_menu(
-        #     self,
-        #     menu=self.ui.left_column.menus.menu_1,
-        #     title="Settings Left Column",
-        #     icon_path=PathFactory.set_svg_icon("icon_setting"),
-        # )
-        # MainFunctions.set_right_column_menu(self, self.ui.right_column.menu_1)
 
-    def load_page1(self):
+    def load_page1(self) -> None:
         """预留页面加载入口。"""
 
-        pass
-
-    def load_page2(self):
+    def load_page2(self) -> None:
         """构建组件展示页示例内容。
 
         返回:
         - None
         """
-
         page_layout = QVBoxLayout(self.ui.load_pages.widget_show)
         page_layout.setContentsMargins(QMargins(0, 0, 0, 0))
 
@@ -135,11 +126,11 @@ class SetupMainWindow:
         back_layout.setContentsMargins(QMargins(0, 0, 0, 0))
         page_layout.addWidget(back_card)
 
-        Card = CCard()
-        card_layout = QGridLayout(Card)
+        card = CCard()
+        card_layout = QGridLayout(card)
         card_layout.setContentsMargins(QMargins(0, 0, 0, 0))
         scroller_area = QScrollArea()
-        scroller_area.setWidget(Card)
+        scroller_area.setWidget(card)
         scroller_area.setWidgetResizable(True)
         scroller_area.setVerticalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
         scroller_area.setStyleSheet(f"background:{ColorPalette.custom_dark_three};")
@@ -152,7 +143,9 @@ class SetupMainWindow:
         trans_btn = CPushButton(text="透明按钮", is_transparent=True)
         trans_btn.clicked.connect(lambda: Logger.info("点击了透明按钮"))
         text_icon_btn = CPushButton(
-            size=QSize(128, 32), icon=QIcon(PathFactory.set_svg_icon("icon_heart")), text="QIcon-文字按钮"
+            size=QSize(128, 32),
+            icon=QIcon(PathFactory.set_svg_icon("icon_heart")),
+            text="QIcon-文字按钮",
         )
         text_icon_btn.clicked.connect(lambda: Logger.info("点击了文字按钮"))
         two_btn = CStatusButton(
@@ -207,29 +200,26 @@ class SetupMainWindow:
         card_layout.addWidget(card_7)
         card_layout.addWidget(card_8)
 
-    def resize_grips(self):
+    def resize_grips(self) -> None:
         """根据窗口尺寸更新边缘夹点位置。
 
         返回:
         - None
         """
-
         self.left_grip.setGeometry(5, 10, 10, self.height())
         self.right_grip.setGeometry(self.width() - 15, 10, 10, self.height())
         self.top_grip.setGeometry(5, 5, self.width() - 10, 10)
         self.bottom_grip.setGeometry(5, self.height() - 15, self.width() - 10, 10)
-        # self.top_left_grip.setGeometry(5, 5, 15, 15)
         self.top_right_grip.setGeometry(self.width() - 20, 5, 15, 15)
         self.bottom_left_grip.setGeometry(5, self.height() - 20, 15, 15)
         self.bottom_right_grip.setGeometry(self.width() - 20, self.height() - 20, 15, 15)
 
-    def menu_add_btn(self):
+    def menu_add_btn(self) -> None:
         """注入菜单并绑定按钮事件。
 
         返回:
         - None
         """
-
         register_builtin_title_menus()
         left_menu_items = get_menu_items("LeftMenu")
         title_menu_items = get_menu_items("TitleMenu")

@@ -1,3 +1,5 @@
+"""模块说明。"""
+
 from dataclasses import dataclass
 
 
@@ -58,10 +60,10 @@ class ColorHandler:
         返回:
         - None
         """
-
         # 注册颜色，允许用自定义颜色
         for key, value in new_colors.items():
             setattr(self, key, value)
+
 
 ColorPalette = ColorHandler()
 __all__ = ["ColorHandler", "ColorPalette"]

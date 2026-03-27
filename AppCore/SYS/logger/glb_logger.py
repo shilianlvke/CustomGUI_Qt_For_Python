@@ -1,12 +1,14 @@
+"""模块说明。"""
+
 import logging
-import os
 import re
 from logging.handlers import RotatingFileHandler
 from pathlib import Path
+from typing import ClassVar
 
 try:
     from colorama import just_fix_windows_console
-except Exception:
+except ImportError:
     just_fix_windows_console = None
 
 
@@ -14,15 +16,15 @@ class _ColorFormatter(logging.Formatter):
     """控制台彩色日志格式器。"""
 
     RESET = "\033[0m"
-    LEVEL_COLORS = {
-        logging.DEBUG: "\033[36m",   # Cyan
-        logging.INFO: "\033[32m",    # Green
-        logging.WARNING: "\033[33m", # Yellow
-        logging.ERROR: "\033[31m",   # Red
-        logging.CRITICAL: "\033[35m",# Magenta
+    LEVEL_COLORS: ClassVar[dict[int, str]] = {
+        logging.DEBUG: "\033[36m",  # Cyan
+        logging.INFO: "\033[32m",  # Green
+        logging.WARNING: "\033[33m",  # Yellow
+        logging.ERROR: "\033[31m",  # Red
+        logging.CRITICAL: "\033[35m",  # Magenta
     }
 
-    def format(self, record):
+    def format(self, record: logging.LogRecord) -> str:
         """格式化日志记录并附加颜色。
 
         参数:
@@ -31,7 +33,6 @@ class _ColorFormatter(logging.Formatter):
         返回:
         - str: 格式化后的日志文本。
         """
-
         message = super().format(record)
         color = self.LEVEL_COLORS.get(record.levelno)
         if not color:
@@ -47,22 +48,21 @@ class _Logger:
     - 提供简洁的日志调用方法。
     """
 
-    LEVELS = {
+    LEVELS: ClassVar[dict[str, int]] = {
         "debug": logging.DEBUG,
         "info": logging.INFO,
         "warning": logging.WARNING,
         "error": logging.ERROR,
     }
 
-    def __init__(self):
+    def __init__(self) -> None:
         """初始化日志门面并完成日志系统配置。"""
-
         self._logger = logging.getLogger("CustomGUI")
         self._logger.propagate = False
         self._configured = False
         self._configure_logging()
 
-    def set_level(self, level: str):
+    def set_level(self, level: str) -> None:
         """设置日志级别。
 
         参数:
@@ -71,20 +71,18 @@ class _Logger:
         返回:
         - None
         """
-
         level_name = (level or "info").lower()
         target_level = self.LEVELS.get(level_name, logging.INFO)
         self._logger.setLevel(target_level)
         for handler in self._logger.handlers:
             handler.setLevel(target_level)
 
-    def _configure_logging(self):
+    def _configure_logging(self) -> None:
         """初始化日志处理器与格式器。
 
         返回:
         - None
         """
-
         if self._configured:
             return
 
@@ -93,7 +91,7 @@ class _Logger:
 
         root_dir = Path(__file__).resolve().parents[3]
         log_dir = root_dir / "logs"
-        os.makedirs(log_dir, exist_ok=True)
+        log_dir.mkdir(parents=True, exist_ok=True)
 
         formatter = logging.Formatter(
             "[%(asctime)s] [%(levelname)s] %(message)s",
@@ -130,7 +128,6 @@ class _Logger:
         返回:
         - str: 日志级别文本。
         """
-
         root_dir = Path(__file__).resolve().parents[3]
         config_path = root_dir / "resource" / "CustomUI" / "settings" / "console.yml"
         if not config_path.exists():
@@ -153,7 +150,6 @@ class _Logger:
         返回:
         - bool: 是否启用彩色控制台输出。
         """
-
         root_dir = Path(__file__).resolve().parents[3]
         config_path = root_dir / "resource" / "CustomUI" / "settings" / "console.yml"
         if not config_path.exists():
@@ -169,30 +165,25 @@ class _Logger:
             return True
         return match.group(1).lower() == "true"
 
-    def info(self, msg: str):
+    def info(self, msg: str) -> None:
         """输出 info 级别日志。"""
-
         self._logger.info(msg)
 
-    def debug(self, msg: str):
+    def debug(self, msg: str) -> None:
         """输出 debug 级别日志。"""
-
         self._logger.debug(msg)
 
-    def warning(self, msg: str):
+    def warning(self, msg: str) -> None:
         """输出 warning 级别日志。"""
-
         self._logger.warning(msg)
 
-    def error(self, msg: str):
+    def error(self, msg: str) -> None:
         """输出 error 级别日志。"""
-
         self._logger.error(msg)
 
-    def tool(self, msg: str):
+    def tool(self, msg: str) -> None:
         """输出工具阶段标记日志。"""
-
-        self._logger.info(f"[TOOL] ====={msg}=====")
+        self._logger.info("[TOOL] =====%s=====", msg)
 
 
 # 全局logger实例，直接导入logger.Logger即可用

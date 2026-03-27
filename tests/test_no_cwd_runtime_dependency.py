@@ -1,13 +1,15 @@
-﻿import ast
-from pathlib import Path
+"""模块说明。"""
 
+import ast
+from collections.abc import Iterator
+from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 RUNTIME_DIRS = ["AppCore", "GUI", "GuiCore"]
 RUNTIME_FILES = ["main.py"]
 
 
-def _iter_runtime_files():
+def _iter_runtime_files() -> Iterator[Path]:
     """函数：_iter_runtime_files。
 
     参数:
@@ -26,8 +28,8 @@ def _iter_runtime_files():
             yield path
 
 
-def test_runtime_code_must_not_use_os_getcwd():
-    "测试用例：test_runtime_code_must_not_use_os_getcwd。"
+def test_runtime_code_must_not_use_os_getcwd() -> None:
+    """测试用例：test_runtime_code_must_not_use_os_getcwd。"""
     violations = []
 
     for file_path in _iter_runtime_files():
@@ -35,17 +37,23 @@ def test_runtime_code_must_not_use_os_getcwd():
         tree = ast.parse(source, filename=str(file_path))
 
         for node in ast.walk(tree):
-            if isinstance(node, ast.ImportFrom) and node.module == "os":
-                if any(alias.name == "getcwd" for alias in node.names):
-                    violations.append(f"{file_path.relative_to(ROOT).as_posix()} -> from os import getcwd")
+            if (
+                isinstance(node, ast.ImportFrom)
+                and node.module == "os"
+                and any(alias.name == "getcwd" for alias in node.names)
+            ):
+                violations.append(f"{file_path.relative_to(ROOT).as_posix()} -> from os import getcwd")
 
             if isinstance(node, ast.Call):
                 func = node.func
-                if isinstance(func, ast.Attribute) and isinstance(func.value, ast.Name):
-                    if func.value.id == "os" and func.attr == "getcwd":
-                        violations.append(f"{file_path.relative_to(ROOT).as_posix()} -> os.getcwd()")
+                if (
+                    isinstance(func, ast.Attribute)
+                    and isinstance(func.value, ast.Name)
+                    and func.value.id == "os"
+                    and func.attr == "getcwd"
+                ):
+                    violations.append(f"{file_path.relative_to(ROOT).as_posix()} -> os.getcwd()")
                 elif isinstance(func, ast.Name) and func.id == "getcwd":
                     violations.append(f"{file_path.relative_to(ROOT).as_posix()} -> getcwd()")
 
     assert not violations, "Runtime code must not depend on os.getcwd:\n" + "\n".join(violations)
-

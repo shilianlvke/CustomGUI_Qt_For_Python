@@ -1,12 +1,12 @@
-from qt_core import QLabel, QPixmap, QVBoxLayout, Qt, QWidget
+"""图片展示组件模块。"""
+
+from qt_core import QLabel, QPixmap, Qt, QVBoxLayout, QWidget
 
 
-# PY ICON WITH CUSTOM COLORS
-# ///////////////////////////////////////////////////////////////
 class CPixmap(QWidget):
     """图片展示组件。"""
 
-    def __init__(self, pic_path):
+    def __init__(self, pic_path: str) -> None:
         """初始化图片组件。
 
         参数:
@@ -15,7 +15,6 @@ class CPixmap(QWidget):
         返回:
         - None
         """
-
         super().__init__()
         # PROPERTIES
         self._icon_path = pic_path
@@ -23,13 +22,12 @@ class CPixmap(QWidget):
         # SETUP UI
         self.setup_ui()
 
-    def setup_ui(self):
+    def setup_ui(self) -> None:
         """构建图片组件内部布局。
 
         返回:
         - None
         """
-
         # LAYOUT
         self.layout = QVBoxLayout(self)
         self.layout.setContentsMargins(0, 0, 0, 0)
@@ -44,7 +42,7 @@ class CPixmap(QWidget):
         # ADD TO LAYOUT
         self.layout.addWidget(self.icon)
 
-    def set_icon(self, icon_path):
+    def set_icon(self, icon_path: str) -> None:
         """设置当前显示图片。
 
         参数:
@@ -53,21 +51,6 @@ class CPixmap(QWidget):
         返回:
         - None
         """
-
-        # # GET COLOR
-        # color = ""
-        # if icon_color is not None:
-        #     color = icon_color
-        # else:
-        #     color = self._icon_color
-        #
-        # # PAINTER / PIXMAP
         icon = QPixmap(icon_path)
-        # icon.scaled()
-        # painter = QPainter(icon)
-        # painter.setCompositionMode(QPainter.CompositionMode_SourceIn)
-        # painter.fillRect(icon.rect(), color)
-        # painter.end()
-
         # SET PIXMAP
         self.icon.setPixmap(icon)

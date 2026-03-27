@@ -1,3 +1,5 @@
+"""模块说明。"""
+
 from dataclasses import dataclass
 
 from .color_module import ColorPalette
@@ -85,8 +87,7 @@ def get_design_tokens() -> DesignTokens:
     返回:
     - DesignTokens: 当前上下文下的设计令牌集合。
     """
-
-    from ..other.folder_tools import AppSettings
+    from AppCore.SYS.other.folder_tools import AppSettings  # noqa: PLC0415
 
     return DesignTokens(
         colors=ColorTokens(

@@ -1,4 +1,8 @@
-from PySide6.QtCore import QObject, QRunnable, QMutex, QWaitCondition, QMutexLocker, Signal
+"""模块说明。"""
+
+from easydict import EasyDict
+from PySide6.QtCore import QMutex, QMutexLocker, QObject, QRunnable, QWaitCondition, Signal
+
 from AppCore import (
     AppError,
     DomainErrorBoundary,
@@ -9,7 +13,6 @@ from AppCore import (
     to_user_message,
     track_timing,
 )
-from easydict import EasyDict
 
 
 class LoadingSignalBus(QObject):
@@ -28,9 +31,8 @@ class ResourceLoader:
     - 通过信号上报进度、完成与错误。
     """
 
-    def __init__(self):
+    def __init__(self) -> None:
         """初始化资源加载器。"""
-
         Logger.tool(__class__)
         self.value = 0
         self._paused = False
@@ -41,41 +43,38 @@ class ResourceLoader:
         self.sys_config = EasyDict()
         self.load_config()
 
-    def load_config(self):
+    def load_config(self) -> None:
         """加载启动配置与基础路径。
 
         返回:
         - None
         """
-
         self.loading_config = YamlHandler("resource/loading_config.yml")
         self._base_paths = self.loading_config.base_path
 
-    def stop(self):
+    def stop(self) -> None:
         """停止加载流程。
 
         返回:
         - None
         """
-
         with QMutexLocker(self._lock):
             self._stopped = True
             self._paused = False
             self._cond.wakeOne()
 
-    def resume(self):
+    def resume(self) -> None:
         """恢复已暂停的加载流程。
 
         返回:
         - None
         """
-
         if self._paused:
             with QMutexLocker(self._lock):
                 self._paused = False
                 self._cond.wakeOne()
 
-    def send_progress(self, value):
+    def send_progress(self, value: int) -> None:
         """发送进度更新信号。
 
         参数:
@@ -84,16 +83,14 @@ class ResourceLoader:
         返回:
         - None
         """
-
         self.bus.progress_updated.emit(value)
 
-    def perform_loading(self):
+    def perform_loading(self) -> None:
         """执行完整加载流程。
 
         返回:
         - None
         """
-
         try:
             with track_timing("loading.total", category="perf"):
                 for category, steps in self.loading_config.loading_steps.items():
@@ -104,7 +101,9 @@ class ResourceLoader:
                         if self._stopped:
                             return
                         self._load_step(step, category)
-            Logger.info(f"{self.sys_config.app_lang.custom_ui.sys_name}-{self.sys_config.app_lang.custom_ui.sys_copyright}")
+            Logger.info(
+                f"{self.sys_config.app_lang.custom_ui.sys_name}-{self.sys_config.app_lang.custom_ui.sys_copyright}",
+            )
             record_event("loading.finished", category="loading")
             self.bus.finished.emit()
         except AppError as e:
@@ -131,7 +130,7 @@ class ResourceLoader:
             )
             self.bus.error_occurred.emit(to_user_message(wrapped))
 
-    def _load_step(self, step_config, category):
+    def _load_step(self, step_config: dict[str, object], category: str) -> None:
         """执行单个加载步骤。
 
         参数:
@@ -141,7 +140,6 @@ class ResourceLoader:
         返回:
         - None
         """
-
         if self._stopped:
             return
         try:
@@ -182,7 +180,7 @@ class ResourceLoader:
 class LoadingTask(QRunnable):
     """线程池加载任务包装器。"""
 
-    def __init__(self, loader: ResourceLoader):
+    def __init__(self, loader: ResourceLoader) -> None:
         """初始化加载任务。
 
         参数:
@@ -191,15 +189,13 @@ class LoadingTask(QRunnable):
         返回:
         - None
         """
-
         super().__init__()
         self.loader = loader
 
-    def run(self):
+    def run(self) -> None:
         """执行任务入口。
 
         返回:
         - None
         """
-
         self.loader.perform_loading()

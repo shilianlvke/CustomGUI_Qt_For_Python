@@ -1,3 +1,5 @@
+"""模块说明。"""
+
 from qt_core import QMenu
 
 style = """
@@ -29,13 +31,13 @@ class CMenu(QMenu):
 
     def __init__(
         self,
-        parent=None,
+        parent: object | None = None,
         width: int = 64 + 36,
         radius: int = 8,
         border_size: int = 2,
-        colorpalette=None,
+        colorpalette: object | None = None,
         is_transparent: bool = False,
-    ):
+    ) -> None:
         """初始化菜单组件。
 
         参数:
@@ -49,7 +51,6 @@ class CMenu(QMenu):
         返回:
         - None
         """
-
         super().__init__(parent)
         self.setFixedWidth(width)
         self.radius = radius
@@ -68,13 +69,13 @@ class CMenu(QMenu):
 
     def set_stylesheet(
         self,
-        radius,
-        border_size,
-        bg_color,
-        text_color,
-        hover_color,
-        press_active,
-    ):
+        radius: int,
+        border_size: int,
+        bg_color: str,
+        text_color: str,
+        hover_color: str,
+        press_active: str,
+    ) -> None:
         """设置菜单样式表。
 
         参数:
@@ -88,7 +89,6 @@ class CMenu(QMenu):
         返回:
         - None
         """
-
         style_format = style.format(
             _radius=radius,
             _border_size=border_size,

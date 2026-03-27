@@ -1,3 +1,7 @@
+"""窗口标题栏组件模块。"""
+
+from AppCore import AppSettings, ColorPalette, Language, PathFactory
+from GuiCore.CustomUI.div import CVDiv
 from qt_core import (
     QCursor,
     QFrame,
@@ -5,13 +9,12 @@ from qt_core import (
     QLabel,
     QSize,
     QSvgWidget,
-    QVBoxLayout,
     Qt,
-    Signal,
+    QVBoxLayout,
     QWidget,
+    Signal,
 )
-from AppCore import ColorPalette, PathFactory, AppSettings, Language
-from GuiCore.CustomUI.div import CVDiv
+
 from .title_button import CTitleButton
 
 _is_maximized = False
@@ -30,7 +33,7 @@ class CTitleBar(QWidget):
     clicked = Signal(object)
     released = Signal(object)
 
-    def __init__(self, parent, app_parent):
+    def __init__(self, parent: QWidget, app_parent: object) -> None:
         """初始化标题栏。
 
         参数:
@@ -40,7 +43,6 @@ class CTitleBar(QWidget):
         返回:
         - None
         """
-
         super().__init__()
         self._parent = parent
         self._app_parent = app_parent
@@ -68,21 +70,15 @@ class CTitleBar(QWidget):
         self.close_btn = Language.UI.ui_Close
         self.setup_ui()
 
-        # 添加背景色
-        # self.bg.setStyleSheet(f"background-color: {self._bg_color}; border-radius: {radius}px;")
-
         # 设置logo宽度
         self.top_logo.setMinimumWidth(AppSettings.icon_size)
         self.top_logo.setMaximumWidth(AppSettings.icon_size)
 
-        # self.top_logo.setPixmap(Functions.set_svg_image(logo_image))
-
         # 移动窗口/最大化/恢复
-        def moveWindow(event):
+        def moveWindow(event: object) -> None:
             # 如果最大化改变为正常
             if parent.isMaximized():
                 self.maximize_restore()
-                # self.resize(_old_size)
                 curso_x = parent.pos().x()
                 curso_y = event.globalPos().y() - QCursor.pos().y()
                 parent.move(curso_x, curso_y)
@@ -91,13 +87,6 @@ class CTitleBar(QWidget):
                 parent.move(parent.pos() + event.globalPos() - parent.dragPos)
                 parent.dragPos = event.globalPos()
                 event.accept()
-            # parent_rect = parent.frameGeometry()
-            # screen_rect = parent.screen().geometry()
-            # # 不可超出屏幕顶部
-            # if parent.pos().y() < 0:
-            #     parent.move(parent.pos().x(), 0)
-            # if parent_rect.bottom() > screen_rect.bottom():
-            #     parent.move(parent.pos().x(), screen_rect.height() - parent_rect.height())
 
         # 移动应用程序小部件
         if self._is_custom_title_bar:
@@ -140,7 +129,7 @@ class CTitleBar(QWidget):
     # 在标题栏中添加按钮
     # 添加btns并发出信号
     # ///////////////////////////////////////////////////////////////
-    def add_menus(self, parameters):
+    def add_menus(self, parameters: list[dict[str, object]] | None) -> None:
         """批量添加标题栏菜单按钮。
 
         参数:
@@ -149,7 +138,6 @@ class CTitleBar(QWidget):
         返回:
         - None
         """
-
         if parameters is not None and len(parameters) > 0:
             for parameter in parameters:
                 _btn_icon = PathFactory.set_svg_icon(parameter["btn_icon"])
@@ -178,19 +166,17 @@ class CTitleBar(QWidget):
                 self.custom_buttons_layout.addWidget(self.div_3)
 
     # 标题栏菜单发出信号
-    def btn_clicked(self):
+    def btn_clicked(self) -> None:
         """处理标题栏按钮点击并发射信号。"""
-
         self.clicked.emit(self.menu)
 
-    def btn_released(self):
+    def btn_released(self) -> None:
         """处理标题栏按钮释放并发射信号。"""
-
         self.released.emit(self.menu)
 
     # 设置标题栏文本
     # ///////////////////////////////////////////////////////////////
-    def set_title(self, title):
+    def set_title(self, title: str) -> None:
         """设置标题栏文本。
 
         参数:
@@ -199,13 +185,12 @@ class CTitleBar(QWidget):
         返回:
         - None
         """
-
         self.title_label.setText(title)
 
     # 最大化/恢复
     # 最大化并恢复父窗口
     # ///////////////////////////////////////////////////////////////
-    def maximize_restore(self, e=None):
+    def maximize_restore(self, e: object | None = None) -> None:
         """切换窗口最大化与还原状态。
 
         参数:
@@ -214,14 +199,12 @@ class CTitleBar(QWidget):
         返回:
         - None
         """
-
-        global _is_maximized
-        global _old_size
+        state = globals()
 
         # 更改UI并调整夹点大小
-        def change_ui():
+        def change_ui() -> None:
             if hasattr(self._parent, "ui"):
-                if _is_maximized:
+                if state["_is_maximized"]:
                     self._parent.ui.central_widget_layout.setContentsMargins(0, 0, 0, 0)
                     self._parent.ui.window.set_stylesheet(border_radius=0, border_size=0)
                     self.maximize_restore_button.set_icon(PathFactory.set_svg_icon("icon_restore"))
@@ -232,24 +215,23 @@ class CTitleBar(QWidget):
 
         # 检查事件
         if self._parent.isMaximized():
-            _is_maximized = False
+            state["_is_maximized"] = False
             self._parent.showNormal()
             change_ui()
         else:
-            _is_maximized = True
-            _old_size = QSize(self._parent.width(), self._parent.height())
+            state["_is_maximized"] = True
+            state["_old_size"] = QSize(self._parent.width(), self._parent.height())
             self._parent.showMaximized()
             change_ui()
 
     # SETUP APP
     # ///////////////////////////////////////////////////////////////
-    def setup_ui(self):
+    def setup_ui(self) -> None:
         """构建标题栏界面结构。
 
         返回:
         - None
         """
-
         # ADD MENU LAYOUT
         self.title_bar_layout = QVBoxLayout(self)
         self.title_bar_layout.setContentsMargins(0, 0, 0, 0)

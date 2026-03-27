@@ -1,5 +1,7 @@
-from qt_core import QIcon, QPixmap, QPushButton, QSize, Qt
+"""模块说明。"""
+
 from AppCore import PicFixFactory
+from qt_core import QIcon, QPixmap, QPushButton, QSize, Qt
 
 
 class CPushButton(QPushButton):
@@ -7,11 +9,11 @@ class CPushButton(QPushButton):
 
     def __init__(
         self,
-        size: QSize = QSize(64, 32),
+        size: QSize | None = None,
         text: str | None = None,
         icon: QIcon | str | None = None,
         is_trans: bool = False,
-    ):
+    ) -> None:
         """初始化按钮组件。
 
         参数:
@@ -23,8 +25,9 @@ class CPushButton(QPushButton):
         返回:
         - None
         """
-
         super().__init__()
+        if size is None:
+            size = QSize(64, 32)
         self.setObjectName("CPushButton_PushButton")
         if text is not None:
             self.setText(text)

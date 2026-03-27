@@ -1,9 +1,11 @@
-﻿from threading import Thread
+"""模块说明。"""
+
+from threading import Thread
 
 from AppCore import AppSettings, get_app_context, initialize_app_context
 
 
-def test_lazy_context_view_access():
+def test_lazy_context_view_access() -> None:
     """测试用例：test_lazy_context_view_access。
 
     职责:
@@ -15,8 +17,8 @@ def test_lazy_context_view_access():
     assert isinstance(AppSettings.theme_name, str)
 
 
-def test_context_reload_returns_loaded_context():
-    "测试用例：test_context_reload_returns_loaded_context。"
+def test_context_reload_returns_loaded_context() -> None:
+    """测试用例：test_context_reload_returns_loaded_context。"""
     ctx = get_app_context(force_reload=True)
 
     assert ctx.settings is not None
@@ -26,13 +28,13 @@ def test_context_reload_returns_loaded_context():
     assert not hasattr(ctx, "menu")
 
 
-def test_get_app_context_thread_safe_initialization():
-    "测试用例：test_get_app_context_thread_safe_initialization。"
+def test_get_app_context_thread_safe_initialization() -> None:
+    """测试用例：test_get_app_context_thread_safe_initialization。"""
     initialize_app_context(force_reload=True)
     contexts = []
 
-    def worker():
-        "函数：worker。"
+    def worker() -> None:
+        """函数：worker。"""
         contexts.append(get_app_context())
 
     threads = [Thread(target=worker) for _ in range(8)]
@@ -44,4 +46,3 @@ def test_get_app_context_thread_safe_initialization():
     assert contexts
     first = contexts[0]
     assert all(ctx is first for ctx in contexts)
-

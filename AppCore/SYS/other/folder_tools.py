@@ -1,15 +1,15 @@
-import os
+"""模块说明。"""
+
 import threading
+from collections.abc import Callable, Iterator
+from pathlib import Path
+
 from easydict import EasyDict
-from ..handler import YamlHandler
-from ..logger import Logger
-from .resource_locator import ResourceLocator
-from ..module.settings_module import (
-    validate_language_data,
-    validate_settings_data,
-    validate_theme_data,
-)
-from ..module.error_module import DomainErrorBoundary
+
+from AppCore.SYS.logger import Logger
+from AppCore.SYS.module.error_module import DomainErrorBoundary
+from AppCore.SYS.module.settings_module import validate_language_data, validate_settings_data, validate_theme_data
+from AppCore.SYS.other.resource_locator import ResourceLocator
 
 
 class ConfigHandler:
@@ -35,22 +35,23 @@ class ConfigHandler:
         返回:
         - EasyDict: ``name -> {path, data}`` 的映射。
         """
+        from AppCore.SYS.handler import YamlHandler  # noqa: PLC0415
 
         result = EasyDict()
         for path in path_list:
-            name = os.path.splitext(os.path.basename(path))[0].lower()
+            name = Path(path).stem.lower()
             result[name] = EasyDict(path=path, data=YamlHandler(path))
         return result
 
     @staticmethod
     def _validate_group(
         group: EasyDict,
-        validator,
+        validator: Callable[..., object] | None,
         *,
         error_code: str,
         error_message: str,
         validator_arg_name: str,
-    ):
+    ) -> None:
         """校验分组配置数据。
 
         参数:
@@ -63,7 +64,6 @@ class ConfigHandler:
         返回:
         - None
         """
-
         if validator is None:
             return
         for name, item in group.items():
@@ -76,11 +76,11 @@ class ConfigHandler:
                     details=str(exc),
                 ) from exc
 
-    def _load_group(
+    def _load_group(  # noqa: PLR0913
         self,
         directory: str,
         *,
-        validator=None,
+        validator: Callable[..., object] | None = None,
         error_code: str | None = None,
         error_message: str | None = None,
         validator_arg_name: str | None = None,
@@ -99,7 +99,6 @@ class ConfigHandler:
         返回:
         - EasyDict: 分组配置映射。
         """
-
         path_list = ResourceLocator.find_files_by_extension(".yml", directory)
         group = self._build_named_yaml_map(path_list)
         if validator:
@@ -113,9 +112,8 @@ class ConfigHandler:
         Logger.debug(f"{log_label}:{group.keys()}")
         return group
 
-    def find_languages(self):
+    def find_languages(self) -> EasyDict:
         """加载并校验语言配置组。"""
-
         return self._load_group(
             self.languages,
             validator=validate_language_data,
@@ -125,9 +123,8 @@ class ConfigHandler:
             log_label="语言",
         )
 
-    def find_themes(self):
+    def find_themes(self) -> EasyDict:
         """加载并校验主题配置组。"""
-
         return self._load_group(
             self.themes,
             validator=validate_theme_data,
@@ -137,18 +134,16 @@ class ConfigHandler:
             log_label="主题色",
         )
 
-    def find_others(self):
+    def find_others(self) -> EasyDict:
         """加载其他配置组。"""
-
         return self._load_group(self.others, log_label="其他配置")
 
-    def find_settings(self):
+    def find_settings(self) -> EasyDict:
         """加载并汇总系统配置。
 
         返回:
         - EasyDict: 合并后的系统配置对象。
         """
-
         settings = self._load_group(self.settings, log_label="配置")
         result = EasyDict()
         for value in settings.values():
@@ -172,7 +167,7 @@ class AppContext:
     - 提供线程安全的懒加载与强制重载能力。
     """
 
-    def __init__(self, config_handler: ConfigHandler):
+    def __init__(self, config_handler: ConfigHandler) -> None:
         """初始化应用上下文。
 
         参数:
@@ -181,7 +176,6 @@ class AppContext:
         返回:
         - None
         """
-
         self._config_handler = config_handler
         self._loaded = False
         self.settings = None
@@ -190,7 +184,7 @@ class AppContext:
         self.others = None
         self._load_lock = threading.Lock()
 
-    def load(self, force_reload: bool = False):
+    def load(self, *, force_reload: bool = False) -> "AppContext":
         """加载应用配置上下文。
 
         参数:
@@ -199,7 +193,6 @@ class AppContext:
         返回:
         - AppContext: 当前上下文实例。
         """
-
         with self._load_lock:
             if self._loaded and not force_reload:
                 return self
@@ -220,68 +213,56 @@ class _ContextView:
     - 提供字典与属性访问兼容能力。
     """
 
-    def __init__(self, key: str):
+    def __init__(self, key: str) -> None:
         """初始化上下文视图。
 
         参数:
         - key: AppContext 中的目标属性名。
         """
-
         self._key = key
 
-    def _target(self):
+    def _target(self) -> object:
         """获取当前视图对应的真实对象。"""
-
         return getattr(get_app_context(), self._key)
 
-    def __getattr__(self, item):
+    def __getattr__(self, item: str) -> object:
         """代理属性读取。"""
-
         return getattr(self._target(), item)
 
-    def __getitem__(self, item):
+    def __getitem__(self, item: object) -> object:
         """代理字典下标读取。"""
-
         return self._target()[item]
 
-    def __iter__(self):
+    def __iter__(self) -> Iterator[object]:
         """返回迭代器。"""
-
         return iter(self._target())
 
-    def __contains__(self, item):
+    def __contains__(self, item: object) -> bool:
         """判断元素是否存在。"""
-
         return item in self._target()
 
-    def __len__(self):
+    def __len__(self) -> int:
         """返回元素数量。"""
-
         return len(self._target())
 
-    def get(self, key, default=None):
+    def get(self, key: object, default: object | None = None) -> object | None:
         """按键获取值并支持默认值。"""
-
         return self._target().get(key, default)
 
-    def keys(self):
+    def keys(self) -> object:
         """返回键视图。"""
-
         return self._target().keys()
 
-    def values(self):
+    def values(self) -> object:
         """返回值视图。"""
-
         return self._target().values()
 
-    def items(self):
+    def items(self) -> object:
         """返回键值对视图。"""
-
         return self._target().items()
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         """返回调试表示。"""
-
         return repr(self._target())
 
 
@@ -293,14 +274,13 @@ class AppContextProvider:
     - 提供线程安全的获取与重载入口。
     """
 
-    def __init__(self, config_handler: ConfigHandler):
+    def __init__(self, config_handler: ConfigHandler) -> None:
         """初始化上下文提供器。"""
-
         self._config_handler = config_handler
         self._context: AppContext | None = None
         self._lock = threading.Lock()
 
-    def get(self, force_reload: bool = False) -> AppContext:
+    def get(self, *, force_reload: bool = False) -> AppContext:
         """获取应用上下文实例。
 
         参数:
@@ -309,7 +289,6 @@ class AppContextProvider:
         返回:
         - AppContext: 应用上下文对象。
         """
-
         if force_reload:
             with self._lock:
                 if self._context is None:
@@ -328,7 +307,7 @@ class AppContextProvider:
 _APP_CONTEXT_PROVIDER = AppContextProvider(ConfigHandler())
 
 
-def get_app_context(force_reload: bool = False) -> AppContext:
+def get_app_context(*, force_reload: bool = False) -> AppContext:
     """获取全局应用上下文。
 
     参数:
@@ -337,11 +316,10 @@ def get_app_context(force_reload: bool = False) -> AppContext:
     返回:
     - AppContext: 应用上下文对象。
     """
-
     return _APP_CONTEXT_PROVIDER.get(force_reload=force_reload)
 
 
-def initialize_app_context(force_reload: bool = False) -> AppContext:
+def initialize_app_context(*, force_reload: bool = False) -> AppContext:
     """初始化应用上下文。
 
     参数:
@@ -350,7 +328,6 @@ def initialize_app_context(force_reload: bool = False) -> AppContext:
     返回:
     - AppContext: 应用上下文对象。
     """
-
     return get_app_context(force_reload=force_reload)
 
 

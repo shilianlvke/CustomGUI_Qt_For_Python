@@ -1,4 +1,4 @@
-# -*- coding: utf-8 -*-
+"""模块说明。"""
 
 ################################################################################
 ## Form generated from reading UI file 'left_column.ui'
@@ -29,8 +29,11 @@ from PySide6.QtWidgets import (
 )
 
 
-class Ui_LeftColumn(object):
-    def setupUi(self, LeftColumn):
+class Ui_LeftColumn:
+    """左侧列 UI 生成类。"""
+
+    def setupUi(self, LeftColumn: QWidget) -> None:
+        """构建左侧列界面。"""
         if not LeftColumn.objectName():
             LeftColumn.setObjectName("LeftColumn")
         LeftColumn.resize(288, 600)
@@ -48,11 +51,11 @@ class Ui_LeftColumn(object):
         self.verticalLayout.setContentsMargins(5, 5, 5, 5)
         self.btn_1_widget = QWidget(self.menu_1)
         self.btn_1_widget.setObjectName("btn_1_widget")
-        sizePolicy = QSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed)
-        sizePolicy.setHorizontalStretch(0)
-        sizePolicy.setVerticalStretch(0)
-        sizePolicy.setHeightForWidth(self.btn_1_widget.sizePolicy().hasHeightForWidth())
-        self.btn_1_widget.setSizePolicy(sizePolicy)
+        size_policy = QSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed)
+        size_policy.setHorizontalStretch(0)
+        size_policy.setVerticalStretch(0)
+        size_policy.setHeightForWidth(self.btn_1_widget.sizePolicy().hasHeightForWidth())
+        self.btn_1_widget.setSizePolicy(size_policy)
         self.btn_1_layout = QVBoxLayout(self.btn_1_widget)
         self.btn_1_layout.setSpacing(0)
         self.btn_1_layout.setObjectName("btn_1_layout")
@@ -104,11 +107,11 @@ class Ui_LeftColumn(object):
         self.verticalLayout_3.setContentsMargins(0, 0, 0, 0)
         self.label_2 = QLabel(self.left_column_info)
         self.label_2.setObjectName("label_2")
-        sizePolicy1 = QSizePolicy(QSizePolicy.Expanding, QSizePolicy.Maximum)
-        sizePolicy1.setHorizontalStretch(0)
-        sizePolicy1.setVerticalStretch(0)
-        sizePolicy1.setHeightForWidth(self.label_2.sizePolicy().hasHeightForWidth())
-        self.label_2.setSizePolicy(sizePolicy1)
+        size_policy_1 = QSizePolicy(QSizePolicy.Expanding, QSizePolicy.Maximum)
+        size_policy_1.setHorizontalStretch(0)
+        size_policy_1.setVerticalStretch(0)
+        size_policy_1.setHeightForWidth(self.label_2.sizePolicy().hasHeightForWidth())
+        self.label_2.setSizePolicy(size_policy_1)
         self.label_2.setMaximumSize(QSize(16777215, 30))
         font = QFont()
         font.setPointSize(16)
@@ -143,13 +146,16 @@ class Ui_LeftColumn(object):
 
     # setupUi
 
-    def retranslateUi(self, LeftColumn):
+    def retranslateUi(self, LeftColumn: QWidget) -> None:
+        """刷新界面文本。"""
         LeftColumn.setWindowTitle(QCoreApplication.translate("LeftColumn", "Form", None))
         self.label_2.setText(QCoreApplication.translate("LeftColumn", "Menu 2 - Left Menu", None))
         self.label_3.setText(
             QCoreApplication.translate(
-                "LeftColumn", "This is just an example menu.\n" "Add Qt Widgets or your custom widgets here.", None
-            )
+                "LeftColumn",
+                "This is just an example menu.\nAdd Qt Widgets or your custom widgets here.",
+                None,
+            ),
         )
 
     # retranslateUi

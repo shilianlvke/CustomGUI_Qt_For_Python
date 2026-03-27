@@ -1,7 +1,9 @@
-﻿from AppCore import AppSettings, ColorPalette, get_design_tokens
+"""模块说明。"""
+
+from AppCore import AppSettings, ColorPalette, get_design_tokens
 
 
-def test_design_tokens_reflect_current_settings_and_palette():
+def test_design_tokens_reflect_current_settings_and_palette() -> None:
     """测试用例：test_design_tokens_reflect_current_settings_and_palette。
 
     职责:
@@ -17,8 +19,8 @@ def test_design_tokens_reflect_current_settings_and_palette():
     assert tokens.colors.text_primary == ColorPalette.custom_text_foreground
 
 
-def test_design_tokens_update_after_palette_change():
-    "测试用例：test_design_tokens_update_after_palette_change。"
+def test_design_tokens_update_after_palette_change() -> None:
+    """测试用例：test_design_tokens_update_after_palette_change。"""
     old_value = ColorPalette.custom_bg_one
     try:
         ColorPalette.custom_bg_one = "#123456"
@@ -26,4 +28,3 @@ def test_design_tokens_update_after_palette_change():
         assert tokens.colors.surface_app == "#123456"
     finally:
         ColorPalette.custom_bg_one = old_value
-

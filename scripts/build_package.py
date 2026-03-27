@@ -1,4 +1,6 @@
-﻿import os
+"""模块说明。"""
+
+import os
 import shutil
 import subprocess
 import sys
@@ -19,7 +21,7 @@ def _build_add_data_arg(src: str, dest: str) -> str:
 
 
 def main() -> int:
-    "函数：main。"
+    """函数：main。"""
     root = Path(__file__).resolve().parents[1]
     os.chdir(root)
 
@@ -51,11 +53,10 @@ def main() -> int:
         "main.py",
     ]
 
-    print("Running:", " ".join(cmd))
-    result = subprocess.run(cmd, check=False)
+    sys.stdout.write(f"Running: {' '.join(cmd)}\n")
+    result = subprocess.run(cmd, check=False)  # noqa: S603
     return result.returncode
 
 
 if __name__ == "__main__":
     raise SystemExit(main())
-

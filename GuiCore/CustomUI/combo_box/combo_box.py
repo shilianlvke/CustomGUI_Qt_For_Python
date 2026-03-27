@@ -1,3 +1,5 @@
+"""模块说明。"""
+
 from qt_core import QComboBox, QSize, Qt
 
 
@@ -6,11 +8,11 @@ class CComboBox(QComboBox):
 
     def __init__(
         self,
-        size: QSize = QSize(64, 32),
-        placeholder_text: str = None,
-        items: list = None,
-        is_editable=False,
-    ):
+        size: QSize | None = None,
+        placeholder_text: str | None = None,
+        items: list[str] | None = None,
+        is_editable: bool = False,
+    ) -> None:
         """初始化下拉框。
 
         参数:
@@ -22,8 +24,9 @@ class CComboBox(QComboBox):
         返回:
         - None
         """
-
         super().__init__()
+        if size is None:
+            size = QSize(64, 32)
         self.setObjectName("CComboBox_ComboBox")
         self.setFixedSize(size)
         self.setMaxVisibleItems(3)

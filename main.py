@@ -1,19 +1,21 @@
+"""应用程序入口模块。"""
+
 import sys
 
 from AppCore import (
-    Logger,
-    ColorPalette,
-    Language,
-    PathFactory,
+    AppLanguages,
     AppSettings,
     AppThemes,
-    AppLanguages,
+    ColorPalette,
+    Language,
+    Logger,
+    PathFactory,
     initialize_app_context,
     record_event,
 )
-from GUI import UiMainWindow, SetupMainWindow, MainFunctions
+from GUI import SetupMainWindow, UiMainWindow
 from GUI.windows.main_window.controller import MainWindowController
-from qt_core import QApplication, QMainWindow, QIcon
+from qt_core import QApplication, QIcon, QMainWindow, QMouseEvent, QResizeEvent
 
 
 class MainWindow(QMainWindow):
@@ -25,7 +27,7 @@ class MainWindow(QMainWindow):
     3. 处理窗口级事件（缩放、鼠标按下）。
     """
 
-    def __init__(self, **args):
+    def __init__(self, **args: object) -> None:
         """初始化主窗口并完成启动期装配。
 
         参数:
@@ -34,7 +36,6 @@ class MainWindow(QMainWindow):
         返回:
         - None
         """
-
         super().__init__()
         # 启动遥测：主窗口初始化
         record_event("app.main_window.init", category="app")
@@ -65,29 +66,27 @@ class MainWindow(QMainWindow):
         self.show()
         record_event("app.main_window.ready", category="app")
 
-    def btn_clicked(self):
+    def btn_clicked(self) -> None:
         """处理按钮点击并分发到控制器。
 
         返回:
         - None
         """
-
         # 统一从 UI 层取 sender，再交给控制器分发
         btn = SetupMainWindow.setup_btns(self)
         if btn is None:
             return
         self.controller.handle_button(btn)
 
-    def btn_released(self):
+    def btn_released(self) -> None:
         """处理按钮释放事件。
 
         返回:
         - None
         """
-
         SetupMainWindow.setup_btns(self)
 
-    def resizeEvent(self, event):
+    def resizeEvent(self, event: QResizeEvent) -> None:
         """处理窗口缩放并更新夹点位置。
 
         参数:
@@ -96,10 +95,9 @@ class MainWindow(QMainWindow):
         返回:
         - None
         """
-
         SetupMainWindow.resize_grips(self)
 
-    def mousePressEvent(self, event):
+    def mousePressEvent(self, event: QMouseEvent) -> None:
         """处理鼠标按下并记录拖拽起点。
 
         参数:
@@ -108,7 +106,6 @@ class MainWindow(QMainWindow):
         返回:
         - None
         """
-
         self.dragPos = event.globalPosition().toPoint()
         # 点击窗口其他区域时转移焦点
         self.focusNextChild()
@@ -120,28 +117,6 @@ if __name__ == "__main__":
 
     # 创建 Qt 应用对象
     app = QApplication(sys.argv)
-
-    # app.setQuitOnLastWindowClosed(False)
-    # # 创建托盘图标
-    # tray_icon = QSystemTrayIcon()
-    # tray_icon.setIcon(QIcon(PathFactory.set_jpg_image("托盘")))  # 设置托盘图标
-    # tray_icon.setToolTip("CustomUI Open Source")  # 设置提示信息
-    # menu = QMenu()
-    # show_action = QAction("显示主界面")
-    # quit_action = QAction("退出")
-    # # 绑定菜单事件
-    # show_action.triggered.connect(
-    #     lambda: MainWindow(
-    #         sys_settings=sys_settings,
-    #         sys_config=loading_window.loader.sys_config,
-    #     )
-    # )
-    # quit_action.triggered.connect(app.quit)
-    # menu.addAction(show_action)
-    # menu.addAction(quit_action)
-    # tray_icon.setContextMenu(menu)  # 设置右键菜单
-    # # 显示托盘图标
-    # tray_icon.setVisible(True)
 
     # 应用级样式和图标
     app.setStyle("windows11")
