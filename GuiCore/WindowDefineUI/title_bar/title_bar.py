@@ -33,7 +33,7 @@ class CTitleBar(QWidget):
     clicked = Signal(object)
     released = Signal(object)
 
-    def __init__(self, parent: QWidget, app_parent: object) -> None:
+    def __init__(self, parent: QWidget, app_parent: object) -> None:  # noqa: PLR0915
         """初始化标题栏。
 
         参数:
