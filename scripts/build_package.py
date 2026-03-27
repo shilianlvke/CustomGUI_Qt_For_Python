@@ -1,8 +1,8 @@
 """模块说明。"""
 
+import importlib
 import os
 import shutil
-import subprocess
 import sys
 from pathlib import Path
 
@@ -31,10 +31,7 @@ def main() -> int:
     if build_dir.exists():
         shutil.rmtree(build_dir)
 
-    cmd = [
-        sys.executable,
-        "-m",
-        "PyInstaller",
+    pyinstaller_args = [
         "--noconfirm",
         "--clean",
         "--windowed",
@@ -53,9 +50,21 @@ def main() -> int:
         "main.py",
     ]
 
-    sys.stdout.write(f"Running: {' '.join(cmd)}\n")
-    result = subprocess.run(cmd, check=False)  # noqa: S603
-    return result.returncode
+    sys.stdout.write(f"Running: PyInstaller {' '.join(pyinstaller_args)}\n")
+    try:
+        pyinstaller_run = importlib.import_module("PyInstaller.__main__").run
+    except ModuleNotFoundError as exc:
+        sys.stderr.write(f"PyInstaller import failed: {exc}\n")
+        return 1
+
+    try:
+        pyinstaller_run(pyinstaller_args)
+    except SystemExit as exc:
+        code = exc.code
+        if isinstance(code, int):
+            return code
+        return 1
+    return 0
 
 
 if __name__ == "__main__":

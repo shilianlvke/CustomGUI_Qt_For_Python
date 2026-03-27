@@ -2,9 +2,9 @@
 
 # ruff: noqa: N999
 
+import asyncio
 import ipaddress
 import os
-import subprocess
 
 
 def is_private_ip(ip: str) -> bool:
@@ -32,5 +32,20 @@ def is_device_online(ip: str) -> bool:
     except ValueError:
         return False
     command = ["ping", "-n", "1", "-w", "1000", ip] if os.name == "nt" else ["ping", "-c", "1", "-W", "1", ip]
-    response = subprocess.run(command, check=False, capture_output=True)  # noqa: S603
-    return response.returncode == 0
+
+    async def _ping_once() -> int:
+        process = await asyncio.create_subprocess_exec(
+            *command,
+            stdout=asyncio.subprocess.DEVNULL,
+            stderr=asyncio.subprocess.DEVNULL,
+        )
+        return await process.wait()
+
+    try:
+        return asyncio.run(_ping_once()) == 0
+    except RuntimeError:
+        loop = asyncio.new_event_loop()
+        try:
+            return loop.run_until_complete(_ping_once()) == 0
+        finally:
+            loop.close()
