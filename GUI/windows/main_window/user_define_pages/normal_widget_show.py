@@ -50,7 +50,7 @@ class NormalWidgetShowPage:
         scroller_area.setWidget(card)
         scroller_area.setWidgetResizable(True)
         scroller_area.setVerticalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
-        scroller_area.setStyleSheet(f"#widget_show_scroller_area{{background:{ColorPalette.custom_dark_three}}};")
+        scroller_area.setStyleSheet(f"#widget_show_scroller_area{{background-color:{ColorPalette.custom_dark_three};}}")
         page_card_layout.addWidget(scroller_area)
 
         stander_btn = CPushButton(text="标准按钮")

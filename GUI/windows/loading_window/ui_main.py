@@ -62,7 +62,7 @@ class LoadingWindow(QWidget):
 
         self.setWindowFlag(Qt.FramelessWindowHint)
         self.setAttribute(Qt.WA_TranslucentBackground)
-        self.setStyleSheet("background: transparent;")
+        self.setStyleSheet("background-color: transparent;")
         self.setFixedSize(self.progress.size())
 
         self.quit_anim = QPropertyAnimation(self.progress, b"value", self)

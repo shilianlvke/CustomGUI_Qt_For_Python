@@ -133,7 +133,7 @@ class SetupMainWindow:
         scroller_area.setWidget(card)
         scroller_area.setWidgetResizable(True)
         scroller_area.setVerticalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
-        scroller_area.setStyleSheet(f"background:{ColorPalette.custom_dark_three};")
+        scroller_area.setStyleSheet(f"background-color:{ColorPalette.custom_dark_three};")
         back_layout.addWidget(scroller_area)
 
         stander_btn = CPushButton(text="标准按钮")

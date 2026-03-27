@@ -85,7 +85,7 @@ class P2PTestReportPage:
         right_bottom_scroller_area = QScrollArea()
         right_bottom_scroller_area.setWidget(right_bottom_card)
         right_bottom_scroller_area.setWidgetResizable(True)
-        right_bottom_scroller_area.setStyleSheet(f"background:{ColorPalette.custom_dark_three};")
+        right_bottom_scroller_area.setStyleSheet(f"background-color:{ColorPalette.custom_dark_three};")
         right_bottom_scroller_area.setVerticalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
         right_bottom_scroller_area.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
         right_back_layout.addWidget(right_bottom_scroller_area)
