@@ -1,6 +1,7 @@
 """应用程序入口模块。"""
 
 import sys
+from typing import override
 
 from AppCore import (
     AppLanguages,
@@ -87,6 +88,7 @@ class MainWindow(QMainWindow):
         """
         SetupMainWindow.setup_btns(self)
 
+    @override
     def resizeEvent(self, event: QResizeEvent) -> None:
         """处理窗口缩放并更新夹点位置。
 
@@ -99,6 +101,7 @@ class MainWindow(QMainWindow):
         _ = event
         SetupMainWindow.resize_grips(self)
 
+    @override
     def mousePressEvent(self, event: QMouseEvent) -> None:
         """处理鼠标按下并记录拖拽起点。
 

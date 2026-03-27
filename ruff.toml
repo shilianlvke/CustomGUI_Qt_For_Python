@@ -35,7 +35,6 @@ ignore = ["D203", "D213", "D400", "D415", "RUF001", "RUF002", "RUF003", "COM812"
 	"PLR0915",
 	"SLF001",
 ]
-"main.py" = ["ARG002", "N802"]
 
 [format]
 quote-style = "double"
