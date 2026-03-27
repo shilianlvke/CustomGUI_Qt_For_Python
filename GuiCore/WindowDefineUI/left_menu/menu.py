@@ -1,7 +1,7 @@
 """模块说明。"""
 
 from AppCore import AppSettings, ColorPalette, Language, PathFactory
-from GuiCore.CustomUI.div import CHDiv
+from guicore.CustomUI.div import CHDiv
 from qt_core import (
     QEasingCurve,
     QFrame,

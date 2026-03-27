@@ -1,7 +1,7 @@
 """模块说明。"""
 
 from AppCore import Language, PathFactory
-from GuiCore import CCard, CDialog, CLineEdit, CPushButton
+from guicore import CCard, CDialog, CLineEdit, CPushButton
 from qt_core import QHBoxLayout, QIcon, QLabel, QSize, Qt, QVBoxLayout
 
 

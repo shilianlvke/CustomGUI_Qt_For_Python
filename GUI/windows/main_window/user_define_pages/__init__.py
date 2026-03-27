@@ -1,4 +1,3 @@
-# ruff: noqa: N999
 """Package initialization module."""
 
 from AppCore import MenuPlugin, PagePlugin, get_plugin_registry

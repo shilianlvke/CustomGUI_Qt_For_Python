@@ -27,7 +27,7 @@ def test_legacy_language_module_is_removed() -> None:
 
 def test_canonical_loading_ui_module_imports() -> None:
     """测试用例：test_canonical_loading_ui_module_imports。"""
-    ui_module = importlib.import_module("GUI.windows.loading_window.ui_main")
+    ui_module = importlib.import_module("gui.windows.loading_window.ui_main")
 
     if not (ui_module.LoadingWindow is not None):
         pytest.fail("Assertion failed")
@@ -36,4 +36,4 @@ def test_canonical_loading_ui_module_imports() -> None:
 def test_legacy_loading_ui_module_is_removed() -> None:
     """测试用例：test_legacy_loading_ui_module_is_removed。"""
     with pytest.raises(ModuleNotFoundError):
-        importlib.import_module("GUI.windows.loading_window.ui_mian")
+        importlib.import_module("gui.windows.loading_window.ui_mian")

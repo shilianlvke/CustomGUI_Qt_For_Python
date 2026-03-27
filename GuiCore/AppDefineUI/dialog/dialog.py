@@ -3,8 +3,8 @@
 from typing import override
 
 from AppCore import AppSettings
-from GuiCore.CustomUI import CCard
-from GuiCore.WindowDefineUI import CTitleBar, CWindow
+from guicore.CustomUI import CCard
+from guicore.WindowDefineUI import CTitleBar, CWindow
 from qt_core import QDialog, QMouseEvent, QPoint, Qt, QVBoxLayout
 
 

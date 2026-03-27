@@ -14,8 +14,8 @@ from AppCore import (
     initialize_app_context,
     record_event,
 )
-from GUI import SetupMainWindow, UiMainWindow
-from GUI.windows.main_window.controller import MainWindowController
+from gui import SetupMainWindow, UiMainWindow
+from gui.windows.main_window.controller import MainWindowController
 from qt_core import QApplication, QIcon, QMainWindow, QMouseEvent, QResizeEvent
 
 

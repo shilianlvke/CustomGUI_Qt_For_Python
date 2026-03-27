@@ -1,8 +1,8 @@
 """模块说明。"""
 
 from AppCore import AppSettings, Language, PathFactory
-from GuiCore import CCard, CComboBox, CLineEdit, CPushButton
-from GuiCore.CustomUI.div import CHDiv
+from guicore import CCard, CComboBox, CLineEdit, CPushButton
+from guicore.CustomUI.div import CHDiv
 from qt_core import (
     QGridLayout,
     QHBoxLayout,

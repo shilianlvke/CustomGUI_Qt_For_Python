@@ -3,8 +3,8 @@
 from PySide6.QtWidgets import QFrame, QHBoxLayout, QVBoxLayout, QWidget
 
 from AppCore import AppSettings, PathFactory
-from GUI import UiMainPages, UiRightColumn
-from GuiCore import CCredits, CLeftColumn, CLeftMenu, CTitleBar, CWindow
+from gui import UiMainPages, UiRightColumn
+from guicore import CCredits, CLeftColumn, CLeftMenu, CTitleBar, CWindow
 
 
 class UiMainWindow:

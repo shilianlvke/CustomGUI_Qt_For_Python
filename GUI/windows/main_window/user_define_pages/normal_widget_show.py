@@ -1,7 +1,7 @@
 """模块说明。"""
 
 from AppCore import ColorPalette, Language, Logger, PathFactory
-from GuiCore import CCard, CComboBox, CMenu, CMenuButton, CPushButton, CShowCard, CStatusButton
+from guicore import CCard, CComboBox, CMenu, CMenuButton, CPushButton, CShowCard, CStatusButton
 from qt_core import (
     QGridLayout,
     QIcon,

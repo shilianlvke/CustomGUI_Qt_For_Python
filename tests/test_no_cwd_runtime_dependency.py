@@ -7,7 +7,7 @@ from pathlib import Path
 import pytest
 
 ROOT = Path(__file__).resolve().parents[1]
-RUNTIME_DIRS = ["AppCore", "GUI", "GuiCore"]
+RUNTIME_DIRS = ["AppCore", "gui", "guicore"]
 RUNTIME_FILES = ["main.py"]
 
 

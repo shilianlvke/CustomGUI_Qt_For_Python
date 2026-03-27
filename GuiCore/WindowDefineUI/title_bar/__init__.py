@@ -1,4 +1,3 @@
-# ruff: noqa: N999
 """Package initialization module."""
 
 from .title_bar import CTitleBar as CTitleBar

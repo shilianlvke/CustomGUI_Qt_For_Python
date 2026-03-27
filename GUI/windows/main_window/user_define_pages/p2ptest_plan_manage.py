@@ -5,8 +5,8 @@ from PySide6.QtGui import QFont, QIcon
 from PySide6.QtWidgets import QGridLayout, QHBoxLayout, QLabel, QScrollArea, QVBoxLayout, QWidget
 
 from AppCore import AppSettings, ColorPalette, Language, Logger, PathFactory
-from GuiCore import CCard, CPushButton, CShowCard, CStatusButton
-from GuiCore.CustomUI.div import CHDiv
+from guicore import CCard, CPushButton, CShowCard, CStatusButton
+from guicore.CustomUI.div import CHDiv
 
 
 class P2PTestPlanPage:

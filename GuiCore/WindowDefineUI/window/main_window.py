@@ -4,7 +4,7 @@ from PySide6.QtGui import QColor
 from PySide6.QtWidgets import QFrame, QGraphicsDropShadowEffect, QHBoxLayout, QVBoxLayout
 
 from AppCore import AppSettings
-from GuiCore.styles import Styles
+from guicore.styles import Styles
 
 
 class CWindow(QFrame):

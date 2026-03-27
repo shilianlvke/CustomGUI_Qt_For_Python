@@ -4,7 +4,7 @@ from types import SimpleNamespace
 
 import pytest
 
-from GUI.windows.main_window.controller import ColumnController, MainWindowController, PageRouterController
+from gui.windows.main_window.controller import ColumnController, MainWindowController, PageRouterController
 
 
 class _FakeButton:

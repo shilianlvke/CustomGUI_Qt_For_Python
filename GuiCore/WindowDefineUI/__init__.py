@@ -1,4 +1,3 @@
-# ruff: noqa: N999
 """Package initialization module."""
 
 from .credits_bar import CCredits as CCredits

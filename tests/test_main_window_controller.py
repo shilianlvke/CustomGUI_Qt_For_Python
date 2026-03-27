@@ -4,7 +4,7 @@ from types import SimpleNamespace
 
 import pytest
 
-from GUI.windows.main_window.controller import MainWindowController, PageRouterController, ThemeController
+from gui.windows.main_window.controller import MainWindowController, PageRouterController, ThemeController
 
 
 class _StubMainFunctions:

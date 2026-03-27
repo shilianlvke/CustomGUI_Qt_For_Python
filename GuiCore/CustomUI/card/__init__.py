@@ -1,4 +1,3 @@
-# ruff: noqa: N999
 """Package initialization module."""
 
 from .back_card import CCard as CCard

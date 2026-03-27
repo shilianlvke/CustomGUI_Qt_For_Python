@@ -3,7 +3,7 @@
 import pytest
 
 from AppCore import Language, get_plugin_registry
-from GUI.windows.main_window.user_define_pages import (
+from gui.windows.main_window.user_define_pages import (
     PAGE_REGISTRY,
     get_default_page_object,
     get_page_routes,

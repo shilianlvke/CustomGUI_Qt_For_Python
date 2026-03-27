@@ -1,7 +1,7 @@
 """模块说明。"""
 
 from AppCore import ColorPalette
-from GUI import UiLeftColumn
+from gui import UiLeftColumn
 from qt_core import (
     QFrame,
     QHBoxLayout,

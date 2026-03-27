@@ -29,8 +29,8 @@ def test_core_config_smoke() -> None:
 def test_public_imports_smoke() -> None:
     """测试用例：test_public_imports_smoke。"""
     appcore = importlib.import_module("AppCore")
-    gui = importlib.import_module("GUI")
-    guicore = importlib.import_module("GuiCore")
+    gui = importlib.import_module("gui")
+    guicore = importlib.import_module("guicore")
 
     if not (hasattr(appcore, "Logger")):
         pytest.fail("Assertion failed")

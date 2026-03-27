@@ -1,4 +1,3 @@
-# ruff: noqa: N999
 """Package initialization module."""
 
 from .combo_box import CComboBox as CComboBox

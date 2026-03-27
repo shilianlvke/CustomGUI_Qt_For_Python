@@ -1,7 +1,7 @@
 """窗口标题栏组件模块。"""
 
 from AppCore import AppSettings, ColorPalette, Language, PathFactory
-from GuiCore.CustomUI.div import CVDiv
+from guicore.CustomUI.div import CVDiv
 from qt_core import (
     QCursor,
     QFrame,

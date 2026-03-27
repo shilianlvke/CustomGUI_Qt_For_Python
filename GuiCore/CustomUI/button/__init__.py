@@ -1,4 +1,3 @@
-# ruff: noqa: N999
 """Package initialization module."""
 
 from .menu_btn import CMenuButton as CMenuButton

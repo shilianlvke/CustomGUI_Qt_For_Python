@@ -15,7 +15,7 @@ from AppCore import (
     get_plugin_registry,
     record_event,
 )
-from GuiCore import Styles
+from guicore import Styles
 
 from .functions import MainFunctions
 from .user_define_pages import get_page_routes

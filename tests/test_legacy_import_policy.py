@@ -7,7 +7,7 @@ from pathlib import Path
 import pytest
 
 ROOT = Path(__file__).resolve().parents[1]
-RUNTIME_DIRS = ["AppCore", "GUI", "GuiCore"]
+RUNTIME_DIRS = ["AppCore", "gui", "guicore"]
 RUNTIME_FILES = ["main.py"]
 
 LEGACY_IMPORT_PATTERNS = [
@@ -20,7 +20,7 @@ LEGACY_IMPORT_PATTERNS = [
 
 ALLOWED_FILES = {
     "AppCore/SYS/module/language_module.py",
-    "GUI/windows/loading_window/ui_main.py",
+    "gui/windows/loading_window/ui_main.py",
 }
 
 

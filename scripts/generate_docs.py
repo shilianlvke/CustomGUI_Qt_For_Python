@@ -12,7 +12,7 @@ if TYPE_CHECKING:
 
 ROOT = Path(__file__).resolve().parents[1]
 DOCS_DIR = ROOT / "docs"
-PACKAGES = ("AppCore", "GUI", "GuiCore")
+PACKAGES = ("AppCore", "gui", "guicore")
 
 
 @dataclass(frozen=True)
