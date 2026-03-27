@@ -112,12 +112,31 @@ class SetupMainWindow:
     def load_page1(self) -> None:
         """预留页面加载入口。"""
 
-    def load_page2(self) -> None:  # noqa: PLR0915
+    def load_page2(self) -> None:
         """构建组件展示页示例内容。
 
         返回:
         - None
         """
+        card_layout = self._build_demo_page_layout()
+        cards = self._create_demo_cards()
+        positions = [
+            (cards[0], 0, 0),
+            (cards[1], 0, 1),
+            (cards[2], 0, 2),
+            (cards[3], 0, 3),
+            (cards[4], None, None),
+            (cards[5], None, None),
+            (cards[6], None, None),
+            (cards[7], None, None),
+        ]
+        for card, row, col in positions:
+            if row is None or col is None:
+                card_layout.addWidget(card)
+            else:
+                card_layout.addWidget(card, row, col)
+
+    def _build_demo_page_layout(self) -> QGridLayout:
         page_layout = QVBoxLayout(self.ui.load_pages.widget_show)
         page_layout.setContentsMargins(QMargins(0, 0, 0, 0))
 
@@ -135,7 +154,9 @@ class SetupMainWindow:
         scroller_area.setVerticalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
         scroller_area.setStyleSheet(f"background-color:{ColorPalette.custom_dark_three};")
         back_layout.addWidget(scroller_area)
+        return card_layout
 
+    def _create_demo_cards(self) -> list[CShowCard]:
         stander_btn = CPushButton(text="标准按钮")
         stander_btn.clicked.connect(lambda: Logger.info("点击了标准按钮"))
         icon_btn = CPushButton(size=QSize(64, 64), icon=PathFactory.set_jpg_image("托盘"))
@@ -183,22 +204,18 @@ class SetupMainWindow:
         menu_btn.setMenu(menu)
         combo_box_0 = CComboBox(size=QSize(120, 30), items=["提莫", "亚索", "阿狸"], placeholder_text="选择你的英雄")
         combo_box_0.currentIndexChanged.connect(lambda: Logger.info(f"改变了下拉框值{combo_box_0.currentIndex()}"))
-        card_1 = CShowCard(None, Language.custom_ui.sys_github, "标准按钮", stander_btn)
-        card_2 = CShowCard(None, Language.custom_ui.sys_github, "图标按钮", icon_btn)
-        card_3 = CShowCard(None, Language.custom_ui.sys_github, "透明按钮", trans_btn)
-        card_4 = CShowCard(None, Language.custom_ui.sys_github, "QIcon-文字按钮", text_icon_btn)
-        card_5 = CShowCard(None, Language.custom_ui.sys_github, "双态按钮", two_btn)
-        card_6 = CShowCard(None, Language.custom_ui.sys_github, "三态按钮", three_btn)
-        card_7 = CShowCard(None, Language.custom_ui.sys_github, "菜单按钮", menu_btn)
-        card_8 = CShowCard(None, Language.custom_ui.sys_github, "下拉框", combo_box_0)
-        card_layout.addWidget(card_1, 0, 0)
-        card_layout.addWidget(card_2, 0, 1)
-        card_layout.addWidget(card_3, 0, 2)
-        card_layout.addWidget(card_4, 0, 3)
-        card_layout.addWidget(card_5)
-        card_layout.addWidget(card_6)
-        card_layout.addWidget(card_7)
-        card_layout.addWidget(card_8)
+
+        github_url = Language.custom_ui.sys_github
+        return [
+            CShowCard(None, github_url, "标准按钮", stander_btn),
+            CShowCard(None, github_url, "图标按钮", icon_btn),
+            CShowCard(None, github_url, "透明按钮", trans_btn),
+            CShowCard(None, github_url, "QIcon-文字按钮", text_icon_btn),
+            CShowCard(None, github_url, "双态按钮", two_btn),
+            CShowCard(None, github_url, "三态按钮", three_btn),
+            CShowCard(None, github_url, "菜单按钮", menu_btn),
+            CShowCard(None, github_url, "下拉框", combo_box_0),
+        ]
 
     def resize_grips(self) -> None:
         """根据窗口尺寸更新边缘夹点位置。
