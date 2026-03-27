@@ -357,6 +357,12 @@ class PluginRegistry:
         return str(root / "resource" / "CustomUI" / "settings" / "plugins.yml")
 
     @staticmethod
+    def _yaml_handler_type() -> type:
+        """延迟解析 YamlHandler 类型以规避导入环。"""
+        module = importlib.import_module("AppCore.SYS.handler.yaml_handler")
+        return module.YamlHandler
+
+    @staticmethod
     def _normalize_manifest_modules(raw_data: object) -> list[str]:
         """标准化清单中的插件模块列表。
 
@@ -393,9 +399,8 @@ class PluginRegistry:
         path = manifest_path or self._default_manifest_path()
         if not Path(path).exists():
             return []
-        from AppCore.SYS.handler import YamlHandler  # noqa: PLC0415
 
-        data = YamlHandler(path).data
+        data = self._yaml_handler_type()(path).data
         return self._normalize_manifest_modules(data)
 
     def load_plugins_from_modules(self, module_paths: list[str], *, strict: bool = False) -> dict[str, int]:

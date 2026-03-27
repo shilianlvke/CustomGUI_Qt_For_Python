@@ -1,5 +1,6 @@
 """模块说明。"""
 
+import importlib
 from dataclasses import dataclass
 
 from .color_module import ColorPalette
@@ -87,7 +88,7 @@ def get_design_tokens() -> DesignTokens:
     返回:
     - DesignTokens: 当前上下文下的设计令牌集合。
     """
-    from AppCore.SYS.other.folder_tools import AppSettings  # noqa: PLC0415
+    app_settings = importlib.import_module("AppCore.SYS.other.folder_tools").AppSettings
 
     return DesignTokens(
         colors=ColorTokens(
@@ -105,25 +106,25 @@ def get_design_tokens() -> DesignTokens:
             border_transparent=ColorPalette.custom_transparent,
         ),
         typography=TypographyTokens(
-            family=AppSettings.family,
-            size_title=AppSettings.title_size,
-            size_subtitle=AppSettings.subtitle_size,
-            size_text=AppSettings.text_size,
-            weight_tooltip=AppSettings.tooltip_font,
+            family=app_settings.family,
+            size_title=app_settings.title_size,
+            size_subtitle=app_settings.subtitle_size,
+            size_text=app_settings.text_size,
+            weight_tooltip=app_settings.tooltip_font,
         ),
         spacing=SpacingTokens(
             padding_sm=10,
-            padding_md=AppSettings.custom_padding,
+            padding_md=app_settings.custom_padding,
         ),
         radius=RadiusTokens(
-            window=AppSettings.window_border_radius,
-            tooltip=AppSettings.tooltip_border_radius,
+            window=app_settings.window_border_radius,
+            tooltip=app_settings.tooltip_border_radius,
         ),
         border=BorderTokens(
-            width=AppSettings.window_border_size,
-            accent_width=AppSettings.custom_border,
+            width=app_settings.window_border_size,
+            accent_width=app_settings.custom_border,
         ),
         size=SizeTokens(
-            icon=AppSettings.icon_size,
+            icon=app_settings.icon_size,
         ),
     )

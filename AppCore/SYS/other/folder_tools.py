@@ -1,5 +1,6 @@
 """模块说明。"""
 
+import importlib
 import threading
 from collections.abc import Callable, Iterator
 from dataclasses import dataclass
@@ -36,12 +37,12 @@ class ConfigHandler:
         返回:
         - EasyDict: ``name -> {path, data}`` 的映射。
         """
-        from AppCore.SYS.handler import YamlHandler  # noqa: PLC0415
+        yaml_handler = importlib.import_module("AppCore.SYS.handler.yaml_handler").YamlHandler
 
         result = EasyDict()
         for path in path_list:
             name = Path(path).stem.lower()
-            result[name] = EasyDict(path=path, data=YamlHandler(path))
+            result[name] = EasyDict(path=path, data=yaml_handler(path))
         return result
 
     @staticmethod
