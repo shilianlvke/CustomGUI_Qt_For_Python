@@ -268,7 +268,7 @@ class MainWindowController:
         - None
         """
         btn_name = btn.objectName()
-        self._logger.debug(f"{btn_name} is clicked")
+        self._logger.debug("%s is clicked", btn_name)
         self._record_event("ui.button_click", category="ui", payload={"button_id": btn_name})
 
         if self._button_use_case.should_reset_left_tab(btn_name):

@@ -169,9 +169,9 @@ class _Logger:
         """输出 info 级别日志。"""
         self._logger.info(msg)
 
-    def debug(self, msg: str) -> None:
+    def debug(self, msg: str, *args: object) -> None:
         """输出 debug 级别日志。"""
-        self._logger.debug(msg)
+        self._logger.debug(msg, *args)
 
     def warning(self, msg: str) -> None:
         """输出 warning 级别日志。"""

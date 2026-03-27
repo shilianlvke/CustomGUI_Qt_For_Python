@@ -129,67 +129,49 @@ def test_theme_controller_cycles_expected_theme_sequence() -> None:
         pytest.fail("Assertion failed")
 
 
-def test_main_window_controller_dispatches_plugin_command_when_unhandled() -> None:
-    """测试用例：test_main_window_controller_dispatches_plugin_command_when_unhandled。"""
-    calls = []
+class _PluginDispatchRegistry:
+    """类：_PluginDispatchRegistry。"""
 
-    def _record_event(*_args: object, **_kwargs: object) -> None:
-        return
+    def __init__(self, calls: list[tuple[str, object, str]]) -> None:
+        """函数：__init__。"""
+        self._calls = calls
 
-    def _debug_log(*_args: object, **_kwargs: object) -> None:
-        return
+    def execute_command(self, command_id: str, window: object, btn: object) -> None:
+        """函数：execute_command。"""
+        self._calls.append((command_id, window, btn.objectName()))
 
-    def _route_for(_name: str) -> None:
-        return None
 
-    def _switch_page(*_args: object) -> None:
-        return
-
-    def _handle_action(*_args: object) -> None:
-        return
-
-    def _cycle_theme() -> None:
-        return
-
-    def _plugin_registry_getter() -> "_Registry":
-        return _Registry()
-
-    def _deselect_all_tab() -> None:
-        return
-
-    class _Registry:
-        """类：_Registry。"""
-
-        def execute_command(self, command_id: str, window: object, btn: object) -> None:
-            """函数：execute_command。"""
-            calls.append((command_id, window, btn.objectName()))
-
+def _build_controller_for_plugin_dispatch(calls: list[tuple[str, object, str]]) -> MainWindowController:
+    """函数：_build_controller_for_plugin_dispatch。"""
     window = SimpleNamespace(
         ui=SimpleNamespace(
-            left_menu=SimpleNamespace(deselect_all_tab=_deselect_all_tab),
+            left_menu=SimpleNamespace(deselect_all_tab=lambda: None),
             title_bar=SimpleNamespace(),
         ),
     )
-
     controller = MainWindowController(
         window=window,
         main_functions=_StubMainFunctions,
-        plugin_registry_getter=_plugin_registry_getter,
-        event_recorder=_record_event,
-        logger=SimpleNamespace(debug=_debug_log),
+        plugin_registry_getter=lambda: _PluginDispatchRegistry(calls),
+        event_recorder=lambda *_args, **_kwargs: None,
+        logger=SimpleNamespace(debug=lambda *_args, **_kwargs: None),
     )
-    controller.page_router = SimpleNamespace(route_for=_route_for, switch_page=_switch_page)
+    controller.page_router = SimpleNamespace(route_for=lambda _name: None, switch_page=lambda *_args: None)
     controller.column_controller = SimpleNamespace(
-        handle_info_button=_handle_action,
-        handle_more_button=_handle_action,
-        handle_top_settings_button=_handle_action,
+        handle_info_button=lambda *_args: None,
+        handle_more_button=lambda *_args: None,
+        handle_top_settings_button=lambda *_args: None,
     )
-    controller.theme_controller = SimpleNamespace(cycle_theme=_cycle_theme)
+    controller.theme_controller = SimpleNamespace(cycle_theme=lambda: None)
+    return controller
+
+
+def test_main_window_controller_dispatches_plugin_command_when_unhandled() -> None:
+    """测试用例：test_main_window_controller_dispatches_plugin_command_when_unhandled。"""
+    calls: list[tuple[str, object, str]] = []
+    controller = _build_controller_for_plugin_dispatch(calls)
 
     btn = _FakeButton("cmd_custom")
     controller.handle_button(btn)
-
-    if not (calls):
-        pytest.fail("Assertion failed")
-    if calls[0][0] != "cmd_custom":
-        pytest.fail("Assertion failed")
+    assert calls
+    assert calls[0][0] == "cmd_custom"
