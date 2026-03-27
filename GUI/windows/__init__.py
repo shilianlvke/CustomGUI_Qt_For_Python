@@ -1,3 +1,4 @@
+# ruff: noqa: N999
 """Package initialization module."""
 
 from .loading_window import LoadingWindow

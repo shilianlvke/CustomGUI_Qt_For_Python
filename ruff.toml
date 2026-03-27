@@ -7,8 +7,6 @@ select = ["ALL"]
 ignore = ["D203", "D213", "D400", "D415", "RUF001", "RUF002", "RUF003", "COM812"]
 
 [lint.per-file-ignores]
-"GuiCore/**/__init__.py" = ["N999"]
-"GUI/**/__init__.py" = ["N999"]
 
 [format]
 quote-style = "double"

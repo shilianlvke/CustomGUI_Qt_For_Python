@@ -1,3 +1,4 @@
+# ruff: noqa: N999
 """Package initialization module."""
 
 from .main_pages import UiMainPages as UiMainPages

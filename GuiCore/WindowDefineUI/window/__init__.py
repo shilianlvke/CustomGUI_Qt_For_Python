@@ -1,3 +1,4 @@
+# ruff: noqa: N999
 """Package initialization module."""
 
 from .main_window import CWindow as CWindow

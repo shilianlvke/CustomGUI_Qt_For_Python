@@ -1,3 +1,4 @@
+# ruff: noqa: N999
 """Package initialization module."""
 
 from .left_column import CLeftColumn as CLeftColumn
