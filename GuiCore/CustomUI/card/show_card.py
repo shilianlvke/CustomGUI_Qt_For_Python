@@ -25,15 +25,7 @@ class CShowCard(QFrame):
     - 提供统一卡片样式与链接跳转行为。
     """
 
-    def __init__(  # noqa: PLR0913
-        self,
-        size: QSize | None = None,
-        source_url: str = "https://example.com",
-        bottom_text: str = "查看源代码",
-        widget: QWidget | None = None,
-        radius: int = 8,
-        border_size: int = 12,
-    ) -> None:
+    def __init__(self, *args: object, **kwargs: object) -> None:
         """初始化展示卡片。
 
         参数:
@@ -47,16 +39,39 @@ class CShowCard(QFrame):
         返回:
         - None
         """
+        defaults: dict[str, object] = {
+            "size": None,
+            "source_url": "https://example.com",
+            "bottom_text": "查看源代码",
+            "widget": None,
+            "radius": 8,
+            "border_size": 12,
+        }
+        values = defaults.copy()
+        for index, key in enumerate(defaults):
+            if index < len(args):
+                values[key] = args[index]
+        for key in defaults:
+            if key in kwargs:
+                values[key] = kwargs[key]
+
+        size = values["size"]
+        source_url = values["source_url"]
+        bottom_text = values["bottom_text"]
+        widget = values["widget"]
+        radius = values["radius"]
+        border_size = values["border_size"]
+
         super().__init__()
         self.setObjectName("CShowCard")
-        if size is not None:
+        if isinstance(size, QSize):
             self.setFixedSize(size)
         self.setMinimumHeight(96)
-        self.radius = radius
-        self.border_size = border_size
+        self.radius = int(radius)
+        self.border_size = int(border_size)
         self.colorpalette = ColorPalette
-        self.bottom_text = bottom_text
-        self.source_url = source_url
+        self.bottom_text = str(bottom_text)
+        self.source_url = str(source_url)
 
         # 初始化上下区域
         self.top_area = QWidget()
@@ -89,7 +104,7 @@ class CShowCard(QFrame):
         main_layout.setContentsMargins(0, 0, 0, 0)
         main_layout.addWidget(self.top_area)
         main_layout.addWidget(self.bottom_area)
-        if widget is not None:
+        if isinstance(widget, QWidget):
             self.set_top_widget(widget)
         # 样式
         self._setup_style()

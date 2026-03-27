@@ -28,23 +28,7 @@ class CLeftMenuButton(QPushButton):
 
     style_change = Slot("style_change")
 
-    def __init__(  # noqa: PLR0913
-        self,
-        app_parent: object,
-        text: str,
-        btn_id: str | None = None,
-        tooltip_text: str = "",
-        margin: int = 4,
-        icon_path: str = "icon_add_user",
-        icon_active_menu: str = "active_menu",
-        *,
-        is_active: bool = False,
-        is_active_tab: bool = False,
-        is_toggle_active: bool = False,
-        minimum_width: int = 50,
-        maximum_width: int = 240,
-        font_family: object = None,
-    ) -> None:
+    def __init__(self, app_parent: object, text: str, **options: object) -> None:
         """初始化左侧菜单按钮。
 
         参数:
@@ -65,6 +49,18 @@ class CLeftMenuButton(QPushButton):
         返回:
         - None
         """
+        btn_id = options.get("btn_id")
+        tooltip_text = str(options.get("tooltip_text", ""))
+        margin = int(options.get("margin", 4))
+        icon_path = str(options.get("icon_path", "icon_add_user"))
+        icon_active_menu = str(options.get("icon_active_menu", "active_menu"))
+        is_active = bool(options.get("is_active", False))
+        is_active_tab = bool(options.get("is_active_tab", False))
+        is_toggle_active = bool(options.get("is_toggle_active", False))
+        minimum_width = int(options.get("minimum_width", 50))
+        maximum_width = int(options.get("maximum_width", 240))
+        font_family = options.get("font_family")
+
         super().__init__()
         self.setText(text)
         self.setFont(font_family)

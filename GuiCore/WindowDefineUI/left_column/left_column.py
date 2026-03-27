@@ -28,17 +28,7 @@ class CLeftColumn(QWidget):
     clicked = Signal(object)
     released = Signal(object)
 
-    def __init__(  # noqa: PLR0913
-        self,
-        # parent,
-        app_parent: object,
-        text_title: str,
-        text_title_size: int,
-        icon_path: str,
-        icon_close_path: str,
-        font_family: str,
-        radius: int = 8,
-    ) -> None:
+    def __init__(self, app_parent: object, **options: object) -> None:
         """初始化左侧栏组件。
 
         参数:
@@ -53,6 +43,13 @@ class CLeftColumn(QWidget):
         返回:
         - None
         """
+        text_title = str(options.get("text_title", ""))
+        text_title_size = int(options.get("text_title_size", 10))
+        icon_path = str(options.get("icon_path", ""))
+        icon_close_path = str(options.get("icon_close_path", ""))
+        font_family = str(options.get("font_family", ""))
+        radius = int(options.get("radius", 8))
+
         super().__init__()
 
         # 参数

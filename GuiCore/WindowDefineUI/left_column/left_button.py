@@ -25,19 +25,7 @@ class PyLeftButton(QPushButton):
     - 支持悬停、按压反馈与提示信息显示。
     """
 
-    def __init__(  # noqa: PLR0913
-        self,
-        app_parent: object = None,
-        tooltip_text: str = "",
-        btn_id: str | None = None,
-        width: int = 30,
-        height: int = 30,
-        radius: int = 8,
-        icon_path: str = "no_icon.svg",
-        *,
-        is_active: bool = False,
-        font_family: str = "",
-    ) -> None:
+    def __init__(self, app_parent: object = None, **options: object) -> None:
         """初始化左侧栏按钮。
 
         参数:
@@ -54,6 +42,15 @@ class PyLeftButton(QPushButton):
         返回:
         - None
         """
+        tooltip_text = str(options.get("tooltip_text", ""))
+        btn_id = options.get("btn_id")
+        width = int(options.get("width", 30))
+        height = int(options.get("height", 30))
+        radius = int(options.get("radius", 8))
+        icon_path = str(options.get("icon_path", "no_icon.svg"))
+        is_active = bool(options.get("is_active", False))
+        font_family = str(options.get("font_family", ""))
+
         super().__init__()
 
         # SET DEFAULT PARAMETERS
@@ -84,10 +81,10 @@ class PyLeftButton(QPushButton):
         self._tooltip = _ToolTip(
             app_parent,
             tooltip_text,
-            ColorPalette.custom_dark_one,
-            ColorPalette.custom_context_color,
-            ColorPalette.custom_text_foreground,
-            font_family,
+            dark_one=ColorPalette.custom_dark_one,
+            context_color=ColorPalette.custom_context_color,
+            text_foreground=ColorPalette.custom_text_foreground,
+            family=font_family,
         )
         self._tooltip.hide()
 
@@ -267,15 +264,7 @@ class _ToolTip(QLabel):
     }}
     """
 
-    def __init__(  # noqa: PLR0913
-        self,
-        parent: object,
-        tooltip: str,
-        dark_one: str,
-        context_color: str,
-        text_foreground: str,
-        family: str,
-    ) -> None:
+    def __init__(self, parent: object, tooltip: str, **style_tokens: object) -> None:
         """初始化提示框。
 
         参数:
@@ -290,10 +279,10 @@ class _ToolTip(QLabel):
 
         # LABEL SETUP
         style = self.style_tooltip.format(
-            _dark_one=dark_one,
-            _context_color=context_color,
-            _text_foreground=text_foreground,
-            _family=family,
+            _dark_one=style_tokens.get("dark_one", ColorPalette.custom_dark_one),
+            _context_color=style_tokens.get("context_color", ColorPalette.custom_context_color),
+            _text_foreground=style_tokens.get("text_foreground", ColorPalette.custom_text_foreground),
+            _family=style_tokens.get("family", ""),
         )
         self.setObjectName("label_tooltip")
         self.setStyleSheet(style)

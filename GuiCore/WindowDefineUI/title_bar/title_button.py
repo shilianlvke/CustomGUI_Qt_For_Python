@@ -23,21 +23,7 @@ from qt_core import (
 class CTitleButton(QPushButton):
     """标题栏控制按钮组件。"""
 
-    def __init__(  # noqa: PLR0913
-        self,
-        parent: object,
-        app_parent: object = None,
-        tooltip_text: str = "",
-        btn_id: str | None = None,
-        width: int = 30,
-        height: int = 30,
-        radius: int = 8,
-        bg_color: str = "#343b48",
-        icon_color: str = "#c3ccdf",
-        icon_path: str = "no_icon.svg",
-        *,
-        is_active: bool = False,
-    ) -> None:
+    def __init__(self, parent: object, app_parent: object = None, **options: object) -> None:
         """初始化标题栏按钮。
 
         参数:
@@ -56,6 +42,16 @@ class CTitleButton(QPushButton):
         返回:
         - None
         """
+        tooltip_text = str(options.get("tooltip_text", ""))
+        btn_id = options.get("btn_id")
+        width = int(options.get("width", 30))
+        height = int(options.get("height", 30))
+        radius = int(options.get("radius", 8))
+        bg_color = str(options.get("bg_color", "#343b48"))
+        icon_color = str(options.get("icon_color", "#c3ccdf"))
+        icon_path = str(options.get("icon_path", "no_icon.svg"))
+        is_active = bool(options.get("is_active", False))
+
         super().__init__()
 
         # SET DEFAULT PARAMETERS
