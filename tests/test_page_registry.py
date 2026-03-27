@@ -1,4 +1,4 @@
-from AppCore import Language
+﻿from AppCore import Language
 from AppCore import get_plugin_registry
 from GUI.windows.main_window.user_define_pages import (
     PAGE_REGISTRY,
@@ -8,11 +8,17 @@ from GUI.windows.main_window.user_define_pages import (
 
 
 def test_registry_button_ids_unique():
+    """测试用例：test_registry_button_ids_unique。
+
+    职责:
+    - 验证目标行为符合预期。
+    """
     ids = [item["button_id"] for item in PAGE_REGISTRY]
     assert len(ids) == len(set(ids))
 
 
 def test_page_routes_contains_core_entries():
+    "测试用例：test_page_routes_contains_core_entries。"
     routes = get_page_routes(Language)
 
     assert "btn_home" in routes
@@ -21,6 +27,7 @@ def test_page_routes_contains_core_entries():
 
 
 def test_default_page_exists_in_routes():
+    "测试用例：test_default_page_exists_in_routes。"
     routes = get_page_routes(Language)
     default_page = get_default_page_object()
 
@@ -29,7 +36,9 @@ def test_default_page_exists_in_routes():
 
 
 def test_builtin_page_plugins_registered():
+    "测试用例：test_builtin_page_plugins_registered。"
     registry = get_plugin_registry()
     pages = registry.page_plugins()
 
     assert any(plugin.plugin_id == "builtin.page.home" for plugin in pages)
+

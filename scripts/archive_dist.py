@@ -1,9 +1,17 @@
-import shutil
+﻿import shutil
 import sys
 from pathlib import Path
 
 
 def main() -> int:
+    """函数：main。
+
+    参数:
+    - 按函数签名传入。
+
+    返回:
+    - 按函数实现返回。
+    """
     if len(sys.argv) != 2:
         print("Usage: python scripts/archive_dist.py <target-name>")
         return 2
@@ -26,3 +34,4 @@ def main() -> int:
 
 if __name__ == "__main__":
     raise SystemExit(main())
+

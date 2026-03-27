@@ -193,6 +193,15 @@ BUILTIN_PAGE_PLUGINS = [
 
 
 def _default_title_by_button(button_id):
+    """按按钮 ID 提供默认标题。
+
+    参数:
+    - button_id: 按钮标识。
+
+    返回:
+    - str: 默认标题文本。
+    """
+
     defaults = {
         "btn_widget_show": "Widget Show",
     }
@@ -200,6 +209,12 @@ def _default_title_by_button(button_id):
 
 
 def register_builtin_pages():
+    """注册内置页面插件。
+
+    返回:
+    - None
+    """
+
     registry = get_plugin_registry()
     for plugin in BUILTIN_PAGE_PLUGINS:
         if not registry.has_page(plugin.plugin_id):
@@ -207,6 +222,12 @@ def register_builtin_pages():
 
 
 def register_builtin_menus():
+    """注册内置菜单插件。
+
+    返回:
+    - None
+    """
+
     registry = get_plugin_registry()
     for plugin in BUILTIN_MENU_PLUGINS:
         # MenuPlugin 目前没有 has_menu 接口，按 plugin_id 判重可直接重用底层容器
@@ -215,6 +236,12 @@ def register_builtin_menus():
 
 
 def _as_legacy_registry():
+    """导出兼容历史结构的页面注册表。
+
+    返回:
+    - list[dict]: 兼容旧接口的页面信息列表。
+    """
+
     registry = get_plugin_registry()
     result = []
     for plugin in registry.page_plugins():
@@ -231,6 +258,15 @@ def _as_legacy_registry():
 
 
 def load_registered_pages(window):
+    """加载并执行已注册页面插件。
+
+    参数:
+    - window: 主窗口对象。
+
+    返回:
+    - None
+    """
+
     register_builtin_menus()
     register_builtin_pages()
     registry = get_plugin_registry()
@@ -238,6 +274,15 @@ def load_registered_pages(window):
 
 
 def get_page_routes(language):
+    """获取页面路由映射。
+
+    参数:
+    - language: 当前语言对象。
+
+    返回:
+    - dict: ``button_id -> (page_object, title)`` 映射。
+    """
+
     register_builtin_menus()
     register_builtin_pages()
     registry = get_plugin_registry()
@@ -245,6 +290,12 @@ def get_page_routes(language):
 
 
 def get_default_page_object():
+    """获取默认页面对象名。
+
+    返回:
+    - str: 默认页面对象名。
+    """
+
     register_builtin_menus()
     register_builtin_pages()
     registry = get_plugin_registry()
@@ -252,6 +303,15 @@ def get_default_page_object():
 
 
 def get_menu_items(target: str):
+    """获取指定菜单目标的菜单项。
+
+    参数:
+    - target: 菜单目标标识。
+
+    返回:
+    - list: 菜单项列表。
+    """
+
     register_builtin_menus()
     registry = get_plugin_registry()
     return registry.apply_menu_plugins([], target)

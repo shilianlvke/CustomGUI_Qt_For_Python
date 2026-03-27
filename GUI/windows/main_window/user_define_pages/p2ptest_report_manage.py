@@ -7,8 +7,15 @@ from GuiCore.CustomUI.div import CHDiv
 
 
 class P2PTestReportPage:
+    """P2P 测试报告页面定义。"""
 
     def load_page(self):
+        """构建并注册测试报告页面。
+
+        返回:
+        - None
+        """
+
         # 新增页面
         page = QWidget()
         page.setObjectName("p2pTestReportPage")

@@ -1,4 +1,4 @@
-import ast
+﻿import ast
 from pathlib import Path
 
 
@@ -8,6 +8,14 @@ RUNTIME_FILES = ["main.py"]
 
 
 def _iter_runtime_files():
+    """函数：_iter_runtime_files。
+
+    参数:
+    - 按函数签名传入。
+
+    返回:
+    - 按函数实现返回。
+    """
     for rel in RUNTIME_DIRS:
         base = ROOT / rel
         for path in base.rglob("*.py"):
@@ -19,6 +27,7 @@ def _iter_runtime_files():
 
 
 def test_runtime_code_must_not_use_os_getcwd():
+    "测试用例：test_runtime_code_must_not_use_os_getcwd。"
     violations = []
 
     for file_path in _iter_runtime_files():
@@ -39,3 +48,4 @@ def test_runtime_code_must_not_use_os_getcwd():
                     violations.append(f"{file_path.relative_to(ROOT).as_posix()} -> getcwd()")
 
     assert not violations, "Runtime code must not depend on os.getcwd:\n" + "\n".join(violations)
+

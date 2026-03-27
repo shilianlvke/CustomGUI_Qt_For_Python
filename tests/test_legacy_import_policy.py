@@ -1,4 +1,4 @@
-import re
+﻿import re
 from pathlib import Path
 
 
@@ -21,6 +21,14 @@ ALLOWED_FILES = {
 
 
 def _iter_runtime_files():
+    """函数：_iter_runtime_files。
+
+    参数:
+    - 按函数签名传入。
+
+    返回:
+    - 按函数实现返回。
+    """
     for rel in RUNTIME_DIRS:
         base = ROOT / rel
         for path in base.rglob("*.py"):
@@ -32,6 +40,7 @@ def _iter_runtime_files():
 
 
 def test_runtime_code_does_not_add_new_legacy_imports():
+    "测试用例：test_runtime_code_does_not_add_new_legacy_imports。"
     violations = []
 
     for path in _iter_runtime_files():
@@ -45,3 +54,4 @@ def test_runtime_code_does_not_add_new_legacy_imports():
                 violations.append(f"{rel}:{index}: {line.strip()}")
 
     assert not violations, "New legacy imports are not allowed:\n" + "\n".join(violations)
+

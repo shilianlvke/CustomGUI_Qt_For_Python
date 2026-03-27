@@ -20,6 +20,12 @@ QPushButton:pressed {{
 
 
 class CStatusButton(QPushButton):
+    """状态切换按钮组件。
+
+    职责:
+    - 支持双态或三态状态循环。
+    - 根据状态同步文本、图标与样式。
+    """
 
     statusChanged = Signal(int)
 
@@ -36,6 +42,24 @@ class CStatusButton(QPushButton):
         border_size: int = 2,
         is_normal: bool = False,  # 三态开关
     ):
+        """初始化状态按钮。
+
+        参数:
+        - size: 按钮尺寸。
+        - text_negative: 负态文本。
+        - text_normal: 中态文本。
+        - text_positive: 正态文本。
+        - icon_negative: 负态图标对象或路径。
+        - icon_normal: 中态图标对象或路径。
+        - icon_positive: 正态图标对象或路径。
+        - radius: 圆角半径。
+        - border_size: 边框宽度。
+        - is_normal: 是否启用三态模式。
+
+        返回:
+        - None
+        """
+
         super().__init__()
         self.status_list = [-1, 0, 1] if is_normal else [0, 1]
         self.status = self.status_list[0]
@@ -83,6 +107,21 @@ class CStatusButton(QPushButton):
         self.setFocusPolicy(Qt.StrongFocus)
 
     def set_stylesheet(self, radius, border_size, bg_color, text_color, hover_color, press_active, border_hover_color):
+        """设置按钮样式表。
+
+        参数:
+        - radius: 圆角半径。
+        - border_size: 边框宽度。
+        - bg_color: 背景颜色。
+        - text_color: 文本颜色。
+        - hover_color: 悬停颜色。
+        - press_active: 按下颜色。
+        - border_hover_color: 边框颜色。
+
+        返回:
+        - None
+        """
+
         style_format = style.format(
             _radius=radius,
             _border_size=border_size,
@@ -95,6 +134,8 @@ class CStatusButton(QPushButton):
         self.setStyleSheet(style_format)
 
     def text_change(self):
+        """根据当前状态更新按钮文本。"""
+
         if self.status == 1:
             if hasattr(self, "text_positive"):
                 self.setText(self.text_positive)
@@ -112,6 +153,8 @@ class CStatusButton(QPushButton):
                 self.setText("")
 
     def icon_change(self):
+        """根据当前状态更新按钮图标。"""
+
         if self.status == 1:
             if hasattr(self, "icon_positive"):
                 self.setIcon(self.icon_positive)
@@ -129,6 +172,8 @@ class CStatusButton(QPushButton):
                 self.setIconSize(self.icon_size_normal)
 
     def style_change(self):
+        """根据当前状态更新按钮样式。"""
+
         if self.status == 1:
             border_haver_color = self.color.custom_context_color
         elif self.status == 0:
@@ -146,6 +191,15 @@ class CStatusButton(QPushButton):
         )
 
     def mousePressEvent(self, event):
+        """处理鼠标点击并推进状态机。
+
+        参数:
+        - event: 鼠标事件对象。
+
+        返回:
+        - None
+        """
+
         super().mousePressEvent(event)
         self.status = self.status_list[(self.status_list.index(self.status) + 1) % len(self.status_list)]
         self.statusChanged.emit(self.status)

@@ -6,8 +6,10 @@ from PySide6.QtGui import QPixmap, QPainter, QPainterPath
 
 
 class PathFinder:
-    """
-    路径工厂类
+    """资源路径工厂。
+
+    职责:
+    - 提供图片、主题、语言和配置文件的统一路径解析入口。
     """
 
     images = r"resource/CustomUI/images/"
@@ -18,6 +20,16 @@ class PathFinder:
 
     @classmethod
     def __get_path(cls, folder, icon_name):
+        """解析目标文件路径并在缺失时返回兜底图标路径。
+
+        参数:
+        - folder: 资源文件夹路径。
+        - icon_name: 文件名。
+
+        返回:
+        - str: 可用文件路径。
+        """
+
         path = ResourceLocator.resolve(folder)
         result = os.path.normpath(os.path.join(str(path), icon_name))
         if os.path.exists(result):
@@ -31,49 +43,132 @@ class PathFinder:
             )
             return result
 
-    # 设置svg类型的icon
     @classmethod
     def set_svg_icon(cls, name):
+        """获取 SVG 图标路径。
+
+        参数:
+        - name: 图标名称（不含扩展名）。
+
+        返回:
+        - str: SVG 图标绝对路径。
+        """
+
         return cls.__get_path(os.path.join(cls.images, r"svg_icons/"), name + ".svg")
 
-    # 设置svg类型的image
     @classmethod
     def set_svg_image(cls, name):
+        """获取 SVG 图片路径。
+
+        参数:
+        - name: 图片名称（不含扩展名）。
+
+        返回:
+        - str: SVG 图片绝对路径。
+        """
+
         return cls.__get_path(os.path.join(cls.images, r"svg_images/"), name + ".svg")
 
-    # 设置png类型的image
     @classmethod
     def set_png_image(cls, name):
+        """获取 PNG 图片路径。
+
+        参数:
+        - name: 图片名称（不含扩展名）。
+
+        返回:
+        - str: PNG 图片绝对路径。
+        """
+
         return cls.__get_path(os.path.join(cls.images, r"png_images/"), name + ".png")
 
-    # 设置ico
     @classmethod
     def set_ico(cls, name):
+        """获取 ICO 图标路径。
+
+        参数:
+        - name: 图标名称（不含扩展名）。
+
+        返回:
+        - str: ICO 图标绝对路径。
+        """
+
         return cls.__get_path(os.path.join(cls.images, r"ico/"), name + ".ico")
 
     @classmethod
     def set_jpg_image(cls, name):
+        """获取 JPG 图片路径。
+
+        参数:
+        - name: 图片名称（不含扩展名）。
+
+        返回:
+        - str: JPG 图片绝对路径。
+        """
+
         return cls.__get_path(os.path.join(cls.images, r"jpg_images"), name + ".jpg")
 
     @classmethod
     def set_themes(cls, name):
+        """获取主题配置文件路径。
+
+        参数:
+        - name: 主题名（不含扩展名）。
+
+        返回:
+        - str: 主题配置绝对路径。
+        """
+
         return cls.__get_path(cls.themes, name + ".yml")
 
     @classmethod
     def set_languages(cls, name):
+        """获取语言配置文件路径。
+
+        参数:
+        - name: 语言名（不含扩展名）。
+
+        返回:
+        - str: 语言配置绝对路径。
+        """
+
         return cls.__get_path(cls.languages, name + ".yml")
 
     @classmethod
     def set_settings(cls):
+        """获取主设置文件路径。
+
+        返回:
+        - str: settings.yml 绝对路径。
+        """
+
         return cls.__get_path(cls.settings, "settings" + ".yml")
 
     @classmethod
     def set_update_log(cls):
+        """获取更新日志配置文件路径。
+
+        返回:
+        - str: UpdateLog.yml 绝对路径。
+        """
+
         return cls.__get_path(cls.others, "UpdateLog" + ".yml")
 
 
 class PicFixFactory:
+    """图片处理工厂。"""
+
     def create_rounded_pixmap(pixmap: QPixmap, radius: int | float) -> QPixmap:
+        """将图片裁剪为圆角图。
+
+        参数:
+        - pixmap: 原始图片对象。
+        - radius: 圆角半径。
+
+        返回:
+        - QPixmap: 处理后的圆角图片。
+        """
+
         # 不处理空数据或者错误数据
         if pixmap.isNull():
             return pixmap

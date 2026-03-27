@@ -5,6 +5,8 @@ from .color_module import ColorPalette
 
 @dataclass(frozen=True)
 class ColorTokens:
+    """设计系统颜色令牌集合。"""
+
     surface_app: str
     surface_sidebar: str
     surface_panel: str
@@ -21,6 +23,8 @@ class ColorTokens:
 
 @dataclass(frozen=True)
 class TypographyTokens:
+    """设计系统排版令牌集合。"""
+
     family: str
     size_title: int
     size_subtitle: int
@@ -30,29 +34,39 @@ class TypographyTokens:
 
 @dataclass(frozen=True)
 class SpacingTokens:
+    """设计系统间距令牌集合。"""
+
     padding_sm: int
     padding_md: int
 
 
 @dataclass(frozen=True)
 class RadiusTokens:
+    """设计系统圆角令牌集合。"""
+
     window: int
     tooltip: int
 
 
 @dataclass(frozen=True)
 class BorderTokens:
+    """设计系统边框令牌集合。"""
+
     width: int
     accent_width: int
 
 
 @dataclass(frozen=True)
 class SizeTokens:
+    """设计系统尺寸令牌集合。"""
+
     icon: int
 
 
 @dataclass(frozen=True)
 class DesignTokens:
+    """聚合后的设计令牌对象。"""
+
     colors: ColorTokens
     typography: TypographyTokens
     spacing: SpacingTokens
@@ -62,6 +76,16 @@ class DesignTokens:
 
 
 def get_design_tokens() -> DesignTokens:
+    """构建设计令牌快照。
+
+    职责:
+    - 从当前颜色与应用设置读取值。
+    - 返回供 UI 层消费的统一 DesignTokens 对象。
+
+    返回:
+    - DesignTokens: 当前上下文下的设计令牌集合。
+    """
+
     from ..other.folder_tools import AppSettings
 
     return DesignTokens(

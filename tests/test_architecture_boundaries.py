@@ -1,4 +1,4 @@
-import ast
+﻿import ast
 from pathlib import Path
 
 
@@ -6,12 +6,21 @@ ROOT = Path(__file__).resolve().parents[1]
 
 
 def _iter_python_files(folder: str):
+    """函数：_iter_python_files。
+
+    参数:
+    - 按函数签名传入。
+
+    返回:
+    - 按函数实现返回。
+    """
     base = ROOT / folder
     for path in base.rglob("*.py"):
         yield path
 
 
 def _extract_import_roots(file_path: Path) -> list[str]:
+    "函数：_extract_import_roots。"
     tree = ast.parse(file_path.read_text(encoding="utf-8"), filename=str(file_path))
     imports: list[str] = []
 
@@ -26,6 +35,7 @@ def _extract_import_roots(file_path: Path) -> list[str]:
 
 
 def test_appcore_does_not_depend_on_presentation_layers():
+    "测试用例：test_appcore_does_not_depend_on_presentation_layers。"
     violations = []
     for path in _iter_python_files("AppCore"):
         for module in _extract_import_roots(path):
@@ -37,6 +47,7 @@ def test_appcore_does_not_depend_on_presentation_layers():
 
 
 def test_presentation_layer_uses_appcore_public_api_only():
+    "测试用例：test_presentation_layer_uses_appcore_public_api_only。"
     violations = []
     targets = ["GUI", "GuiCore"]
 
@@ -48,3 +59,4 @@ def test_presentation_layer_uses_appcore_public_api_only():
                     violations.append(f"{rel} -> {module}")
 
     assert not violations, "Presentation code must not import AppCore.SYS internals:\n" + "\n".join(violations)
+

@@ -4,6 +4,15 @@ import struct
 
 # 异或校验码计算
 def BBC(data: bytes) -> int:
+    """计算 BBC 异或校验值。
+
+    参数:
+    - data: 输入字节序列。
+
+    返回:
+    - int: 异或校验结果。
+    """
+
     res = 0x00
     for byte in data:
         res ^= byte
@@ -12,6 +21,15 @@ def BBC(data: bytes) -> int:
 
 # CRC-16-MODBUS
 def CRC_16_MODBUS(data: bytes) -> list:
+    """计算 CRC-16/MODBUS 校验并返回字节列表。
+
+    参数:
+    - data: 输入字节序列。
+
+    返回:
+    - list: 校验结果字节列表。
+    """
+
     crc = 0xFFFF
     for byte in data:
         crc ^= byte

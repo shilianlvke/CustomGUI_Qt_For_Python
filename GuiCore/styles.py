@@ -3,8 +3,16 @@ from AppCore import get_design_tokens
 
 
 class Styles(object):
+    """全局样式生成器。
+
+    职责:
+    - 根据设计令牌构建应用样式表字符串。
+    - 聚合按钮、输入框、下拉框等组件样式。
+    """
 
     def __init__(self):
+        """初始化样式生成器并构建样式文本。"""
+
         self.tokens = get_design_tokens()
         print(self.tokens)
         self.style = f"""
@@ -53,6 +61,12 @@ class Styles(object):
         self.update_combobox_style()
 
     def update_btn_style(self):
+        """追加按钮相关样式片段。
+
+        返回:
+        - None
+        """
+
         self.style += f"""
             #CMenuButton_PushButton {{
                 border: {self.tokens.border.width}px solid {self.tokens.colors.surface_interactive};
@@ -102,6 +116,12 @@ class Styles(object):
         """
 
     def update_lineedit_style(self):
+        """追加输入框相关样式片段。
+
+        返回:
+        - None
+        """
+
         self.style += f"""
             #CLineEdit_LineEdit {{
                 background-color: {self.tokens.colors.surface_interactive};
@@ -125,6 +145,12 @@ class Styles(object):
         """
 
     def update_combobox_style(self):
+        """追加下拉框相关样式片段。
+
+        返回:
+        - None
+        """
+
         self.style += f"""
             #CComboBox_ComboBox {{
                 border: {self.tokens.border.width}px solid {self.tokens.colors.surface_interactive};

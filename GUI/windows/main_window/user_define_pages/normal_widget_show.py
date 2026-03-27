@@ -20,8 +20,15 @@ from .dialogs.team_search import TeamSearchDialog
 
 
 class NormalWidgetShowPage:
+    """组件展示页定义。"""
 
     def load_page(self):
+        """构建并注册组件展示页面。
+
+        返回:
+        - None
+        """
+
         # 新增页面
         page = QWidget()
         page.setObjectName("normalWidgetShowPage")

@@ -1,4 +1,4 @@
-import os
+﻿import os
 import shutil
 import subprocess
 import sys
@@ -6,11 +6,20 @@ from pathlib import Path
 
 
 def _build_add_data_arg(src: str, dest: str) -> str:
+    """函数：_build_add_data_arg。
+
+    参数:
+    - 按函数签名传入。
+
+    返回:
+    - 按函数实现返回。
+    """
     separator = ";" if os.name == "nt" else ":"
     return f"{src}{separator}{dest}"
 
 
 def main() -> int:
+    "函数：main。"
     root = Path(__file__).resolve().parents[1]
     os.chdir(root)
 
@@ -49,3 +58,4 @@ def main() -> int:
 
 if __name__ == "__main__":
     raise SystemExit(main())
+

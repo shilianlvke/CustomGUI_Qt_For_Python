@@ -1,8 +1,13 @@
-from AppCore import CommandPlugin, MenuPlugin, PagePlugin, get_plugin_registry
+﻿from AppCore import CommandPlugin, MenuPlugin, PagePlugin, get_plugin_registry
 from AppCore.SYS.module.error_module import DomainErrorBoundary
 
 
 def test_plugin_registry_page_menu_command_flow():
+    """测试用例：test_plugin_registry_page_menu_command_flow。
+
+    职责:
+    - 验证目标行为符合预期。
+    """
     registry = get_plugin_registry(reset=True)
 
     registry.register_page(
@@ -31,6 +36,7 @@ def test_plugin_registry_page_menu_command_flow():
     state = {"ran": False}
 
     def _handler(*args, **kwargs):
+        "函数：_handler。"
         state["ran"] = True
 
     registry.register_command(
@@ -52,6 +58,7 @@ def test_plugin_registry_page_menu_command_flow():
 
 
 def test_plugin_registry_duplicate_registration_raises():
+    "测试用例：test_plugin_registry_duplicate_registration_raises。"
     registry = get_plugin_registry(reset=True)
     plugin = PagePlugin(
         plugin_id="dup.page",
@@ -69,6 +76,7 @@ def test_plugin_registry_duplicate_registration_raises():
 
 
 def test_plugin_lifecycle_enable_disable_and_unregister():
+    "测试用例：test_plugin_lifecycle_enable_disable_and_unregister。"
     registry = get_plugin_registry(reset=True)
 
     registry.register_command(
@@ -92,6 +100,7 @@ def test_plugin_lifecycle_enable_disable_and_unregister():
 
 
 def test_plugin_protocol_version_mismatch_raises():
+    "测试用例：test_plugin_protocol_version_mismatch_raises。"
     registry = get_plugin_registry(reset=True)
 
     try:
@@ -110,6 +119,7 @@ def test_plugin_protocol_version_mismatch_raises():
 
 
 def test_plugin_load_and_command_fault_isolation():
+    "测试用例：test_plugin_load_and_command_fault_isolation。"
     registry = get_plugin_registry(reset=True)
 
     report = registry.load_plugins(
@@ -136,13 +146,16 @@ def test_plugin_load_and_command_fault_isolation():
 
 
 def test_page_plugin_loader_fault_isolation():
+    "测试用例：test_page_plugin_loader_fault_isolation。"
     registry = get_plugin_registry(reset=True)
     calls = []
 
     def _ok_loader(window):
+        "函数：_ok_loader。"
         calls.append(("ok", window))
 
     def _bad_loader(_window):
+        "函数：_bad_loader。"
         raise RuntimeError("load failed")
 
     registry.load_plugins(
@@ -172,6 +185,7 @@ def test_page_plugin_loader_fault_isolation():
 
 
 def test_plugin_protocol_compatibility_helpers():
+    "测试用例：test_plugin_protocol_compatibility_helpers。"
     registry = get_plugin_registry(reset=True)
 
     assert registry.is_protocol_supported("1") is True
@@ -180,6 +194,7 @@ def test_plugin_protocol_compatibility_helpers():
 
 
 def test_discover_plugin_modules_from_manifest(tmp_path):
+    "测试用例：test_discover_plugin_modules_from_manifest。"
     registry = get_plugin_registry(reset=True)
     manifest = tmp_path / "plugins.yml"
     manifest.write_text(
@@ -200,6 +215,7 @@ plugins:
 
 
 def test_discover_and_load_plugins_from_module_register_function(tmp_path, monkeypatch):
+    "测试用例：test_discover_and_load_plugins_from_module_register_function。"
     registry = get_plugin_registry(reset=True)
 
     plugin_dir = tmp_path / "plugins"
@@ -212,6 +228,14 @@ from AppCore import CommandPlugin
 
 
 def register_plugins(registry):
+    '''函数：register_plugins。
+
+    参数:
+    - 按函数签名传入。
+
+    返回:
+    - 按函数实现返回。
+    '''
     registry.register_command(
         CommandPlugin(
             plugin_id=\"demo.cmd\",
@@ -235,6 +259,11 @@ def register_plugins(registry):
 
 
 def test_load_plugins_from_module_missing_entry_records_error(tmp_path, monkeypatch):
+    """测试用例：test_load_plugins_from_module_missing_entry_records_error。
+
+    职责:
+    - 验证目标行为符合预期。
+    """
     registry = get_plugin_registry(reset=True)
 
     plugin_dir = tmp_path / "plugins"
@@ -252,6 +281,7 @@ def test_load_plugins_from_module_missing_entry_records_error(tmp_path, monkeypa
 
 
 def test_plugin_protocol_adapter_migrates_legacy_plugin():
+    "测试用例：test_plugin_protocol_adapter_migrates_legacy_plugin。"
     registry = get_plugin_registry(reset=True)
 
     registry.register_protocol_adapter(
@@ -277,6 +307,7 @@ def test_plugin_protocol_adapter_migrates_legacy_plugin():
 
 
 def test_plugin_protocol_adapter_failure_raises_boundary():
+    "测试用例：test_plugin_protocol_adapter_failure_raises_boundary。"
     registry = get_plugin_registry(reset=True)
 
     registry.register_protocol_adapter("0", lambda _plugin: (_ for _ in ()).throw(RuntimeError("cannot adapt")))
@@ -293,3 +324,4 @@ def test_plugin_protocol_adapter_failure_raises_boundary():
         raise AssertionError("Expected protocol adapt failure")
     except DomainErrorBoundary as exc:
         assert exc.code == "PLUGIN_PROTOCOL_ADAPT_FAILED"
+

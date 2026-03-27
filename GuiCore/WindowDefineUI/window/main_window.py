@@ -6,8 +6,23 @@ from AppCore import AppSettings
 
 
 class CWindow(QFrame):
+    """主窗口背景容器。
+
+    职责:
+    - 创建窗口根布局并应用全局样式。
+    - 按配置决定是否启用阴影效果。
+    """
 
     def __init__(self, horizontal: bool = True):
+        """初始化窗口容器。
+
+        参数:
+        - horizontal: True 使用水平布局，False 使用垂直布局。
+
+        返回:
+        - None
+        """
+
         super().__init__()
         self.setObjectName("CWindow_Frame")
         if horizontal:

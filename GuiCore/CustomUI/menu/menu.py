@@ -25,6 +25,7 @@ QMenu::icon {{
 
 
 class CMenu(QMenu):
+    """自定义菜单组件。"""
 
     def __init__(
         self,
@@ -35,6 +36,20 @@ class CMenu(QMenu):
         colorpalette=None,
         is_transparent: bool = False,
     ):
+        """初始化菜单组件。
+
+        参数:
+        - parent: 父组件。
+        - width: 菜单宽度。
+        - radius: 圆角半径。
+        - border_size: 边框宽度。
+        - colorpalette: 颜色对象。
+        - is_transparent: 是否使用透明背景。
+
+        返回:
+        - None
+        """
+
         super().__init__(parent)
         self.setFixedWidth(width)
         self.radius = radius
@@ -60,6 +75,20 @@ class CMenu(QMenu):
         hover_color,
         press_active,
     ):
+        """设置菜单样式表。
+
+        参数:
+        - radius: 圆角半径。
+        - border_size: 边框宽度。
+        - bg_color: 背景颜色。
+        - text_color: 文本颜色。
+        - hover_color: 悬停颜色。
+        - press_active: 按下颜色。
+
+        返回:
+        - None
+        """
+
         style_format = style.format(
             _radius=radius,
             _border_size=border_size,

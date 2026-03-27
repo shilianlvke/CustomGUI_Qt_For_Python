@@ -34,6 +34,7 @@ QPushButton::menu-indicator:pressed, QPushButton::menu-indicator:open {{
 
 
 class CMenuButton(QPushButton):
+    """带菜单指示器的按钮组件。"""
 
     def __init__(
         self,
@@ -45,6 +46,21 @@ class CMenuButton(QPushButton):
         colorpalette=None,
         is_transparent: bool = False,
     ):
+        """初始化菜单按钮。
+
+        参数:
+        - size: 按钮基础尺寸。
+        - text: 按钮文本。
+        - icon: 图标对象或路径。
+        - radius: 圆角半径。
+        - border_size: 边框宽度。
+        - colorpalette: 颜色对象。
+        - is_transparent: 透明样式开关。
+
+        返回:
+        - None
+        """
+
         super().__init__()
         self.setObjectName("CMenuButton_PushButton")
         if text is not None:
@@ -85,6 +101,20 @@ class CMenuButton(QPushButton):
         hover_color,
         press_active,
     ):
+        """设置菜单按钮样式表。
+
+        参数:
+        - radius: 圆角半径。
+        - border_size: 边框宽度。
+        - bg_color: 背景色。
+        - text_color: 文本色。
+        - hover_color: 悬停色。
+        - press_active: 按下色。
+
+        返回:
+        - None
+        """
+
         style_format = style.format(
             _radius=radius,
             _border_size=border_size,

@@ -12,15 +12,25 @@ _LOCK = threading.Lock()
 
 
 def _utc_now_iso() -> str:
-    """返回 UTC ISO 时间字符串。"""
+    """获取当前 UTC 时间字符串。
+
+    返回:
+    - str: ISO8601 格式时间文本。
+    """
+
     return datetime.now(timezone.utc).isoformat()
 
 
 def _resolve_diagnostics_dir() -> Path:
-    """解析遥测目录。
+    """解析遥测输出目录。
 
-    优先使用环境变量 CUSTOMGUI_DIAGNOSTICS_DIR，
-    未设置时回落到项目 logs/diagnostics 目录。
+    职责:
+    - 优先读取环境变量 ``CUSTOMGUI_DIAGNOSTICS_DIR``。
+    - 未设置时回落到项目 ``logs/diagnostics`` 目录。
+    - 确保目录存在。
+
+    返回:
+    - Path: 可写入的遥测目录路径。
     """
     custom_dir = os.getenv("CUSTOMGUI_DIAGNOSTICS_DIR", "").strip()
     if custom_dir:
@@ -32,22 +42,49 @@ def _resolve_diagnostics_dir() -> Path:
 
 
 def _event_file_path() -> Path:
-    """事件日志文件路径（JSON Lines）。"""
+    """获取事件日志文件路径。
+
+    返回:
+    - Path: ``events.jsonl`` 文件路径。
+    """
+
     return _resolve_diagnostics_dir() / "events.jsonl"
 
 
 def _metric_file_path() -> Path:
-    """指标聚合文件路径（JSON）。"""
+    """获取指标聚合文件路径。
+
+    返回:
+    - Path: ``metrics.json`` 文件路径。
+    """
+
     return _resolve_diagnostics_dir() / "metrics.json"
 
 
 def _safe_dump_json(path: Path, data: dict):
-    """统一 JSON 落盘，保持 UTF-8 与可读缩进。"""
+    """将 JSON 数据安全写入文件。
+
+    参数:
+    - path: 目标文件路径。
+    - data: 待写入的字典数据。
+
+    返回:
+    - None
+    """
+
     path.write_text(json.dumps(data, ensure_ascii=False, indent=2), encoding="utf-8")
 
 
 def _read_metrics(path: Path) -> dict:
-    """读取指标文件；损坏或不存在时返回默认结构。"""
+    """读取指标聚合文件。
+
+    参数:
+    - path: 指标文件路径。
+
+    返回:
+    - dict: 指标字典；文件不存在或损坏时返回默认结构。
+    """
+
     if not path.exists():
         return {"updated_at": _utc_now_iso(), "events": {}, "categories": {}}
     try:
@@ -64,7 +101,15 @@ def _read_metrics(path: Path) -> dict:
 
 
 def _append_event(payload: dict):
-    """追加单条事件到 events.jsonl。"""
+    """追加单条事件到日志文件。
+
+    参数:
+    - payload: 事件对象。
+
+    返回:
+    - None
+    """
+
     event_path = _event_file_path()
     line = json.dumps(payload, ensure_ascii=False)
     with event_path.open("a", encoding="utf-8") as f:
@@ -72,7 +117,16 @@ def _append_event(payload: dict):
 
 
 def _update_metrics(name: str, category: str):
-    """更新事件名与分类维度计数。"""
+    """更新指标计数聚合。
+
+    参数:
+    - name: 事件名称。
+    - category: 事件分类。
+
+    返回:
+    - None
+    """
+
     metric_path = _metric_file_path()
     metrics = _read_metrics(metric_path)
     metrics["events"][name] = int(metrics["events"].get(name, 0)) + 1
@@ -85,10 +139,13 @@ def record_event(name: str, category: str = "app", level: str = "info", payload:
     """记录一条遥测事件并更新聚合指标。
 
     参数:
-    - name: 事件名
-    - category: 事件分类
-    - level: 严重级别（仅记录，不做过滤）
-    - payload: 事件附加数据
+    - name: 事件名称。
+    - category: 事件分类。
+    - level: 严重级别（仅记录，不做过滤）。
+    - payload: 事件附加数据。
+
+    返回:
+    - None
     """
     event_payload = {
         "timestamp": _utc_now_iso(),
@@ -106,10 +163,13 @@ def record_event(name: str, category: str = "app", level: str = "info", payload:
 def track_timing(name: str, category: str = "perf", payload: dict | None = None):
     """上下文计时器。
 
-    用法:
-        with track_timing("loading.total"):
-            ...
-    退出上下文后会自动记录 duration_ms。
+    参数:
+    - name: 计时事件名称。
+    - category: 事件分类，默认 ``perf``。
+    - payload: 附加事件数据。
+
+    返回:
+    - contextmanager: 可用于 ``with`` 语句的计时上下文。
     """
     start = time.perf_counter()
     try:
@@ -123,7 +183,15 @@ def track_timing(name: str, category: str = "perf", payload: dict | None = None)
 
 
 def read_recent_events(limit: int = 20) -> list[dict]:
-    """读取最近 N 条事件，按写入顺序返回末尾片段。"""
+    """读取最近事件列表。
+
+    参数:
+    - limit: 最大返回条数。
+
+    返回:
+    - list[dict]: 最近事件集合，按写入顺序返回末尾片段。
+    """
+
     if limit <= 0:
         return []
     path = _event_file_path()

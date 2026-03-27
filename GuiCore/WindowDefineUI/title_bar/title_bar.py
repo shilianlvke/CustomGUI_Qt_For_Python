@@ -19,11 +19,28 @@ _old_size = QSize()
 
 
 class CTitleBar(QWidget):
+    """窗口标题栏组件。
+
+    职责:
+    - 构建标题栏图标、标题与控制按钮。
+    - 提供窗口拖拽、最大化/还原与菜单按钮事件分发。
+    """
+
     # SIGNALS
     clicked = Signal(object)
     released = Signal(object)
 
     def __init__(self, parent, app_parent):
+        """初始化标题栏。
+
+        参数:
+        - parent: 标题栏所属窗口。
+        - app_parent: 应用父对象。
+
+        返回:
+        - None
+        """
+
         super().__init__()
         self._parent = parent
         self._app_parent = app_parent
@@ -124,6 +141,15 @@ class CTitleBar(QWidget):
     # 添加btns并发出信号
     # ///////////////////////////////////////////////////////////////
     def add_menus(self, parameters):
+        """批量添加标题栏菜单按钮。
+
+        参数:
+        - parameters: 按钮配置列表。
+
+        返回:
+        - None
+        """
+
         if parameters is not None and len(parameters) > 0:
             for parameter in parameters:
                 _btn_icon = PathFactory.set_svg_icon(parameter["btn_icon"])
@@ -153,20 +179,42 @@ class CTitleBar(QWidget):
 
     # 标题栏菜单发出信号
     def btn_clicked(self):
+        """处理标题栏按钮点击并发射信号。"""
+
         self.clicked.emit(self.menu)
 
     def btn_released(self):
+        """处理标题栏按钮释放并发射信号。"""
+
         self.released.emit(self.menu)
 
     # 设置标题栏文本
     # ///////////////////////////////////////////////////////////////
     def set_title(self, title):
+        """设置标题栏文本。
+
+        参数:
+        - title: 标题文本。
+
+        返回:
+        - None
+        """
+
         self.title_label.setText(title)
 
     # 最大化/恢复
     # 最大化并恢复父窗口
     # ///////////////////////////////////////////////////////////////
     def maximize_restore(self, e=None):
+        """切换窗口最大化与还原状态。
+
+        参数:
+        - e: 可选事件对象。
+
+        返回:
+        - None
+        """
+
         global _is_maximized
         global _old_size
 
@@ -196,6 +244,12 @@ class CTitleBar(QWidget):
     # SETUP APP
     # ///////////////////////////////////////////////////////////////
     def setup_ui(self):
+        """构建标题栏界面结构。
+
+        返回:
+        - None
+        """
+
         # ADD MENU LAYOUT
         self.title_bar_layout = QVBoxLayout(self)
         self.title_bar_layout.setContentsMargins(0, 0, 0, 0)

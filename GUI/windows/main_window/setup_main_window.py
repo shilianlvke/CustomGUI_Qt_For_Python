@@ -41,6 +41,12 @@ BUILTIN_TITLE_MENU_PLUGINS = [
 
 
 def register_builtin_title_menus():
+    """注册内置标题栏菜单插件。
+
+    返回:
+    - None
+    """
+
     registry = get_plugin_registry()
     for plugin in BUILTIN_TITLE_MENU_PLUGINS:
         if plugin.plugin_id not in registry._menus:
@@ -48,7 +54,20 @@ def register_builtin_title_menus():
 
 
 class SetupMainWindow:
+    """主窗口装配器。
+
+    职责:
+    - 完成窗口基础装配、菜单注入与页面初始化。
+    - 提供窗口尺寸夹点与按钮来源解析等辅助能力。
+    """
+
     def setup_btns(self):
+        """获取当前触发信号的按钮对象。
+
+        返回:
+        - QObject | None: 发送信号的按钮对象。
+        """
+
         if self.ui.title_bar.sender() is not None:
             return self.ui.title_bar.sender()
         elif self.ui.left_menu.sender() is not None:
@@ -58,6 +77,12 @@ class SetupMainWindow:
         return None
 
     def setup_gui(self):
+        """执行主窗口 UI 装配流程。
+
+        返回:
+        - None
+        """
+
         # 添加标题描述
         self.setWindowTitle(Language.custom_ui.sys_name)
         self.ui.title_bar.set_title(Language.custom_ui.sys_name)
@@ -91,9 +116,17 @@ class SetupMainWindow:
         # MainFunctions.set_right_column_menu(self, self.ui.right_column.menu_1)
 
     def load_page1(self):
+        """预留页面加载入口。"""
+
         pass
 
     def load_page2(self):
+        """构建组件展示页示例内容。
+
+        返回:
+        - None
+        """
+
         page_layout = QVBoxLayout(self.ui.load_pages.widget_show)
         page_layout.setContentsMargins(QMargins(0, 0, 0, 0))
 
@@ -175,6 +208,12 @@ class SetupMainWindow:
         card_layout.addWidget(card_8)
 
     def resize_grips(self):
+        """根据窗口尺寸更新边缘夹点位置。
+
+        返回:
+        - None
+        """
+
         self.left_grip.setGeometry(5, 10, 10, self.height())
         self.right_grip.setGeometry(self.width() - 15, 10, 10, self.height())
         self.top_grip.setGeometry(5, 5, self.width() - 10, 10)
@@ -185,6 +224,12 @@ class SetupMainWindow:
         self.bottom_right_grip.setGeometry(self.width() - 20, self.height() - 20, 15, 15)
 
     def menu_add_btn(self):
+        """注入菜单并绑定按钮事件。
+
+        返回:
+        - None
+        """
+
         register_builtin_title_menus()
         left_menu_items = get_menu_items("LeftMenu")
         title_menu_items = get_menu_items("TitleMenu")

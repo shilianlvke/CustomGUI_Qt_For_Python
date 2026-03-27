@@ -1,7 +1,15 @@
 from dataclasses import dataclass
 
+
 @dataclass
 class ColorHandler:
+    """颜色配置容器。
+
+    职责:
+    - 持有主题相关颜色字段。
+    - 提供运行时批量更新颜色值的能力。
+    """
+
     # 默认暗色系
     custom_dark_one: str = "#1b1e23"
     custom_dark_two: str = "#1e2229"
@@ -42,6 +50,15 @@ class ColorHandler:
     custom_transparent: str = "transparent"
 
     def update(self, new_colors: dict) -> None:
+        """批量更新颜色字段。
+
+        参数:
+        - new_colors: 颜色键值映射，键为字段名，值为颜色字符串。
+
+        返回:
+        - None
+        """
+
         # 注册颜色，允许用自定义颜色
         for key, value in new_colors.items():
             setattr(self, key, value)

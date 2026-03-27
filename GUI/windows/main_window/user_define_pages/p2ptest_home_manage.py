@@ -21,8 +21,15 @@ from .dialogs.team_search import TeamSearchDialog
 
 
 class P2PTestHomePage:
+    """P2P 测试首页页面定义。"""
 
     def load_page(self):
+        """构建并注册 P2P 测试首页。
+
+        返回:
+        - None
+        """
+
         # 新增页面
         page = QWidget()
         page.setObjectName("p2pTestHomePage")

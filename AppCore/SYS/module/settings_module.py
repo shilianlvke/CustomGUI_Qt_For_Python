@@ -7,12 +7,16 @@ from .color_module import ColorHandler
 
 @dataclass(frozen=True)
 class SizeRangeSchema:
+	"""最小/最大区间结构。"""
+
 	minimum: int
 	maximum: int
 
 
 @dataclass(frozen=True)
 class WindowSettingsSchema:
+	"""窗口设置字段结构定义。"""
+
 	startup_size: list
 	minimum_size: list
 	icon_size: int
@@ -39,18 +43,48 @@ class WindowSettingsSchema:
 
 
 def _as_dict(data):
+	"""将 EasyDict 兼容转换为标准字典。
+
+	参数:
+	- data: 可能为 EasyDict 或 dict 的对象。
+
+	返回:
+	- Any: 转换后的 dict 或原对象。
+	"""
+
 	if isinstance(data, EasyDict):
 		return dict(data)
 	return data
 
 
 def _ensure_keys(data, required_keys, label):
+	"""校验字典必须包含给定键集合。
+
+	参数:
+	- data: 待校验字典。
+	- required_keys: 必填键列表。
+	- label: 错误提示标签。
+
+	返回:
+	- None
+	"""
+
 	missing = [key for key in required_keys if key not in data]
 	if missing:
 		raise ValueError(f"{label} 缺少关键字段: {', '.join(missing)}")
 
 
 def _validate_size_range(raw_value, field_name):
+	"""校验区间字段并返回标准结构。
+
+	参数:
+	- raw_value: 待校验区间对象。
+	- field_name: 字段名，用于错误信息。
+
+	返回:
+	- SizeRangeSchema: 校验通过后的区间对象。
+	"""
+
 	raw_value = _as_dict(raw_value)
 	if not isinstance(raw_value, dict):
 		raise ValueError(f"{field_name} 必须是包含 minimum/maximum 的字典")
@@ -69,6 +103,16 @@ def _validate_size_range(raw_value, field_name):
 
 
 def _validate_size_list(raw_value, field_name):
+	"""校验尺寸数组字段。
+
+	参数:
+	- raw_value: 待校验值，应为长度为 2 的整数数组。
+	- field_name: 字段名，用于错误信息。
+
+	返回:
+	- None
+	"""
+
 	if not isinstance(raw_value, list) or len(raw_value) != 2:
 		raise ValueError(f"{field_name} 必须是长度为 2 的数组")
 	if not all(isinstance(v, int) for v in raw_value):
@@ -78,6 +122,15 @@ def _validate_size_list(raw_value, field_name):
 
 
 def validate_settings_data(settings_data):
+	"""校验应用窗口设置数据。
+
+	参数:
+	- settings_data: 配置对象，支持 dict 或 EasyDict。
+
+	返回:
+	- None
+	"""
+
 	settings = _as_dict(settings_data)
 	if not isinstance(settings, dict):
 		raise ValueError("AppSettings 必须为字典结构")
@@ -125,6 +178,16 @@ def validate_settings_data(settings_data):
 
 
 def validate_theme_data(theme_data, theme_name="unknown"):
+	"""校验主题颜色配置数据。
+
+	参数:
+	- theme_data: 主题对象，支持 dict 或 EasyDict。
+	- theme_name: 主题名称，用于错误信息。
+
+	返回:
+	- None
+	"""
+
 	theme = _as_dict(theme_data)
 	if not isinstance(theme, dict):
 		raise ValueError(f"主题 {theme_name} 必须是字典结构")
@@ -144,6 +207,16 @@ def validate_theme_data(theme_data, theme_name="unknown"):
 
 
 def validate_language_data(language_data, language_name="unknown"):
+	"""校验语言包配置数据。
+
+	参数:
+	- language_data: 语言对象，支持 dict 或 EasyDict。
+	- language_name: 语言名称，用于错误信息。
+
+	返回:
+	- None
+	"""
+
 	language = _as_dict(language_data)
 	if not isinstance(language, dict):
 		raise ValueError(f"语言 {language_name} 必须是字典结构")

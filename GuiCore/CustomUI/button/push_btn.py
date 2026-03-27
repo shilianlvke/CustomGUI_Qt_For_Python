@@ -3,6 +3,7 @@ from AppCore import PicFixFactory
 
 
 class CPushButton(QPushButton):
+    """自定义按钮组件。"""
 
     def __init__(
         self,
@@ -11,6 +12,18 @@ class CPushButton(QPushButton):
         icon: QIcon | str | None = None,
         is_trans: bool = False,
     ):
+        """初始化按钮组件。
+
+        参数:
+        - size: 按钮尺寸。
+        - text: 按钮文本。
+        - icon: 图标对象或图标路径。
+        - is_trans: 透明样式开关（预留参数）。
+
+        返回:
+        - None
+        """
+
         super().__init__()
         self.setObjectName("CPushButton_PushButton")
         if text is not None:

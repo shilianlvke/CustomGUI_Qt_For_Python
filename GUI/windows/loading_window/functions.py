@@ -13,14 +13,24 @@ from easydict import EasyDict
 
 
 class LoadingSignalBus(QObject):
+    """加载流程信号总线。"""
+
     progress_updated = Signal(int)  # 进度更新信号
     finished = Signal()  # 完成信号
     error_occurred = Signal(str)  # 错误信号
 
 
 class ResourceLoader:
+    """资源加载器。
+
+    职责:
+    - 按配置步骤加载启动资源。
+    - 通过信号上报进度、完成与错误。
+    """
 
     def __init__(self):
+        """初始化资源加载器。"""
+
         Logger.tool(__class__)
         self.value = 0
         self._paused = False
@@ -32,25 +42,58 @@ class ResourceLoader:
         self.load_config()
 
     def load_config(self):
+        """加载启动配置与基础路径。
+
+        返回:
+        - None
+        """
+
         self.loading_config = YamlHandler("resource/loading_config.yml")
         self._base_paths = self.loading_config.base_path
 
     def stop(self):
+        """停止加载流程。
+
+        返回:
+        - None
+        """
+
         with QMutexLocker(self._lock):
             self._stopped = True
             self._paused = False
             self._cond.wakeOne()
 
     def resume(self):
+        """恢复已暂停的加载流程。
+
+        返回:
+        - None
+        """
+
         if self._paused:
             with QMutexLocker(self._lock):
                 self._paused = False
                 self._cond.wakeOne()
 
     def send_progress(self, value):
+        """发送进度更新信号。
+
+        参数:
+        - value: 当前进度值。
+
+        返回:
+        - None
+        """
+
         self.bus.progress_updated.emit(value)
 
     def perform_loading(self):
+        """执行完整加载流程。
+
+        返回:
+        - None
+        """
+
         try:
             with track_timing("loading.total", category="perf"):
                 for category, steps in self.loading_config.loading_steps.items():
@@ -89,6 +132,16 @@ class ResourceLoader:
             self.bus.error_occurred.emit(to_user_message(wrapped))
 
     def _load_step(self, step_config, category):
+        """执行单个加载步骤。
+
+        参数:
+        - step_config: 步骤配置对象。
+        - category: 步骤所属分类。
+
+        返回:
+        - None
+        """
+
         if self._stopped:
             return
         try:
@@ -127,9 +180,26 @@ class ResourceLoader:
 
 
 class LoadingTask(QRunnable):
+    """线程池加载任务包装器。"""
+
     def __init__(self, loader: ResourceLoader):
+        """初始化加载任务。
+
+        参数:
+        - loader: 资源加载器实例。
+
+        返回:
+        - None
+        """
+
         super().__init__()
         self.loader = loader
 
     def run(self):
+        """执行任务入口。
+
+        返回:
+        - None
+        """
+
         self.loader.perform_loading()

@@ -4,7 +4,11 @@ from PySide6.QtWidgets import QHBoxLayout, QFrame, QWidget
 # CUSTOM LEFT MENU
 # ///////////////////////////////////////////////////////////////
 class CHDiv(QWidget):
+    """水平分割线组件。"""
+
     def __init__(self):
+        """初始化水平分割线。"""
+
         super().__init__()
         self.layout = QHBoxLayout(self)
         self.layout.setContentsMargins(5, 0, 5, 0)
@@ -18,7 +22,11 @@ class CHDiv(QWidget):
 
 
 class CVDiv(QWidget):
+    """垂直分割线组件。"""
+
     def __init__(self):
+        """初始化垂直分割线。"""
+
         super().__init__()
         self.layout = QHBoxLayout(self)
         self.layout.setContentsMargins(0, 5, 0, 5)

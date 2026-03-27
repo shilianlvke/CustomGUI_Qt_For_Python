@@ -1,31 +1,43 @@
-from types import SimpleNamespace
+﻿from types import SimpleNamespace
 
 from GUI.windows.main_window.controller import MainWindowController, PageRouterController, ThemeController
 
 
 class _StubMainFunctions:
+    """类：_StubMainFunctions。
+
+    职责:
+    - 提供 _StubMainFunctions 相关能力。
+    """
     @staticmethod
     def set_page(window, page):
+        "函数：set_page。"
         window._selected_page = page
 
     @staticmethod
     def get_title_bar_btn(window, object_name):
+        "函数：get_title_bar_btn。"
         raise AttributeError(object_name)
 
 
 class _FakeButton:
+    "类：_FakeButton。"
     def __init__(self, name):
+        "函数：__init__。"
         self._name = name
 
     def objectName(self):
+        "函数：objectName。"
         return self._name
 
 
 def _make_window_for_router():
+    "函数：_make_window_for_router。"
     selected = {"btn": None}
     title = {"text": None}
 
     def _find_child(_cls, page_name):
+        "函数：_find_child。"
         return page_name
 
     window = SimpleNamespace(
@@ -39,6 +51,7 @@ def _make_window_for_router():
 
 
 def test_page_router_switch_page_routes_target_widget():
+    "测试用例：test_page_router_switch_page_routes_target_widget。"
     window, selected, title = _make_window_for_router()
     router = PageRouterController(
         window=window,
@@ -58,12 +71,15 @@ def test_page_router_switch_page_routes_target_widget():
 
 
 def test_theme_controller_cycles_expected_theme_sequence():
+    "测试用例：test_theme_controller_cycles_expected_theme_sequence。"
     style_calls = []
     updates = []
 
     class _ColorPalette:
+        "类：_ColorPalette。"
         @staticmethod
         def update(data):
+            "函数：update。"
             updates.append(data)
 
     themes = {
@@ -73,7 +89,9 @@ def test_theme_controller_cycles_expected_theme_sequence():
     }
 
     class _Styles:
+        "类：_Styles。"
         def __init__(self):
+            "函数：__init__。"
             self.style = "demo-style"
 
     window = SimpleNamespace(
@@ -91,10 +109,13 @@ def test_theme_controller_cycles_expected_theme_sequence():
 
 
 def test_main_window_controller_dispatches_plugin_command_when_unhandled():
+    "测试用例：test_main_window_controller_dispatches_plugin_command_when_unhandled。"
     calls = []
 
     class _Registry:
+        "类：_Registry。"
         def execute_command(self, command_id, window, btn):
+            "函数：execute_command。"
             calls.append((command_id, window, btn.objectName()))
 
     window = SimpleNamespace(
@@ -124,3 +145,4 @@ def test_main_window_controller_dispatches_plugin_command_when_unhandled():
 
     assert calls
     assert calls[0][0] == "cmd_custom"
+

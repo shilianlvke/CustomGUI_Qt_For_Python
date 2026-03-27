@@ -2,6 +2,7 @@ from qt_core import QComboBox, QSize, Qt
 
 
 class CComboBox(QComboBox):
+    """自定义下拉框组件。"""
 
     def __init__(
         self,
@@ -10,6 +11,18 @@ class CComboBox(QComboBox):
         items: list = None,
         is_editable=False,
     ):
+        """初始化下拉框。
+
+        参数:
+        - size: 组件尺寸。
+        - placeholder_text: 占位文本。
+        - items: 初始选项列表。
+        - is_editable: 是否可编辑。
+
+        返回:
+        - None
+        """
+
         super().__init__()
         self.setObjectName("CComboBox_ComboBox")
         self.setFixedSize(size)

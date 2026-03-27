@@ -2,7 +2,24 @@ from qt_core import QCursor, QFrame, QRect, QSize, QSizeGrip, Qt, QWidget
 
 
 class CGrips(QWidget):
+    """窗口缩放夹点组件。
+
+    职责:
+    - 根据位置创建对应的边缘/角落缩放区域。
+    - 响应鼠标拖动调整窗口尺寸。
+    """
+
     def __init__(self, parent, position, disable_color=False):
+        """初始化夹点组件。
+
+        参数:
+        - parent: 父窗口对象。
+        - position: 夹点位置标识。
+        - disable_color: 是否禁用调试颜色背景。
+
+        返回:
+        - None
+        """
 
         # SETUP UI
         # ///////////////////////////////////////////////////////////////
@@ -145,11 +162,29 @@ class CGrips(QWidget):
     # MOUSE RELEASE
     # ///////////////////////////////////////////////////////////////
     def mouseReleaseEvent(self, event):
+        """处理鼠标释放事件。
+
+        参数:
+        - event: 鼠标事件对象。
+
+        返回:
+        - None
+        """
+
         self.mousePos = None
 
     # RESIZE EVENT
     # ///////////////////////////////////////////////////////////////
     def resizeEvent(self, event):
+        """处理组件缩放并同步内部夹点几何。
+
+        参数:
+        - event: 缩放事件对象。
+
+        返回:
+        - None
+        """
+
         if hasattr(self.wi, "top_grip"):
             self.wi.top_grip.setGeometry(0, 0, self.width(), 10)
 
@@ -175,31 +210,43 @@ class CGrips(QWidget):
 # GRIP WIDGTES
 # ///////////////////////////////////////////////////////////////
 class Widgets(object):
+    """夹点子部件构建器。"""
+
     def top_left(self, form):
+        """创建左上角夹点。"""
+
         self.top_left_grip = QFrame(form)
         self.top_left_grip.setObjectName("top_left_grip")
         self.top_left_grip.setFixedSize(15, 15)
         self.top_left_grip.setStyleSheet("background-color: #333; border: 2px solid #55FF00;")
 
     def top_right(self, form):
+        """创建右上角夹点。"""
+
         self.top_right_grip = QFrame(form)
         self.top_right_grip.setObjectName("top_right_grip")
         self.top_right_grip.setFixedSize(15, 15)
         self.top_right_grip.setStyleSheet("background-color: #333; border: 2px solid #55FF00;")
 
     def bottom_left(self, form):
+        """创建左下角夹点。"""
+
         self.bottom_left_grip = QFrame(form)
         self.bottom_left_grip.setObjectName("bottom_left_grip")
         self.bottom_left_grip.setFixedSize(15, 15)
         self.bottom_left_grip.setStyleSheet("background-color: #333; border: 2px solid #55FF00;")
 
     def bottom_right(self, form):
+        """创建右下角夹点。"""
+
         self.bottom_right_grip = QFrame(form)
         self.bottom_right_grip.setObjectName("bottom_right_grip")
         self.bottom_right_grip.setFixedSize(15, 15)
         self.bottom_right_grip.setStyleSheet("background-color: #333; border: 2px solid #55FF00;")
 
     def top(self, form):
+        """创建顶部边缘夹点。"""
+
         self.top_grip = QFrame(form)
         self.top_grip.setObjectName("top_grip")
         self.top_grip.setGeometry(QRect(0, 0, 500, 10))
@@ -207,6 +254,8 @@ class Widgets(object):
         self.top_grip.setCursor(QCursor(Qt.SizeVerCursor))
 
     def bottom(self, form):
+        """创建底部边缘夹点。"""
+
         self.bottom_grip = QFrame(form)
         self.bottom_grip.setObjectName("bottom_grip")
         self.bottom_grip.setGeometry(QRect(0, 0, 500, 10))
@@ -214,6 +263,8 @@ class Widgets(object):
         self.bottom_grip.setCursor(QCursor(Qt.SizeVerCursor))
 
     def left(self, form):
+        """创建左侧边缘夹点。"""
+
         self.left_grip = QFrame(form)
         self.left_grip.setObjectName("left")
         self.left_grip.setGeometry(QRect(0, 10, 10, 480))
@@ -222,6 +273,8 @@ class Widgets(object):
         self.left_grip.setStyleSheet("background-color: rgb(255, 121, 198);")
 
     def right(self, form):
+        """创建右侧边缘夹点。"""
+
         self.right_grip = QFrame(form)
         self.right_grip.setObjectName("right")
         self.right_grip.setGeometry(QRect(0, 0, 10, 500))

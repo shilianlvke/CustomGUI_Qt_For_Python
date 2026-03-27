@@ -5,9 +5,19 @@ from GuiCore import CDialog, CCard, CPushButton, CLineEdit
 
 
 class TeamCreateDialog:
+    """团队创建对话框。"""
 
     @staticmethod
     def setup_ui(title) -> None:
+        """构建并展示团队创建对话框。
+
+        参数:
+        - title: 对话框标题。
+
+        返回:
+        - None
+        """
+
         create_team = CDialog(title)
 
         team_name = CCard()

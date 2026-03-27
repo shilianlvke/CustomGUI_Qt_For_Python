@@ -15,6 +15,13 @@ from AppCore import PathFactory, ColorPalette, AppSettings, Language
 
 
 class CLeftMenu(QWidget):
+    """左侧主菜单组件。
+
+    职责:
+    - 动态添加菜单按钮并发射交互信号。
+    - 管理菜单展开/收起动画与按钮激活状态。
+    """
+
     # 信号
     clicked = Signal(object)
     released = Signal(object)
@@ -27,6 +34,19 @@ class CLeftMenu(QWidget):
             icon_path="icon_menu",
             icon_path_close="icon_menu_close"
     ):
+        """初始化左侧菜单组件。
+
+        参数:
+        - parent: 菜单容器父对象。
+        - app_parent: 应用父对象。
+        - radius: 圆角半径。
+        - icon_path: 展开图标名。
+        - icon_path_close: 收起图标名。
+
+        返回:
+        - None
+        """
+
         super().__init__()
         self.setObjectName("CLeftMenu_QWidget")
         self.parent = parent
@@ -84,6 +104,15 @@ class CLeftMenu(QWidget):
     # 为左侧菜单添加按钮
     # 添加按钮并设置信号
     def add_menus(self, parameters):
+        """批量添加菜单按钮。
+
+        参数:
+        - parameters: 菜单配置列表。
+
+        返回:
+        - None
+        """
+
         if parameters is not None:
             for parameter in parameters:
                 _btn_icon = parameter["btn_icon"]
@@ -114,13 +143,23 @@ class CLeftMenu(QWidget):
 
     # 左侧菜单发射信号
     def btn_clicked(self):
+        """处理按钮点击并发射信号。"""
+
         self.clicked.emit(self.menu)
 
     def btn_released(self):
+        """处理按钮释放并发射信号。"""
+
         self.released.emit(self.menu)
 
     # 展开/缩回左菜单
     def toggle_animation(self):
+        """执行菜单展开或收起动画。
+
+        返回:
+        - None
+        """
+
         # CREATE ANIMATION
         self.animation = QPropertyAnimation(self._parent, b"minimumWidth")
         self.animation.stop()
@@ -140,6 +179,15 @@ class CLeftMenu(QWidget):
 
     # 仅选择一个BTN
     def select_only_one(self, widget: str):
+        """仅激活一个菜单按钮。
+
+        参数:
+        - widget: 目标按钮对象名。
+
+        返回:
+        - None
+        """
+
         for btn in self.findChildren(QPushButton):
             if btn.objectName() == widget:
                 btn.set_active(True)
@@ -148,6 +196,15 @@ class CLeftMenu(QWidget):
 
     # 仅选择一个选项卡BTN
     def select_only_one_tab(self, widget: str):
+        """仅激活一个标签态按钮。
+
+        参数:
+        - widget: 目标按钮对象名。
+
+        返回:
+        - None
+        """
+
         for btn in self.findChildren(QPushButton):
             if btn.objectName() == widget:
                 btn.set_active_tab(True)
@@ -156,17 +213,27 @@ class CLeftMenu(QWidget):
 
     # 取消选择所有BTN
     def deselect_all(self):
+        """取消所有按钮激活状态。"""
+
         for btn in self.findChildren(QPushButton):
             btn.set_active(False)
 
     # 取消选择所有标签
     def deselect_all_tab(self):
+        """取消所有按钮标签激活状态。"""
+
         for btn in self.findChildren(QPushButton):
             btn.set_active_tab(False)
 
     # SETUP APP
     # ///////////////////////////////////////////////////////////////
     def setup_ui(self):
+        """构建左侧菜单界面结构。
+
+        返回:
+        - None
+        """
+
         # 添加菜单布局
         self.left_menu_layout = QVBoxLayout(self)
         self.left_menu_layout.setContentsMargins(0, 0, 0, 0)

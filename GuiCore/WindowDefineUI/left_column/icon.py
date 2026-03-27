@@ -4,7 +4,19 @@ from qt_core import QLabel, QPainter, QPixmap, QVBoxLayout, Qt, QWidget
 # PY ICON WITH CUSTOM COLORS
 # ///////////////////////////////////////////////////////////////
 class PyIcon(QWidget):
+    """可着色图标组件。"""
+
     def __init__(self, icon_path, icon_color):
+        """初始化图标组件。
+
+        参数:
+        - icon_path: 图标路径。
+        - icon_color: 图标颜色。
+
+        返回:
+        - None
+        """
+
         super().__init__()
 
         # PROPERTIES
@@ -15,6 +27,12 @@ class PyIcon(QWidget):
         self.setup_ui()
 
     def setup_ui(self):
+        """构建图标组件布局。
+
+        返回:
+        - None
+        """
+
         # LAYOUT
         self.layout = QVBoxLayout(self)
         self.layout.setContentsMargins(0, 0, 0, 0)
@@ -30,6 +48,16 @@ class PyIcon(QWidget):
         self.layout.addWidget(self.icon)
 
     def set_icon(self, icon_path, icon_color=None):
+        """设置图标与颜色。
+
+        参数:
+        - icon_path: 图标路径。
+        - icon_color: 可选覆盖颜色。
+
+        返回:
+        - None
+        """
+
         # GET COLOR
         color = ""
         if icon_color is not None:

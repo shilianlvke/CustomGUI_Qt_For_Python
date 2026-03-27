@@ -3,12 +3,35 @@ from easydict import EasyDict
 from pathlib import Path
 from AppCore.SYS.logger import Logger
 
+
 class JsonHandler:
+    """JSON 文件处理器。
+
+    职责:
+    - 读取、更新与写回 JSON 配置数据。
+    - 提供字典式与属性式访问能力。
+    """
+
     def __init__(self, file_path):
+        """初始化 JSON 处理器并加载文件。
+
+        参数:
+        - file_path: JSON 文件相对路径。
+
+        返回:
+        - None
+        """
+
         self.file_path = Path.cwd() / file_path
         self.data = self.read()
 
     def read(self):
+        """读取 JSON 文件内容。
+
+        返回:
+        - dict | None: 解析结果；解析失败时返回 None。
+        """
+
         try:
             with self.file_path.open("r", encoding="utf-8") as f:
                 Logger.debug(f"加载文件：'{self.file_path}'")
@@ -20,10 +43,25 @@ class JsonHandler:
             return None
 
     def _write(self):
+        """将当前数据写回 JSON 文件。
+
+        返回:
+        - Any: json.dump 的返回值。
+        """
+
         with self.file_path.open("w", encoding="utf-8") as f:
             return json.dump(self.data, f, indent=4, ensure_ascii=False)
 
     def update(self, new_data):
+        """更新当前 JSON 数据并写回文件。
+
+        参数:
+        - new_data: 待更新字典。
+
+        返回:
+        - None
+        """
+
         if isinstance(new_data, dict):
             self.data.update(new_data)
             self._write()
@@ -31,13 +69,36 @@ class JsonHandler:
             Logger.error("json写入失败")
 
     def merge(self, other):
+        """将另一个 JsonHandler 的数据合并到当前对象。
+
+        参数:
+        - other: 另一个 JsonHandler 实例。
+
+        返回:
+        - None
+        """
+
         self.data.update(other.data)
 
     def __getitem__(self, key, default=None):
+        """按键获取数据。
+
+        参数:
+        - key: 键名。
+        - default: 默认值。
+
+        返回:
+        - Any: 对应值或默认值。
+        """
+
         return self.data.get(key, default)
 
     def __getattr__(self, item):
+        """按属性方式读取数据字段。"""
+
         return EasyDict(self.data)[item]
 
     def __str__(self):
+        """返回格式化后的 JSON 字符串。"""
+
         return json.dumps(self.data, indent=4)

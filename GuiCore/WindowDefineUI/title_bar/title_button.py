@@ -17,6 +17,8 @@ from AppCore import ColorPalette, AppSettings
 # PY TITLE BUTTON
 # ///////////////////////////////////////////////////////////////
 class CTitleButton(QPushButton):
+    """标题栏控制按钮组件。"""
+
     def __init__(
         self,
         parent,
@@ -31,6 +33,25 @@ class CTitleButton(QPushButton):
         icon_path="no_icon.svg",
         is_active=False,
     ):
+        """初始化标题栏按钮。
+
+        参数:
+        - parent: 所属窗口。
+        - app_parent: 应用父对象。
+        - tooltip_text: 提示文本。
+        - btn_id: 按钮对象名。
+        - width: 按钮宽度。
+        - height: 按钮高度。
+        - radius: 圆角半径。
+        - bg_color: 背景色。
+        - icon_color: 图标色。
+        - icon_path: 图标路径。
+        - is_active: 初始激活状态。
+
+        返回:
+        - None
+        """
+
         super().__init__()
 
         # SET DEFAULT PARAMETERS
@@ -57,18 +78,24 @@ class CTitleButton(QPushButton):
     # SET ACTIVE MENU
     # ///////////////////////////////////////////////////////////////
     def set_active(self, is_active):
+        """设置按钮激活状态。"""
+
         self._is_active = is_active
         self.repaint()
 
     # RETURN IF IS ACTIVE MENU
     # ///////////////////////////////////////////////////////////////
     def is_active(self):
+        """返回按钮是否激活。"""
+
         return self._is_active
 
     # PAINT EVENT
     # painting the button and the icon
     # ///////////////////////////////////////////////////////////////
     def paintEvent(self, event):
+        """绘制按钮背景与图标。"""
+
         # PAINTER
         paint = QPainter()
         paint.begin(self)
@@ -100,6 +127,8 @@ class CTitleButton(QPushButton):
     # Functions with custom styles
     # ///////////////////////////////////////////////////////////////
     def change_style(self, event):
+        """根据交互事件更新样式状态。"""
+
         if event == QEvent.Enter:
             self._set_bg_color = ColorPalette.custom_bg_three
             self._set_icon_color = ColorPalette.custom_icon_hover
@@ -117,6 +146,8 @@ class CTitleButton(QPushButton):
     # Event triggered when the mouse is over the BTN
     # ///////////////////////////////////////////////////////////////
     def enterEvent(self, event):
+        """处理鼠标进入并显示提示框。"""
+
         self._icon_enter = True
         self.change_style(QEvent.Enter)
         self.move_tooltip()
@@ -126,6 +157,8 @@ class CTitleButton(QPushButton):
     # Event fired when the mouse leaves the BTN
     # ///////////////////////////////////////////////////////////////
     def leaveEvent(self, event):
+        """处理鼠标离开并隐藏提示框。"""
+
         self._icon_enter = False
         self.change_style(QEvent.Leave)
         self.move_tooltip()
@@ -135,6 +168,8 @@ class CTitleButton(QPushButton):
     # Event triggered when the left button is pressed
     # ///////////////////////////////////////////////////////////////
     def mousePressEvent(self, event):
+        """处理鼠标按下并发射点击信号。"""
+
         if event.button() == Qt.LeftButton:
             # SET FOCUS
             self.setFocus()
@@ -147,6 +182,8 @@ class CTitleButton(QPushButton):
     # Event triggered after the mouse button is released
     # ///////////////////////////////////////////////////////////////
     def mouseReleaseEvent(self, event):
+        """处理鼠标释放并发射释放信号。"""
+
         if event.button() == Qt.LeftButton:
             self.change_style(QEvent.MouseButtonRelease)
             # EMIT SIGNAL
@@ -155,6 +192,8 @@ class CTitleButton(QPushButton):
     # DRAW ICON WITH COLORS
     # ///////////////////////////////////////////////////////////////
     def icon_paint(self, qp, image, rect):
+        """按当前状态绘制图标颜色。"""
+
         icon = QPixmap(image)
         painter = QPainter(icon)
         painter.setCompositionMode(QPainter.CompositionMode_SourceIn)
@@ -168,12 +207,16 @@ class CTitleButton(QPushButton):
     # SET ICON
     # ///////////////////////////////////////////////////////////////
     def set_icon(self, icon_path):
+        """设置按钮图标并刷新。"""
+
         self._set_icon_path = icon_path
         self.repaint()
 
     # MOVE TOOLTIP
     # ///////////////////////////////////////////////////////////////
     def move_tooltip(self):
+        """计算并移动提示框位置。"""
+
         # GET MAIN WINDOW PARENT
         gp = self.mapToGlobal(QPoint(0, 0))
 
@@ -194,9 +237,13 @@ class CTitleButton(QPushButton):
 # TOOLTIP
 # ///////////////////////////////////////////////////////////////
 class _ToolTip(QLabel):
+    """标题栏按钮提示框组件。"""
+
     # TOOLTIP / LABEL StyleSheet
 
     def __init__(self, parent, tooltip):
+        """初始化提示框。"""
+
         QLabel.__init__(self)
         # LABEL SETUP
         self.setObjectName("label_tooltip")
@@ -215,10 +262,14 @@ class _ToolTip(QLabel):
         self.setGraphicsEffect(self.shadow)
 
     def show(self):
+        """显示提示框前刷新样式。"""
+
         self.update_style()
         super().show()
 
     def update_style(self):
+        """更新提示框样式文本。"""
+
         self.style = f"""
             QLabel {{
                 background-color: {ColorPalette.custom_dark_one};	

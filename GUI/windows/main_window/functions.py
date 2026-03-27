@@ -13,14 +13,40 @@ from AppCore import AppSettings
 
 # FUNCTIONS
 class MainFunctions:
+    """主窗口通用功能集合。
+
+    职责:
+    - 提供页面切换、侧栏切换、按钮查询与文件选择等通用操作。
+    """
+
     # SET MAIN WINDOW PAGES
     # ///////////////////////////////////////////////////////////////
     def set_page(self, page):
+        """切换主页面。
+
+        参数:
+        - page: 目标页面对象。
+
+        返回:
+        - None
+        """
+
         self.ui.load_pages.pages.setCurrentWidget(page)
 
     # SET LEFT COLUMN PAGES
     # ///////////////////////////////////////////////////////////////
     def set_left_column_menu(self, menu, title, icon_path):
+        """设置左侧栏菜单页内容。
+
+        参数:
+        - menu: 目标菜单页对象。
+        - title: 标题文本。
+        - icon_path: 图标路径。
+
+        返回:
+        - None
+        """
+
         self.ui.left_column.menus.menus.setCurrentWidget(menu)
         self.ui.left_column.title_label.setText(title)
         self.ui.left_column.icon.set_icon(icon_path)
@@ -28,6 +54,12 @@ class MainFunctions:
     # RETURN IF LEFT COLUMN IS VISIBLE
     # ///////////////////////////////////////////////////////////////
     def left_column_is_visible(self):
+        """判断左侧栏是否可见。
+
+        返回:
+        - bool: 可见为 True，否则为 False。
+        """
+
         width = self.ui.left_column_frame.width()
         if width == 0:
             return False
@@ -37,6 +69,12 @@ class MainFunctions:
     # RETURN IF RIGHT COLUMN IS VISIBLE
     # ///////////////////////////////////////////////////////////////
     def right_column_is_visible(self):
+        """判断右侧栏是否可见。
+
+        返回:
+        - bool: 可见为 True，否则为 False。
+        """
+
         width = self.ui.right_column_frame.width()
         if width == 0:
             return False
@@ -46,33 +84,83 @@ class MainFunctions:
     # SET RIGHT COLUMN PAGES
     # ///////////////////////////////////////////////////////////////
     def set_right_column_menu(self, menu):
+        """设置右侧栏菜单页。
+
+        参数:
+        - menu: 目标菜单页对象。
+
+        返回:
+        - None
+        """
+
         self.ui.right_column.menus.setCurrentWidget(menu)
 
     # GET TITLE BUTTON BY OBJECT NAME
     # ///////////////////////////////////////////////////////////////
     def get_title_bar_btn(self, object_name):
+        """按对象名获取标题栏按钮。
+
+        参数:
+        - object_name: 按钮对象名。
+
+        返回:
+        - QPushButton | None: 匹配按钮对象。
+        """
+
         return self.ui.title_bar_frame.findChild(QPushButton, object_name)
 
     # GET TITLE BUTTON BY OBJECT NAME
     # ///////////////////////////////////////////////////////////////
     def get_left_menu_btn(self, object_name):
+        """按对象名获取左侧菜单按钮。
+
+        参数:
+        - object_name: 按钮对象名。
+
+        返回:
+        - QPushButton | None: 匹配按钮对象。
+        """
+
         return self.ui.left_menu.findChild(QPushButton, object_name)
 
     # LEDT AND RIGHT COLUMNS / SHOW / HIDE
     # ///////////////////////////////////////////////////////////////
     def toggle_left_column(self):
+        """切换左侧栏显隐状态。
+
+        返回:
+        - None
+        """
+
         # GET ACTUAL CLUMNS SIZE
         width = self.ui.left_column_frame.width()
         right_column_width = self.ui.right_column_frame.width()
         MainFunctions.start_box_animation(self, width, right_column_width, "left")
 
     def toggle_right_column(self):
+        """切换右侧栏显隐状态。
+
+        返回:
+        - None
+        """
+
         # GET ACTUAL CLUMNS SIZE
         left_column_width = self.ui.left_column_frame.width()
         width = self.ui.right_column_frame.width()
         MainFunctions.start_box_animation(self, left_column_width, width, "right")
 
     def start_box_animation(self, left_box_width, right_box_width, direction):
+        """执行左右侧栏联动动画。
+
+        参数:
+        - left_box_width: 当前左侧栏宽度。
+        - right_box_width: 当前右侧栏宽度。
+        - direction: 动画方向，``left`` 或 ``right``。
+
+        返回:
+        - None
+        """
+
         time_animation = AppSettings.time_animation
         minimum_left = AppSettings.left_column_size.minimum
         maximum_left = AppSettings.left_column_size.maximum
@@ -113,13 +201,37 @@ class MainFunctions:
         self.group.start()
 
     def set_select_path(self, obj):
+        """弹窗选择目录并回填到输入控件。
+
+        参数:
+        - obj: 目标控件对象。
+
+        返回:
+        - None
+        """
+
         folder_path = QFileDialog.getExistingDirectory(self, "选择文件夹")
         obj.setText(folder_path)
 
     def set_select_file(self, obj):
+        """弹窗选择文件并回填到输入控件。
+
+        参数:
+        - obj: 目标控件对象。
+
+        返回:
+        - None
+        """
+
         file_path, file_name = QFileDialog.getOpenFileName(self, "选择文件")
         obj.setText(file_path)
 
     def open_directory(self):
+        """打开输入框指定目录。
+
+        返回:
+        - None
+        """
+
         if os.path.isdir(self.app1_line_edit.text()):
             QtGui.QDesktopServices.openUrl(QtCore.QUrl.fromLocalFile(self.app1_line_edit.text()))

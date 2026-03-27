@@ -4,7 +4,18 @@ from qt_core import QLabel, QPixmap, QVBoxLayout, Qt, QWidget
 # PY ICON WITH CUSTOM COLORS
 # ///////////////////////////////////////////////////////////////
 class CPixmap(QWidget):
+    """图片展示组件。"""
+
     def __init__(self, pic_path):
+        """初始化图片组件。
+
+        参数:
+        - pic_path: 图片路径。
+
+        返回:
+        - None
+        """
+
         super().__init__()
         # PROPERTIES
         self._icon_path = pic_path
@@ -13,6 +24,12 @@ class CPixmap(QWidget):
         self.setup_ui()
 
     def setup_ui(self):
+        """构建图片组件内部布局。
+
+        返回:
+        - None
+        """
+
         # LAYOUT
         self.layout = QVBoxLayout(self)
         self.layout.setContentsMargins(0, 0, 0, 0)
@@ -28,6 +45,15 @@ class CPixmap(QWidget):
         self.layout.addWidget(self.icon)
 
     def set_icon(self, icon_path):
+        """设置当前显示图片。
+
+        参数:
+        - icon_path: 图片路径。
+
+        返回:
+        - None
+        """
+
         # # GET COLOR
         # color = ""
         # if icon_color is not None:

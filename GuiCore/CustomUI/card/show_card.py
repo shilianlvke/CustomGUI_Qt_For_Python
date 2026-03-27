@@ -15,8 +15,11 @@ from AppCore import PathFactory, ColorPalette
 
 
 class CShowCard(QFrame):
-    """
-    现代简约风格卡片组件：上半部分自定义组件，下半部分点击跳转
+    """展示卡片组件。
+
+    职责:
+    - 组合上半区自定义控件与下半区跳转区域。
+    - 提供统一卡片样式与链接跳转行为。
     """
 
     def __init__(
@@ -28,6 +31,20 @@ class CShowCard(QFrame):
         radius: int = 8,
         border_size: int = 12,
     ):
+        """初始化展示卡片。
+
+        参数:
+        - size: 卡片固定尺寸。
+        - source_url: 点击跳转链接。
+        - bottom_text: 底部提示文本。
+        - widget: 顶部插入组件。
+        - radius: 卡片圆角半径。
+        - border_size: 卡片边框宽度。
+
+        返回:
+        - None
+        """
+
         super().__init__()
         self.setObjectName("CShowCard")
         if size is not None:
@@ -78,7 +95,12 @@ class CShowCard(QFrame):
         self.bottom_area.mousePressEvent = self._on_source_click
 
     def _setup_style(self):
-        """现代简约风格样式表"""
+        """设置卡片样式表。
+
+        返回:
+        - None
+        """
+
         self.setStyleSheet(f"""
             #CShowCard {{
                 border: {self.border_size}px solid transparent;
@@ -104,7 +126,15 @@ class CShowCard(QFrame):
         """)
 
     def set_top_widget(self, widget):
-        """放入自定义组件到上半部分"""
+        """设置上半区组件内容。
+
+        参数:
+        - widget: 要放入上半区的组件。
+
+        返回:
+        - None
+        """
+
         # 清空原有内容
         if self.top_area.layout():
             for i in reversed(range(self.top_area.layout().count())):
@@ -121,5 +151,13 @@ class CShowCard(QFrame):
         top_layout.addWidget(widget)
 
     def _on_source_click(self, event):
-        """底部点击跳转网页"""
+        """处理底部区域点击并打开链接。
+
+        参数:
+        - event: 鼠标事件对象。
+
+        返回:
+        - None
+        """
+
         webbrowser.open(self.source_url)

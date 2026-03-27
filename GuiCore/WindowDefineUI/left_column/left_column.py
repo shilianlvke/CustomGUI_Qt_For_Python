@@ -14,6 +14,13 @@ from AppCore import ColorPalette
 
 
 class CLeftColumn(QWidget):
+    """左侧信息栏容器组件。
+
+    职责:
+    - 构建左侧标题区与内容区。
+    - 发出关闭按钮点击与释放信号。
+    """
+
     # SIGNALS
     clicked = Signal(object)
     released = Signal(object)
@@ -29,6 +36,21 @@ class CLeftColumn(QWidget):
         font_family,
         radius=8,
     ):
+        """初始化左侧栏组件。
+
+        参数:
+        - app_parent: 应用父对象。
+        - text_title: 标题文本。
+        - text_title_size: 标题字号。
+        - icon_path: 标题图标路径。
+        - icon_close_path: 关闭按钮图标路径。
+        - font_family: 字体名称。
+        - radius: 圆角半径。
+
+        返回:
+        - None
+        """
+
         super().__init__()
 
         # 参数
@@ -63,12 +85,22 @@ class CLeftColumn(QWidget):
 
     # 标题左列发出信号
     def btn_clicked(self):
+        """处理关闭按钮点击并发射信号。"""
+
         self.clicked.emit(self.btn_close)
 
     def btn_released(self):
+        """处理关闭按钮释放并发射信号。"""
+
         self.released.emit(self.btn_close)
 
     def setup_ui(self):
+        """构建左侧栏界面结构。
+
+        返回:
+        - None
+        """
+
         # 基础布局
         self.base_layout = QVBoxLayout(self)
         self.base_layout.setContentsMargins(0, 0, 0, 0)

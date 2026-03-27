@@ -13,8 +13,7 @@ from AppCore import (
 )
 from GUI import UiMainWindow, SetupMainWindow, MainFunctions
 from GUI.windows.main_window.controller import MainWindowController
-from PySide6.QtWidgets import QApplication, QMainWindow
-from PySide6.QtGui import QIcon
+from qt_core import QApplication, QMainWindow, QIcon
 
 
 class MainWindow(QMainWindow):
@@ -27,6 +26,15 @@ class MainWindow(QMainWindow):
     """
 
     def __init__(self, **args):
+        """初始化主窗口并完成启动期装配。
+
+        参数:
+        - **args: 预留扩展参数。
+
+        返回:
+        - None
+        """
+
         super().__init__()
         # 启动遥测：主窗口初始化
         record_event("app.main_window.init", category="app")
@@ -58,6 +66,12 @@ class MainWindow(QMainWindow):
         record_event("app.main_window.ready", category="app")
 
     def btn_clicked(self):
+        """处理按钮点击并分发到控制器。
+
+        返回:
+        - None
+        """
+
         # 统一从 UI 层取 sender，再交给控制器分发
         btn = SetupMainWindow.setup_btns(self)
         if btn is None:
@@ -65,12 +79,36 @@ class MainWindow(QMainWindow):
         self.controller.handle_button(btn)
 
     def btn_released(self):
+        """处理按钮释放事件。
+
+        返回:
+        - None
+        """
+
         SetupMainWindow.setup_btns(self)
 
     def resizeEvent(self, event):
+        """处理窗口缩放并更新夹点位置。
+
+        参数:
+        - event: 缩放事件对象。
+
+        返回:
+        - None
+        """
+
         SetupMainWindow.resize_grips(self)
 
     def mousePressEvent(self, event):
+        """处理鼠标按下并记录拖拽起点。
+
+        参数:
+        - event: 鼠标事件对象。
+
+        返回:
+        - None
+        """
+
         self.dragPos = event.globalPosition().toPoint()
         # 点击窗口其他区域时转移焦点
         self.focusNextChild()

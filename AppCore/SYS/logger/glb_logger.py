@@ -11,6 +11,8 @@ except Exception:
 
 
 class _ColorFormatter(logging.Formatter):
+    """控制台彩色日志格式器。"""
+
     RESET = "\033[0m"
     LEVEL_COLORS = {
         logging.DEBUG: "\033[36m",   # Cyan
@@ -21,6 +23,15 @@ class _ColorFormatter(logging.Formatter):
     }
 
     def format(self, record):
+        """格式化日志记录并附加颜色。
+
+        参数:
+        - record: 日志记录对象。
+
+        返回:
+        - str: 格式化后的日志文本。
+        """
+
         message = super().format(record)
         color = self.LEVEL_COLORS.get(record.levelno)
         if not color:
@@ -29,6 +40,13 @@ class _ColorFormatter(logging.Formatter):
 
 
 class _Logger:
+    """全局日志门面。
+
+    职责:
+    - 统一配置控制台与文件日志输出。
+    - 提供简洁的日志调用方法。
+    """
+
     LEVELS = {
         "debug": logging.DEBUG,
         "info": logging.INFO,
@@ -37,12 +55,23 @@ class _Logger:
     }
 
     def __init__(self):
+        """初始化日志门面并完成日志系统配置。"""
+
         self._logger = logging.getLogger("CustomGUI")
         self._logger.propagate = False
         self._configured = False
         self._configure_logging()
 
     def set_level(self, level: str):
+        """设置日志级别。
+
+        参数:
+        - level: 日志级别文本。
+
+        返回:
+        - None
+        """
+
         level_name = (level or "info").lower()
         target_level = self.LEVELS.get(level_name, logging.INFO)
         self._logger.setLevel(target_level)
@@ -50,6 +79,12 @@ class _Logger:
             handler.setLevel(target_level)
 
     def _configure_logging(self):
+        """初始化日志处理器与格式器。
+
+        返回:
+        - None
+        """
+
         if self._configured:
             return
 
@@ -90,6 +125,12 @@ class _Logger:
 
     @staticmethod
     def _read_level_from_console_config() -> str:
+        """从 console.yml 读取日志级别配置。
+
+        返回:
+        - str: 日志级别文本。
+        """
+
         root_dir = Path(__file__).resolve().parents[3]
         config_path = root_dir / "resource" / "CustomUI" / "settings" / "console.yml"
         if not config_path.exists():
@@ -107,6 +148,12 @@ class _Logger:
 
     @staticmethod
     def _read_color_enabled_from_console_config() -> bool:
+        """从 console.yml 读取彩色日志开关。
+
+        返回:
+        - bool: 是否启用彩色控制台输出。
+        """
+
         root_dir = Path(__file__).resolve().parents[3]
         config_path = root_dir / "resource" / "CustomUI" / "settings" / "console.yml"
         if not config_path.exists():
@@ -123,18 +170,28 @@ class _Logger:
         return match.group(1).lower() == "true"
 
     def info(self, msg: str):
+        """输出 info 级别日志。"""
+
         self._logger.info(msg)
 
     def debug(self, msg: str):
+        """输出 debug 级别日志。"""
+
         self._logger.debug(msg)
 
     def warning(self, msg: str):
+        """输出 warning 级别日志。"""
+
         self._logger.warning(msg)
 
     def error(self, msg: str):
+        """输出 error 级别日志。"""
+
         self._logger.error(msg)
 
     def tool(self, msg: str):
+        """输出工具阶段标记日志。"""
+
         self._logger.info(f"[TOOL] ====={msg}=====")
 
 

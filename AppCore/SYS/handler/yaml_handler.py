@@ -7,13 +7,22 @@ from ..module.error_module import IOErrorBoundary
 
 
 class YamlHandler:
-    def __init__(self, file_path: str, auto_load: bool = True):
-        """
-        初始化YamlHandler
+    """YAML 配置处理器。
 
-        Args:
-            file_path: YAML文件路径
-            auto_load: 是否在初始化时自动加载文件
+    职责:
+    - 负责 YAML 配置的加载、保存、更新与查询。
+    - 提供 EasyDict 与 dict 之间的转换能力。
+    """
+
+    def __init__(self, file_path: str, auto_load: bool = True):
+        """初始化 YAML 处理器。
+
+        参数:
+        - file_path: YAML 文件路径。
+        - auto_load: 是否在初始化时自动加载。
+
+        返回:
+        - None
         """
         self.file_path = file_path
         self.data = EasyDict()
@@ -22,14 +31,13 @@ class YamlHandler:
             self.load()
 
     def load(self, file_path: Optional[str] = None) -> EasyDict:
-        """
-        加载YAML文件
+        """加载 YAML 文件。
 
-        Args:
-            file_path: 可选，指定要加载的文件路径
+        参数:
+        - file_path: 可选文件路径，传入时会覆盖当前路径。
 
-        Returns:
-            EasyDict对象
+        返回:
+        - EasyDict: 解析后的配置对象。
         """
         if file_path:
             self.file_path = file_path
@@ -62,13 +70,15 @@ class YamlHandler:
         return self.data
 
     def save(self, data: Optional[Union[Dict, EasyDict]] = None, file_path: Optional[str] = None, **kwargs):
-        """
-        保存数据到YAML文件
+        """保存数据到 YAML 文件。
 
-        Args:
-            data: 要保存的数据，如果为None则保存当前data
-            file_path: 可选，指定保存的文件路径
-            **kwargs: 传递给yaml.dump的其他参数
+        参数:
+        - data: 待保存数据；为空时保存当前 data。
+        - file_path: 可选输出路径。
+        - **kwargs: 透传给 yaml.dump 的参数。
+
+        返回:
+        - None
         """
         if file_path:
             save_path = file_path
@@ -96,12 +106,14 @@ class YamlHandler:
             ) from exc
 
     def update(self, new_data: Union[Dict, EasyDict], merge: bool = True):
-        """
-        更新数据
+        """更新内存中的配置数据。
 
-        Args:
-            new_data: 新的数据
-            merge: 是否合并数据（True为合并，False为替换）
+        参数:
+        - new_data: 新数据。
+        - merge: True 为深度合并，False 为整体替换。
+
+        返回:
+        - None
         """
         if isinstance(new_data, EasyDict):
             new_data = self._easydict_to_dict(new_data)
@@ -113,15 +125,14 @@ class YamlHandler:
             self.data = self._dict_to_easydict(new_data)
 
     def get(self, key: str, default: Any = None) -> Any:
-        """
-        获取值，支持点符号访问嵌套键
+        """获取配置值，支持点路径。
 
-        Args:
-            key: 键名，支持点符号如 "database.host"
-            default: 默认值
+        参数:
+        - key: 键名，支持如 ``database.host`` 的点路径。
+        - default: 缺失时的默认值。
 
-        Returns:
-            对应的值
+        返回:
+        - Any: 查找到的值或默认值。
         """
         keys = key.split(".")
         value = self.data
@@ -137,12 +148,14 @@ class YamlHandler:
         return value
 
     def set(self, key: str, value: Any):
-        """
-        设置值，支持点符号访问嵌套键
+        """设置配置值，支持点路径。
 
-        Args:
-            key: 键名，支持点符号如 "database.host"
-            value: 要设置的值
+        参数:
+        - key: 键名，支持如 ``database.host`` 的点路径。
+        - value: 要设置的值。
+
+        返回:
+        - None
         """
         keys = key.split(".")
         current = self.data
@@ -163,37 +176,41 @@ class YamlHandler:
         setattr(current, last_key, value)
 
     def to_dict(self) -> Dict:
-        """
-        将EasyDict转换为普通字典
+        """将当前数据转换为普通字典。
 
-        Returns:
-            普通字典
+        返回:
+        - Dict: 普通字典数据。
         """
         return self._easydict_to_dict(self.data)
 
     def to_json(self, indent: int = 2) -> str:
-        """
-        将数据转换为JSON字符串
+        """将当前数据转换为 JSON 字符串。
 
-        Args:
-            indent: JSON缩进
+        参数:
+        - indent: 缩进空格数。
 
-        Returns:
-            JSON字符串
+        返回:
+        - str: JSON 字符串。
         """
         return json.dumps(self.to_dict(), indent=indent, ensure_ascii=False)
 
     def reload(self) -> EasyDict:
-        """
-        重新加载文件
+        """重新加载当前 YAML 文件。
 
-        Returns:
-            EasyDict对象
+        返回:
+        - EasyDict: 重新加载后的数据对象。
         """
         return self.load()
 
     def _dict_to_easydict(self, data: Dict) -> EasyDict:
-        """递归将字典转换为EasyDict"""
+        """递归将字典转换为 EasyDict。
+
+        参数:
+        - data: 待转换字典。
+
+        返回:
+        - EasyDict: 转换结果。
+        """
         if not isinstance(data, dict):
             return data
 
@@ -208,7 +225,14 @@ class YamlHandler:
         return result
 
     def _easydict_to_dict(self, data: Union[EasyDict, Any]) -> Dict:
-        """递归将EasyDict转换为普通字典"""
+        """递归将 EasyDict 转换为普通字典。
+
+        参数:
+        - data: 待转换对象。
+
+        返回:
+        - Dict: 转换结果。
+        """
         if isinstance(data, EasyDict):
             return {key: self._easydict_to_dict(value) for key, value in data.items()}
         elif isinstance(data, dict):
@@ -219,7 +243,15 @@ class YamlHandler:
             return data
 
     def _deep_update(self, original: EasyDict, new_data: Dict):
-        """深度更新字典"""
+        """深度更新字典对象。
+
+        参数:
+        - original: 原始 EasyDict。
+        - new_data: 新数据字典。
+
+        返回:
+        - None
+        """
         for key, value in new_data.items():
             if key in original and isinstance(original[key], (dict, EasyDict)) and isinstance(value, dict):
                 self._deep_update(original[key], value)
@@ -230,21 +262,26 @@ class YamlHandler:
                 original[key] = value
 
     def __getitem__(self, key):
-        """支持字典式访问"""
+        """支持字典式读取。"""
+
         return getattr(self.data, key)
 
     def __setitem__(self, key, value):
-        """支持字典式设置"""
+        """支持字典式写入。"""
+
         setattr(self.data, key, value)
 
     def __getattr__(self, name):
-        """代理属性访问到data"""
+        """将属性访问代理到内部 data 对象。"""
+
         return getattr(self.data, name)
 
     def __str__(self):
-        """字符串表示"""
+        """返回字符串表示。"""
+
         return str(self.data)
 
     def __repr__(self):
-        """repr表示"""
+        """返回调试表示字符串。"""
+
         return f"YamlHandler(file_path='{self.file_path}')"

@@ -4,8 +4,23 @@ from GuiCore import CCard, CTitleBar, CWindow
 
 
 class CDialog(QDialog):
+    """通用对话框基类。
+
+    职责:
+    - 统一构建自定义标题栏与内容容器。
+    - 支持无边框拖拽体验。
+    """
 
     def __init__(self, title):
+        """初始化对话框。
+
+        参数:
+        - title: 对话框标题文本。
+
+        返回:
+        - None
+        """
+
         super().__init__()
         self.dragPos = QPoint(0, 0)
         layout = QVBoxLayout()
@@ -35,6 +50,15 @@ class CDialog(QDialog):
         self.BG.layout.addWidget(content)
 
     def mousePressEvent(self, event):
+        """记录拖拽起点并转移焦点。
+
+        参数:
+        - event: 鼠标事件对象。
+
+        返回:
+        - None
+        """
+
         self.dragPos = event.globalPosition().toPoint()
         # 点击窗口其他区域时转移焦点
         self.focusNextChild()
