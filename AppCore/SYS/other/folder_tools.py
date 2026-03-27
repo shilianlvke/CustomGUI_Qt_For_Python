@@ -2,6 +2,7 @@
 
 import threading
 from collections.abc import Callable, Iterator
+from dataclasses import dataclass
 from pathlib import Path
 
 from easydict import EasyDict
@@ -76,38 +77,41 @@ class ConfigHandler:
                     details=str(exc),
                 ) from exc
 
-    def _load_group(  # noqa: PLR0913
+    @dataclass(frozen=True)
+    class _ValidationOptions:
+        """分组配置校验选项。"""
+
+        validator: Callable[..., object] | None
+        error_code: str
+        error_message: str
+        validator_arg_name: str
+
+    def _load_group(
         self,
         directory: str,
         *,
-        validator: Callable[..., object] | None = None,
-        error_code: str | None = None,
-        error_message: str | None = None,
-        validator_arg_name: str | None = None,
         log_label: str,
+        validation: _ValidationOptions | None = None,
     ) -> EasyDict:
         """按目录加载并可选校验配置分组。
 
         参数:
         - directory: 资源目录。
-        - validator: 可选校验函数。
-        - error_code: 校验失败错误码。
-        - error_message: 校验失败错误消息。
-        - validator_arg_name: 校验函数参数名。
         - log_label: 日志标签。
+        - validation: 可选校验参数对象。
 
         返回:
         - EasyDict: 分组配置映射。
         """
         path_list = ResourceLocator.find_files_by_extension(".yml", directory)
         group = self._build_named_yaml_map(path_list)
-        if validator:
+        if validation and validation.validator:
             self._validate_group(
                 group,
-                validator,
-                error_code=error_code or "GROUP_CONFIG_INVALID",
-                error_message=error_message or "配置校验失败",
-                validator_arg_name=validator_arg_name or "name",
+                validation.validator,
+                error_code=validation.error_code,
+                error_message=validation.error_message,
+                validator_arg_name=validation.validator_arg_name,
             )
         Logger.debug(f"{log_label}:{group.keys()}")
         return group
@@ -116,22 +120,26 @@ class ConfigHandler:
         """加载并校验语言配置组。"""
         return self._load_group(
             self.languages,
-            validator=validate_language_data,
-            error_code="LANGUAGE_CONFIG_INVALID",
-            error_message="语言配置校验失败",
-            validator_arg_name="language_name",
             log_label="语言",
+            validation=self._ValidationOptions(
+                validator=validate_language_data,
+                error_code="LANGUAGE_CONFIG_INVALID",
+                error_message="语言配置校验失败",
+                validator_arg_name="language_name",
+            ),
         )
 
     def find_themes(self) -> EasyDict:
         """加载并校验主题配置组。"""
         return self._load_group(
             self.themes,
-            validator=validate_theme_data,
-            error_code="THEME_CONFIG_INVALID",
-            error_message="主题配置校验失败",
-            validator_arg_name="theme_name",
             log_label="主题色",
+            validation=self._ValidationOptions(
+                validator=validate_theme_data,
+                error_code="THEME_CONFIG_INVALID",
+                error_message="主题配置校验失败",
+                validator_arg_name="theme_name",
+            ),
         )
 
     def find_others(self) -> EasyDict:

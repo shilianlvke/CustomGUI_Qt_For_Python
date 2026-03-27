@@ -32,9 +32,15 @@ class _FakeButton:
         """函数：__init__。"""
         self._name = name
 
-    def objectName(self) -> str:  # noqa: N802
-        """函数：objectName。"""
+    def object_name(self) -> str:
+        """函数：object_name。"""
         return self._name
+
+    def __getattr__(self, name: str) -> object:
+        """兼容 Qt 按钮接口中的 objectName 调用。"""
+        if name == "objectName":
+            return self.object_name
+        raise AttributeError(name)
 
 
 def _make_window_for_router() -> tuple[SimpleNamespace, dict[str, str | None], dict[str, str | None]]:
