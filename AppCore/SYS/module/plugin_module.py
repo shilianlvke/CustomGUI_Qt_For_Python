@@ -9,6 +9,15 @@ from typing import NoReturn
 from .error_module import DomainErrorBoundary
 
 SUPPORTED_PLUGIN_PROTOCOL_VERSIONS = {"1"}
+PLUGIN_ADAPTER_EXCEPTIONS = (RuntimeError, TypeError, ValueError, AttributeError)
+PLUGIN_RUNTIME_EXCEPTIONS = (
+    DomainErrorBoundary,
+    ImportError,
+    RuntimeError,
+    TypeError,
+    ValueError,
+    AttributeError,
+)
 
 
 @dataclass(frozen=True)
@@ -118,7 +127,7 @@ class PluginRegistry:
 
         try:
             adapted = adapter(plugin)
-        except Exception as exc:
+        except PLUGIN_ADAPTER_EXCEPTIONS as exc:
             raise DomainErrorBoundary(
                 code="PLUGIN_PROTOCOL_ADAPT_FAILED",
                 message="插件协议迁移失败",
@@ -340,7 +349,7 @@ class PluginRegistry:
             try:
                 self.register_plugin(plugin)
                 report["loaded"] += 1
-            except Exception as exc:  # noqa: BLE001
+            except PLUGIN_RUNTIME_EXCEPTIONS as exc:
                 report["failed"] += 1
                 self._load_errors.append(f"{getattr(plugin, 'plugin_id', 'unknown')}: {exc}")
                 self._raise_if_strict(strict=strict, exc=exc)
@@ -419,7 +428,7 @@ class PluginRegistry:
             try:
                 module = importlib.import_module(module_path)
                 report["modules_loaded"] += 1
-            except Exception as exc:  # noqa: BLE001
+            except PLUGIN_RUNTIME_EXCEPTIONS as exc:
                 report["modules_failed"] += 1
                 self._load_errors.append(f"module:{module_path}: {exc}")
                 self._raise_if_strict(strict=strict, exc=exc)
@@ -437,7 +446,7 @@ class PluginRegistry:
                 load_report = self.load_plugins(list(module_plugins), strict=strict)
                 report["plugins_loaded"] += int(load_report.get("loaded", 0))
                 report["plugins_failed"] += int(load_report.get("failed", 0))
-            except Exception as exc:  # noqa: BLE001
+            except PLUGIN_RUNTIME_EXCEPTIONS as exc:
                 report["modules_failed"] += 1
                 self._load_errors.append(f"module:{module_path}: {exc}")
                 self._raise_if_strict(strict=strict, exc=exc)
@@ -524,7 +533,7 @@ class PluginRegistry:
             if plugin.loader:
                 try:
                     plugin.loader(window)
-                except Exception as exc:  # noqa: BLE001
+                except PLUGIN_RUNTIME_EXCEPTIONS as exc:
                     self._load_errors.append(f"{plugin.plugin_id}: {exc}")
                     if on_error:
                         on_error(plugin, exc)
@@ -543,7 +552,7 @@ class PluginRegistry:
         for plugin in self.page_plugins():
             try:
                 title = plugin.title_getter(language)
-            except Exception:  # noqa: BLE001
+            except PLUGIN_RUNTIME_EXCEPTIONS:
                 title = title_fallback(plugin.button_id)
             routes[plugin.button_id] = (plugin.page_object, title)
         return routes
@@ -591,7 +600,7 @@ class PluginRegistry:
             if plugin.command_id == command_id:
                 try:
                     return plugin.handler(*args, **kwargs)
-                except Exception as exc:  # noqa: BLE001
+                except PLUGIN_RUNTIME_EXCEPTIONS as exc:
                     self._load_errors.append(f"{plugin.plugin_id}: {exc}")
                     return None
         return None
