@@ -33,7 +33,7 @@ class CTitleBar(QWidget):
     clicked = Signal(object)
     released = Signal(object)
 
-    def __init__(self, parent: QWidget, app_parent: object) -> None:  # noqa: PLR0915
+    def __init__(self, parent: QWidget, app_parent: object) -> None:
         """初始化标题栏。
 
         参数:
@@ -47,8 +47,15 @@ class CTitleBar(QWidget):
         self._parent = parent
         self._app_parent = app_parent
         self.settings = AppSettings
+        self._load_style_tokens()
+        self.setup_ui()
+        self._set_logo_size()
+        self._bind_window_interactions()
+        self._compose_title_layout()
+        self._connect_window_buttons()
+        self._append_window_buttons()
 
-        # 参数
+    def _load_style_tokens(self) -> None:
         self._logo_image = AppSettings.logo_title
         self._dark_one = ColorPalette.custom_dark_one
         self._bg_color = ColorPalette.custom_dark_three
@@ -68,27 +75,23 @@ class CTitleBar(QWidget):
         self.minimize_btn = Language.UI.ui_Minimize
         self.maximize_btn = Language.UI.ui_Maximize
         self.close_btn = Language.UI.ui_Close
-        self.setup_ui()
 
-        # 设置logo宽度
+    def _set_logo_size(self) -> None:
         self.top_logo.setMinimumWidth(AppSettings.icon_size)
         self.top_logo.setMaximumWidth(AppSettings.icon_size)
 
-        # 移动窗口/最大化/恢复
+    def _bind_window_interactions(self) -> None:
         def move_window(event: object) -> None:
-            # 如果最大化改变为正常
-            if parent.isMaximized():
+            if self._parent.isMaximized():
                 self.maximize_restore()
-                curso_x = parent.pos().x()
+                curso_x = self._parent.pos().x()
                 curso_y = event.globalPos().y() - QCursor.pos().y()
-                parent.move(curso_x, curso_y)
-            # 移动窗口
+                self._parent.move(curso_x, curso_y)
             if event.buttons() == Qt.LeftButton:
-                parent.move(parent.pos() + event.globalPos() - parent.dragPos)
-                parent.dragPos = event.globalPos()
+                self._parent.move(self._parent.pos() + event.globalPos() - self._parent.dragPos)
+                self._parent.dragPos = event.globalPos()
                 event.accept()
 
-        # 移动应用程序小部件
         if self._is_custom_title_bar:
             self.top_logo.mouseMoveEvent = move_window
             self.div_1.mouseMoveEvent = move_window
@@ -96,31 +99,24 @@ class CTitleBar(QWidget):
             self.div_2.mouseMoveEvent = move_window
             self.div_3.mouseMoveEvent = move_window
 
-        # 最大化/恢复
-        if self._is_custom_title_bar:
             self.top_logo.mouseDoubleClickEvent = self.maximize_restore
             self.div_1.mouseDoubleClickEvent = self.maximize_restore
             self.title_label.mouseDoubleClickEvent = self.maximize_restore
             self.div_2.mouseDoubleClickEvent = self.maximize_restore
 
-        # 将小部件添加到标题栏
-        # ///////////////////////////////////////////////////////////////
+    def _compose_title_layout(self) -> None:
         self.bg_layout.addWidget(self.top_logo)
         self.bg_layout.addWidget(self.div_1)
         self.bg_layout.addWidget(self.title_label)
         self.bg_layout.addWidget(self.div_2)
-
-        # 添加按钮按钮
-        # ///////////////////////////////////////////////////////////////
-        # Functions
-        self.minimize_button.released.connect(parent.showMinimized)
-        self.maximize_restore_button.released.connect(self.maximize_restore)
-        self.close_button.released.connect(parent.close)
-
-        # 额外BTN布局
         self.bg_layout.addLayout(self.custom_buttons_layout)
 
-        # 添加按钮
+    def _connect_window_buttons(self) -> None:
+        self.minimize_button.released.connect(self._parent.showMinimized)
+        self.maximize_restore_button.released.connect(self.maximize_restore)
+        self.close_button.released.connect(self._parent.close)
+
+    def _append_window_buttons(self) -> None:
         if self._is_custom_title_bar:
             self.bg_layout.addWidget(self.minimize_button)
             self.bg_layout.addWidget(self.maximize_restore_button)
