@@ -175,5 +175,7 @@ def test_main_window_controller_dispatches_plugin_command_when_unhandled() -> No
 
     btn = _FakeButton("cmd_custom")
     controller.handle_button(btn)
-    assert calls
-    assert calls[0][0] == "cmd_custom"
+    if not calls:
+        pytest.fail("Assertion failed")
+    if calls[0][0] != "cmd_custom":
+        pytest.fail("Assertion failed")
