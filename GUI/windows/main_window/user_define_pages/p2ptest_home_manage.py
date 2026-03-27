@@ -25,28 +25,35 @@ from .dialogs.team_search import TeamSearchDialog
 class P2PTestHomePage:
     """P2P 测试首页页面定义。"""
 
-    def load_page(self: object) -> None:  # noqa: PLR0915
+    def load_page(self: object) -> None:
         """构建并注册 P2P 测试首页。
 
         返回:
         - None
         """
-        # 新增页面
         page = QWidget()
         page.setObjectName("p2pTestHomePage")
         self.ui.load_pages.pages.addWidget(page)
-        # 绘制页面
+
         page_layout = QVBoxLayout(page)
         page_layout.setContentsMargins(QMargins(0, 0, 0, 0))
         page_layout.setSpacing(3)
         page_layout.setAlignment(Qt.AlignmentFlag.AlignCenter)
 
+        page_card_layout = self._build_page_container(page_layout)
+        self._build_welcome_section(page_card_layout)
+        self._build_login_section(page_card_layout)
+        self._build_init_section(page_card_layout)
+
+    def _build_page_container(self, page_layout: QVBoxLayout) -> QVBoxLayout:
         page_card = CCard()
         page_card.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
         page_card_layout = QVBoxLayout(page_card)
         page_card_layout.setAlignment(Qt.AlignmentFlag.AlignCenter)
         page_layout.addWidget(page_card)
+        return page_card_layout
 
+    def _build_welcome_section(self, page_card_layout: QVBoxLayout) -> None:
         welcome_card = CCard()
         page_card_layout.addWidget(welcome_card)
         welcome_card_layout = QHBoxLayout(welcome_card)
@@ -64,6 +71,7 @@ class P2PTestHomePage:
         page_card_layout.addWidget(CHDiv())
         page_card_layout.addStretch()
 
+    def _build_login_section(self, page_card_layout: QVBoxLayout) -> None:
         login_card = CCard()
         login_card.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
         login_card_layout = QVBoxLayout(login_card)
@@ -72,6 +80,12 @@ class P2PTestHomePage:
         login_card_layout.setSpacing(3)
         page_card_layout.addWidget(login_card)
 
+        self._add_username_row(login_card_layout)
+        self._add_password_row(login_card_layout)
+        self._add_team_row(login_card_layout)
+        self._add_login_button_row(login_card_layout)
+
+    def _add_username_row(self, login_card_layout: QVBoxLayout) -> None:
         username_card = CCard()
         username_card.setSizePolicy(QSizePolicy.Policy.Maximum, QSizePolicy.Policy.Maximum)
         username_card_layout = QHBoxLayout(username_card)
@@ -86,6 +100,7 @@ class P2PTestHomePage:
         login_card_layout.addWidget(username_card)
         login_card_layout.addWidget(CHDiv())
 
+    def _add_password_row(self, login_card_layout: QVBoxLayout) -> None:
         userpass_card = CCard()
         userpass_card.setSizePolicy(QSizePolicy.Policy.Maximum, QSizePolicy.Policy.Maximum)
         userpass_card_layout = QHBoxLayout(userpass_card)
@@ -101,6 +116,7 @@ class P2PTestHomePage:
         login_card_layout.addWidget(userpass_card)
         login_card_layout.addWidget(CHDiv())
 
+    def _add_team_row(self, login_card_layout: QVBoxLayout) -> None:
         test_node_card = CCard()
         test_node_card.setSizePolicy(QSizePolicy.Policy.Maximum, QSizePolicy.Policy.Maximum)
         test_node_card_layout = QHBoxLayout(test_node_card)
@@ -119,6 +135,7 @@ class P2PTestHomePage:
         login_card_layout.addWidget(test_node_card)
         login_card_layout.addWidget(CHDiv())
 
+    def _add_login_button_row(self, login_card_layout: QVBoxLayout) -> None:
         login_btn_card = CCard()
         login_btn_card_layout = QHBoxLayout(login_btn_card)
         login_btn_card_layout.setContentsMargins(QMargins(0, 0, 0, 0))
@@ -131,6 +148,7 @@ class P2PTestHomePage:
         login_btn_card_layout.addWidget(login_btn)
         login_card_layout.addWidget(login_btn_card)
 
+    def _build_init_section(self, page_card_layout: QVBoxLayout) -> None:
         page_card_layout.addStretch()
         page_card_layout.addWidget(CHDiv())
 

@@ -18,22 +18,39 @@ from qt_core import (
 class NormalWidgetShowPage:
     """组件展示页定义。"""
 
-    def load_page(self: object) -> None:  # noqa: PLR0915
+    def load_page(self: object) -> None:
         """构建并注册组件展示页面。
 
         返回:
         - None
         """
-        # 新增页面
         page = QWidget()
         page.setObjectName("normalWidgetShowPage")
         self.ui.load_pages.pages.addWidget(page)
-        # 绘制页面
+
         page_layout = QVBoxLayout(page)
         page_layout.setContentsMargins(QMargins(0, 0, 0, 0))
         page_layout.setSpacing(3)
         page_layout.setAlignment(Qt.AlignmentFlag.AlignCenter)
 
+        welcome_card_layout = self._build_page_layout(page_layout)
+        cards = self._create_demo_cards()
+        positions = [
+            (cards[0], 0, 0),
+            (cards[1], 0, 1),
+            (cards[2], 0, 2),
+            (cards[3], None, None),
+            (cards[4], None, None),
+            (cards[5], None, None),
+            (cards[6], None, None),
+        ]
+        for card, row, col in positions:
+            if row is None or col is None:
+                welcome_card_layout.addWidget(card)
+            else:
+                welcome_card_layout.addWidget(card, row, col)
+
+    def _build_page_layout(self, page_layout: QVBoxLayout) -> QGridLayout:
         page_card = CCard()
         page_card.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
         page_card_layout = QVBoxLayout(page_card)
@@ -52,7 +69,9 @@ class NormalWidgetShowPage:
         scroller_area.setVerticalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
         scroller_area.setStyleSheet(f"#widget_show_scroller_area{{background-color:{ColorPalette.custom_dark_three};}}")
         page_card_layout.addWidget(scroller_area)
+        return welcome_card_layout
 
+    def _create_demo_cards(self) -> list[CShowCard]:
         stander_btn = CPushButton(text="标准按钮")
         stander_btn.clicked.connect(lambda: Logger.info("点击了标准按钮"))
         icon_btn = CPushButton(size=QSize(64, 64), icon=PathFactory.set_jpg_image("托盘"))
@@ -98,17 +117,14 @@ class NormalWidgetShowPage:
         menu_btn.setMenu(menu)
         combo_box_0 = CComboBox(size=QSize(120, 30), items=["提莫", "亚索", "阿狸"], placeholder_text="选择你的英雄")
         combo_box_0.currentIndexChanged.connect(lambda: Logger.info(f"改变了下拉框值{combo_box_0.currentIndex()}"))
-        card_1 = CShowCard(None, Language.custom_ui.sys_github, "标准按钮", stander_btn)
-        card_2 = CShowCard(None, Language.custom_ui.sys_github, "图标按钮", icon_btn)
-        card_4 = CShowCard(None, Language.custom_ui.sys_github, "QIcon-文字按钮", text_icon_btn)
-        card_5 = CShowCard(None, Language.custom_ui.sys_github, "双态按钮", two_btn)
-        card_6 = CShowCard(None, Language.custom_ui.sys_github, "三态按钮", three_btn)
-        card_7 = CShowCard(None, Language.custom_ui.sys_github, "菜单按钮", menu_btn)
-        card_8 = CShowCard(None, Language.custom_ui.sys_github, "下拉框", combo_box_0)
-        welcome_card_layout.addWidget(card_1, 0, 0)
-        welcome_card_layout.addWidget(card_2, 0, 1)
-        welcome_card_layout.addWidget(card_4, 0, 2)
-        welcome_card_layout.addWidget(card_5)
-        welcome_card_layout.addWidget(card_6)
-        welcome_card_layout.addWidget(card_7)
-        welcome_card_layout.addWidget(card_8)
+
+        github_url = Language.custom_ui.sys_github
+        return [
+            CShowCard(None, github_url, "标准按钮", stander_btn),
+            CShowCard(None, github_url, "图标按钮", icon_btn),
+            CShowCard(None, github_url, "QIcon-文字按钮", text_icon_btn),
+            CShowCard(None, github_url, "双态按钮", two_btn),
+            CShowCard(None, github_url, "三态按钮", three_btn),
+            CShowCard(None, github_url, "菜单按钮", menu_btn),
+            CShowCard(None, github_url, "下拉框", combo_box_0),
+        ]
