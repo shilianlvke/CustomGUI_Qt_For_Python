@@ -40,10 +40,10 @@ class P2PTestHomePage:
         page_layout.setSpacing(3)
         page_layout.setAlignment(Qt.AlignmentFlag.AlignCenter)
 
-        page_card_layout = self._build_page_container(page_layout)
-        self._build_welcome_section(page_card_layout)
-        self._build_login_section(page_card_layout)
-        self._build_init_section(page_card_layout)
+        page_card_layout = P2PTestHomePage._build_page_container(self, page_layout)
+        P2PTestHomePage._build_welcome_section(self, page_card_layout)
+        P2PTestHomePage._build_login_section(self, page_card_layout)
+        P2PTestHomePage._build_init_section(self, page_card_layout)
 
     def _build_page_container(self, page_layout: QVBoxLayout) -> QVBoxLayout:
         page_card = CCard()
@@ -80,10 +80,10 @@ class P2PTestHomePage:
         login_card_layout.setSpacing(3)
         page_card_layout.addWidget(login_card)
 
-        self._add_username_row(login_card_layout)
-        self._add_password_row(login_card_layout)
-        self._add_team_row(login_card_layout)
-        self._add_login_button_row(login_card_layout)
+        P2PTestHomePage._add_username_row(self, login_card_layout)
+        P2PTestHomePage._add_password_row(self, login_card_layout)
+        P2PTestHomePage._add_team_row(self, login_card_layout)
+        P2PTestHomePage._add_login_button_row(self, login_card_layout)
 
     def _add_username_row(self, login_card_layout: QVBoxLayout) -> None:
         username_card = CCard()

@@ -26,11 +26,11 @@ class P2PTestAnalysisPage:
         page_layout.setContentsMargins(QMargins(0, 0, 0, 0))
         page_layout.setSpacing(3)
 
-        self._build_left_section(page_layout)
-        right_back_layout = self._build_right_container(page_layout)
-        self._build_top_section(right_back_layout)
-        self._build_filter_section(right_back_layout)
-        self._build_analysis_cards(right_back_layout)
+        P2PTestAnalysisPage._build_left_section(self, page_layout)
+        right_back_layout = P2PTestAnalysisPage._build_right_container(self, page_layout)
+        P2PTestAnalysisPage._build_top_section(self, right_back_layout)
+        P2PTestAnalysisPage._build_filter_section(self, right_back_layout)
+        P2PTestAnalysisPage._build_analysis_cards(self, right_back_layout)
 
     def _build_left_section(self, page_layout: QHBoxLayout) -> None:
         left_back_card = CCard()

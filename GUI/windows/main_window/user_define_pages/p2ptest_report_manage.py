@@ -27,10 +27,10 @@ class P2PTestReportPage:
         page_layout.setContentsMargins(QMargins(0, 0, 0, 0))
         page_layout.setSpacing(3)
 
-        right_back_layout = self._build_right_container(page_layout)
-        self._build_top_section(right_back_layout)
-        self._build_filter_section(right_back_layout)
-        self._build_report_cards(right_back_layout)
+        right_back_layout = P2PTestReportPage._build_right_container(self, page_layout)
+        P2PTestReportPage._build_top_section(self, right_back_layout)
+        P2PTestReportPage._build_filter_section(self, right_back_layout)
+        P2PTestReportPage._build_report_cards(self, right_back_layout)
 
     def _build_right_container(self, page_layout: QHBoxLayout) -> QVBoxLayout:
         right_back_card = CCard()

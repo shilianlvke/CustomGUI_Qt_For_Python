@@ -33,8 +33,8 @@ class NormalWidgetShowPage:
         page_layout.setSpacing(3)
         page_layout.setAlignment(Qt.AlignmentFlag.AlignCenter)
 
-        welcome_card_layout = self._build_page_layout(page_layout)
-        cards = self._create_demo_cards()
+        welcome_card_layout = NormalWidgetShowPage._build_page_layout(self, page_layout)
+        cards = NormalWidgetShowPage._create_demo_cards(self)
         positions = [
             (cards[0], 0, 0),
             (cards[1], 0, 1),
