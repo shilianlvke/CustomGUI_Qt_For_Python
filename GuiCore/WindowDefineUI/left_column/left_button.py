@@ -2,7 +2,7 @@
 
 from typing import override
 
-from AppCore import ColorPalette
+from AppCore import get_token_manager
 from qt_core import (
     QBrush,
     QColor,
@@ -59,20 +59,20 @@ class PyLeftButton(QPushButton):
         self.setObjectName(btn_id)
 
         # PROPERTIES
-        self._bg_color = ColorPalette.custom_bg_three
-        self._bg_color_hover = ColorPalette.custom_bg_two
-        self._bg_color_pressed = ColorPalette.custom_bg_one
-        self._icon_color = ColorPalette.custom_icon_color
-        self._icon_color_hover = ColorPalette.custom_icon_hover
-        self._icon_color_pressed = ColorPalette.custom_icon_pressed
-        self._icon_color_active = ColorPalette.custom_icon_pressed
-        self._context_color = ColorPalette.custom_context_color
+        self._bg_color = get_token_manager().theme.custom_bg_three
+        self._bg_color_hover = get_token_manager().theme.custom_bg_two
+        self._bg_color_pressed = get_token_manager().theme.custom_bg_one
+        self._icon_color = get_token_manager().theme.custom_icon_color
+        self._icon_color_hover = get_token_manager().theme.custom_icon_hover
+        self._icon_color_pressed = get_token_manager().theme.custom_icon_pressed
+        self._icon_color_active = get_token_manager().theme.custom_icon_pressed
+        self._context_color = get_token_manager().theme.custom_context_color
         self._top_margin = self.height() + 6
         self._is_active = is_active
         # Set Parameters
-        self._set_bg_color = ColorPalette.custom_bg_three
+        self._set_bg_color = get_token_manager().theme.custom_bg_three
         self._set_icon_path = icon_path
-        self._set_icon_color = ColorPalette.custom_icon_color
+        self._set_icon_color = get_token_manager().theme.custom_icon_color
         self._set_border_radius = radius
         self._app_parent = app_parent
 
@@ -81,9 +81,9 @@ class PyLeftButton(QPushButton):
         self._tooltip = _ToolTip(
             app_parent,
             tooltip_text,
-            dark_one=ColorPalette.custom_dark_one,
-            context_color=ColorPalette.custom_context_color,
-            text_foreground=ColorPalette.custom_text_foreground,
+            dark_one=get_token_manager().theme.custom_dark_one,
+            context_color=get_token_manager().theme.custom_context_color,
+            text_foreground=get_token_manager().theme.custom_text_foreground,
             family=font_family,
         )
         self._tooltip.hide()
@@ -279,9 +279,9 @@ class _ToolTip(QLabel):
 
         # LABEL SETUP
         style = self.style_tooltip.format(
-            _dark_one=style_tokens.get("dark_one", ColorPalette.custom_dark_one),
-            _context_color=style_tokens.get("context_color", ColorPalette.custom_context_color),
-            _text_foreground=style_tokens.get("text_foreground", ColorPalette.custom_text_foreground),
+            _dark_one=style_tokens.get("dark_one", get_token_manager().theme.custom_dark_one),
+            _context_color=style_tokens.get("context_color", get_token_manager().theme.custom_context_color),
+            _text_foreground=style_tokens.get("text_foreground", get_token_manager().theme.custom_text_foreground),
             _family=style_tokens.get("family", ""),
         )
         self.setObjectName("label_tooltip")

@@ -1,6 +1,6 @@
 """模块说明。"""
 
-from AppCore import Language
+from AppCore import get_token_manager
 from qt_core import QFrame, QHBoxLayout, QLabel, QSizePolicy, QSpacerItem, Qt, QWidget
 
 
@@ -15,8 +15,8 @@ class CCredits(QWidget):
         """
         super().__init__()
         # PROPERTIES
-        self._copyright = Language.custom_ui.sys_copyright
-        self._version = Language.custom_ui.sys_version
+        self._copyright = get_token_manager().language.custom_ui.sys_copyright
+        self._version = get_token_manager().language.custom_ui.sys_version
 
         # SETUP UI
         self.setup_ui()

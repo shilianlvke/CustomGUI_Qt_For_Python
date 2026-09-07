@@ -2,7 +2,7 @@
 
 from typing import override
 
-from AppCore import ColorPalette, PathFactory
+from AppCore import PathFactory, get_token_manager
 from qt_core import QIcon, QPixmap, QPushButton, QSize, Qt, Signal
 
 style = """
@@ -67,7 +67,7 @@ class CStatusButton(QPushButton):
         self.status = self.status_list[0]
         self.radius = radius
         self.border_size = border_size
-        self.color = ColorPalette
+        self.color = get_token_manager().theme
 
         self._apply_optional_text("negative", text_negative)
         self._apply_optional_text("positive", text_positive)

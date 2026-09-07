@@ -4,7 +4,7 @@ from PySide6.QtCore import QMargins, QSize, Qt
 from PySide6.QtGui import QFont, QIcon
 from PySide6.QtWidgets import QGridLayout, QHBoxLayout, QLabel, QScrollArea, QVBoxLayout, QWidget
 
-from AppCore import AppSettings, ColorPalette, Language, Logger, PathFactory
+from AppCore import AppSettings, Logger, PathFactory, get_token_manager
 from guicore import CCard, CPushButton, CShowCard, CStatusButton
 from guicore.CustomUI.div import CHDiv
 
@@ -93,20 +93,20 @@ class P2PTestReportPage:
         right_bottom_scroller_area = QScrollArea()
         right_bottom_scroller_area.setWidget(right_bottom_card)
         right_bottom_scroller_area.setWidgetResizable(True)
-        right_bottom_scroller_area.setStyleSheet(f"background-color:{ColorPalette.custom_dark_three};")
+        right_bottom_scroller_area.setStyleSheet(f"background-color:{get_token_manager().theme.custom_dark_three};")
         right_bottom_scroller_area.setVerticalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
         right_bottom_scroller_area.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
         right_back_layout.addWidget(right_bottom_scroller_area)
 
         cards = [
-            CShowCard(QSize(230, 128), Language.custom_ui.sys_github, "功能测试报告"),
-            CShowCard(QSize(230, 128), Language.custom_ui.sys_github, "性能测试报告"),
-            CShowCard(QSize(230, 128), Language.custom_ui.sys_github, "硬件测试报告"),
-            CShowCard(QSize(230, 128), Language.custom_ui.sys_github, "软件测试报告1"),
-            CShowCard(QSize(230, 128), Language.custom_ui.sys_github, "软件测试报告2"),
-            CShowCard(QSize(230, 128), Language.custom_ui.sys_github, "软件测试报告3"),
-            CShowCard(QSize(230, 128), Language.custom_ui.sys_github, "软件测试报告4"),
-            CShowCard(QSize(230, 128), Language.custom_ui.sys_github, "软件测试报告5"),
+            CShowCard(QSize(230, 128), get_token_manager().language.custom_ui.sys_github, "功能测试报告"),
+            CShowCard(QSize(230, 128), get_token_manager().language.custom_ui.sys_github, "性能测试报告"),
+            CShowCard(QSize(230, 128), get_token_manager().language.custom_ui.sys_github, "硬件测试报告"),
+            CShowCard(QSize(230, 128), get_token_manager().language.custom_ui.sys_github, "软件测试报告1"),
+            CShowCard(QSize(230, 128), get_token_manager().language.custom_ui.sys_github, "软件测试报告2"),
+            CShowCard(QSize(230, 128), get_token_manager().language.custom_ui.sys_github, "软件测试报告3"),
+            CShowCard(QSize(230, 128), get_token_manager().language.custom_ui.sys_github, "软件测试报告4"),
+            CShowCard(QSize(230, 128), get_token_manager().language.custom_ui.sys_github, "软件测试报告5"),
         ]
         positions = [(0, 0), (0, 1), (0, 2), (1, 0), (1, 1), (1, 2), (2, 0), (2, 1)]
         for card, (row, col) in zip(cards, positions, strict=False):

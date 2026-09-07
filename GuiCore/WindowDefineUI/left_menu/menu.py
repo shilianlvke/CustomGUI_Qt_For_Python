@@ -1,6 +1,6 @@
 """模块说明。"""
 
-from AppCore import AppSettings, ColorPalette, Language, PathFactory
+from AppCore import AppSettings, PathFactory, get_token_manager
 from guicore.CustomUI.div import CHDiv
 from qt_core import (
     QEasingCurve,
@@ -52,17 +52,17 @@ class CLeftMenu(QWidget):
         self.setObjectName("CLeftMenu_QWidget")
         self.parent = parent
         self.app_parent = app_parent
-        self._dark_one = ColorPalette.custom_dark_one
-        self._dark_three = ColorPalette.custom_dark_three
-        self._dark_four = ColorPalette.custom_dark_four
-        self._bg_one = ColorPalette.custom_bg_one
-        self._icon_color = ColorPalette.custom_icon_color
-        self._icon_color_hover = ColorPalette.custom_icon_hover
-        self._icon_color_pressed = ColorPalette.custom_icon_pressed
-        self._icon_color_active = ColorPalette.custom_icon_active
-        self._context_color = ColorPalette.custom_context_color
-        self._text_foreground = ColorPalette.custom_text_foreground
-        self._text_active = ColorPalette.custom_text_active
+        self._dark_one = get_token_manager().theme.custom_dark_one
+        self._dark_three = get_token_manager().theme.custom_dark_three
+        self._dark_four = get_token_manager().theme.custom_dark_four
+        self._bg_one = get_token_manager().theme.custom_bg_one
+        self._icon_color = get_token_manager().theme.custom_icon_color
+        self._icon_color_hover = get_token_manager().theme.custom_icon_hover
+        self._icon_color_pressed = get_token_manager().theme.custom_icon_pressed
+        self._icon_color_active = get_token_manager().theme.custom_icon_active
+        self._context_color = get_token_manager().theme.custom_context_color
+        self._text_foreground = get_token_manager().theme.custom_text_foreground
+        self._text_active = get_token_manager().theme.custom_text_active
         self._duration_time = AppSettings.time_animation
         self._radius = radius
         self._minimum_width = AppSettings.lef_menu_size.minimum
@@ -82,8 +82,8 @@ class CLeftMenu(QWidget):
         # 切换按钮和DIV菜单
         self.toggle_button = CLeftMenuButton(
             app_parent,
-            text=Language.UI.ui_Hide,
-            tooltip_text=Language.UI.ui_Show,
+            text=get_token_manager().language.UI.ui_Hide,
+            tooltip_text=get_token_manager().language.UI.ui_Show,
             icon_path=icon_path,
             minimum_width=self._minimum_width,
             maximum_width=self._maximum_width,

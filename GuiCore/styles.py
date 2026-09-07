@@ -1,7 +1,7 @@
 """模块说明。"""
 
 # 这里决定整个window的总体样式
-from AppCore import get_design_tokens
+from AppCore import get_token_manager
 
 
 class Styles:
@@ -14,7 +14,7 @@ class Styles:
 
     def __init__(self) -> None:
         """初始化样式生成器并构建样式文本。"""
-        self.tokens = get_design_tokens()
+        self.tokens = get_token_manager().tokens
         self.style = f"""
             #CWindow_Frame {{
                 background-color: {self.tokens.colors.surface_app};

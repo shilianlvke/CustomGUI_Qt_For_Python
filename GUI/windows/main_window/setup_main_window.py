@@ -4,7 +4,7 @@ from PySide6.QtCore import QMargins, QSize, Qt
 from PySide6.QtGui import QIcon
 from PySide6.QtWidgets import QGridLayout, QScrollArea, QVBoxLayout, QWidget
 
-from AppCore import AppSettings, ColorPalette, Language, Logger, MenuPlugin, PathFactory, get_plugin_registry
+from AppCore import AppSettings, Logger, MenuPlugin, PathFactory, get_plugin_registry, get_token_manager
 from guicore import CCard, CComboBox, CGrips, CMenu, CMenuButton, CPushButton, CShowCard, CStatusButton
 
 from .functions import MainFunctions
@@ -85,8 +85,8 @@ class SetupMainWindow:
         - None
         """
         # 添加标题描述
-        self.setWindowTitle(Language.custom_ui.sys_name)
-        self.ui.title_bar.set_title(Language.custom_ui.sys_name)
+        self.setWindowTitle(get_token_manager().language.custom_ui.sys_name)
+        self.ui.title_bar.set_title(get_token_manager().language.custom_ui.sys_name)
         if AppSettings.custom_title_bar:
             # 去除标题栏
             self.setWindowFlag(Qt.FramelessWindowHint)
@@ -152,7 +152,7 @@ class SetupMainWindow:
         scroller_area.setWidget(card)
         scroller_area.setWidgetResizable(True)
         scroller_area.setVerticalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
-        scroller_area.setStyleSheet(f"background-color:{ColorPalette.custom_dark_three};")
+        scroller_area.setStyleSheet(f"background-color:{get_token_manager().theme.custom_dark_three};")
         back_layout.addWidget(scroller_area)
         return card_layout
 
@@ -191,12 +191,12 @@ class SetupMainWindow:
         )
         three_btn.clicked.connect(lambda: Logger.info(f"点击了三态按钮当前状态{three_btn.status}"))
         menu_btn = CMenuButton(
-            colorpalette=ColorPalette,
+            colorpalette=get_token_manager().theme,
             text="邮件",
             icon=QIcon(PathFactory.set_svg_icon("icon_mail")),
         )
         menu_btn.clicked.connect(lambda: Logger.info("点击了菜单按钮"))
-        menu = CMenu(self, colorpalette=ColorPalette)
+        menu = CMenu(self, colorpalette=get_token_manager().theme)
         f1 = menu.addAction(QIcon(PathFactory.set_svg_icon("icon_save")), "保存")
         f2 = menu.addAction(QIcon(PathFactory.set_svg_icon("icon_mail_send")), "发送")
         f1.triggered.connect(lambda: Logger.info("点击了菜单按钮保存"))
@@ -205,7 +205,7 @@ class SetupMainWindow:
         combo_box_0 = CComboBox(size=QSize(120, 30), items=["提莫", "亚索", "阿狸"], placeholder_text="选择你的英雄")
         combo_box_0.currentIndexChanged.connect(lambda: Logger.info(f"改变了下拉框值{combo_box_0.currentIndex()}"))
 
-        github_url = Language.custom_ui.sys_github
+        github_url = get_token_manager().language.custom_ui.sys_github
         return [
             CShowCard(None, github_url, "标准按钮", stander_btn),
             CShowCard(None, github_url, "图标按钮", icon_btn),

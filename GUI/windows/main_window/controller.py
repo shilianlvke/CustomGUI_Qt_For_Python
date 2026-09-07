@@ -6,13 +6,11 @@ from dataclasses import dataclass
 from PySide6.QtWidgets import QWidget
 
 from AppCore import (
-    AppThemes,
-    ColorPalette,
-    Language,
     Logger,
     MainWindowButtonUseCase,
     PathFactory,
     get_plugin_registry,
+    get_token_manager,
     record_event,
 )
 from guicore import Styles
@@ -33,7 +31,7 @@ class PageRouterController:
         self,
         window: object,
         main_functions: object = MainFunctions,
-        language: object = Language,
+        language: object | None = None,
         get_routes: Callable[[object], dict[str, tuple[str, str]]] = get_page_routes,
     ) -> None:
         """初始化页面路由控制器。
@@ -41,7 +39,7 @@ class PageRouterController:
         参数:
         - window: 主窗口对象。
         - main_functions: 页面操作函数集合。
-        - language: 当前语言资源对象。
+        - language: 可选语言资源对象，缺省时取令牌管理器中的当前语言。
         - get_routes: 路由获取函数。
 
         返回:
@@ -49,7 +47,7 @@ class PageRouterController:
         """
         self._window = window
         self._main_functions = main_functions
-        self._language = language
+        self._language = language if language is not None else get_token_manager().language
         self._get_routes = get_routes
 
     def route_for(self, btn_name: str) -> tuple[str, str] | None:
@@ -92,24 +90,21 @@ class ThemeController:
     def __init__(
         self,
         window: object,
-        color_palette: object = ColorPalette,
-        app_themes: object = AppThemes,
+        token_manager: object | None = None,
         style_factory: object = Styles,
     ) -> None:
         """初始化主题控制器。
 
         参数:
         - window: 主窗口对象。
-        - color_palette: 颜色调色板对象。
-        - app_themes: 主题数据映射。
+        - token_manager: 可选令牌管理器，缺省时使用全局实例。
         - style_factory: 样式工厂。
 
         返回:
         - None
         """
         self._window = window
-        self._color_palette = color_palette
-        self._app_themes = app_themes
+        self._token_manager = token_manager or get_token_manager()
         self._style_factory = style_factory
         self._theme_index = -1
 
@@ -121,7 +116,7 @@ class ThemeController:
         """
         self._theme_index = (self._theme_index + 1) % len(self._THEME_SEQUENCE)
         theme_name = self._THEME_SEQUENCE[self._theme_index]
-        self._color_palette.update(self._app_themes[theme_name].data)
+        self._token_manager.switch_theme(theme_name)
         now = self._style_factory()
         self._window.ui.window.setStyleSheet(now.style)
 
@@ -134,20 +129,20 @@ class ColumnController:
     - 处理顶部设置按钮触发的右侧栏显示逻辑。
     """
 
-    def __init__(self, window: object, main_functions: object = MainFunctions, language: object = Language) -> None:
+    def __init__(self, window: object, main_functions: object = MainFunctions, language: object | None = None) -> None:
         """初始化侧栏控制器。
 
         参数:
         - window: 主窗口对象。
         - main_functions: 窗口功能函数集合。
-        - language: 当前语言资源对象。
+        - language: 可选语言资源对象，缺省时取令牌管理器中的当前语言。
 
         返回:
         - None
         """
         self._window = window
         self._main_functions = main_functions
-        self._language = language
+        self._language = language if language is not None else get_token_manager().language
 
     def handle_info_button(self, btn_name: str) -> None:
         """处理信息按钮点击逻辑。

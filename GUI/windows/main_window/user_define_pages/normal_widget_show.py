@@ -1,6 +1,6 @@
 """模块说明。"""
 
-from AppCore import ColorPalette, Language, Logger, PathFactory
+from AppCore import Logger, PathFactory, get_token_manager
 from guicore import CCard, CComboBox, CMenu, CMenuButton, CPushButton, CShowCard, CStatusButton
 from qt_core import (
     QGridLayout,
@@ -67,7 +67,7 @@ class NormalWidgetShowPage:
         scroller_area.setWidget(card)
         scroller_area.setWidgetResizable(True)
         scroller_area.setVerticalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
-        scroller_area.setStyleSheet(f"#widget_show_scroller_area{{background-color:{ColorPalette.custom_dark_three};}}")
+        scroller_area.setStyleSheet(f"#widget_show_scroller_area{{background-color:{get_token_manager().theme.custom_dark_three};}}")
         page_card_layout.addWidget(scroller_area)
         return welcome_card_layout
 
@@ -104,12 +104,12 @@ class NormalWidgetShowPage:
         )
         three_btn.clicked.connect(lambda: Logger.info(f"点击了三态按钮当前状态{three_btn.status}"))
         menu_btn = CMenuButton(
-            colorpalette=ColorPalette,
+            colorpalette=get_token_manager().theme,
             text="邮件",
             icon=QIcon(PathFactory.set_svg_icon("icon_mail")),
         )
         menu_btn.clicked.connect(lambda: Logger.info("点击了菜单按钮"))
-        menu = CMenu(self, colorpalette=ColorPalette)
+        menu = CMenu(self, colorpalette=get_token_manager().theme)
         f1 = menu.addAction(QIcon(PathFactory.set_svg_icon("icon_save")), "保存")
         f2 = menu.addAction(QIcon(PathFactory.set_svg_icon("icon_mail_send")), "发送")
         f1.triggered.connect(lambda: Logger.info("点击了菜单按钮保存"))
@@ -118,7 +118,7 @@ class NormalWidgetShowPage:
         combo_box_0 = CComboBox(size=QSize(120, 30), items=["提莫", "亚索", "阿狸"], placeholder_text="选择你的英雄")
         combo_box_0.currentIndexChanged.connect(lambda: Logger.info(f"改变了下拉框值{combo_box_0.currentIndex()}"))
 
-        github_url = Language.custom_ui.sys_github
+        github_url = get_token_manager().language.custom_ui.sys_github
         return [
             CShowCard(None, github_url, "标准按钮", stander_btn),
             CShowCard(None, github_url, "图标按钮", icon_btn),

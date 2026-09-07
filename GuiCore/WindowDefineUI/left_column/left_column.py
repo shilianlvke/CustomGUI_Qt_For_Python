@@ -1,6 +1,6 @@
 """模块说明。"""
 
-from AppCore import ColorPalette
+from AppCore import get_token_manager
 from gui import UiLeftColumn
 from qt_core import (
     QFrame,
@@ -54,20 +54,19 @@ class CLeftColumn(QWidget):
 
         # 参数
         self._app_parent = app_parent
-        self.ColorPalette = ColorPalette
         self._text_title = text_title
         self._text_title_size = text_title_size
-        self._text_title_color = ColorPalette.custom_text_foreground
+        self._text_title_color = get_token_manager().theme.custom_text_foreground
         self._icon_path = icon_path
-        self._dark_one = ColorPalette.custom_dark_one
-        self._bg_color = ColorPalette.custom_bg_three
-        self._btn_color = ColorPalette.custom_bg_three
-        self._btn_color_hover = ColorPalette.custom_bg_two
-        self._btn_color_pressed = ColorPalette.custom_bg_one
-        self._icon_color = ColorPalette.custom_icon_color
-        self._icon_color_hover = ColorPalette.custom_icon_hover
-        self._icon_color_pressed = ColorPalette.custom_icon_pressed
-        self._context_color = ColorPalette.custom_context_color
+        self._dark_one = get_token_manager().theme.custom_dark_one
+        self._bg_color = get_token_manager().theme.custom_bg_three
+        self._btn_color = get_token_manager().theme.custom_bg_three
+        self._btn_color_hover = get_token_manager().theme.custom_bg_two
+        self._btn_color_pressed = get_token_manager().theme.custom_bg_one
+        self._icon_color = get_token_manager().theme.custom_icon_color
+        self._icon_color_hover = get_token_manager().theme.custom_icon_hover
+        self._icon_color_pressed = get_token_manager().theme.custom_icon_pressed
+        self._context_color = get_token_manager().theme.custom_context_color
         self._icon_close_path = icon_close_path
         self._radius = radius
         self._family = font_family

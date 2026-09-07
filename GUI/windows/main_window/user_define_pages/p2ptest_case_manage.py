@@ -4,7 +4,7 @@ from PySide6.QtCore import QMargins, QSize, Qt
 from PySide6.QtGui import QFont, QIcon
 from PySide6.QtWidgets import QHBoxLayout, QLabel, QScrollArea, QVBoxLayout, QWidget
 
-from AppCore import AppSettings, ColorPalette, Language, Logger, PathFactory
+from AppCore import AppSettings, Logger, PathFactory, get_token_manager
 from guicore import CCard, CPushButton, CShowCard, CStatusButton
 from guicore.CustomUI.div import CHDiv
 
@@ -47,7 +47,7 @@ class P2PTestCaseLibPage:
         left_scroller_area.setObjectName("widget_show_scroller_area")
         left_scroller_area.setWidget(left_card)
         left_scroller_area.setWidgetResizable(True)
-        left_scroller_area.setStyleSheet(f"#widget_show_scroller_area{{background-color:{ColorPalette.custom_dark_three};}}")
+        left_scroller_area.setStyleSheet(f"#widget_show_scroller_area{{background-color:{get_token_manager().theme.custom_dark_three};}}")
         left_scroller_area.setVerticalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
         left_scroller_area.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
         left_back_layout.addWidget(left_scroller_area)
@@ -140,20 +140,20 @@ class P2PTestCaseLibPage:
         right_bottom_scroller_area = QScrollArea()
         right_bottom_scroller_area.setWidget(right_bottom_card)
         right_bottom_scroller_area.setWidgetResizable(True)
-        right_bottom_scroller_area.setStyleSheet(f"background-color:{ColorPalette.custom_dark_three};")
+        right_bottom_scroller_area.setStyleSheet(f"background-color:{get_token_manager().theme.custom_dark_three};")
         right_bottom_scroller_area.setVerticalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
         right_bottom_scroller_area.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
         right_back_layout.addWidget(right_bottom_scroller_area)
 
         cards = [
-            CShowCard(None, Language.custom_ui.sys_github, "功能测试库"),
-            CShowCard(None, Language.custom_ui.sys_github, "性能测试库"),
-            CShowCard(None, Language.custom_ui.sys_github, "硬件测试库"),
-            CShowCard(None, Language.custom_ui.sys_github, "软件测试库1"),
-            CShowCard(None, Language.custom_ui.sys_github, "软件测试库2"),
-            CShowCard(None, Language.custom_ui.sys_github, "软件测试库3"),
-            CShowCard(None, Language.custom_ui.sys_github, "软件测试库4"),
-            CShowCard(None, Language.custom_ui.sys_github, "软件测试库5"),
+            CShowCard(None, get_token_manager().language.custom_ui.sys_github, "功能测试库"),
+            CShowCard(None, get_token_manager().language.custom_ui.sys_github, "性能测试库"),
+            CShowCard(None, get_token_manager().language.custom_ui.sys_github, "硬件测试库"),
+            CShowCard(None, get_token_manager().language.custom_ui.sys_github, "软件测试库1"),
+            CShowCard(None, get_token_manager().language.custom_ui.sys_github, "软件测试库2"),
+            CShowCard(None, get_token_manager().language.custom_ui.sys_github, "软件测试库3"),
+            CShowCard(None, get_token_manager().language.custom_ui.sys_github, "软件测试库4"),
+            CShowCard(None, get_token_manager().language.custom_ui.sys_github, "软件测试库5"),
         ]
         for card in cards:
             right_bottom_layout.addWidget(card)

@@ -2,7 +2,7 @@
 
 import webbrowser
 
-from AppCore import ColorPalette, PathFactory
+from AppCore import PathFactory, get_token_manager
 from qt_core import (
     QCursor,
     QFrame,
@@ -69,7 +69,7 @@ class CShowCard(QFrame):
         self.setMinimumHeight(96)
         self.radius = int(radius)
         self.border_size = int(border_size)
-        self.colorpalette = ColorPalette
+        self.colorpalette = get_token_manager().theme
         self.bottom_text = str(bottom_text)
         self.source_url = str(source_url)
 

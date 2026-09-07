@@ -2,7 +2,7 @@
 
 from typing import override
 
-from AppCore import AppSettings, ColorPalette
+from AppCore import AppSettings, get_token_manager
 from qt_core import (
     QBrush,
     QColor,
@@ -102,11 +102,11 @@ class CTitleButton(QPushButton):
 
         if self._is_active:
             # BRUSH
-            brush = QBrush(QColor(ColorPalette.custom_text_foreground))
+            brush = QBrush(QColor(get_token_manager().theme.custom_text_foreground))
         else:
             if not self._icon_enter:
-                self._set_icon_color = ColorPalette.custom_icon_color  # Set icon color
-                self._set_bg_color = ColorPalette.custom_dark_three  # Set BG color
+                self._set_icon_color = get_token_manager().theme.custom_icon_color  # Set icon color
+                self._set_bg_color = get_token_manager().theme.custom_dark_three  # Set BG color
             # BRUSH
             brush = QBrush(QColor(self._set_bg_color))
 
@@ -128,17 +128,17 @@ class CTitleButton(QPushButton):
     def change_style(self, event: QEvent) -> None:
         """根据交互事件更新样式状态。"""
         if event == QEvent.Enter:
-            self._set_bg_color = ColorPalette.custom_bg_three
-            self._set_icon_color = ColorPalette.custom_icon_hover
+            self._set_bg_color = get_token_manager().theme.custom_bg_three
+            self._set_icon_color = get_token_manager().theme.custom_icon_hover
         elif event == QEvent.Leave:
-            self._set_bg_color = ColorPalette.custom_dark_three
-            self._set_icon_color = ColorPalette.custom_icon_color
+            self._set_bg_color = get_token_manager().theme.custom_dark_three
+            self._set_icon_color = get_token_manager().theme.custom_icon_color
         elif event == QEvent.MouseButtonPress:
-            self._set_bg_color = ColorPalette.custom_bg_one
-            self._set_icon_color = ColorPalette.custom_icon_pressed
+            self._set_bg_color = get_token_manager().theme.custom_bg_one
+            self._set_icon_color = get_token_manager().theme.custom_icon_pressed
         elif event == QEvent.MouseButtonRelease:
-            self._set_bg_color = ColorPalette.custom_bg_three
-            self._set_icon_color = ColorPalette.custom_icon_hover
+            self._set_bg_color = get_token_manager().theme.custom_bg_three
+            self._set_icon_color = get_token_manager().theme.custom_icon_hover
 
     # MOUSE OVER
     # Event triggered when the mouse is over the BTN
@@ -197,7 +197,7 @@ class CTitleButton(QPushButton):
         painter = QPainter(icon)
         painter.setCompositionMode(QPainter.CompositionMode_SourceIn)
         if self._is_active:
-            painter.fillRect(icon.rect(), ColorPalette.custom_icon_active)
+            painter.fillRect(icon.rect(), get_token_manager().theme.custom_icon_active)
         else:
             painter.fillRect(icon.rect(), self._set_icon_color)
         qp.drawPixmap((rect.width() - icon.width()) / 2, (rect.height() - icon.height()) / 2, icon)
@@ -266,13 +266,13 @@ class _ToolTip(QLabel):
         """更新提示框样式文本。"""
         self.style = f"""
             QLabel {{
-                background-color: {ColorPalette.custom_dark_one};
-                color: {ColorPalette.custom_text_foreground};
+                background-color: {get_token_manager().theme.custom_dark_one};
+                color: {get_token_manager().theme.custom_text_foreground};
                 padding-left: {AppSettings.custom_padding}px;
                 padding-right: {AppSettings.custom_padding}px;
                 border-radius: {AppSettings.tooltip_border_radius}px;
-                border: 0px solid {ColorPalette.custom_transparent};
-                border-top: {AppSettings.custom_border}px solid {ColorPalette.custom_context_color};
+                border: 0px solid {get_token_manager().theme.custom_transparent};
+                border-top: {AppSettings.custom_border}px solid {get_token_manager().theme.custom_context_color};
                font: {AppSettings.tooltip_font} {AppSettings.text_size}pt "{AppSettings.family}";
             }}
         """

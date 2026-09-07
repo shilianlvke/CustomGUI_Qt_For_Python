@@ -2,7 +2,7 @@
 
 from typing import override
 
-from AppCore import ColorPalette, PathFactory, get_design_tokens
+from AppCore import PathFactory, get_token_manager
 from qt_core import (
     QColor,
     QEvent,
@@ -74,8 +74,8 @@ class CLeftMenuButton(QPushButton):
         self._icon_enter = False
         # PROPERTIES
         self._margin = margin
-        self._set_icon_color = ColorPalette.custom_icon_color  # Set icon color
-        self._set_bg_color = ColorPalette.custom_dark_one  # Set BG color
+        self._set_icon_color = get_token_manager().theme.custom_icon_color  # Set icon color
+        self._set_bg_color = get_token_manager().theme.custom_dark_one  # Set BG color
         self._parent = app_parent
         self._is_active = is_active
         self._is_active_tab = is_active_tab
@@ -108,41 +108,41 @@ class CLeftMenuButton(QPushButton):
 
         if self._is_active:
             # DRAW BG BLUE
-            p.setBrush(QColor(ColorPalette.custom_context_color))
+            p.setBrush(QColor(get_token_manager().theme.custom_context_color))
             p.drawRoundedRect(rect_blue, 8, 8)
 
             # BG INSIDE
-            p.setBrush(QColor(ColorPalette.custom_bg_one))
+            p.setBrush(QColor(get_token_manager().theme.custom_bg_one))
             p.drawRoundedRect(rect_inside_active, 8, 8)
 
             # DRAW ACTIVE
             icon_path = self._icon_active_menu
-            self._set_icon_color = ColorPalette.custom_icon_active
+            self._set_icon_color = get_token_manager().theme.custom_icon_active
             self.icon_active(p, icon_path, self.width())
 
             # DRAW TEXT
-            p.setPen(QColor(ColorPalette.custom_text_active))
+            p.setPen(QColor(get_token_manager().theme.custom_text_active))
             p.drawText(rect_text, Qt.AlignVCenter, self.text())
 
             # DRAW ICONS
-            self.icon_paint(p, self._icon_path, rect_icon, ColorPalette.custom_context_color)
+            self.icon_paint(p, self._icon_path, rect_icon, get_token_manager().theme.custom_context_color)
 
         elif self._is_active_tab:
             # DRAW BG BLUE
-            p.setBrush(QColor(ColorPalette.custom_dark_four))
+            p.setBrush(QColor(get_token_manager().theme.custom_dark_four))
             p.drawRoundedRect(rect_blue, 8, 8)
 
             # BG INSIDE
-            p.setBrush(QColor(ColorPalette.custom_bg_one))
+            p.setBrush(QColor(get_token_manager().theme.custom_bg_one))
             p.drawRoundedRect(rect_inside_active, 8, 8)
 
             # DRAW ACTIVE
             icon_path = self._icon_active_menu
-            self._set_icon_color = ColorPalette.custom_icon_active
+            self._set_icon_color = get_token_manager().theme.custom_icon_active
             self.icon_active(p, icon_path, self.width())
 
             # DRAW TEXT
-            p.setPen(QColor(ColorPalette.custom_text_active))
+            p.setPen(QColor(get_token_manager().theme.custom_text_active))
             p.drawText(rect_text, Qt.AlignVCenter, self.text())
 
             # DRAW ICONS
@@ -151,24 +151,24 @@ class CLeftMenuButton(QPushButton):
         # NORMAL BG
         elif self._is_toggle_active:
             # BG INSIDE
-            p.setBrush(QColor(ColorPalette.custom_dark_three))
+            p.setBrush(QColor(get_token_manager().theme.custom_dark_three))
             p.drawRoundedRect(rect_inside, 8, 8)
 
             # DRAW TEXT
-            p.setPen(QColor(ColorPalette.custom_text_foreground))
+            p.setPen(QColor(get_token_manager().theme.custom_text_foreground))
             p.drawText(rect_text, Qt.AlignVCenter, self.text())
 
-            self.icon_paint(p, self._icon_path, rect_icon, ColorPalette.custom_context_color)
+            self.icon_paint(p, self._icon_path, rect_icon, get_token_manager().theme.custom_context_color)
         else:
             if not self._icon_enter:
-                self._set_icon_color = ColorPalette.custom_icon_color  # Set icon color
-                self._set_bg_color = ColorPalette.custom_dark_one  # Set BG color
+                self._set_icon_color = get_token_manager().theme.custom_icon_color  # Set icon color
+                self._set_bg_color = get_token_manager().theme.custom_dark_one  # Set BG color
             # BG INSIDE
             p.setBrush(QColor(self._set_bg_color))
             p.drawRoundedRect(rect_inside, 8, 8)
 
             # DRAW TEXT
-            p.setPen(QColor(ColorPalette.custom_text_foreground))
+            p.setPen(QColor(get_token_manager().theme.custom_text_foreground))
             p.drawText(rect_text, Qt.AlignVCenter, self.text())
 
             # DRAW ICONS
@@ -181,8 +181,8 @@ class CLeftMenuButton(QPushButton):
         """设置页面激活状态。"""
         self._is_active = bool(is_active)
         if not self._is_active:
-            self._set_icon_color = ColorPalette.custom_icon_color
-            self._set_bg_color = ColorPalette.custom_dark_one
+            self._set_icon_color = get_token_manager().theme.custom_icon_color
+            self._set_bg_color = get_token_manager().theme.custom_dark_one
         self.repaint()
 
     # 设置活跃的导航栏
@@ -190,8 +190,8 @@ class CLeftMenuButton(QPushButton):
         """设置标签激活状态。"""
         self._is_active_tab = bool(is_active)
         if not self._is_active_tab:
-            self._set_icon_color = ColorPalette.custom_icon_color
-            self._set_bg_color = ColorPalette.custom_dark_one
+            self._set_icon_color = get_token_manager().theme.custom_icon_color
+            self._set_bg_color = get_token_manager().theme.custom_dark_one
         self.repaint()
 
     # 返回是否是活跃界面
@@ -231,7 +231,7 @@ class CLeftMenuButton(QPushButton):
         icon = QPixmap(image)
         painter = QPainter(icon)
         painter.setCompositionMode(QPainter.CompositionMode_SourceIn)
-        painter.fillRect(icon.rect(), ColorPalette.custom_bg_one)
+        painter.fillRect(icon.rect(), get_token_manager().theme.custom_bg_one)
         qp.drawPixmap(width - 5, 0, icon)
         painter.end()
 
@@ -240,17 +240,17 @@ class CLeftMenuButton(QPushButton):
     def change_style(self, event: QEvent) -> None:
         """根据事件更新按钮颜色状态。"""
         if not self._is_active and event == QEvent.Enter:
-            self._set_icon_color = ColorPalette.custom_icon_hover
-            self._set_bg_color = ColorPalette.custom_dark_three
+            self._set_icon_color = get_token_manager().theme.custom_icon_hover
+            self._set_bg_color = get_token_manager().theme.custom_dark_three
         elif not self._is_active and event == QEvent.Leave:
-            self._set_icon_color = ColorPalette.custom_icon_color
-            self._set_bg_color = ColorPalette.custom_dark_one
+            self._set_icon_color = get_token_manager().theme.custom_icon_color
+            self._set_bg_color = get_token_manager().theme.custom_dark_one
         elif not self._is_active and event == QEvent.MouseButtonPress:
-            self._set_icon_color = ColorPalette.custom_context_color
-            self._set_bg_color = ColorPalette.custom_dark_four
+            self._set_icon_color = get_token_manager().theme.custom_context_color
+            self._set_bg_color = get_token_manager().theme.custom_dark_four
         elif not self._is_active and event == QEvent.MouseButtonRelease:
-            self._set_icon_color = ColorPalette.custom_icon_hover
-            self._set_bg_color = ColorPalette.custom_dark_three
+            self._set_icon_color = get_token_manager().theme.custom_icon_hover
+            self._set_bg_color = get_token_manager().theme.custom_dark_three
 
     # 鼠标悬停
     # 当鼠标位于BTN上时触发的事件
@@ -347,7 +347,7 @@ class _ToolTip(QLabel):
 
     def update_style(self) -> None:
         """根据设计令牌更新提示框样式。"""
-        tokens = get_design_tokens()
+        tokens = get_token_manager().tokens
         self.style = f"""
             QLabel {{
                 background-color: {tokens.colors.surface_sidebar};

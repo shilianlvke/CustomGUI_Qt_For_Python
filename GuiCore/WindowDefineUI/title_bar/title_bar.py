@@ -1,6 +1,6 @@
 """窗口标题栏组件模块。"""
 
-from AppCore import AppSettings, ColorPalette, Language, PathFactory
+from AppCore import AppSettings, PathFactory, get_token_manager
 from guicore.CustomUI.div import CVDiv
 from qt_core import (
     QCursor,
@@ -57,24 +57,24 @@ class CTitleBar(QWidget):
 
     def _load_style_tokens(self) -> None:
         self._logo_image = AppSettings.logo_title
-        self._dark_one = ColorPalette.custom_dark_one
-        self._bg_color = ColorPalette.custom_dark_three
-        self._div_color = ColorPalette.custom_bg_three
-        self._btn_bg_color = ColorPalette.custom_dark_three
-        self._btn_bg_color_hover = ColorPalette.custom_bg_three
-        self._btn_bg_color_pressed = ColorPalette.custom_bg_one
-        self._context_color = ColorPalette.custom_context_color
-        self._icon_color = ColorPalette.custom_icon_color
-        self._icon_color_hover = ColorPalette.custom_icon_hover
-        self._icon_color_pressed = ColorPalette.custom_icon_pressed
-        self._icon_color_active = ColorPalette.custom_icon_active
+        self._dark_one = get_token_manager().theme.custom_dark_one
+        self._bg_color = get_token_manager().theme.custom_dark_three
+        self._div_color = get_token_manager().theme.custom_bg_three
+        self._btn_bg_color = get_token_manager().theme.custom_dark_three
+        self._btn_bg_color_hover = get_token_manager().theme.custom_bg_three
+        self._btn_bg_color_pressed = get_token_manager().theme.custom_bg_one
+        self._context_color = get_token_manager().theme.custom_context_color
+        self._icon_color = get_token_manager().theme.custom_icon_color
+        self._icon_color_hover = get_token_manager().theme.custom_icon_hover
+        self._icon_color_pressed = get_token_manager().theme.custom_icon_pressed
+        self._icon_color_active = get_token_manager().theme.custom_icon_active
         self._font_family = AppSettings.family
         self._title_size = AppSettings.title_size
-        self._text_foreground = ColorPalette.custom_text_foreground
+        self._text_foreground = get_token_manager().theme.custom_text_foreground
         self._is_custom_title_bar = AppSettings.custom_title_bar
-        self.minimize_btn = Language.UI.ui_Minimize
-        self.maximize_btn = Language.UI.ui_Maximize
-        self.close_btn = Language.UI.ui_Close
+        self.minimize_btn = get_token_manager().language.UI.ui_Minimize
+        self.maximize_btn = get_token_manager().language.UI.ui_Maximize
+        self.close_btn = get_token_manager().language.UI.ui_Close
 
     def _set_logo_size(self) -> None:
         self.top_logo.setMinimumWidth(AppSettings.icon_size)

@@ -4,7 +4,7 @@ from PySide6.QtCore import QMargins, QSize, Qt
 from PySide6.QtGui import QFont, QIcon
 from PySide6.QtWidgets import QGridLayout, QHBoxLayout, QLabel, QScrollArea, QVBoxLayout, QWidget
 
-from AppCore import AppSettings, ColorPalette, Language, Logger, PathFactory
+from AppCore import AppSettings, Logger, PathFactory, get_token_manager
 from guicore import CCard, CPushButton, CShowCard, CStatusButton
 from guicore.CustomUI.div import CHDiv
 
@@ -47,7 +47,7 @@ class P2PTestPlanPage:
         left_scroller_area = QScrollArea()
         left_scroller_area.setWidget(left_card)
         left_scroller_area.setWidgetResizable(True)
-        left_scroller_area.setStyleSheet(f"background-color:{ColorPalette.custom_dark_three};")
+        left_scroller_area.setStyleSheet(f"background-color:{get_token_manager().theme.custom_dark_three};")
         left_scroller_area.setVerticalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
         left_scroller_area.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
         left_back_layout.addWidget(left_scroller_area)
@@ -132,20 +132,20 @@ class P2PTestPlanPage:
         right_bottom_scroller_area = QScrollArea()
         right_bottom_scroller_area.setWidget(right_bottom_card)
         right_bottom_scroller_area.setWidgetResizable(True)
-        right_bottom_scroller_area.setStyleSheet(f"background-color:{ColorPalette.custom_dark_three};")
+        right_bottom_scroller_area.setStyleSheet(f"background-color:{get_token_manager().theme.custom_dark_three};")
         right_bottom_scroller_area.setVerticalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
         right_bottom_scroller_area.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
         right_back_layout.addWidget(right_bottom_scroller_area)
 
         cards = [
-            CShowCard(QSize(230, 128), Language.custom_ui.sys_github, "功能测试计划"),
-            CShowCard(QSize(230, 128), Language.custom_ui.sys_github, "性能测试计划"),
-            CShowCard(QSize(230, 128), Language.custom_ui.sys_github, "硬件测试计划"),
-            CShowCard(QSize(230, 128), Language.custom_ui.sys_github, "软件测试计划1"),
-            CShowCard(QSize(230, 128), Language.custom_ui.sys_github, "软件测试计划2"),
-            CShowCard(QSize(230, 128), Language.custom_ui.sys_github, "软件测试计划3"),
-            CShowCard(QSize(230, 128), Language.custom_ui.sys_github, "软件测试计划4"),
-            CShowCard(QSize(230, 128), Language.custom_ui.sys_github, "软件测试计划5"),
+            CShowCard(QSize(230, 128), get_token_manager().language.custom_ui.sys_github, "功能测试计划"),
+            CShowCard(QSize(230, 128), get_token_manager().language.custom_ui.sys_github, "性能测试计划"),
+            CShowCard(QSize(230, 128), get_token_manager().language.custom_ui.sys_github, "硬件测试计划"),
+            CShowCard(QSize(230, 128), get_token_manager().language.custom_ui.sys_github, "软件测试计划1"),
+            CShowCard(QSize(230, 128), get_token_manager().language.custom_ui.sys_github, "软件测试计划2"),
+            CShowCard(QSize(230, 128), get_token_manager().language.custom_ui.sys_github, "软件测试计划3"),
+            CShowCard(QSize(230, 128), get_token_manager().language.custom_ui.sys_github, "软件测试计划4"),
+            CShowCard(QSize(230, 128), get_token_manager().language.custom_ui.sys_github, "软件测试计划5"),
         ]
         positions = [(0, 0), (0, 1), (0, 2), (1, 0), (1, 1), (1, 2), (2, 0), (2, 1)]
         for card, (row, col) in zip(cards, positions, strict=False):

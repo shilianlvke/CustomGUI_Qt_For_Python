@@ -1,6 +1,6 @@
 """模块说明。"""
 
-from AppCore import AppSettings, Language, PathFactory
+from AppCore import AppSettings, PathFactory, get_token_manager
 from guicore import CCard, CComboBox, CLineEdit, CPushButton
 from guicore.CustomUI.div import CHDiv
 from qt_core import (
@@ -64,7 +64,7 @@ class P2PTestHomePage:
         logo_svg.setFixedSize(QSize(64, 64))
         welcome_card_layout.addWidget(logo_svg)
 
-        welcome_label = QLabel(Language.custom_ui.sys_copyright)
+        welcome_label = QLabel(get_token_manager().language.custom_ui.sys_copyright)
         welcome_label.setStyleSheet(f'font: 700 20pt "{AppSettings.family}";')
         welcome_card_layout.addWidget(welcome_label)
 
@@ -91,9 +91,9 @@ class P2PTestHomePage:
         username_card_layout = QHBoxLayout(username_card)
         username_card_layout.setContentsMargins(QMargins(0, 0, 0, 0))
         username_card_layout.setSpacing(0)
-        username_label = QLabel(Language.P2PTester.login.username)
+        username_label = QLabel(get_token_manager().language.P2PTester.login.username)
         username_label.setMinimumWidth(100)
-        username_line_edit = CLineEdit(place_holder_text=Language.P2PTester.login.input_username)
+        username_line_edit = CLineEdit(place_holder_text=get_token_manager().language.P2PTester.login.input_username)
         username_line_edit.setMinimumWidth(150)
         username_card_layout.addWidget(username_label)
         username_card_layout.addWidget(username_line_edit)
@@ -106,9 +106,9 @@ class P2PTestHomePage:
         userpass_card_layout = QHBoxLayout(userpass_card)
         userpass_card_layout.setContentsMargins(QMargins(0, 0, 0, 0))
         userpass_card_layout.setSpacing(0)
-        userpass_label = QLabel(Language.P2PTester.login.password)
+        userpass_label = QLabel(get_token_manager().language.P2PTester.login.password)
         userpass_label.setMinimumWidth(100)
-        userpass_line_edit = CLineEdit(place_holder_text=Language.P2PTester.login.input_password)
+        userpass_line_edit = CLineEdit(place_holder_text=get_token_manager().language.P2PTester.login.input_password)
         userpass_line_edit.setEchoMode(QLineEdit.EchoMode.PasswordEchoOnEdit)
         userpass_line_edit.setMinimumWidth(150)
         userpass_card_layout.addWidget(userpass_label)
@@ -122,12 +122,12 @@ class P2PTestHomePage:
         test_node_card_layout = QHBoxLayout(test_node_card)
         test_node_card_layout.setContentsMargins(QMargins(0, 0, 0, 0))
         test_node_card_layout.setSpacing(0)
-        test_node_label = QLabel(Language.P2PTester.login.test_team)
+        test_node_label = QLabel(get_token_manager().language.P2PTester.login.test_team)
         test_node_label.setMinimumWidth(100)
         test_node_line_combox = CComboBox(
             size=QSize(120, 32),
             items=["xxx功能测试", "xxx性能测试", "xxx外观测试"],
-            placeholder_text=Language.P2PTester.login.team_combox_tooltip,
+            placeholder_text=get_token_manager().language.P2PTester.login.team_combox_tooltip,
         )
         test_node_line_combox.setMinimumWidth(150)
         test_node_card_layout.addWidget(test_node_label)
@@ -142,7 +142,7 @@ class P2PTestHomePage:
         login_btn_card_layout.setSpacing(0)
         login_btn = CPushButton(
             size=QSize(150, 32),
-            text=Language.P2PTester.login.btn_login,
+            text=get_token_manager().language.P2PTester.login.btn_login,
             icon=QIcon(PathFactory.set_svg_icon("icon_login")),
         )
         login_btn_card_layout.addWidget(login_btn)
@@ -160,12 +160,12 @@ class P2PTestHomePage:
         init_card_layout.setAlignment(Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignVCenter)
         init_create_btn = CPushButton(
             size=QSize(192, 32),
-            text=Language.P2PTester.login.team_create,
+            text=get_token_manager().language.P2PTester.login.team_create,
             icon=QIcon(PathFactory.set_svg_icon("icon_add")),
         )
         init_search_btn = CPushButton(
             size=QSize(192, 32),
-            text=Language.P2PTester.login.team_search,
+            text=get_token_manager().language.P2PTester.login.team_search,
             icon=QIcon(PathFactory.set_svg_icon("icon_search")),
         )
         init_card_layout.addWidget(init_create_btn, 0, 0)
@@ -173,8 +173,8 @@ class P2PTestHomePage:
         page_card_layout.addWidget(init_card)
 
         init_create_btn.clicked.connect(
-            lambda _x: TeamCreateDialog.setup_ui(Language.P2PTester.login.team_create_window),
+            lambda _x: TeamCreateDialog.setup_ui(get_token_manager().language.P2PTester.login.team_create_window),
         )
         init_search_btn.clicked.connect(
-            lambda _x: TeamSearchDialog.setup_ui(Language.P2PTester.login.team_search_window),
+            lambda _x: TeamSearchDialog.setup_ui(get_token_manager().language.P2PTester.login.team_search_window),
         )

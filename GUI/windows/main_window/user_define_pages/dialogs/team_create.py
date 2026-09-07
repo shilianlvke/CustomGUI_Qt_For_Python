@@ -1,6 +1,6 @@
 """模块说明。"""
 
-from AppCore import Language, PathFactory
+from AppCore import PathFactory, get_token_manager
 from guicore import CCard, CDialog, CLineEdit, CPushButton
 from qt_core import QHBoxLayout, QIcon, QLabel, QSize, Qt, QVBoxLayout
 
@@ -19,18 +19,23 @@ class TeamCreateDialog:
         - None
         """
         create_team = CDialog(title)
+        language = get_token_manager().language
 
         team_name = CCard()
         team_name_layout = QHBoxLayout(team_name)
-        team_name_label = QLabel(Language.P2PTester.team_create_dialog.team_name_label)
-        team_name_line_edit = CLineEdit(place_holder_text=Language.P2PTester.team_create_dialog.team_name_input)
+        team_name_label = QLabel(language.P2PTester.team_create_dialog.team_name_label)
+        team_name_line_edit = CLineEdit(
+            place_holder_text=language.P2PTester.team_create_dialog.team_name_input,
+        )
         team_name_layout.addWidget(team_name_label)
         team_name_layout.addWidget(team_name_line_edit)
 
         team_doc = CCard()
         team_doc_layout = QHBoxLayout(team_doc)
-        team_doc_label = QLabel(Language.P2PTester.team_create_dialog.team_doc_label)
-        team_doc_line_edit = CLineEdit(place_holder_text=Language.P2PTester.team_create_dialog.team_doc_input)
+        team_doc_label = QLabel(language.P2PTester.team_create_dialog.team_doc_label)
+        team_doc_line_edit = CLineEdit(
+            place_holder_text=language.P2PTester.team_create_dialog.team_doc_input,
+        )
         team_doc_layout.addWidget(team_doc_label)
         team_doc_layout.addWidget(team_doc_line_edit)
 
@@ -39,7 +44,7 @@ class TeamCreateDialog:
         team_submit_layout.setAlignment(Qt.AlignmentFlag.AlignCenter)
         team_submit_btn = CPushButton(
             size=QSize(192, 32),
-            text=Language.P2PTester.team_create_dialog.team_create_btn,
+            text=language.P2PTester.team_create_dialog.team_create_btn,
             icon=QIcon(PathFactory.set_svg_icon("icon_new_build")),
         )
         team_submit_layout.addWidget(team_submit_btn)
