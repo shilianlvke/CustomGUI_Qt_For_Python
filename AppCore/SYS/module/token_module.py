@@ -1,9 +1,13 @@
-"""模块说明。"""
+"""设计令牌模块。
 
-import importlib
+职责:
+- 定义设计系统的令牌集合结构（颜色、排版、间距、圆角、边框、尺寸）。
+- 从当前主题与窗口设置派生设计令牌快照。
+"""
+
 from dataclasses import dataclass
 
-from .color_module import ColorPalette
+from .token_models import ThemeColors, WindowSettings
 
 
 @dataclass(frozen=True)
@@ -78,53 +82,51 @@ class DesignTokens:
     size: SizeTokens
 
 
-def get_design_tokens() -> DesignTokens:
-    """构建设计令牌快照。
+def build_design_tokens(theme: ThemeColors, settings: WindowSettings) -> DesignTokens:
+    """从主题与窗口设置派生设计令牌快照。
 
-    职责:
-    - 从当前颜色与应用设置读取值。
-    - 返回供 UI 层消费的统一 DesignTokens 对象。
+    参数:
+    - theme: 当前主题颜色模型。
+    - settings: 窗口设置模型。
 
     返回:
-    - DesignTokens: 当前上下文下的设计令牌集合。
+    - DesignTokens: 派生出的设计令牌集合。
     """
-    app_settings = importlib.import_module("AppCore.SYS.other.folder_tools").AppSettings
-
     return DesignTokens(
         colors=ColorTokens(
-            surface_app=ColorPalette.custom_bg_one,
-            surface_sidebar=ColorPalette.custom_dark_one,
-            surface_panel=ColorPalette.custom_dark_three,
-            surface_card=ColorPalette.custom_dark_three,
-            surface_interactive=ColorPalette.custom_bg_one,
-            surface_interactive_hover=ColorPalette.custom_bg_two,
-            surface_interactive_pressed=ColorPalette.custom_bg_three,
-            text_primary=ColorPalette.custom_text_foreground,
-            text_muted=ColorPalette.custom_text_description,
-            text_active=ColorPalette.custom_text_active,
-            border_context=ColorPalette.custom_context_color,
-            border_transparent=ColorPalette.custom_transparent,
+            surface_app=theme.custom_bg_one,
+            surface_sidebar=theme.custom_dark_one,
+            surface_panel=theme.custom_dark_three,
+            surface_card=theme.custom_dark_three,
+            surface_interactive=theme.custom_bg_one,
+            surface_interactive_hover=theme.custom_bg_two,
+            surface_interactive_pressed=theme.custom_bg_three,
+            text_primary=theme.custom_text_foreground,
+            text_muted=theme.custom_text_description,
+            text_active=theme.custom_text_active,
+            border_context=theme.custom_context_color,
+            border_transparent=theme.custom_transparent,
         ),
         typography=TypographyTokens(
-            family=app_settings.family,
-            size_title=app_settings.title_size,
-            size_subtitle=app_settings.subtitle_size,
-            size_text=app_settings.text_size,
-            weight_tooltip=app_settings.tooltip_font,
+            family=settings.family,
+            size_title=settings.title_size,
+            size_subtitle=settings.subtitle_size,
+            size_text=settings.text_size,
+            weight_tooltip=settings.tooltip_font,
         ),
         spacing=SpacingTokens(
             padding_sm=10,
-            padding_md=app_settings.custom_padding,
+            padding_md=settings.custom_padding,
         ),
         radius=RadiusTokens(
-            window=app_settings.window_border_radius,
-            tooltip=app_settings.tooltip_border_radius,
+            window=settings.window_border_radius,
+            tooltip=settings.tooltip_border_radius,
         ),
         border=BorderTokens(
-            width=app_settings.window_border_size,
-            accent_width=app_settings.custom_border,
+            width=settings.window_border_size,
+            accent_width=settings.custom_border,
         ),
         size=SizeTokens(
-            icon=app_settings.icon_size,
+            icon=settings.icon_size,
         ),
     )

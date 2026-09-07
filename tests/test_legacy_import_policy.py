@@ -19,7 +19,6 @@ LEGACY_IMPORT_PATTERNS = [
 ]
 
 ALLOWED_FILES = {
-    "AppCore/SYS/module/language_module.py",
     "gui/windows/loading_window/ui_main.py",
 }
 

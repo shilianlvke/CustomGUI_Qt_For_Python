@@ -93,21 +93,14 @@ def test_page_router_switch_page_routes_target_widget() -> None:
 def test_theme_controller_cycles_expected_theme_sequence() -> None:
     """测试用例：test_theme_controller_cycles_expected_theme_sequence。"""
     style_calls = []
-    updates = []
+    switch_calls = []
 
-    class _ColorPalette:
-        """类：_ColorPalette。"""
+    class _TokenManager:
+        """类：_TokenManager。"""
 
-        @staticmethod
-        def update(data: dict[str, str]) -> None:
-            """函数：update。"""
-            updates.append(data)
-
-    themes = {
-        "eye": SimpleNamespace(data={"theme": "eye"}),
-        "bright": SimpleNamespace(data={"theme": "bright"}),
-        "default": SimpleNamespace(data={"theme": "default"}),
-    }
+        def switch_theme(self, name: str) -> None:
+            """函数：switch_theme。"""
+            switch_calls.append(name)
 
     class _Styles:
         """类：_Styles。"""
@@ -123,13 +116,13 @@ def test_theme_controller_cycles_expected_theme_sequence() -> None:
         ui=SimpleNamespace(window=SimpleNamespace(setStyleSheet=_set_style)),
     )
 
-    controller = ThemeController(window=window, color_palette=_ColorPalette, app_themes=themes, style_factory=_Styles)
+    controller = ThemeController(window=window, token_manager=_TokenManager(), style_factory=_Styles)
 
     controller.cycle_theme()
     controller.cycle_theme()
     controller.cycle_theme()
 
-    if updates != [{"theme": "eye"}, {"theme": "bright"}, {"theme": "default"}]:
+    if switch_calls != ["eye", "bright", "default"]:
         pytest.fail("Assertion failed")
     if style_calls != ["demo-style", "demo-style", "demo-style"]:
         pytest.fail("Assertion failed")

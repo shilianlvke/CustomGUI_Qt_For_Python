@@ -2,7 +2,6 @@
 
 # ruff: noqa: N999
 
-from .color_module import ColorPalette as ColorPalette
 from .error_module import (
     AppError as AppError,
 )
@@ -18,7 +17,6 @@ from .error_module import (
 from .error_module import (
     to_user_message as to_user_message,
 )
-from .language_module import Language as Language
 from .plugin_module import (
     CommandPlugin as CommandPlugin,
 )
@@ -43,26 +41,25 @@ from .telemetry_module import (
 from .telemetry_module import (
     track_timing as track_timing,
 )
+from .token_models import ThemeColors as ThemeColors
+from .token_models import WindowSettings as WindowSettings
 from .token_module import DesignTokens as DesignTokens
-from .token_module import get_design_tokens as get_design_tokens
 
 __all__ = [
     "AppError",
-    "ColorPalette",
     "CommandPlugin",
     "DesignTokens",
     "DomainErrorBoundary",
     "IOErrorBoundary",
-    "Language",
     "MenuPlugin",
     "PagePlugin",
     "PluginRegistry",
+    "ThemeColors",
     "UIErrorBoundary",
-    "get_design_tokens",
+    "WindowSettings",
     "get_plugin_registry",
     "read_recent_events",
     "record_event",
     "to_user_message",
     "track_timing",
 ]
-

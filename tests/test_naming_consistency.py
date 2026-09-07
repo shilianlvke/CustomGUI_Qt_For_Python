@@ -5,17 +5,17 @@ import importlib
 import pytest
 
 
-def test_canonical_language_module_imports() -> None:
-    """测试用例：test_canonical_language_module_imports。
+def test_canonical_token_manager_imports() -> None:
+    """测试用例：test_canonical_token_manager_imports。
 
     职责:
-    - 验证目标行为符合预期。
+    - 验证令牌管理器规范入口存在。
     """
-    language_module = importlib.import_module("AppCore.SYS.module.language_module")
+    token_manager_module = importlib.import_module("AppCore.SYS.other.token_manager")
 
-    if not (language_module.Language is not None):
+    if not (token_manager_module.TokenManager is not None):
         pytest.fail("Assertion failed")
-    if not (language_module.LanguageHandler is not None):
+    if not (token_manager_module.get_token_manager is not None):
         pytest.fail("Assertion failed")
 
 

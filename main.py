@@ -4,14 +4,10 @@ import sys
 from typing import override
 
 from AppCore import (
-    AppLanguages,
     AppSettings,
-    AppThemes,
-    ColorPalette,
-    Language,
     Logger,
     PathFactory,
-    initialize_app_context,
+    initialize_tokens,
     record_event,
 )
 from gui import SetupMainWindow, UiMainWindow
@@ -48,8 +44,6 @@ class MainWindow(QMainWindow):
         # 启动阶段加载主题与语言资源
         Logger.debug(f"窗口主题：{AppSettings.theme_name}")
         Logger.debug(f"语言包：{AppSettings.language}")
-        ColorPalette.update(AppThemes[AppSettings.theme_name].data)
-        Language.update(AppLanguages[AppSettings.language].data)
 
         # 设置初始尺寸与最小尺寸
         Logger.debug(f"窗口大小：{AppSettings.startup_size}")
@@ -117,8 +111,8 @@ class MainWindow(QMainWindow):
 
 
 if __name__ == "__main__":
-    # 启动前初始化全局应用上下文（配置、主题、语言等）
-    initialize_app_context()
+    # 启动前初始化令牌管理器（配置、主题、语言、设计令牌）
+    initialize_tokens()
 
     # 创建 Qt 应用对象
     app = QApplication(sys.argv)

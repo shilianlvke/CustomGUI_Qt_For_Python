@@ -2,12 +2,18 @@
 
 import pytest
 
-from AppCore import Language, get_plugin_registry
+from AppCore import get_plugin_registry, get_token_manager, initialize_tokens
 from gui.windows.main_window.user_define_pages import (
     PAGE_REGISTRY,
     get_default_page_object,
     get_page_routes,
 )
+
+
+def _current_language() -> object:
+    """函数：_current_language。"""
+    initialize_tokens()
+    return get_token_manager().language
 
 
 def test_registry_button_ids_unique() -> None:
@@ -23,7 +29,7 @@ def test_registry_button_ids_unique() -> None:
 
 def test_page_routes_contains_core_entries() -> None:
     """测试用例：test_page_routes_contains_core_entries。"""
-    routes = get_page_routes(Language)
+    routes = get_page_routes(_current_language())
 
     if "btn_home" not in routes:
         pytest.fail("Assertion failed")
@@ -35,7 +41,7 @@ def test_page_routes_contains_core_entries() -> None:
 
 def test_default_page_exists_in_routes() -> None:
     """测试用例：test_default_page_exists_in_routes。"""
-    routes = get_page_routes(Language)
+    routes = get_page_routes(_current_language())
     default_page = get_default_page_object()
 
     page_names = {page for page, _ in routes.values()}
