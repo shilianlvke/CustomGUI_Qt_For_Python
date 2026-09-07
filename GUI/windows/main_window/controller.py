@@ -6,6 +6,7 @@ from dataclasses import dataclass
 from PySide6.QtWidgets import QWidget
 
 from AppCore import (
+    ButtonId,
     Logger,
     MainWindowButtonUseCase,
     PathFactory,
@@ -129,71 +130,63 @@ class ColumnController:
     - 处理顶部设置按钮触发的右侧栏显示逻辑。
     """
 
-    def __init__(self, window: object, main_functions: object = MainFunctions, language: object | None = None) -> None:
+    def __init__(self, window: object, main_functions: object = MainFunctions) -> None:
         """初始化侧栏控制器。
 
         参数:
         - window: 主窗口对象。
         - main_functions: 窗口功能函数集合。
-        - language: 可选语言资源对象，缺省时取令牌管理器中的当前语言。
 
         返回:
         - None
         """
         self._window = window
         self._main_functions = main_functions
-        self._language = language if language is not None else get_token_manager().language
+
+    def _handle_column_button(self, btn_name: str, menu: object, title: str, icon_path: str) -> None:
+        """处理侧栏按钮的公共切换逻辑。
+
+        参数:
+        - btn_name: 按钮对象名。
+        - menu: 目标菜单页。
+        - title: 菜单标题。
+        - icon_path: 标题图标路径。
+
+        返回:
+        - None
+        """
+        if not self._main_functions.left_column_is_visible(self._window):
+            self._window.ui.left_menu.select_only_one_tab(btn_name)
+            self._main_functions.toggle_left_column(self._window)
+        elif btn_name == ButtonId.CLOSE_LEFT_COLUMN:
+            self._window.ui.left_menu.deselect_all_tab()
+            self._main_functions.toggle_left_column(self._window)
+        self._window.ui.left_menu.select_only_one_tab(btn_name)
+        if btn_name != ButtonId.CLOSE_LEFT_COLUMN:
+            self._main_functions.set_left_column_menu(
+                self._window,
+                menu=menu,
+                title=title,
+                icon_path=icon_path,
+            )
 
     def handle_info_button(self, btn_name: str) -> None:
-        """处理信息按钮点击逻辑。
-
-        参数:
-        - btn_name: 按钮对象名。
-
-        返回:
-        - None
-        """
-        if not self._main_functions.left_column_is_visible(self._window):
-            self._window.ui.left_menu.select_only_one_tab(btn_name)
-            self._main_functions.toggle_left_column(self._window)
-            self._window.ui.left_menu.select_only_one_tab(btn_name)
-        else:
-            if btn_name == "btn_close_left_column":
-                self._window.ui.left_menu.deselect_all_tab()
-                self._main_functions.toggle_left_column(self._window)
-            self._window.ui.left_menu.select_only_one_tab(btn_name)
-        if btn_name != "btn_close_left_column":
-            self._main_functions.set_left_column_menu(
-                self._window,
-                menu=self._window.ui.left_column.menus.menu_2,
-                title=self._language.UI.ui_Settings,
-                icon_path=PathFactory.set_svg_icon("icon_setting"),
-            )
+        """处理信息按钮点击逻辑。"""
+        self._handle_column_button(
+            btn_name,
+            menu=self._window.ui.left_column.menus.menu_2,
+            title=get_token_manager().language.UI.ui_Settings,
+            icon_path=PathFactory.set_svg_icon("icon_setting"),
+        )
 
     def handle_more_button(self, btn_name: str) -> None:
-        """处理更多按钮点击逻辑。
-
-        参数:
-        - btn_name: 按钮对象名。
-
-        返回:
-        - None
-        """
-        if not self._main_functions.left_column_is_visible(self._window):
-            self._main_functions.toggle_left_column(self._window)
-            self._window.ui.left_menu.select_only_one_tab(btn_name)
-        else:
-            if btn_name == "btn_close_left_column":
-                self._window.ui.left_menu.deselect_all_tab()
-                self._main_functions.toggle_left_column(self._window)
-            self._window.ui.left_menu.select_only_one_tab(btn_name)
-        if btn_name != "btn_close_left_column":
-            self._main_functions.set_left_column_menu(
-                self._window,
-                menu=self._window.ui.left_column.menus.menu_1,
-                title=self._language.custom_ui.left_column_io_test_title,
-                icon_path=PathFactory.set_svg_icon("icon_more"),
-            )
+        """处理更多按钮点击逻辑。"""
+        self._handle_column_button(
+            btn_name,
+            menu=self._window.ui.left_column.menus.menu_1,
+            title=get_token_manager().language.UI.ui_Info,
+            icon_path=PathFactory.set_svg_icon("icon_menu"),
+        )
 
     def handle_top_settings_button(self, btn: object) -> None:
         """处理顶部设置按钮逻辑。
@@ -212,6 +205,40 @@ class ColumnController:
             self._main_functions.toggle_right_column(self._window)
         top_settings = self._main_functions.get_left_menu_btn(self._window, "btn_settings")
         top_settings.set_active_tab(False)
+
+
+class LanguageController:
+    """语言切换控制器。
+
+    职责:
+    - 循环切换语言，通过令牌管理器广播变更通知。
+    """
+
+    def __init__(self, window: object, token_manager: object | None = None) -> None:
+        """初始化语言切换控制器。
+
+        参数:
+        - window: 主窗口对象。
+        - token_manager: 可选令牌管理器，缺省时使用全局实例。
+
+        返回:
+        - None
+        """
+        self._window = window
+        self._token_manager = token_manager or get_token_manager()
+
+    def cycle_language(self) -> None:
+        """循环切换到下一个语言。
+
+        返回:
+        - None
+        """
+        names = self._token_manager.available_languages
+        if not names:
+            return
+        current = self._token_manager.language_name
+        index = names.index(current) if current in names else -1
+        self._token_manager.switch_language(names[(index + 1) % len(names)])
 
 
 class MainWindowController:
@@ -258,6 +285,7 @@ class MainWindowController:
         self.page_router = PageRouterController(window=window, main_functions=main_functions)
         self.theme_controller = ThemeController(window=window)
         self.column_controller = ColumnController(window=window, main_functions=main_functions)
+        self.language_controller = LanguageController(window=window)
 
     def handle_button(self, btn: object) -> None:
         """处理主窗口按钮点击事件。
@@ -275,7 +303,7 @@ class MainWindowController:
         if self._button_use_case.should_reset_left_tab(btn_name):
             self._window.ui.left_menu.deselect_all_tab()
         try:
-            top_settings = self._main_functions.get_title_bar_btn(self._window, "btn_top_settings")
+            top_settings = self._main_functions.get_title_bar_btn(self._window, ButtonId.TOP_SETTINGS)
             top_settings.set_active(False)
         except AttributeError:
             pass
@@ -299,12 +327,12 @@ class MainWindowController:
         action_name = decision.payload
 
         action_routes = {
-            "btn_info": lambda: self.column_controller.handle_info_button(btn_name),
-            "btn_more": lambda: self.column_controller.handle_more_button(btn_name),
-            "btn_close_left_column": lambda: self.column_controller.handle_more_button(btn_name),
-            "btn_top_settings": lambda: self.column_controller.handle_top_settings_button(btn),
-            "btn_language": lambda: None,
-            "btn_themes": self.theme_controller.cycle_theme,
+            ButtonId.INFO: lambda: self.column_controller.handle_info_button(btn_name),
+            ButtonId.MORE: lambda: self.column_controller.handle_more_button(btn_name),
+            ButtonId.CLOSE_LEFT_COLUMN: lambda: self.column_controller.handle_more_button(btn_name),
+            ButtonId.TOP_SETTINGS: lambda: self.column_controller.handle_top_settings_button(btn),
+            ButtonId.LANGUAGE: self.language_controller.cycle_language,
+            ButtonId.THEMES: self.theme_controller.cycle_theme,
         }
 
         action = action_routes.get(action_name)

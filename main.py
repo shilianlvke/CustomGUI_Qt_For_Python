@@ -7,9 +7,10 @@ from PySide6.QtGui import QIcon, QMouseEvent, QResizeEvent
 from PySide6.QtWidgets import QApplication, QMainWindow
 
 from AppCore import (
-    AppSettings,
+    EVENT_LANGUAGE_CHANGED,
     Logger,
     PathFactory,
+    get_token_manager,
     initialize_tokens,
     record_event,
 )
@@ -44,13 +45,14 @@ class MainWindow(QMainWindow):
         self.setMouseTracking(True)
 
         # 启动阶段加载主题与语言资源
-        Logger.debug(f"窗口主题：{AppSettings.theme_name}")
-        Logger.debug(f"语言包：{AppSettings.language}")
+        manager = get_token_manager()
+        Logger.debug(f"窗口主题：{manager.app_config.theme_name}")
+        Logger.debug(f"语言包：{manager.app_config.language}")
 
         # 设置初始尺寸与最小尺寸
-        Logger.debug(f"窗口大小：{AppSettings.startup_size}")
-        self.resize(AppSettings.startup_size[0], AppSettings.startup_size[1])
-        self.setMinimumSize(AppSettings.minimum_size[0], AppSettings.minimum_size[1])
+        Logger.debug(f"窗口大小：{manager.settings.startup_size}")
+        self.resize(manager.settings.startup_size[0], manager.settings.startup_size[1])
+        self.setMinimumSize(manager.settings.minimum_size[0], manager.settings.minimum_size[1])
 
         # 初始化 UI 并完成主窗口装配
         self.ui = UiMainWindow()
@@ -59,10 +61,25 @@ class MainWindow(QMainWindow):
 
         # 控制器负责按钮路由、页面切换与交互编排
         self.controller = MainWindowController(self)
+        # 语言切换时刷新窗口文案
+        get_token_manager().subscribe(EVENT_LANGUAGE_CHANGED, self.retranslate)
 
         # 展示窗口并记录就绪事件
         self.show()
         record_event("app.main_window.ready", category="app")
+
+    def retranslate(self) -> None:
+        """语言切换后刷新窗口文案。
+
+        返回:
+        - None
+        """
+        title = get_token_manager().language.custom_ui.sys_name
+        self.setWindowTitle(title)
+        self.ui.title_bar.set_title(title)
+        self.ui.title_bar.retranslate()
+        self.ui.credits.retranslate()
+        self.ui.left_menu.retranslate()
 
     def btn_clicked(self) -> None:
         """处理按钮点击并分发到控制器。
@@ -119,9 +136,9 @@ if __name__ == "__main__":
     # 创建 Qt 应用对象
     app = QApplication(sys.argv)
 
-    # 应用级样式和图标
-    app.setStyle("windows11")
-    app.setWindowIcon(QIcon(PathFactory.set_ico(AppSettings.logo)))
+    # 应用级样式和图标（windows11 为 Windows 专属，其他平台回落到 Fusion）
+    app.setStyle("windows11" if sys.platform == "win32" else "Fusion")
+    app.setWindowIcon(QIcon(PathFactory.set_ico(get_token_manager().app_config.logo)))
 
     # 创建主窗口并进入事件循环
     MainWindow()

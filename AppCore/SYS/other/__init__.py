@@ -25,6 +25,12 @@ from .folder_tools import (
 from .static_func import PathFinder as PathFactory
 from .static_func import PicFixFactory as PicFixFactory
 from .token_manager import (
+    EVENT_LANGUAGE_CHANGED as EVENT_LANGUAGE_CHANGED,
+)
+from .token_manager import (
+    EVENT_THEME_CHANGED as EVENT_THEME_CHANGED,
+)
+from .token_manager import (
     TokenManager as TokenManager,
 )
 from .token_manager import (
@@ -35,6 +41,8 @@ from .token_manager import (
 )
 
 __all__ = [
+    "EVENT_LANGUAGE_CHANGED",
+    "EVENT_THEME_CHANGED",
     "AppLanguages",
     "AppOthers",
     "AppSettings",

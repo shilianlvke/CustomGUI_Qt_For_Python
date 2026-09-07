@@ -14,7 +14,7 @@
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
-__all__ = ["SizeRange", "ThemeColors", "WindowSettings"]
+__all__ = ["AppConfig", "SizeRange", "ThemeColors", "WindowSettings"]
 
 
 class SizeRange(BaseModel):
@@ -57,6 +57,10 @@ class WindowSettings(BaseModel):
     left_menu_content_margins: int = Field(ge=0)
     left_column_size: SizeRange
     right_column_size: SizeRange
+    right_menu_content_margins: int = Field(ge=0)
+    right_title_bar_height: int = Field(ge=0)
+    right_content_space: int = Field(ge=0)
+    right_credits_height: int = Field(ge=0)
     custom_padding: int = Field(ge=0)
     custom_border: int = Field(ge=0)
     tooltip_border_radius: int = Field(ge=0)
@@ -125,3 +129,21 @@ class ThemeColors(BaseModel):
     custom_bg_active_two: str = "#ffcf49"
     custom_bg_active_three: str = "#c94f4f"
     custom_transparent: str = "transparent"
+
+
+class AppConfig(BaseModel):
+    """应用配置模型（config.yml）。"""
+
+    model_config = ConfigDict(
+        frozen=True,
+        extra="ignore",
+        str_strip_whitespace=True,
+        str_min_length=1,
+    )
+
+    language: str
+    theme_name: str
+    logo: str
+    logo_home: str
+    logo_title: str
+    logo_loading: str

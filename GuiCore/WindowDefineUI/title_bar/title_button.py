@@ -2,20 +2,11 @@
 
 from typing import override
 
-from AppCore import AppSettings, get_token_manager
-from qt_core import (
-    QBrush,
-    QColor,
-    QEvent,
-    QGraphicsDropShadowEffect,
-    QLabel,
-    QPainter,
-    QPixmap,
-    QPoint,
-    QPushButton,
-    QRect,
-    Qt,
-)
+from PySide6.QtCore import QEvent, QPoint, QRect, Qt
+from PySide6.QtGui import QBrush, QColor, QPainter, QPixmap
+from PySide6.QtWidgets import QGraphicsDropShadowEffect, QLabel, QPushButton
+
+from AppCore import get_token_manager
 
 
 # PY TITLE BUTTON
@@ -210,6 +201,13 @@ class CTitleButton(QPushButton):
         self._set_icon_path = icon_path
         self.repaint()
 
+    # SET TOOLTIP
+    # ///////////////////////////////////////////////////////////////
+    def set_tooltip(self, text: str) -> None:
+        """设置按钮提示文本。"""
+        self._tooltip_text = text
+        self._tooltip.setText(text)
+
     # MOVE TOOLTIP
     # ///////////////////////////////////////////////////////////////
     def move_tooltip(self) -> None:
@@ -264,16 +262,18 @@ class _ToolTip(QLabel):
 
     def update_style(self) -> None:
         """更新提示框样式文本。"""
+        theme = get_token_manager().theme
+        settings = get_token_manager().settings
         self.style = f"""
             QLabel {{
-                background-color: {get_token_manager().theme.custom_dark_one};
-                color: {get_token_manager().theme.custom_text_foreground};
-                padding-left: {AppSettings.custom_padding}px;
-                padding-right: {AppSettings.custom_padding}px;
-                border-radius: {AppSettings.tooltip_border_radius}px;
-                border: 0px solid {get_token_manager().theme.custom_transparent};
-                border-top: {AppSettings.custom_border}px solid {get_token_manager().theme.custom_context_color};
-               font: {AppSettings.tooltip_font} {AppSettings.text_size}pt "{AppSettings.family}";
+                background-color: {theme.custom_dark_one};
+                color: {theme.custom_text_foreground};
+                padding-left: {settings.custom_padding}px;
+                padding-right: {settings.custom_padding}px;
+                border-radius: {settings.tooltip_border_radius}px;
+                border: 0px solid {theme.custom_transparent};
+                border-top: {settings.custom_border}px solid {theme.custom_context_color};
+               font: {settings.tooltip_font} {settings.text_size}pt "{settings.family}";
             }}
         """
         self.setStyleSheet(self.style)

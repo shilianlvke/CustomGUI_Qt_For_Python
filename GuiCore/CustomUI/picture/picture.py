@@ -1,6 +1,8 @@
 """图片展示组件模块。"""
 
-from qt_core import QLabel, QPixmap, Qt, QVBoxLayout, QWidget
+from PySide6.QtCore import Qt
+from PySide6.QtGui import QPixmap
+from PySide6.QtWidgets import QLabel, QVBoxLayout, QWidget
 
 
 class CPixmap(QWidget):

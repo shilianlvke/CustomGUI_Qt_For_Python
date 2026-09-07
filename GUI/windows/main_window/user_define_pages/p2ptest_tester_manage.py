@@ -4,7 +4,7 @@ from PySide6.QtCore import QMargins, QSize, Qt
 from PySide6.QtGui import QFont, QIcon
 from PySide6.QtWidgets import QGridLayout, QHBoxLayout, QLabel, QScrollArea, QVBoxLayout, QWidget
 
-from AppCore import AppSettings, Logger, PathFactory, get_token_manager
+from AppCore import Logger, PathFactory, get_token_manager
 from guicore import CCard, CPushButton, CShowCard, CStatusButton
 from guicore.CustomUI.div import CHDiv
 
@@ -101,7 +101,7 @@ class P2PTestTesterPage:
         right_back_layout.addWidget(right_top_card)
 
         label_4 = QLabel("全部测试库")
-        font = QFont(AppSettings.family, AppSettings.title_size)
+        font = QFont(get_token_manager().settings.family, get_token_manager().settings.title_size)
         label_4.setFont(font)
         case_lib_btn9 = CPushButton(
             size=QSize(144, 32), text="新建测试库", icon=QIcon(PathFactory.set_svg_icon("icon_add")),

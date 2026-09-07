@@ -4,6 +4,22 @@ from dataclasses import dataclass
 from typing import ClassVar
 
 
+class ButtonId:
+    """主窗口按钮对象名常量。
+
+    职责:
+    - 集中定义按钮对象名，消除分发逻辑中的魔法字符串。
+    """
+
+    INFO = "btn_info"
+    MORE = "btn_more"
+    CLOSE_LEFT_COLUMN = "btn_close_left_column"
+    TOP_SETTINGS = "btn_top_settings"
+    LANGUAGE = "btn_language"
+    THEMES = "btn_themes"
+    SETTINGS = "btn_settings"
+
+
 @dataclass(frozen=True)
 class ButtonDecision:
     """按钮决策结果对象。
@@ -29,12 +45,12 @@ class MainWindowButtonUseCase:
     """
 
     ACTION_MAP: ClassVar[dict[str, str]] = {
-        "btn_info": "btn_info",
-        "btn_more": "btn_more",
-        "btn_close_left_column": "btn_more",
-        "btn_top_settings": "btn_top_settings",
-        "btn_language": "btn_language",
-        "btn_themes": "btn_themes",
+        ButtonId.INFO: ButtonId.INFO,
+        ButtonId.MORE: ButtonId.MORE,
+        ButtonId.CLOSE_LEFT_COLUMN: ButtonId.MORE,
+        ButtonId.TOP_SETTINGS: ButtonId.TOP_SETTINGS,
+        ButtonId.LANGUAGE: ButtonId.LANGUAGE,
+        ButtonId.THEMES: ButtonId.THEMES,
     }
 
     @staticmethod
@@ -47,7 +63,7 @@ class MainWindowButtonUseCase:
         返回:
         - bool: ``True`` 表示需要重置，``False`` 表示保持当前状态。
         """
-        return btn_name != "btn_settings"
+        return btn_name != ButtonId.SETTINGS
 
     @classmethod
     def decide(cls, btn_name: str, route: tuple[str, str] | None) -> ButtonDecision:

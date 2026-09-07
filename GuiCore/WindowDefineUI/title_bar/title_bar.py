@@ -1,19 +1,12 @@
 """窗口标题栏组件模块。"""
 
-from AppCore import AppSettings, PathFactory, get_token_manager
+from PySide6.QtCore import QSize, Qt, Signal
+from PySide6.QtGui import QCursor
+from PySide6.QtSvgWidgets import QSvgWidget
+from PySide6.QtWidgets import QFrame, QHBoxLayout, QLabel, QVBoxLayout, QWidget
+
+from AppCore import PathFactory, get_token_manager
 from guicore.CustomUI.div import CVDiv
-from qt_core import (
-    QCursor,
-    QFrame,
-    QHBoxLayout,
-    QLabel,
-    QSize,
-    QSvgWidget,
-    Qt,
-    QVBoxLayout,
-    QWidget,
-    Signal,
-)
 
 from .title_button import CTitleButton
 
@@ -46,7 +39,6 @@ class CTitleBar(QWidget):
         super().__init__()
         self._parent = parent
         self._app_parent = app_parent
-        self.settings = AppSettings
         self._load_style_tokens()
         self.setup_ui()
         self._set_logo_size()
@@ -56,7 +48,7 @@ class CTitleBar(QWidget):
         self._append_window_buttons()
 
     def _load_style_tokens(self) -> None:
-        self._logo_image = AppSettings.logo_title
+        self._logo_image = get_token_manager().app_config.logo_title
         self._dark_one = get_token_manager().theme.custom_dark_one
         self._bg_color = get_token_manager().theme.custom_dark_three
         self._div_color = get_token_manager().theme.custom_bg_three
@@ -68,17 +60,17 @@ class CTitleBar(QWidget):
         self._icon_color_hover = get_token_manager().theme.custom_icon_hover
         self._icon_color_pressed = get_token_manager().theme.custom_icon_pressed
         self._icon_color_active = get_token_manager().theme.custom_icon_active
-        self._font_family = AppSettings.family
-        self._title_size = AppSettings.title_size
+        self._font_family = get_token_manager().settings.family
+        self._title_size = get_token_manager().settings.title_size
         self._text_foreground = get_token_manager().theme.custom_text_foreground
-        self._is_custom_title_bar = AppSettings.custom_title_bar
+        self._is_custom_title_bar = get_token_manager().settings.custom_title_bar
         self.minimize_btn = get_token_manager().language.UI.ui_Minimize
         self.maximize_btn = get_token_manager().language.UI.ui_Maximize
         self.close_btn = get_token_manager().language.UI.ui_Close
 
     def _set_logo_size(self) -> None:
-        self.top_logo.setMinimumWidth(AppSettings.icon_size)
-        self.top_logo.setMaximumWidth(AppSettings.icon_size)
+        self.top_logo.setMinimumWidth(get_token_manager().settings.icon_size)
+        self.top_logo.setMaximumWidth(get_token_manager().settings.icon_size)
 
     def _bind_window_interactions(self) -> None:
         def move_window(event: object) -> None:
@@ -182,6 +174,19 @@ class CTitleBar(QWidget):
         - None
         """
         self.title_label.setText(title)
+
+    def retranslate(self) -> None:
+        """刷新标题栏按钮提示文本。
+
+        返回:
+        - None
+        """
+        self.minimize_btn = get_token_manager().language.UI.ui_Minimize
+        self.maximize_btn = get_token_manager().language.UI.ui_Maximize
+        self.close_btn = get_token_manager().language.UI.ui_Close
+        self.minimize_button.set_tooltip(self.minimize_btn)
+        self.maximize_restore_button.set_tooltip(self.maximize_btn)
+        self.close_button.set_tooltip(self.close_btn)
 
     # 最大化/恢复
     # 最大化并恢复父窗口

@@ -1,11 +1,10 @@
 """主窗口装配流程模块。"""
 
-from PySide6.QtCore import QMargins, QSize, Qt
-from PySide6.QtGui import QIcon
-from PySide6.QtWidgets import QGridLayout, QScrollArea, QVBoxLayout, QWidget
+from PySide6.QtCore import Qt
+from PySide6.QtWidgets import QWidget
 
-from AppCore import AppSettings, Logger, MenuPlugin, PathFactory, get_plugin_registry, get_token_manager
-from guicore import CCard, CComboBox, CGrips, CMenu, CMenuButton, CPushButton, CShowCard, CStatusButton
+from AppCore import MenuPlugin, get_plugin_registry, get_token_manager
+from guicore import CGrips
 
 from .functions import MainFunctions
 from .user_define_pages import get_default_page_object, get_menu_items, load_registered_pages
@@ -62,177 +61,89 @@ class SetupMainWindow:
     职责:
     - 完成窗口基础装配、菜单注入与页面初始化。
     - 提供窗口尺寸夹点与按钮来源解析等辅助能力。
+
+    说明:
+    - 方法均为静态方法，显式接收 ``window`` 参数，避免类方法式调用造成的歧义。
     """
 
-    def setup_btns(self) -> object | None:
+    @staticmethod
+    def setup_btns(window: object) -> object | None:
         """获取当前触发信号的按钮对象。
+
+        参数:
+        - window: 主窗口对象。
 
         返回:
         - QObject | None: 发送信号的按钮对象。
         """
-        if self.ui.title_bar.sender() is not None:
-            return self.ui.title_bar.sender()
-        if self.ui.left_menu.sender() is not None:
-            return self.ui.left_menu.sender()
-        if self.ui.left_column.sender() is not None:
-            return self.ui.left_column.sender()
+        if window.ui.title_bar.sender() is not None:
+            return window.ui.title_bar.sender()
+        if window.ui.left_menu.sender() is not None:
+            return window.ui.left_menu.sender()
+        if window.ui.left_column.sender() is not None:
+            return window.ui.left_column.sender()
         return None
 
-    def setup_gui(self) -> None:
+    @staticmethod
+    def setup_gui(window: object) -> None:
         """执行主窗口 UI 装配流程。
+
+        参数:
+        - window: 主窗口对象。
 
         返回:
         - None
         """
         # 添加标题描述
-        self.setWindowTitle(get_token_manager().language.custom_ui.sys_name)
-        self.ui.title_bar.set_title(get_token_manager().language.custom_ui.sys_name)
-        if AppSettings.custom_title_bar:
+        window.setWindowTitle(get_token_manager().language.custom_ui.sys_name)
+        window.ui.title_bar.set_title(get_token_manager().language.custom_ui.sys_name)
+        if get_token_manager().settings.custom_title_bar:
             # 去除标题栏
-            self.setWindowFlag(Qt.FramelessWindowHint)
-            self.setAttribute(Qt.WA_TranslucentBackground)
+            window.setWindowFlag(Qt.FramelessWindowHint)
+            window.setAttribute(Qt.WA_TranslucentBackground)
             # 添加夹点
-            self.left_grip = CGrips(self, "left", disable_color=AppSettings.hide_grips)
-            self.right_grip = CGrips(self, "right", disable_color=AppSettings.hide_grips)
-            self.top_grip = CGrips(self, "top", disable_color=AppSettings.hide_grips)
-            self.bottom_grip = CGrips(self, "bottom", disable_color=AppSettings.hide_grips)
-            self.top_left_grip = CGrips(self, "top_left", disable_color=AppSettings.hide_grips)
-            self.top_right_grip = CGrips(self, "top_right", disable_color=AppSettings.hide_grips)
-            self.bottom_left_grip = CGrips(self, "bottom_left", disable_color=AppSettings.hide_grips)
-            self.bottom_right_grip = CGrips(self, "bottom_right", disable_color=AppSettings.hide_grips)
-            SetupMainWindow.resize_grips(self)
+            hide_grips = get_token_manager().settings.hide_grips
+            window.left_grip = CGrips(window, "left", disable_color=hide_grips)
+            window.right_grip = CGrips(window, "right", disable_color=hide_grips)
+            window.top_grip = CGrips(window, "top", disable_color=hide_grips)
+            window.bottom_grip = CGrips(window, "bottom", disable_color=hide_grips)
+            window.top_left_grip = CGrips(window, "top_left", disable_color=hide_grips)
+            window.top_right_grip = CGrips(window, "top_right", disable_color=hide_grips)
+            window.bottom_left_grip = CGrips(window, "bottom_left", disable_color=hide_grips)
+            window.bottom_right_grip = CGrips(window, "bottom_right", disable_color=hide_grips)
+            SetupMainWindow.resize_grips(window)
         # 加载按钮
-        SetupMainWindow.menu_add_btn(self)
+        SetupMainWindow.menu_add_btn(window)
         # PAGES
-        load_registered_pages(self)
+        load_registered_pages(window)
         # 设置初始页面/设置左右列菜单
         default_page = get_default_page_object()
-        MainFunctions.set_page(self, self.ui.load_pages.pages.findChild(QWidget, default_page))
+        MainFunctions.set_page(window, window.ui.load_pages.pages.findChild(QWidget, default_page))
 
-    def load_page1(self) -> None:
-        """预留页面加载入口。"""
-
-    def load_page2(self) -> None:
-        """构建组件展示页示例内容。
-
-        返回:
-        - None
-        """
-        card_layout = self._build_demo_page_layout()
-        cards = self._create_demo_cards()
-        positions = [
-            (cards[0], 0, 0),
-            (cards[1], 0, 1),
-            (cards[2], 0, 2),
-            (cards[3], 0, 3),
-            (cards[4], None, None),
-            (cards[5], None, None),
-            (cards[6], None, None),
-            (cards[7], None, None),
-        ]
-        for card, row, col in positions:
-            if row is None or col is None:
-                card_layout.addWidget(card)
-            else:
-                card_layout.addWidget(card, row, col)
-
-    def _build_demo_page_layout(self) -> QGridLayout:
-        page_layout = QVBoxLayout(self.ui.load_pages.widget_show)
-        page_layout.setContentsMargins(QMargins(0, 0, 0, 0))
-
-        back_card = CCard()
-        back_layout = QVBoxLayout(back_card)
-        back_layout.setContentsMargins(QMargins(0, 0, 0, 0))
-        page_layout.addWidget(back_card)
-
-        card = CCard()
-        card_layout = QGridLayout(card)
-        card_layout.setContentsMargins(QMargins(0, 0, 0, 0))
-        scroller_area = QScrollArea()
-        scroller_area.setWidget(card)
-        scroller_area.setWidgetResizable(True)
-        scroller_area.setVerticalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
-        scroller_area.setStyleSheet(f"background-color:{get_token_manager().theme.custom_dark_three};")
-        back_layout.addWidget(scroller_area)
-        return card_layout
-
-    def _create_demo_cards(self) -> list[CShowCard]:
-        stander_btn = CPushButton(text="标准按钮")
-        stander_btn.clicked.connect(lambda: Logger.info("点击了标准按钮"))
-        icon_btn = CPushButton(size=QSize(64, 64), icon=PathFactory.set_jpg_image("托盘"))
-        icon_btn.clicked.connect(lambda: Logger.info("点击了图片按钮"))
-        trans_btn = CPushButton(text="透明按钮", is_transparent=True)
-        trans_btn.clicked.connect(lambda: Logger.info("点击了透明按钮"))
-        text_icon_btn = CPushButton(
-            size=QSize(128, 32),
-            icon=QIcon(PathFactory.set_svg_icon("icon_heart")),
-            text="QIcon-文字按钮",
-        )
-        text_icon_btn.clicked.connect(lambda: Logger.info("点击了文字按钮"))
-        two_btn = CStatusButton(
-            size=QSize(64, 32),
-            radius=16,
-            icon_negative=QIcon(PathFactory.set_svg_icon("icon_arrow_left")),
-            icon_positive=QIcon(PathFactory.set_svg_icon("icon_arrow_right")),
-            text_negative="左",
-            text_positive="右",
-        )
-        two_btn.clicked.connect(lambda: Logger.info(f"点击了双态按钮当前状态{two_btn.status}"))
-        three_btn = CStatusButton(
-            size=QSize(64, 32),
-            radius=16,
-            icon_negative=QIcon(PathFactory.set_svg_icon("icon_arrow_down")),
-            icon_normal=QIcon(PathFactory.set_svg_icon("icon_arrow_left")),
-            icon_positive=QIcon(PathFactory.set_svg_icon("icon_arrow_right")),
-            text_negative="中",
-            text_normal="左",
-            text_positive="右",
-            is_normal=True,
-        )
-        three_btn.clicked.connect(lambda: Logger.info(f"点击了三态按钮当前状态{three_btn.status}"))
-        menu_btn = CMenuButton(
-            colorpalette=get_token_manager().theme,
-            text="邮件",
-            icon=QIcon(PathFactory.set_svg_icon("icon_mail")),
-        )
-        menu_btn.clicked.connect(lambda: Logger.info("点击了菜单按钮"))
-        menu = CMenu(self, colorpalette=get_token_manager().theme)
-        f1 = menu.addAction(QIcon(PathFactory.set_svg_icon("icon_save")), "保存")
-        f2 = menu.addAction(QIcon(PathFactory.set_svg_icon("icon_mail_send")), "发送")
-        f1.triggered.connect(lambda: Logger.info("点击了菜单按钮保存"))
-        f2.triggered.connect(lambda: Logger.info("点击了菜单按钮发送"))
-        menu_btn.setMenu(menu)
-        combo_box_0 = CComboBox(size=QSize(120, 30), items=["提莫", "亚索", "阿狸"], placeholder_text="选择你的英雄")
-        combo_box_0.currentIndexChanged.connect(lambda: Logger.info(f"改变了下拉框值{combo_box_0.currentIndex()}"))
-
-        github_url = get_token_manager().language.custom_ui.sys_github
-        return [
-            CShowCard(None, github_url, "标准按钮", stander_btn),
-            CShowCard(None, github_url, "图标按钮", icon_btn),
-            CShowCard(None, github_url, "透明按钮", trans_btn),
-            CShowCard(None, github_url, "QIcon-文字按钮", text_icon_btn),
-            CShowCard(None, github_url, "双态按钮", two_btn),
-            CShowCard(None, github_url, "三态按钮", three_btn),
-            CShowCard(None, github_url, "菜单按钮", menu_btn),
-            CShowCard(None, github_url, "下拉框", combo_box_0),
-        ]
-
-    def resize_grips(self) -> None:
+    @staticmethod
+    def resize_grips(window: object) -> None:
         """根据窗口尺寸更新边缘夹点位置。
 
+        参数:
+        - window: 主窗口对象。
+
         返回:
         - None
         """
-        self.left_grip.setGeometry(5, 10, 10, self.height())
-        self.right_grip.setGeometry(self.width() - 15, 10, 10, self.height())
-        self.top_grip.setGeometry(5, 5, self.width() - 10, 10)
-        self.bottom_grip.setGeometry(5, self.height() - 15, self.width() - 10, 10)
-        self.top_right_grip.setGeometry(self.width() - 20, 5, 15, 15)
-        self.bottom_left_grip.setGeometry(5, self.height() - 20, 15, 15)
-        self.bottom_right_grip.setGeometry(self.width() - 20, self.height() - 20, 15, 15)
+        window.left_grip.setGeometry(5, 10, 10, window.height())
+        window.right_grip.setGeometry(window.width() - 15, 10, 10, window.height())
+        window.top_grip.setGeometry(5, 5, window.width() - 10, 10)
+        window.bottom_grip.setGeometry(5, window.height() - 15, window.width() - 10, 10)
+        window.top_right_grip.setGeometry(window.width() - 20, 5, 15, 15)
+        window.bottom_left_grip.setGeometry(5, window.height() - 20, 15, 15)
+        window.bottom_right_grip.setGeometry(window.width() - 20, window.height() - 20, 15, 15)
 
-    def menu_add_btn(self) -> None:
+    @staticmethod
+    def menu_add_btn(window: object) -> None:
         """注入菜单并绑定按钮事件。
+
+        参数:
+        - window: 主窗口对象。
 
         返回:
         - None
@@ -240,12 +151,12 @@ class SetupMainWindow:
         register_builtin_title_menus()
         left_menu_items = get_menu_items("LeftMenu")
         title_menu_items = get_menu_items("TitleMenu")
-        self.ui.left_menu.add_menus(left_menu_items)
-        self.ui.title_bar.add_menus(title_menu_items)
+        window.ui.left_menu.add_menus(left_menu_items)
+        window.ui.title_bar.add_menus(title_menu_items)
         # 按钮绑定
-        self.ui.left_menu.clicked.connect(self.btn_clicked)
-        self.ui.left_menu.released.connect(self.btn_released)
-        self.ui.left_column.clicked.connect(self.btn_clicked)
-        self.ui.left_column.released.connect(self.btn_released)
-        self.ui.title_bar.clicked.connect(self.btn_clicked)
-        self.ui.title_bar.released.connect(self.btn_released)
+        window.ui.left_menu.clicked.connect(window.btn_clicked)
+        window.ui.left_menu.released.connect(window.btn_released)
+        window.ui.left_column.clicked.connect(window.btn_clicked)
+        window.ui.left_column.released.connect(window.btn_released)
+        window.ui.title_bar.clicked.connect(window.btn_clicked)
+        window.ui.title_bar.released.connect(window.btn_released)

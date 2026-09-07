@@ -1,6 +1,7 @@
 """模块说明。"""
 
-from qt_core import QFrame, QSize
+from PySide6.QtCore import QSize
+from PySide6.QtWidgets import QFrame
 
 
 class CCard(QFrame):

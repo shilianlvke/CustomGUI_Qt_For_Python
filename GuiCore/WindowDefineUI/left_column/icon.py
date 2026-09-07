@@ -1,6 +1,8 @@
 """模块说明。"""
 
-from qt_core import QLabel, QPainter, QPixmap, Qt, QVBoxLayout, QWidget
+from PySide6.QtCore import Qt
+from PySide6.QtGui import QPainter, QPixmap
+from PySide6.QtWidgets import QLabel, QVBoxLayout, QWidget
 
 
 # PY ICON WITH CUSTOM COLORS

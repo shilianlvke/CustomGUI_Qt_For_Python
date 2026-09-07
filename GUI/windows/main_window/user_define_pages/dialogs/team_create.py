@@ -1,8 +1,11 @@
 """模块说明。"""
 
+from PySide6.QtCore import QSize, Qt
+from PySide6.QtGui import QIcon
+from PySide6.QtWidgets import QHBoxLayout, QLabel, QVBoxLayout
+
 from AppCore import PathFactory, get_token_manager
 from guicore import CCard, CDialog, CLineEdit, CPushButton
-from qt_core import QHBoxLayout, QIcon, QLabel, QSize, Qt, QVBoxLayout
 
 
 class TeamCreateDialog:

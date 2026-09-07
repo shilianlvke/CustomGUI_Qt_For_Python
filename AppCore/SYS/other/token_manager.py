@@ -13,7 +13,7 @@
 
 from collections.abc import Callable
 
-from AppCore.SYS.module.token_models import ThemeColors, WindowSettings
+from AppCore.SYS.module.token_models import AppConfig, ThemeColors, WindowSettings
 from AppCore.SYS.module.token_module import DesignTokens, build_design_tokens
 from AppCore.SYS.other.folder_tools import get_app_context, initialize_app_context
 
@@ -35,15 +35,23 @@ class TokenManager:
     def __init__(self) -> None:
         """初始化令牌管理器。"""
         self._settings: WindowSettings | None = None
+        self._app_config: AppConfig | None = None
         self._theme: ThemeColors | None = None
         self._language: object | None = None
         self._tokens: DesignTokens | None = None
+        self._theme_name: str | None = None
+        self._language_name: str | None = None
         self._subscribers: dict[str, list[Callable[[], None]]] = {}
 
     @property
     def settings(self) -> WindowSettings | None:
         """获取窗口设置快照。"""
         return self._settings
+
+    @property
+    def app_config(self) -> AppConfig | None:
+        """获取应用配置快照。"""
+        return self._app_config
 
     @property
     def theme(self) -> ThemeColors | None:
@@ -60,6 +68,26 @@ class TokenManager:
         """获取派生设计令牌快照。"""
         return self._tokens
 
+    @property
+    def theme_name(self) -> str | None:
+        """获取当前主题名。"""
+        return self._theme_name
+
+    @property
+    def language_name(self) -> str | None:
+        """获取当前语言名。"""
+        return self._language_name
+
+    @property
+    def available_themes(self) -> list[str]:
+        """获取可用主题名列表。"""
+        return list(get_app_context().themes.keys())
+
+    @property
+    def available_languages(self) -> list[str]:
+        """获取可用语言名列表。"""
+        return list(get_app_context().languages.keys())
+
     def load(self) -> "TokenManager":
         """加载配置库并产出初始快照。
 
@@ -67,9 +95,10 @@ class TokenManager:
         - TokenManager: 当前实例。
         """
         context = get_app_context()
+        self._app_config = AppConfig.model_validate(dict(context.settings))
         self._settings = WindowSettings.model_validate(dict(context.settings))
-        self._apply_theme(context.settings.theme_name)
-        self._apply_language(context.settings.language)
+        self._apply_theme(self._app_config.theme_name)
+        self._apply_language(self._app_config.language)
         return self
 
     def switch_theme(self, name: str) -> None:
@@ -111,6 +140,7 @@ class TokenManager:
     def _apply_theme(self, name: str) -> None:
         """应用主题并重建派生令牌。"""
         context = get_app_context()
+        self._theme_name = name
         self._theme = ThemeColors.model_validate(dict(context.themes[name].data.data))
         if self._settings is not None:
             self._tokens = build_design_tokens(self._theme, self._settings)
@@ -119,6 +149,7 @@ class TokenManager:
     def _apply_language(self, name: str) -> None:
         """应用语言包。"""
         context = get_app_context()
+        self._language_name = name
         self._language = context.languages[name].data.data
         self._notify(EVENT_LANGUAGE_CHANGED)
 

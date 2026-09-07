@@ -2,7 +2,9 @@
 
 from typing import override
 
-from qt_core import QCursor, QFrame, QRect, QSize, QSizeGrip, Qt, QWidget
+from PySide6.QtCore import QRect, QSize, Qt
+from PySide6.QtGui import QCursor
+from PySide6.QtWidgets import QFrame, QSizeGrip, QWidget
 
 
 class CGrips(QWidget):

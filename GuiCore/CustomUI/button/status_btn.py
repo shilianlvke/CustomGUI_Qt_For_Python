@@ -2,8 +2,11 @@
 
 from typing import override
 
+from PySide6.QtCore import QSize, Qt, Signal
+from PySide6.QtGui import QIcon, QPixmap
+from PySide6.QtWidgets import QPushButton
+
 from AppCore import PathFactory, get_token_manager
-from qt_core import QIcon, QPixmap, QPushButton, QSize, Qt, Signal
 
 style = """
 /* 主控件样式 */

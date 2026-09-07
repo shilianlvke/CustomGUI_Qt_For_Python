@@ -1,22 +1,13 @@
 """模块说明。"""
 
-from AppCore import AppSettings, PathFactory, get_token_manager
+from PySide6.QtCore import QMargins, QSize, Qt
+from PySide6.QtGui import QIcon
+from PySide6.QtSvgWidgets import QSvgWidget
+from PySide6.QtWidgets import QGridLayout, QHBoxLayout, QLabel, QLineEdit, QSizePolicy, QVBoxLayout, QWidget
+
+from AppCore import PathFactory, get_token_manager
 from guicore import CCard, CComboBox, CLineEdit, CPushButton
 from guicore.CustomUI.div import CHDiv
-from qt_core import (
-    QGridLayout,
-    QHBoxLayout,
-    QIcon,
-    QLabel,
-    QLineEdit,
-    QMargins,
-    QSize,
-    QSizePolicy,
-    QSvgWidget,
-    Qt,
-    QVBoxLayout,
-    QWidget,
-)
 
 from .dialogs.team_create import TeamCreateDialog
 from .dialogs.team_search import TeamSearchDialog
@@ -60,12 +51,12 @@ class P2PTestHomePage:
         welcome_card_layout.setAlignment(Qt.AlignmentFlag.AlignCenter)
         welcome_card_layout.setContentsMargins(QMargins(0, 0, 0, 0))
 
-        logo_svg = QSvgWidget(PathFactory.set_svg_image(AppSettings.logo_home))
+        logo_svg = QSvgWidget(PathFactory.set_svg_image(get_token_manager().app_config.logo_home))
         logo_svg.setFixedSize(QSize(64, 64))
         welcome_card_layout.addWidget(logo_svg)
 
         welcome_label = QLabel(get_token_manager().language.custom_ui.sys_copyright)
-        welcome_label.setStyleSheet(f'font: 700 20pt "{AppSettings.family}";')
+        welcome_label.setStyleSheet(f'font: 700 20pt "{get_token_manager().settings.family}";')
         welcome_card_layout.addWidget(welcome_label)
 
         page_card_layout.addWidget(CHDiv())

@@ -3,16 +3,10 @@
 from pathlib import Path
 
 from PySide6 import QtCore, QtGui
+from PySide6.QtCore import QEasingCurve, QParallelAnimationGroup, QPropertyAnimation
+from PySide6.QtWidgets import QFileDialog, QPushButton, QWidget
 
-from AppCore import AppSettings
-from qt_core import (
-    QEasingCurve,
-    QFileDialog,
-    QParallelAnimationGroup,
-    QPropertyAnimation,
-    QPushButton,
-    QWidget,
-)
+from AppCore import get_token_manager
 
 
 # FUNCTIONS
@@ -149,11 +143,11 @@ class MainFunctions:
         返回:
         - None
         """
-        time_animation = AppSettings.time_animation
-        minimum_left = AppSettings.left_column_size.minimum
-        maximum_left = AppSettings.left_column_size.maximum
-        minimum_right = AppSettings.right_column_size.minimum
-        maximum_right = AppSettings.right_column_size.maximum
+        time_animation = get_token_manager().settings.time_animation
+        minimum_left = get_token_manager().settings.left_column_size.minimum
+        maximum_left = get_token_manager().settings.left_column_size.maximum
+        minimum_right = get_token_manager().settings.right_column_size.minimum
+        maximum_right = get_token_manager().settings.right_column_size.maximum
 
         # Check Left Values
         left_width = maximum_left if left_box_width <= minimum_left and direction == "left" else minimum_left

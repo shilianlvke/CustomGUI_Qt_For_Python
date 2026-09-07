@@ -2,7 +2,7 @@
 
 from PySide6.QtWidgets import QFrame, QHBoxLayout, QVBoxLayout, QWidget
 
-from AppCore import AppSettings, PathFactory
+from AppCore import PathFactory, get_token_manager
 from gui import UiMainPages, UiRightColumn
 from guicore import CCredits, CLeftColumn, CLeftMenu, CTitleBar, CWindow
 
@@ -37,8 +37,8 @@ class UiMainWindow:
     def set_up_left_widget(self) -> None:
         """构建左侧菜单与抽屉区域。"""
         # 左侧菜单
-        margin = AppSettings.left_menu_content_margins
-        size = AppSettings.lef_menu_size.minimum
+        margin = get_token_manager().settings.left_menu_content_margins
+        size = get_token_manager().settings.lef_menu_size.minimum
         self.left_menu_frame = QFrame()
         self.left_menu_frame.setMaximumSize(size + (margin * 2), 17280)
         self.left_menu_frame.setMinimumSize(size + (margin * 2), 0)
@@ -48,18 +48,18 @@ class UiMainWindow:
         self.left_menu_layout.addWidget(self.left_menu)
         # 左侧抽屉
         self.left_column_frame = QFrame()
-        self.left_column_frame.setMaximumWidth(AppSettings.left_column_size.minimum)
-        self.left_column_frame.setMinimumWidth(AppSettings.left_column_size.minimum)
+        self.left_column_frame.setMaximumWidth(get_token_manager().settings.left_column_size.minimum)
+        self.left_column_frame.setMinimumWidth(get_token_manager().settings.left_column_size.minimum)
         self.left_column_layout = QVBoxLayout(self.left_column_frame)
         self.left_column_layout.setContentsMargins(0, 0, 0, 0)
         self.left_column = CLeftColumn(
             # parent,
             app_parent=self.central_widget,
             text_title="",
-            text_title_size=AppSettings.title_size,
+            text_title_size=get_token_manager().settings.title_size,
             icon_path=PathFactory.set_svg_icon("icon_setting"),
             icon_close_path=PathFactory.set_svg_icon("icon_close"),
-            font_family=AppSettings.family,
+            font_family=get_token_manager().settings.family,
         )
         self.left_column_layout.addWidget(self.left_column)
 
@@ -67,12 +67,12 @@ class UiMainWindow:
         """构建右侧标题、内容与状态栏区域。"""
         self.right_app_frame = QFrame()
         self.right_app_layout = QVBoxLayout(self.right_app_frame)
-        margin = AppSettings.right_menu_content_margins
+        margin = get_token_manager().settings.right_menu_content_margins
         self.right_app_layout.setContentsMargins(margin, margin, margin, margin)
-        self.right_app_layout.setSpacing(AppSettings.right_content_space)
+        self.right_app_layout.setSpacing(get_token_manager().settings.right_content_space)
         # 添加标题栏框架、布局
         self.title_bar_frame = QFrame()
-        self.title_bar_frame.setFixedHeight(AppSettings.right_title_bar_height)
+        self.title_bar_frame.setFixedHeight(get_token_manager().settings.right_title_bar_height)
         self.title_bar_layout = QVBoxLayout(self.title_bar_frame)
         self.title_bar_layout.setContentsMargins(0, 0, 0, 0)
         self.title_bar = CTitleBar(self.parent, self.central_widget)
@@ -89,8 +89,8 @@ class UiMainWindow:
         self.load_pages.setup_ui(self.content_area_left_frame)
         # 右侧工具栏
         self.right_column_frame = QFrame()
-        self.right_column_frame.setMinimumWidth(AppSettings.right_column_size.minimum)
-        self.right_column_frame.setMaximumWidth(AppSettings.right_column_size.minimum)
+        self.right_column_frame.setMinimumWidth(get_token_manager().settings.right_column_size.minimum)
+        self.right_column_frame.setMaximumWidth(get_token_manager().settings.right_column_size.minimum)
         # 导入右列
         self.content_area_right_layout = QVBoxLayout(self.right_column_frame)
         self.content_area_right_layout.setContentsMargins(5, 5, 5, 5)
@@ -108,7 +108,7 @@ class UiMainWindow:
         # CREDITS / BOTTOM APP FRAME
         # ///////////////////////////////////////////////////////////////
         self.credits_frame = QFrame()
-        self.credits_frame.setFixedHeight(AppSettings.right_credits_height)
+        self.credits_frame.setFixedHeight(get_token_manager().settings.right_credits_height)
         # CREATE LAYOUT
         self.credits_layout = QVBoxLayout(self.credits_frame)
         self.credits_layout.setContentsMargins(0, 0, 0, 0)
@@ -131,7 +131,7 @@ class UiMainWindow:
         """应用窗口最终配置。"""
         # 添加中心小部件并设置内容边距
         self.parent.setCentralWidget(self.central_widget)
-        if AppSettings.custom_title_bar:
+        if get_token_manager().settings.custom_title_bar:
             self.central_widget_layout.setContentsMargins(10, 10, 10, 10)
         else:
             self.window.set_stylesheet(border_radius=0, border_size=0)

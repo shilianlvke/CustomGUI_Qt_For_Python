@@ -1,7 +1,9 @@
 """模块说明。"""
 
+from PySide6.QtCore import Qt
+from PySide6.QtWidgets import QFrame, QHBoxLayout, QLabel, QSizePolicy, QSpacerItem, QWidget
+
 from AppCore import get_token_manager
-from qt_core import QFrame, QHBoxLayout, QLabel, QSizePolicy, QSpacerItem, Qt, QWidget
 
 
 class CCredits(QWidget):
@@ -57,3 +59,14 @@ class CCredits(QWidget):
         self.bg_layout.addWidget(self.copyright_label)
         self.bg_layout.addSpacerItem(self.separator)
         self.bg_layout.addWidget(self.version_label)
+
+    def retranslate(self) -> None:
+        """刷新版权栏文案。
+
+        返回:
+        - None
+        """
+        self._copyright = get_token_manager().language.custom_ui.sys_copyright
+        self._version = get_token_manager().language.custom_ui.sys_version
+        self.copyright_label.setText(self._copyright)
+        self.version_label.setText(self._version)

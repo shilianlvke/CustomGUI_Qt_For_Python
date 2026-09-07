@@ -1,18 +1,11 @@
 """模块说明。"""
 
+from PySide6.QtCore import QMargins, QSize, Qt
+from PySide6.QtGui import QIcon
+from PySide6.QtWidgets import QGridLayout, QScrollArea, QSizePolicy, QVBoxLayout, QWidget
+
 from AppCore import Logger, PathFactory, get_token_manager
 from guicore import CCard, CComboBox, CMenu, CMenuButton, CPushButton, CShowCard, CStatusButton
-from qt_core import (
-    QGridLayout,
-    QIcon,
-    QMargins,
-    QScrollArea,
-    QSize,
-    QSizePolicy,
-    Qt,
-    QVBoxLayout,
-    QWidget,
-)
 
 
 class NormalWidgetShowPage:

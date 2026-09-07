@@ -1,6 +1,6 @@
 """模块说明。"""
 
-from qt_core import QMenu
+from PySide6.QtWidgets import QMenu
 
 style = """
 QMenu {{

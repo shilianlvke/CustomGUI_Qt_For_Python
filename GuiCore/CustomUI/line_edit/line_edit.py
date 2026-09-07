@@ -1,6 +1,6 @@
 """模块说明。"""
 
-from qt_core import QLineEdit
+from PySide6.QtWidgets import QLineEdit
 
 
 # PY PUSH BUTTON

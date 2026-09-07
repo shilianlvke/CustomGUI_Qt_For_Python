@@ -1,19 +1,13 @@
 """模块说明。"""
 
+from PySide6.QtCore import Qt, Signal
+from PySide6.QtWidgets import QFrame, QHBoxLayout, QLabel, QVBoxLayout, QWidget
+
 from AppCore import get_token_manager
-from gui import UiLeftColumn
-from qt_core import (
-    QFrame,
-    QHBoxLayout,
-    QLabel,
-    Qt,
-    QVBoxLayout,
-    QWidget,
-    Signal,
-)
 
 from .icon import PyIcon
 from .left_button import PyLeftButton
+from .left_column_ui import UiLeftColumn
 
 
 class CLeftColumn(QWidget):

@@ -1,6 +1,7 @@
 """模块说明。"""
 
-from qt_core import QComboBox, QSize, Qt
+from PySide6.QtCore import QSize, Qt
+from PySide6.QtWidgets import QComboBox
 
 
 class CComboBox(QComboBox):

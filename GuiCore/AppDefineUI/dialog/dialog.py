@@ -2,10 +2,13 @@
 
 from typing import override
 
-from AppCore import AppSettings
+from PySide6.QtCore import QPoint, Qt
+from PySide6.QtGui import QMouseEvent
+from PySide6.QtWidgets import QDialog, QVBoxLayout
+
+from AppCore import get_token_manager
 from guicore.CustomUI import CCard
 from guicore.WindowDefineUI import CTitleBar, CWindow
-from qt_core import QDialog, QMouseEvent, QPoint, Qt, QVBoxLayout
 
 
 class CDialog(QDialog):
@@ -29,13 +32,13 @@ class CDialog(QDialog):
         self.dragPos = QPoint(0, 0)
         layout = QVBoxLayout()
         self.setLayout(layout)
-        if AppSettings.custom_title_bar:
+        if get_token_manager().settings.custom_title_bar:
             self.setWindowFlag(Qt.WindowType.FramelessWindowHint)
             self.setAttribute(Qt.WidgetAttribute.WA_TranslucentBackground)
         self.BG = CWindow(horizontal=False)
         layout.addWidget(self.BG)
         self.BG.layout.setAlignment(Qt.AlignmentFlag.AlignTop)
-        if AppSettings.custom_title_bar:
+        if get_token_manager().settings.custom_title_bar:
             self.title_bar = CTitleBar(
                 self,
                 self,

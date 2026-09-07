@@ -24,6 +24,8 @@ from .module import (
     track_timing,
 )
 from .other import (
+    EVENT_LANGUAGE_CHANGED,
+    EVENT_THEME_CHANGED,
     AppLanguages,
     AppOthers,
     AppSettings,
@@ -38,6 +40,8 @@ from .other import (
 )
 
 __all__ = [
+    "EVENT_LANGUAGE_CHANGED",
+    "EVENT_THEME_CHANGED",
     "AppError",
     "AppLanguages",
     "AppOthers",

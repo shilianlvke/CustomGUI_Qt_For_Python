@@ -4,6 +4,7 @@ from types import SimpleNamespace
 
 import pytest
 
+from AppCore import initialize_tokens
 from gui.windows.main_window.controller import ColumnController, MainWindowController, PageRouterController
 
 
@@ -224,13 +225,10 @@ def test_button_to_column_action_chain() -> None:
         language=None,
         get_routes=_routes,
     )
+    initialize_tokens()
     controller.column_controller = ColumnController(
         window=window,
         main_functions=main_functions,
-        language=SimpleNamespace(
-            UI=SimpleNamespace(ui_Settings="Settings"),
-            custom_ui=SimpleNamespace(left_column_io_test_title="IO"),
-        ),
     )
 
     controller.handle_button(_FakeButton("btn_info"))

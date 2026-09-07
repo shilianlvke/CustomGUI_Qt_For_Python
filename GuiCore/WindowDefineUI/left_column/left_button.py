@@ -2,19 +2,11 @@
 
 from typing import override
 
+from PySide6.QtCore import QEvent, QRect, Qt
+from PySide6.QtGui import QBrush, QColor, QPainter, QPixmap
+from PySide6.QtWidgets import QGraphicsDropShadowEffect, QLabel, QPushButton
+
 from AppCore import get_token_manager
-from qt_core import (
-    QBrush,
-    QColor,
-    QEvent,
-    QGraphicsDropShadowEffect,
-    QLabel,
-    QPainter,
-    QPixmap,
-    QPushButton,
-    QRect,
-    Qt,
-)
 
 
 class PyLeftButton(QPushButton):

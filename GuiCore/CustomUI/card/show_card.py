@@ -2,19 +2,11 @@
 
 import webbrowser
 
+from PySide6.QtCore import QSize, Qt
+from PySide6.QtGui import QCursor, QPixmap
+from PySide6.QtWidgets import QFrame, QHBoxLayout, QLabel, QSizePolicy, QVBoxLayout, QWidget
+
 from AppCore import PathFactory, get_token_manager
-from qt_core import (
-    QCursor,
-    QFrame,
-    QHBoxLayout,
-    QLabel,
-    QPixmap,
-    QSize,
-    QSizePolicy,
-    Qt,
-    QVBoxLayout,
-    QWidget,
-)
 
 
 class CShowCard(QFrame):

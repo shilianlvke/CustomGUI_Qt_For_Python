@@ -1,17 +1,10 @@
 """模块说明。"""
 
-from AppCore import AppSettings, PathFactory, get_token_manager
+from PySide6.QtCore import QEasingCurve, QPropertyAnimation, Qt, Signal
+from PySide6.QtWidgets import QFrame, QPushButton, QVBoxLayout, QWidget
+
+from AppCore import PathFactory, get_token_manager
 from guicore.CustomUI.div import CHDiv
-from qt_core import (
-    QEasingCurve,
-    QFrame,
-    QPropertyAnimation,
-    QPushButton,
-    Qt,
-    QVBoxLayout,
-    QWidget,
-    Signal,
-)
 
 from .menu_button import CLeftMenuButton
 
@@ -63,13 +56,13 @@ class CLeftMenu(QWidget):
         self._context_color = get_token_manager().theme.custom_context_color
         self._text_foreground = get_token_manager().theme.custom_text_foreground
         self._text_active = get_token_manager().theme.custom_text_active
-        self._duration_time = AppSettings.time_animation
+        self._duration_time = get_token_manager().settings.time_animation
         self._radius = radius
-        self._minimum_width = AppSettings.lef_menu_size.minimum
-        self._maximum_width = AppSettings.lef_menu_size.maximum
+        self._minimum_width = get_token_manager().settings.lef_menu_size.minimum
+        self._maximum_width = get_token_manager().settings.lef_menu_size.maximum
         self._icon_path = PathFactory.set_svg_icon(icon_path)
         self._icon_path_close = PathFactory.set_svg_icon(icon_path_close)
-        self._font_family = AppSettings.family
+        self._font_family = get_token_manager().settings.family
         # 获取父类
         self._parent = parent
         self._app_parent = app_parent
@@ -261,3 +254,12 @@ class CLeftMenu(QWidget):
 
         # 添加背景到菜单布局
         self.left_menu_layout.addWidget(self.bg)
+
+    def retranslate(self) -> None:
+        """刷新菜单切换按钮文案。
+
+        返回:
+        - None
+        """
+        self.toggle_button.setText(get_token_manager().language.UI.ui_Hide)
+        self.toggle_button.set_tooltip(get_token_manager().language.UI.ui_Show)

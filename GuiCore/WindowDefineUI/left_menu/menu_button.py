@@ -2,20 +2,11 @@
 
 from typing import override
 
+from PySide6.QtCore import QEvent, QPoint, QRect, Qt, Slot
+from PySide6.QtGui import QColor, QPainter, QPixmap
+from PySide6.QtWidgets import QGraphicsDropShadowEffect, QLabel, QPushButton
+
 from AppCore import PathFactory, get_token_manager
-from qt_core import (
-    QColor,
-    QEvent,
-    QGraphicsDropShadowEffect,
-    QLabel,
-    QPainter,
-    QPixmap,
-    QPoint,
-    QPushButton,
-    QRect,
-    Qt,
-    Slot,
-)
 
 
 class CLeftMenuButton(QPushButton):
@@ -214,6 +205,12 @@ class CLeftMenuButton(QPushButton):
         """设置按钮图标并刷新。"""
         self._icon_path = icon_path
         self.repaint()
+
+    # 设置提示文本
+    def set_tooltip(self, text: str) -> None:
+        """设置按钮提示文本。"""
+        self._tooltip_text = text
+        self.tooltip.setText(text)
 
     # 用颜色绘制图标
     def icon_paint(self, qp: object, image: str, rect: QRect, color: object) -> None:

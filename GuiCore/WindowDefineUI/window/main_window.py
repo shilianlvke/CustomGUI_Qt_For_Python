@@ -3,7 +3,7 @@
 from PySide6.QtGui import QColor
 from PySide6.QtWidgets import QFrame, QGraphicsDropShadowEffect, QHBoxLayout, QVBoxLayout
 
-from AppCore import AppSettings
+from AppCore import get_token_manager
 from guicore.styles import Styles
 
 
@@ -30,10 +30,10 @@ class CWindow(QFrame):
             self.layout = QHBoxLayout(self)
         else:
             self.layout = QVBoxLayout(self)
-        margin = AppSettings.window_margin
+        margin = get_token_manager().settings.window_margin
         self.layout.setContentsMargins(margin, margin, margin, margin)
-        self.layout.setSpacing(AppSettings.window_space)
-        if AppSettings.custom_title_bar and AppSettings.window_shadow:
+        self.layout.setSpacing(get_token_manager().settings.window_space)
+        if get_token_manager().settings.custom_title_bar and get_token_manager().settings.window_shadow:
             self.shadow = QGraphicsDropShadowEffect()
             self.shadow.setBlurRadius(20)
             self.shadow.setXOffset(0)

@@ -1,7 +1,9 @@
 """模块说明。"""
 
 # 这里决定整个window的总体样式
-from AppCore import get_token_manager
+from pathlib import Path
+
+from AppCore import PathFactory, get_token_manager
 
 
 class Styles:
@@ -15,6 +17,8 @@ class Styles:
     def __init__(self) -> None:
         """初始化样式生成器并构建样式文本。"""
         self.tokens = get_token_manager().tokens
+        self._icon_arrow_right = Path(PathFactory.set_svg_icon("icon_arrow_right")).as_posix()
+        self._icon_arrow_down = Path(PathFactory.set_svg_icon("icon_arrow_down")).as_posix()
         self.style = f"""
             #CWindow_Frame {{
                 background-color: {self.tokens.colors.surface_app};
@@ -81,14 +85,14 @@ class Styles:
                 background-color: {self.tokens.colors.surface_interactive_pressed};
             }}
             #CMenuButton_PushButton::menu-indicator {{
-                image: url(resource/CustomUI/images/svg_icons/icon_arrow_right.svg);
+                image: url({self._icon_arrow_right});
                 width: {self.tokens.size.icon}px;
                 height: {self.tokens.size.icon}px;
                 padding-right: 4px;
                 subcontrol-position: right;
             }}
             #CMenuButton_PushButton::menu-indicator:pressed, #CMenuButton_PushButton::menu-indicator:open {{
-                image: url(resource/CustomUI/images/svg_icons/icon_arrow_down.svg);
+                image: url({self._icon_arrow_down});
                 width: {self.tokens.size.icon}px;
                 height: {self.tokens.size.icon}px;
                 position: relative;
@@ -186,12 +190,12 @@ class Styles:
                 border: none;
             }}
             #CComboBox_ComboBox::down-arrow {{
-                image: url(resource/CustomUI/images/svg_icons/icon_arrow_right.svg);
+                image: url({self._icon_arrow_right});
                 width: {self.tokens.size.icon}px;
                 height: {self.tokens.size.icon}px;
             }}
             #CComboBox_ComboBox::down-arrow:on {{
-                image: url(resource/CustomUI/images/svg_icons/icon_arrow_down.svg);
+                image: url({self._icon_arrow_down});
                 width: {self.tokens.size.icon}px;
                 height: {self.tokens.size.icon}px;
             }}
