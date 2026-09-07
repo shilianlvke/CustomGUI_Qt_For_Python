@@ -2,8 +2,8 @@
 
 # ruff: noqa: N999
 
-from .APP import ButtonDecision, ButtonId, MainWindowButtonUseCase
-from .SYS import (
+from .app import ButtonDecision, ButtonId, MainWindowButtonUseCase
+from .system import (
     EVENT_LANGUAGE_CHANGED,
     EVENT_THEME_CHANGED,
     AppError,

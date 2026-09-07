@@ -1,7 +1,7 @@
 """主窗口装配流程模块。"""
 
 from PySide6.QtCore import Qt
-from PySide6.QtWidgets import QWidget
+from PySide6.QtWidgets import QMainWindow, QWidget
 
 from AppCore import MenuPlugin, get_plugin_registry, get_token_manager
 from guicore import CGrips
@@ -67,7 +67,7 @@ class SetupMainWindow:
     """
 
     @staticmethod
-    def setup_btns(window: object) -> object | None:
+    def setup_btns(window: QMainWindow) -> object | None:
         """获取当前触发信号的按钮对象。
 
         参数:
@@ -85,7 +85,7 @@ class SetupMainWindow:
         return None
 
     @staticmethod
-    def setup_gui(window: object) -> None:
+    def setup_gui(window: QMainWindow) -> None:
         """执行主窗口 UI 装配流程。
 
         参数:
@@ -121,7 +121,7 @@ class SetupMainWindow:
         MainFunctions.set_page(window, window.ui.load_pages.pages.findChild(QWidget, default_page))
 
     @staticmethod
-    def resize_grips(window: object) -> None:
+    def resize_grips(window: QMainWindow) -> None:
         """根据窗口尺寸更新边缘夹点位置。
 
         参数:
@@ -139,7 +139,7 @@ class SetupMainWindow:
         window.bottom_right_grip.setGeometry(window.width() - 20, window.height() - 20, 15, 15)
 
     @staticmethod
-    def menu_add_btn(window: object) -> None:
+    def menu_add_btn(window: QMainWindow) -> None:
         """注入菜单并绑定按钮事件。
 
         参数:

@@ -2,7 +2,7 @@
 
 # ruff: noqa: N999
 
-from AppCore.SYS.logger import Logger
+from AppCore.system.logger import Logger
 
 try:
     import serial.tools.list_ports as serial_list_ports

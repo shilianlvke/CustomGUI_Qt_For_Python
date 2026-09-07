@@ -4,7 +4,7 @@ from pathlib import Path
 
 import pytest
 
-from AppCore.SYS.module.telemetry_module import read_recent_events, record_event, track_timing
+from AppCore.system.module.telemetry_module import read_recent_events, record_event, track_timing
 
 
 def test_record_event_writes_event_and_metric(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:

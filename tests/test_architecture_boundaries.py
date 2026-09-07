@@ -56,9 +56,9 @@ def test_presentation_layer_uses_appcore_public_api_only() -> None:
     for folder in targets:
         for path in _iter_python_files(folder):
             for module in _extract_import_roots(path):
-                if module == "AppCore.SYS" or module.startswith("AppCore.SYS."):
+                if module == "AppCore.system" or module.startswith("AppCore.system."):
                     rel = path.relative_to(ROOT).as_posix()
                     violations.append(f"{rel} -> {module}")
 
     if violations:
-        pytest.fail("Presentation code must not import AppCore.SYS internals:\n" + "\n".join(violations))
+        pytest.fail("Presentation code must not import AppCore.system internals:\n" + "\n".join(violations))

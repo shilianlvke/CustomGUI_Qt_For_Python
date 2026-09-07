@@ -27,16 +27,12 @@ class MainWindow(QMainWindow):
     3. 处理窗口级事件（缩放、鼠标按下）。
     """
 
-    def __init__(self, **args: object) -> None:
+    def __init__(self) -> None:
         """初始化主窗口并完成启动期装配。
-
-        参数:
-        - **args: 预留扩展参数。
 
         返回:
         - None
         """
-        _ = args
         super().__init__()
         # 启动遥测：主窗口初始化
         record_event("app.main_window.init", category="app")

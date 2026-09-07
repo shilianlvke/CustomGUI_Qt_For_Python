@@ -3,7 +3,7 @@
 from collections.abc import Callable
 from dataclasses import dataclass
 
-from PySide6.QtWidgets import QWidget
+from PySide6.QtWidgets import QMainWindow, QWidget
 
 from AppCore import (
     ButtonId,
@@ -30,7 +30,7 @@ class PageRouterController:
 
     def __init__(
         self,
-        window: object,
+        window: QMainWindow,
         main_functions: object = MainFunctions,
         language: object | None = None,
         get_routes: Callable[[object], dict[str, tuple[str, str]]] = get_page_routes,
@@ -90,7 +90,7 @@ class ThemeController:
 
     def __init__(
         self,
-        window: object,
+        window: QMainWindow,
         token_manager: object | None = None,
         style_factory: object = Styles,
     ) -> None:
@@ -130,7 +130,7 @@ class ColumnController:
     - 处理顶部设置按钮触发的右侧栏显示逻辑。
     """
 
-    def __init__(self, window: object, main_functions: object = MainFunctions) -> None:
+    def __init__(self, window: QMainWindow, main_functions: object = MainFunctions) -> None:
         """初始化侧栏控制器。
 
         参数:
@@ -188,7 +188,7 @@ class ColumnController:
             icon_path=PathFactory.set_svg_icon("icon_menu"),
         )
 
-    def handle_top_settings_button(self, btn: object) -> None:
+    def handle_top_settings_button(self, btn: QWidget) -> None:
         """处理顶部设置按钮逻辑。
 
         参数:
@@ -214,7 +214,7 @@ class LanguageController:
     - 循环切换语言，通过令牌管理器广播变更通知。
     """
 
-    def __init__(self, window: object, token_manager: object | None = None) -> None:
+    def __init__(self, window: QMainWindow, token_manager: object | None = None) -> None:
         """初始化语言切换控制器。
 
         参数:
@@ -259,7 +259,7 @@ class MainWindowController:
 
     def __init__(
         self,
-        window: object,
+        window: QMainWindow,
         main_functions: object = MainFunctions,
         runtime: Runtime | None = None,
         button_use_case: object | None = None,
@@ -287,7 +287,7 @@ class MainWindowController:
         self.column_controller = ColumnController(window=window, main_functions=main_functions)
         self.language_controller = LanguageController(window=window)
 
-    def handle_button(self, btn: object) -> None:
+    def handle_button(self, btn: QWidget) -> None:
         """处理主窗口按钮点击事件。
 
         参数:

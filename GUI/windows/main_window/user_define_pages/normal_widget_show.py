@@ -11,7 +11,7 @@ from guicore import CCard, CComboBox, CMenu, CMenuButton, CPushButton, CShowCard
 class NormalWidgetShowPage:
     """组件展示页定义。"""
 
-    def load_page(self: object) -> None:
+    def load_page(self) -> None:
         """构建并注册组件展示页面。
 
         返回:

@@ -3,7 +3,7 @@
 from typing import override
 
 from PySide6.QtCore import QSize, Qt, Signal
-from PySide6.QtGui import QIcon, QPixmap
+from PySide6.QtGui import QIcon, QMouseEvent, QPixmap
 from PySide6.QtWidgets import QPushButton
 
 from AppCore import PathFactory, get_token_manager
@@ -190,7 +190,7 @@ class CStatusButton(QPushButton):
         )
 
     @override
-    def mousePressEvent(self, event: object) -> None:
+    def mousePressEvent(self, event: QMouseEvent) -> None:
         """处理鼠标点击并推进状态机。
 
         参数:

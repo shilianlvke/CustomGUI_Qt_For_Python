@@ -5,7 +5,7 @@ from pathlib import Path
 import pytest
 
 from AppCore import CommandPlugin, MenuPlugin, PagePlugin, get_plugin_registry
-from AppCore.SYS.module.error_module import DomainErrorBoundary
+from AppCore.system.module.error_module import DomainErrorBoundary
 
 
 def test_plugin_registry_page_menu_command_flow() -> None:

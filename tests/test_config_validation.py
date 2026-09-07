@@ -2,8 +2,8 @@
 
 import pytest
 
-from AppCore.SYS.module.settings_module import validate_language_data
-from AppCore.SYS.module.token_models import ThemeColors, WindowSettings
+from AppCore.system.module.settings_module import validate_language_data
+from AppCore.system.module.token_models import ThemeColors, WindowSettings
 
 
 def _base_settings() -> dict[str, object]:

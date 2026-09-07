@@ -4,8 +4,8 @@ from pathlib import Path
 
 import pytest
 
-from AppCore.SYS.module.resource_locator import ResourceLocator
-from AppCore.SYS.other.static_func import PathFinder
+from AppCore.system.module.resource_locator import ResourceLocator
+from AppCore.system.other.static_func import PathFinder
 
 
 def test_resource_locator_resolves_from_project_root() -> None:

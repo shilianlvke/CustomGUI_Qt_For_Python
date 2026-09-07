@@ -3,7 +3,7 @@
 from typing import override
 
 from PySide6.QtCore import QEvent, QRect, Qt
-from PySide6.QtGui import QBrush, QColor, QPainter, QPixmap
+from PySide6.QtGui import QBrush, QColor, QMouseEvent, QPainter, QPaintEvent, QPixmap
 from PySide6.QtWidgets import QGraphicsDropShadowEffect, QLabel, QPushButton
 
 from AppCore import get_token_manager
@@ -97,7 +97,7 @@ class PyLeftButton(QPushButton):
     # painting the button and the icon
     # ///////////////////////////////////////////////////////////////
     @override
-    def paintEvent(self, event: object) -> None:
+    def paintEvent(self, event: QPaintEvent) -> None:
         """绘制按钮背景与图标。
 
         参数:
@@ -159,7 +159,7 @@ class PyLeftButton(QPushButton):
     # Event triggered when the mouse is over the BTN
     # ///////////////////////////////////////////////////////////////
     @override
-    def enterEvent(self, event: object) -> None:
+    def enterEvent(self, event: QEvent) -> None:
         """处理鼠标进入事件。"""
         _ = event
         self.change_style(QEvent.Enter)
@@ -168,7 +168,7 @@ class PyLeftButton(QPushButton):
     # Event fired when the mouse leaves the BTN
     # ///////////////////////////////////////////////////////////////
     @override
-    def leaveEvent(self, event: object) -> None:
+    def leaveEvent(self, event: QEvent) -> None:
         """处理鼠标离开事件。"""
         _ = event
         self.change_style(QEvent.Leave)
@@ -177,7 +177,7 @@ class PyLeftButton(QPushButton):
     # Event triggered when the left button is pressed
     # ///////////////////////////////////////////////////////////////
     @override
-    def mousePressEvent(self, event: object) -> None:
+    def mousePressEvent(self, event: QMouseEvent) -> None:
         """处理鼠标按下事件并发射点击信号。"""
         if event.button() == Qt.LeftButton:
             self.change_style(QEvent.MouseButtonPress)
@@ -190,7 +190,7 @@ class PyLeftButton(QPushButton):
     # Event triggered after the mouse button is released
     # ///////////////////////////////////////////////////////////////
     @override
-    def mouseReleaseEvent(self, event: object) -> None:
+    def mouseReleaseEvent(self, event: QMouseEvent) -> None:
         """处理鼠标释放事件并发射释放信号。"""
         if event.button() == Qt.LeftButton:
             self.change_style(QEvent.MouseButtonRelease)

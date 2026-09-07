@@ -1,5 +1,7 @@
 """Package initialization module."""
 
+from PySide6.QtWidgets import QMainWindow
+
 from AppCore import MenuPlugin, PagePlugin, get_plugin_registry
 
 from .normal_widget_show import NormalWidgetShowPage
@@ -253,7 +255,7 @@ def _as_legacy_registry() -> list[dict[str, object]]:
     ]
 
 
-def load_registered_pages(window: object) -> None:
+def load_registered_pages(window: QMainWindow) -> None:
     """加载并执行已注册页面插件。
 
     参数:

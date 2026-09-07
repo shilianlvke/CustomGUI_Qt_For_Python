@@ -2,8 +2,8 @@
 
 import pytest
 
-from AppCore.SYS.handler.yaml_handler import YamlHandler
-from AppCore.SYS.module.error_module import (
+from AppCore.system.handler.yaml_handler import YamlHandler
+from AppCore.system.module.error_module import (
     DomainErrorBoundary,
     IOErrorBoundary,
     UIErrorBoundary,

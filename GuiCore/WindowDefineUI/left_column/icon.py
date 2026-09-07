@@ -10,7 +10,7 @@ from PySide6.QtWidgets import QLabel, QVBoxLayout, QWidget
 class PyIcon(QWidget):
     """可着色图标组件。"""
 
-    def __init__(self, icon_path: str, icon_color: object) -> None:
+    def __init__(self, icon_path: str, icon_color: str) -> None:
         """初始化图标组件。
 
         参数:
@@ -49,7 +49,7 @@ class PyIcon(QWidget):
         # ADD TO LAYOUT
         self.layout.addWidget(self.icon)
 
-    def set_icon(self, icon_path: str, icon_color: object | None = None) -> None:
+    def set_icon(self, icon_path: str, icon_color: str | None = None) -> None:
         """设置图标与颜色。
 
         参数:

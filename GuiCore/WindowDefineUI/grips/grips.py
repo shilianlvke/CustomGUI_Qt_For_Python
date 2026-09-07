@@ -3,7 +3,7 @@
 from typing import override
 
 from PySide6.QtCore import QRect, QSize, Qt
-from PySide6.QtGui import QCursor
+from PySide6.QtGui import QCursor, QMouseEvent, QResizeEvent
 from PySide6.QtWidgets import QFrame, QSizeGrip, QWidget
 
 
@@ -85,7 +85,7 @@ class CGrips(QWidget):
         self.setGeometry(0, 5, self.parent.width(), 10)
         self.setMaximumHeight(10)
 
-        def resize_top(event: object) -> None:
+        def resize_top(event: QMouseEvent) -> None:
             delta = event.pos()
             height = max(self.parent.minimumHeight(), self.parent.height() - delta.y())
             geo = self.parent.geometry()
@@ -102,7 +102,7 @@ class CGrips(QWidget):
         self.setGeometry(0, self.parent.height() - 10, self.parent.width(), 10)
         self.setMaximumHeight(10)
 
-        def resize_bottom(event: object) -> None:
+        def resize_bottom(event: QMouseEvent) -> None:
             delta = event.pos()
             height = max(self.parent.minimumHeight(), self.parent.height() + delta.y())
             self.parent.resize(self.parent.width(), height)
@@ -117,7 +117,7 @@ class CGrips(QWidget):
         self.setGeometry(0, 10, 10, self.parent.height())
         self.setMaximumWidth(10)
 
-        def resize_left(event: object) -> None:
+        def resize_left(event: QMouseEvent) -> None:
             delta = event.pos()
             width = max(self.parent.minimumWidth(), self.parent.width() - delta.x())
             geo = self.parent.geometry()
@@ -134,7 +134,7 @@ class CGrips(QWidget):
         self.setGeometry(self.parent.width() - 10, 10, 10, self.parent.height())
         self.setMaximumWidth(10)
 
-        def resize_right(event: object) -> None:
+        def resize_right(event: QMouseEvent) -> None:
             delta = event.pos()
             width = max(self.parent.minimumWidth(), self.parent.width() + delta.x())
             self.parent.resize(width, self.parent.height())
@@ -147,7 +147,7 @@ class CGrips(QWidget):
     # MOUSE RELEASE
     # ///////////////////////////////////////////////////////////////
     @override
-    def mouseReleaseEvent(self, event: object) -> None:
+    def mouseReleaseEvent(self, event: QMouseEvent) -> None:
         """处理鼠标释放事件。
 
         参数:
@@ -162,7 +162,7 @@ class CGrips(QWidget):
     # RESIZE EVENT
     # ///////////////////////////////////////////////////////////////
     @override
-    def resizeEvent(self, event: object) -> None:
+    def resizeEvent(self, event: QResizeEvent) -> None:
         """处理组件缩放并同步内部夹点几何。
 
         参数:
