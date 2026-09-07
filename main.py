@@ -3,6 +3,9 @@
 import sys
 from typing import override
 
+from PySide6.QtGui import QIcon, QMouseEvent, QResizeEvent
+from PySide6.QtWidgets import QApplication, QMainWindow
+
 from AppCore import (
     AppSettings,
     Logger,
@@ -12,7 +15,6 @@ from AppCore import (
 )
 from gui import SetupMainWindow, UiMainWindow
 from gui.windows.main_window.controller import MainWindowController
-from qt_core import QApplication, QIcon, QMainWindow, QMouseEvent, QResizeEvent
 
 
 class MainWindow(QMainWindow):

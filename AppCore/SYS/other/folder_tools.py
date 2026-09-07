@@ -9,9 +9,9 @@ from pathlib import Path
 from AppCore.SYS.logger import Logger
 from AppCore.SYS.module.attrdict import AttrDict
 from AppCore.SYS.module.error_module import DomainErrorBoundary
+from AppCore.SYS.module.resource_locator import ResourceLocator
 from AppCore.SYS.module.settings_module import SettingsValidationError, validate_language_data
 from AppCore.SYS.module.token_models import ThemeColors, WindowSettings
-from AppCore.SYS.other.resource_locator import ResourceLocator
 
 
 class ConfigHandler:
@@ -22,10 +22,10 @@ class ConfigHandler:
     - 执行分组配置校验并统一抛出领域异常。
     """
 
-    languages = r"resource/CustomUI/languages"
-    themes = r"resource/CustomUI/themes/"
-    others = r"resource/CustomUI/others/"
-    settings = r"resource/CustomUI/settings/"
+    languages = r"resource/customui/languages"
+    themes = r"resource/customui/themes/"
+    others = r"resource/customui/others/"
+    settings = r"resource/customui/settings/"
 
     @staticmethod
     def _build_named_yaml_map(path_list: list[str]) -> AttrDict:

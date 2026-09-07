@@ -2,6 +2,8 @@
 
 # ruff: noqa: N999
 
+from AppCore.SYS.module.resource_locator import ResourceLocator as ResourceLocator
+
 from .folder_tools import (
     AppLanguages as AppLanguages,
 )
@@ -20,7 +22,6 @@ from .folder_tools import (
 from .folder_tools import (
     initialize_app_context as initialize_app_context,
 )
-from .resource_locator import ResourceLocator as ResourceLocator
 from .static_func import PathFinder as PathFactory
 from .static_func import PicFixFactory as PicFixFactory
 from .token_manager import (

@@ -7,6 +7,7 @@ from pathlib import Path
 from typing import NoReturn
 
 from .error_module import DomainErrorBoundary
+from .resource_locator import ResourceLocator
 
 SUPPORTED_PLUGIN_PROTOCOL_VERSIONS = {"1"}
 PLUGIN_ADAPTER_EXCEPTIONS = (RuntimeError, TypeError, ValueError, AttributeError)
@@ -362,8 +363,7 @@ class PluginRegistry:
         返回:
         - str: 默认 ``plugins.yml`` 文件路径字符串。
         """
-        root = Path(__file__).resolve().parents[4]
-        return str(root / "resource" / "CustomUI" / "settings" / "plugins.yml")
+        return str(ResourceLocator.resolve("resource/customui/settings/plugins.yml"))
 
     @staticmethod
     def _yaml_handler_type() -> type:

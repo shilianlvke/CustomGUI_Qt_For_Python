@@ -3,8 +3,9 @@
 import logging
 import re
 from logging.handlers import RotatingFileHandler
-from pathlib import Path
 from typing import ClassVar
+
+from AppCore.SYS.module.resource_locator import ResourceLocator
 
 try:
     from colorama import just_fix_windows_console
@@ -89,7 +90,7 @@ class _Logger:
         if just_fix_windows_console:
             just_fix_windows_console()
 
-        root_dir = Path(__file__).resolve().parents[3]
+        root_dir = ResourceLocator.project_root()
         log_dir = root_dir / "logs"
         log_dir.mkdir(parents=True, exist_ok=True)
 
@@ -128,8 +129,7 @@ class _Logger:
         返回:
         - str: 日志级别文本。
         """
-        root_dir = Path(__file__).resolve().parents[3]
-        config_path = root_dir / "resource" / "CustomUI" / "settings" / "console.yml"
+        config_path = ResourceLocator.resolve("resource/customui/settings/console.yml")
         if not config_path.exists():
             return "debug"
 
@@ -150,8 +150,7 @@ class _Logger:
         返回:
         - bool: 是否启用彩色控制台输出。
         """
-        root_dir = Path(__file__).resolve().parents[3]
-        config_path = root_dir / "resource" / "CustomUI" / "settings" / "console.yml"
+        config_path = ResourceLocator.resolve("resource/customui/settings/console.yml")
         if not config_path.exists():
             return True
 

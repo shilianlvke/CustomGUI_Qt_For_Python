@@ -9,6 +9,8 @@ from contextlib import contextmanager
 from datetime import UTC, datetime
 from pathlib import Path
 
+from .resource_locator import ResourceLocator
+
 # 遥测写入使用进程内互斥锁，避免并发写文件时数据竞争。
 _LOCK = threading.Lock()
 
@@ -34,7 +36,7 @@ def _resolve_diagnostics_dir() -> Path:
     - Path: 可写入的遥测目录路径。
     """
     custom_dir = os.getenv("CUSTOMGUI_DIAGNOSTICS_DIR", "").strip()
-    path = Path(custom_dir) if custom_dir else Path(__file__).resolve().parents[3] / "logs" / "diagnostics"
+    path = Path(custom_dir) if custom_dir else ResourceLocator.project_root() / "logs" / "diagnostics"
     path.mkdir(parents=True, exist_ok=True)
     return path
 

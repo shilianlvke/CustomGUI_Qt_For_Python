@@ -4,7 +4,7 @@ from pathlib import Path
 
 import pytest
 
-from AppCore.SYS.other.resource_locator import ResourceLocator
+from AppCore.SYS.module.resource_locator import ResourceLocator
 from AppCore.SYS.other.static_func import PathFinder
 
 
@@ -14,7 +14,7 @@ def test_resource_locator_resolves_from_project_root() -> None:
     职责:
     - 验证目标行为符合预期。
     """
-    path = ResourceLocator.resolve("resource/CustomUI/settings")
+    path = ResourceLocator.resolve("resource/customui/settings")
 
     if not (path.exists()):
         pytest.fail("Assertion failed")
