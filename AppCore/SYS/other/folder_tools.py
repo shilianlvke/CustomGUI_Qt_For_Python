@@ -10,7 +10,8 @@ from easydict import EasyDict
 
 from AppCore.SYS.logger import Logger
 from AppCore.SYS.module.error_module import DomainErrorBoundary
-from AppCore.SYS.module.settings_module import validate_language_data, validate_settings_data, validate_theme_data
+from AppCore.SYS.module.settings_module import SettingsValidationError, validate_language_data
+from AppCore.SYS.module.token_models import ThemeColors, WindowSettings
 from AppCore.SYS.other.resource_locator import ResourceLocator
 
 
@@ -130,13 +131,30 @@ class ConfigHandler:
             ),
         )
 
+    @staticmethod
+    def _validate_theme_pydantic(theme_data: object, theme_name: str = "unknown") -> None:
+        """用 pydantic 模型校验主题数据并保留主题名。
+
+        参数:
+        - theme_data: 主题配置对象。
+        - theme_name: 主题名，用于错误信息。
+
+        返回:
+        - None
+        """
+        try:
+            ThemeColors.model_validate(theme_data)
+        except ValueError as exc:
+            message = f"主题 {theme_name}: {exc}"
+            raise SettingsValidationError(message) from exc
+
     def find_themes(self) -> EasyDict:
         """加载并校验主题配置组。"""
         return self._load_group(
             self.themes,
             log_label="主题色",
             validation=self._ValidationOptions(
-                validator=validate_theme_data,
+                validator=self._validate_theme_pydantic,
                 error_code="THEME_CONFIG_INVALID",
                 error_message="主题配置校验失败",
                 validator_arg_name="theme_name",
@@ -158,7 +176,7 @@ class ConfigHandler:
         for value in settings.values():
             result.update(value.data.data)
         try:
-            validate_settings_data(result)
+            WindowSettings.model_validate(dict(result))
         except ValueError as exc:
             raise DomainErrorBoundary(
                 code="SETTINGS_CONFIG_INVALID",

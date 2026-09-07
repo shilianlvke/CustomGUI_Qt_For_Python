@@ -1,23 +1,13 @@
-"""模块说明。"""
+"""配置校验测试。"""
 
 import pytest
 
-from AppCore.SYS.module.settings_module import (
-    validate_language_data,
-    validate_settings_data,
-    validate_theme_data,
-)
+from AppCore.SYS.module.settings_module import validate_language_data
+from AppCore.SYS.module.token_models import ThemeColors, WindowSettings
 
 
 def _base_settings() -> dict[str, object]:
-    """函数：_base_settings。
-
-    参数:
-    - 按函数签名传入。
-
-    返回:
-    - 按函数实现返回。
-    """
+    """返回一份合法的窗口设置样例。"""
     return {
         "startup_size": [960, 540],
         "minimum_size": [960, 540],
@@ -46,7 +36,7 @@ def _base_settings() -> dict[str, object]:
 
 
 def _base_theme() -> dict[str, str]:
-    """函数：_base_theme。"""
+    """返回一份合法的主题颜色样例。"""
     return {
         "custom_dark_one": "#1a1d22",
         "custom_dark_two": "#1d2128",
@@ -79,7 +69,7 @@ def _base_theme() -> dict[str, str]:
 
 
 def _base_language() -> dict[str, object]:
-    """函数：_base_language。"""
+    """返回一份合法的语言包样例。"""
     return {
         "custom_ui": {
             "sys_name": "CustomGUI",
@@ -93,51 +83,66 @@ def _base_language() -> dict[str, object]:
 
 
 def test_settings_validation_passes_for_valid_data() -> None:
-    """测试用例：test_settings_validation_passes_for_valid_data。"""
-    validate_settings_data(_base_settings())
+    """合法设置应通过校验。"""
+    WindowSettings.model_validate(_base_settings())
+
+
+def test_settings_validation_ignores_extra_fields() -> None:
+    """合并配置中的额外字段应被忽略。"""
+    payload = _base_settings()
+    payload["language"] = "zh_cn"
+    payload["logger_level"] = "DEBUG"
+
+    model = WindowSettings.model_validate(payload)
+    if hasattr(model, "language"):
+        pytest.fail("Assertion failed")
 
 
 def test_settings_validation_fails_when_required_field_missing() -> None:
-    """测试用例：test_settings_validation_fails_when_required_field_missing。"""
+    """缺少必填字段时应抛校验错误。"""
     payload = _base_settings()
     payload.pop("time_animation")
 
-    with pytest.raises(ValueError, match="缺少关键字段"):
-        validate_settings_data(payload)
+    with pytest.raises(ValueError, match="time_animation"):
+        WindowSettings.model_validate(payload)
 
 
 def test_theme_validation_passes_for_valid_data() -> None:
-    """测试用例：test_theme_validation_passes_for_valid_data。"""
-    validate_theme_data(_base_theme(), "default")
+    """合法主题应通过校验。"""
+    ThemeColors.model_validate(_base_theme())
 
 
 def test_theme_validation_passes_when_optional_keys_missing() -> None:
-    """测试用例：test_theme_validation_passes_when_optional_keys_missing。"""
+    """可选颜色字段缺失时应回落到默认值。"""
     payload = _base_theme()
     payload.pop("custom_bg_active_one")
     payload.pop("custom_bg_active_two")
     payload.pop("custom_bg_active_three")
     payload.pop("custom_transparent")
 
-    validate_theme_data(payload, "bright")
+    model = ThemeColors.model_validate(payload)
+    if model.custom_bg_active_one != "#57965c":
+        pytest.fail("Assertion failed")
+    if model.custom_transparent != "transparent":
+        pytest.fail("Assertion failed")
 
 
 def test_theme_validation_fails_when_color_key_missing() -> None:
-    """测试用例：test_theme_validation_fails_when_color_key_missing。"""
+    """缺少必填颜色字段时应抛校验错误。"""
     payload = _base_theme()
     payload.pop("custom_text_active")
 
-    with pytest.raises(ValueError, match="缺少关键字段"):
-        validate_theme_data(payload, "default")
+    with pytest.raises(ValueError, match="custom_text_active"):
+        ThemeColors.model_validate(payload)
 
 
 def test_language_validation_passes_for_valid_data() -> None:
-    """测试用例：test_language_validation_passes_for_valid_data。"""
+    """合法语言包应通过校验。"""
     validate_language_data(_base_language(), "en_us")
 
 
 def test_language_validation_fails_when_required_group_missing() -> None:
-    """测试用例：test_language_validation_fails_when_required_group_missing。"""
+    """缺少必填分组时应抛校验错误。"""
     payload = _base_language()
     payload.pop("UI")
 
