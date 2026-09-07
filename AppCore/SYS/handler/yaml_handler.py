@@ -4,8 +4,8 @@ import json
 from pathlib import Path
 
 import yaml
-from easydict import EasyDict
 
+from AppCore.SYS.module.attrdict import AttrDict, to_attrdict, to_plain_dict
 from AppCore.SYS.module.error_module import IOErrorBoundary
 
 
@@ -14,7 +14,7 @@ class YamlHandler:
 
     职责:
     - 负责 YAML 配置的加载、保存、更新与查询。
-    - 提供 EasyDict 与 dict 之间的转换能力。
+    - 提供属性字典与普通字典之间的转换能力。
     """
 
     def __init__(self, file_path: str, *, auto_load: bool = True) -> None:
@@ -28,19 +28,19 @@ class YamlHandler:
         - None
         """
         self.file_path = file_path
-        self.data = EasyDict()
+        self.data = AttrDict()
 
         if auto_load:
             self.load()
 
-    def load(self, file_path: str | None = None) -> EasyDict:
+    def load(self, file_path: str | None = None) -> AttrDict:
         """加载 YAML 文件。
 
         参数:
         - file_path: 可选文件路径，传入时会覆盖当前路径。
 
         返回:
-        - EasyDict: 解析后的配置对象。
+        - AttrDict: 解析后的配置对象。
         """
         if file_path:
             self.file_path = file_path
@@ -69,13 +69,13 @@ class YamlHandler:
                 details=f"{self.file_path}: {exc}",
             ) from exc
 
-        # 将嵌套字典转换为EasyDict
-        self.data = self._dict_to_easydict(raw_data)
+        # 将嵌套字典转换为属性字典
+        self.data = to_attrdict(raw_data)
         return self.data
 
     def save(
         self,
-        data: dict[str, object] | EasyDict | None = None,
+        data: dict[str, object] | AttrDict | None = None,
         file_path: str | None = None,
         **kwargs: object,
     ) -> None:
@@ -97,9 +97,9 @@ class YamlHandler:
         if data is None:
             data = self.data
 
-        # 如果传入的是EasyDict，转换为普通字典
-        if isinstance(data, EasyDict):
-            data = self._easydict_to_dict(data)
+        # 如果传入的是属性字典，转换为普通字典
+        if isinstance(data, AttrDict):
+            data = to_plain_dict(data)
 
         try:
             with Path(save_path).open("w", encoding="utf-8") as f:
@@ -111,7 +111,7 @@ class YamlHandler:
                 details=f"{save_path}: {exc}",
             ) from exc
 
-    def update(self, new_data: dict[str, object] | EasyDict, *, merge: bool = True) -> None:
+    def update(self, new_data: dict[str, object] | AttrDict, *, merge: bool = True) -> None:
         """更新内存中的配置数据。
 
         参数:
@@ -121,14 +121,14 @@ class YamlHandler:
         返回:
         - None
         """
-        if isinstance(new_data, EasyDict):
-            new_data = self._easydict_to_dict(new_data)
+        if isinstance(new_data, AttrDict):
+            new_data = to_plain_dict(new_data)
 
         if merge:
             # 深度合并字典
             self._deep_update(self.data, new_data)
         else:
-            self.data = self._dict_to_easydict(new_data)
+            self.data = to_attrdict(new_data)
 
     def get(self, key: str, default: object = None) -> object:
         """获取配置值，支持点路径。
@@ -169,15 +169,15 @@ class YamlHandler:
         # 导航到最后一个键的父级
         for k in keys[:-1]:
             if not hasattr(current, k):
-                setattr(current, k, EasyDict())
+                setattr(current, k, AttrDict())
             current = getattr(current, k)
 
         # 设置值
         last_key = keys[-1]
 
-        # 如果值是字典，转换为EasyDict
+        # 如果值是字典，转换为属性字典
         if isinstance(value, dict):
-            value = self._dict_to_easydict(value)
+            value = to_attrdict(value)
 
         setattr(current, last_key, value)
 
@@ -187,7 +187,7 @@ class YamlHandler:
         返回:
         - Dict: 普通字典数据。
         """
-        return self._easydict_to_dict(self.data)
+        return to_plain_dict(self.data)
 
     def to_json(self, indent: int = 2) -> str:
         """将当前数据转换为 JSON 字符串。
@@ -200,72 +200,32 @@ class YamlHandler:
         """
         return json.dumps(self.to_dict(), indent=indent, ensure_ascii=False)
 
-    def reload(self) -> EasyDict:
+    def reload(self) -> AttrDict:
         """重新加载当前 YAML 文件。
 
         返回:
-        - EasyDict: 重新加载后的数据对象。
+        - AttrDict: 重新加载后的数据对象。
         """
         return self.load()
 
-    def _dict_to_easydict(self, data: dict[str, object] | object) -> EasyDict | object:
-        """递归将字典转换为 EasyDict。
-
-        参数:
-        - data: 待转换字典。
-
-        返回:
-        - EasyDict: 转换结果。
-        """
-        if not isinstance(data, dict):
-            return data
-
-        result = EasyDict()
-        for key, value in data.items():
-            if isinstance(value, dict):
-                result[key] = self._dict_to_easydict(value)
-            elif isinstance(value, list):
-                result[key] = [self._dict_to_easydict(item) if isinstance(item, dict) else item for item in value]
-            else:
-                result[key] = value
-        return result
-
-    def _easydict_to_dict(
-        self,
-        data: EasyDict | dict[str, object] | list[object] | object,
-    ) -> dict[str, object] | list[object] | object:
-        """递归将 EasyDict 转换为普通字典。
-
-        参数:
-        - data: 待转换对象。
-
-        返回:
-        - Dict: 转换结果。
-        """
-        if isinstance(data, (EasyDict, dict)):
-            return {key: self._easydict_to_dict(value) for key, value in data.items()}
-        if isinstance(data, list):
-            return [self._easydict_to_dict(item) for item in data]
-        return data
-
-    def _deep_update(self, original: EasyDict, new_data: dict[str, object]) -> None:
+    def _deep_update(self, original: AttrDict, new_data: dict[str, object]) -> None:
         """深度更新字典对象。
 
         参数:
-        - original: 原始 EasyDict。
+        - original: 原始属性字典。
         - new_data: 新数据字典。
 
         返回:
         - None
         """
         for key, value in new_data.items():
-            if key in original and isinstance(original[key], (dict, EasyDict)) and isinstance(value, dict):
+            if key in original and isinstance(original[key], dict) and isinstance(value, dict):
                 self._deep_update(original[key], value)
             else:
-                # 如果值是字典，转换为EasyDict
+                # 如果值是字典，转换为属性字典
                 updated_value = value
                 if isinstance(value, dict):
-                    updated_value = self._dict_to_easydict(value)
+                    updated_value = to_attrdict(value)
                 original[key] = updated_value
 
     def __getitem__(self, key: str) -> object:

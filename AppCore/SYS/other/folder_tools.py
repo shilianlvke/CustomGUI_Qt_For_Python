@@ -6,9 +6,8 @@ from collections.abc import Callable, Iterator
 from dataclasses import dataclass
 from pathlib import Path
 
-from easydict import EasyDict
-
 from AppCore.SYS.logger import Logger
+from AppCore.SYS.module.attrdict import AttrDict
 from AppCore.SYS.module.error_module import DomainErrorBoundary
 from AppCore.SYS.module.settings_module import SettingsValidationError, validate_language_data
 from AppCore.SYS.module.token_models import ThemeColors, WindowSettings
@@ -29,26 +28,26 @@ class ConfigHandler:
     settings = r"resource/CustomUI/settings/"
 
     @staticmethod
-    def _build_named_yaml_map(path_list: list[str]) -> EasyDict:
+    def _build_named_yaml_map(path_list: list[str]) -> AttrDict:
         """按文件名构建 YAML 数据映射。
 
         参数:
         - path_list: YAML 文件路径列表。
 
         返回:
-        - EasyDict: ``name -> {path, data}`` 的映射。
+        - AttrDict: ``name -> {path, data}`` 的映射。
         """
         yaml_handler = importlib.import_module("AppCore.SYS.handler.yaml_handler").YamlHandler
 
-        result = EasyDict()
+        result = AttrDict()
         for path in path_list:
             name = Path(path).stem.lower()
-            result[name] = EasyDict(path=path, data=yaml_handler(path))
+            result[name] = AttrDict(path=path, data=yaml_handler(path))
         return result
 
     @staticmethod
     def _validate_group(
-        group: EasyDict,
+        group: AttrDict,
         validator: Callable[..., object] | None,
         *,
         error_code: str,
@@ -94,7 +93,7 @@ class ConfigHandler:
         *,
         log_label: str,
         validation: _ValidationOptions | None = None,
-    ) -> EasyDict:
+    ) -> AttrDict:
         """按目录加载并可选校验配置分组。
 
         参数:
@@ -103,7 +102,7 @@ class ConfigHandler:
         - validation: 可选校验参数对象。
 
         返回:
-        - EasyDict: 分组配置映射。
+        - AttrDict: 分组配置映射。
         """
         path_list = ResourceLocator.find_files_by_extension(".yml", directory)
         group = self._build_named_yaml_map(path_list)
@@ -118,7 +117,7 @@ class ConfigHandler:
         Logger.debug(f"{log_label}:{group.keys()}")
         return group
 
-    def find_languages(self) -> EasyDict:
+    def find_languages(self) -> AttrDict:
         """加载并校验语言配置组。"""
         return self._load_group(
             self.languages,
@@ -148,7 +147,7 @@ class ConfigHandler:
             message = f"主题 {theme_name}: {exc}"
             raise SettingsValidationError(message) from exc
 
-    def find_themes(self) -> EasyDict:
+    def find_themes(self) -> AttrDict:
         """加载并校验主题配置组。"""
         return self._load_group(
             self.themes,
@@ -161,18 +160,18 @@ class ConfigHandler:
             ),
         )
 
-    def find_others(self) -> EasyDict:
+    def find_others(self) -> AttrDict:
         """加载其他配置组。"""
         return self._load_group(self.others, log_label="其他配置")
 
-    def find_settings(self) -> EasyDict:
+    def find_settings(self) -> AttrDict:
         """加载并汇总系统配置。
 
         返回:
-        - EasyDict: 合并后的系统配置对象。
+        - AttrDict: 合并后的系统配置对象。
         """
         settings = self._load_group(self.settings, log_label="配置")
-        result = EasyDict()
+        result = AttrDict()
         for value in settings.values():
             result.update(value.data.data)
         try:

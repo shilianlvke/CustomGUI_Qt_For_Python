@@ -11,7 +11,7 @@
 
 from typing import NoReturn
 
-from easydict import EasyDict
+from AppCore.SYS.module.attrdict import AttrDict
 
 
 class SettingsValidationError(ValueError):
@@ -33,15 +33,15 @@ def _raise_type_error(message: str) -> NoReturn:
 
 
 def _as_dict(data: object) -> object:
-    """将 EasyDict 兼容转换为标准字典。
+    """将 AttrDict 兼容转换为标准字典。
 
     参数:
-    - data: 可能为 EasyDict 或 dict 的对象。
+    - data: 可能为 AttrDict 或 dict 的对象。
 
     返回:
     - object: 转换后的 dict 或原对象。
     """
-    if isinstance(data, EasyDict):
+    if isinstance(data, AttrDict):
         return dict(data)
     return data
 
@@ -66,7 +66,7 @@ def validate_language_data(language_data: object, language_name: str = "unknown"
     """校验语言包配置数据。
 
     参数:
-    - language_data: 语言对象，支持 dict 或 EasyDict。
+    - language_data: 语言对象，支持 dict 或 AttrDict。
     - language_name: 语言名称，用于错误信息。
 
     返回:

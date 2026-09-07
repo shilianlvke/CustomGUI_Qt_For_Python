@@ -6,6 +6,7 @@ from .handler import JsonHandler, YamlHandler
 from .logger import Logger
 from .module import (
     AppError,
+    AttrDict,
     CommandPlugin,
     DesignTokens,
     DomainErrorBoundary,
@@ -42,6 +43,7 @@ __all__ = [
     "AppOthers",
     "AppSettings",
     "AppThemes",
+    "AttrDict",
     "CommandPlugin",
     "DesignTokens",
     "DomainErrorBoundary",

@@ -3,9 +3,8 @@
 import json
 from pathlib import Path
 
-from easydict import EasyDict
-
 from AppCore.SYS.logger import Logger
+from AppCore.SYS.module.attrdict import AttrDict
 
 
 class JsonHandler:
@@ -94,7 +93,7 @@ class JsonHandler:
 
     def __getattr__(self, item: str) -> object:
         """按属性方式读取数据字段。"""
-        return EasyDict(self.data)[item]
+        return AttrDict(self.data)[item]
 
     def __str__(self) -> str:
         """返回格式化后的 JSON 字符串。"""

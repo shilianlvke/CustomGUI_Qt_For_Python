@@ -2,6 +2,7 @@
 
 # ruff: noqa: N999
 
+from .attrdict import AttrDict as AttrDict
 from .error_module import (
     AppError as AppError,
 )
@@ -47,6 +48,7 @@ from .token_module import DesignTokens as DesignTokens
 
 __all__ = [
     "AppError",
+    "AttrDict",
     "CommandPlugin",
     "DesignTokens",
     "DomainErrorBoundary",

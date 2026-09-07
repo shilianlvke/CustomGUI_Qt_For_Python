@@ -69,7 +69,6 @@ name = "customgui"
 version = "0.1.0"
 source = { virtual = "." }
 dependencies = [
-    { name = "easydict" },
     { name = "pydantic" },
     { name = "pyside6" },
     { name = "pyyaml" },
@@ -90,7 +89,6 @@ windows-hardware = [
 [package.metadata]
 requires-dist = [
     { name = "black", marker = "extra == 'dev'" },
-    { name = "easydict", specifier = ">=1.13" },
     { name = "hidapi", marker = "sys_platform == 'win32' and extra == 'windows-hardware'", specifier = ">=0.14.0" },
     { name = "pydantic", specifier = ">=2.13.5" },
     { name = "pyserial", marker = "sys_platform == 'win32' and extra == 'windows-hardware'", specifier = ">=3.5" },
@@ -101,15 +99,6 @@ requires-dist = [
     { name = "wmi", marker = "sys_platform == 'win32' and extra == 'windows-hardware'", specifier = ">=1.5.1" },
 ]
 provides-extras = ["windows-hardware", "dev"]
-
-[[package]]
-name = "easydict"
-version = "1.13"
-source = { registry = "https://pypi.tuna.tsinghua.edu.cn/simple" }
-sdist = { url = "https://pypi.tuna.tsinghua.edu.cn/packages/24/9f/d18d6b5e19244788a6d09c14a8406376b4f4bfcc008e6d17a4f4c15362e8/easydict-1.13.tar.gz", hash = "sha256:b1135dedbc41c8010e2bc1f77ec9744c7faa42bce1a1c87416791449d6c87780", size = 6809, upload-time = "2024-03-04T12:04:41.251Z" }
-wheels = [
-    { url = "https://pypi.tuna.tsinghua.edu.cn/packages/05/ec/fa6963f1198172c2b75c9ab6ecefb3045991f92f75f5eb41b6621b198123/easydict-1.13-py3-none-any.whl", hash = "sha256:6b787daf4dcaf6377b4ad9403a5cee5a86adbc0ca9a5bcf5410e9902002aeac2", size = 6804, upload-time = "2024-03-04T12:04:39.508Z" },
-]
 
 [[package]]
 name = "hidapi"

@@ -1,10 +1,10 @@
 """模块说明。"""
 
-from easydict import EasyDict
 from PySide6.QtCore import QMutex, QMutexLocker, QObject, QRunnable, QWaitCondition, Signal
 
 from AppCore import (
     AppError,
+    AttrDict,
     DomainErrorBoundary,
     Logger,
     UIErrorBoundary,
@@ -40,7 +40,7 @@ class ResourceLoader:
         self._lock = QMutex()
         self._cond = QWaitCondition()
         self.bus = LoadingSignalBus()
-        self.sys_config = EasyDict()
+        self.sys_config = AttrDict()
         self.load_config()
 
     def load_config(self) -> None:
