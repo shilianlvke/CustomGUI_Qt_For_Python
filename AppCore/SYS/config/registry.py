@@ -56,10 +56,10 @@ class ConfigRegistry:
     目录常量可通过子类覆盖（测试中常用临时目录注入）。
     """
 
-    SETTINGS_DIR = "resource/CustomUI/settings"
-    THEMES_DIR = "resource/CustomUI/themes"
-    LANGUAGES_DIR = "resource/CustomUI/languages"
-    OTHERS_DIR = "resource/CustomUI/others"
+    SETTINGS_DIR = "resource/customui/settings"
+    THEMES_DIR = "resource/customui/themes"
+    LANGUAGES_DIR = "resource/customui/languages"
+    OTHERS_DIR = "resource/customui/others"
 
     def load_settings(self) -> AppSettingsModel:
         """加载并合并 settings 目录下全部 YAML，返回强类型模型。"""
