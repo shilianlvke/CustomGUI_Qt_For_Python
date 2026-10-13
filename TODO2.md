@@ -85,10 +85,10 @@
 ## 执行记录
 
 2026-03-19：已将 `config_module.py` 从“独立配置加载实现”改为“冻结兼容层”，统一转发到 `get_app_context().settings`，并保留旧 API（`find_settings` / `AppSettings`）以避免破坏历史调用。
-2026-03-19：已新增 `tests/test_architecture_boundaries.py` 作为架构门禁，约束 `AppCore` 不依赖 `GUI/GuiCore`，并约束 `GUI/GuiCore` 不直接导入 `AppCore.SYS` 内部实现；同时将 `loading_window/functions.py` 改为仅使用 `AppCore` 公共导出，并接入 CI 工作流执行该测试。
+2026-03-19：已新增 `tests/test_architecture_boundaries.py` 作为架构门禁，约束 `AppCore` 不依赖 `Guis`，并约束 `Guis` 不直接导入 `AppCore.SYS` 内部实现；同时将 `loading_window/functions.py` 改为仅使用 `AppCore` 公共导出，并接入 CI 工作流执行该测试。
 2026-03-19：已新增 `resource_locator.py` 统一资源根目录解析，替换 `static_func.py`、`folder_tools.py`、`left_menu/menu_button.py` 中 `os.getcwd()` 路径拼接；新增 `tests/test_resource_locator.py` 验证在切换工作目录后资源解析仍正常。
 2026-03-19：已新增 `tests/test_no_cwd_runtime_dependency.py`，对 `AppCore/GUI/GuiCore/main.py` 建立 `os.getcwd()` 禁用门禁，并接入 CI，防止后续路径解析回退到 cwd 依赖。
-2026-03-19：Phase B 第一步已启动并完成第一刀：新增 `GUI/windows/main_window/controller.py`（`MainWindowController`），将 `main.py` 中按钮路由、页面切换、主题切换与侧栏交互迁移至控制器，主窗口类仅保留生命周期与事件入口。
+2026-03-19：Phase B 第一步已启动并完成第一刀：新增 `Guis`（`MainWindowController`），将 `main.py` 中按钮路由、页面切换、主题切换与侧栏交互迁移至控制器，主窗口类仅保留生命周期与事件入口。
 2026-03-19：Phase B 第二刀完成：`MainWindowController` 进一步拆分为 `PageRouterController`、`ThemeController`、`ColumnController`，并新增 `tests/test_main_window_controller.py` 覆盖页面切换、主题轮换与插件命令分发行为。
 2026-03-19：已引入应用层用例 `AppCore/APP/main_window_use_cases.py`（`MainWindowButtonUseCase`），将按钮分发决策从控制器下沉为纯逻辑；控制器改为编排执行，新增 `tests/test_main_window_use_cases.py` 覆盖决策规则。
 2026-03-19：已新增 `tests/test_main_window_integration.py`，覆盖“按钮 -> 路由/动作/插件命令”关键交互链路，并在 CI 增加 Main window interaction tests 专项步骤，完成 Phase B 第 3 项（关键交互测试闭环）。
@@ -96,8 +96,8 @@
 2026-03-19：Phase C 第二刀完成：插件发现机制已支持从 `plugins.yml` 读取模块路径并动态加载（`discover_plugin_modules` / `load_plugins_from_modules` / `discover_and_load_plugins`），补齐协议兼容矩阵辅助接口（`supported_protocol_versions` / `is_protocol_supported`）与对应测试，并在 CI 增加 Plugin lifecycle tests 步骤。
 2026-03-19：Phase C 第三刀完成：插件协议迁移能力已落地（`register_protocol_adapter` + 自适配加载），旧协议插件可在注册阶段自动转换为受支持协议；补充适配成功与适配失败边界测试，形成“校验 + 迁移 + 隔离”闭环。
 2026-03-19：Phase D 命名一致性第一批完成：新增规范入口 `language_module.py` 与 `loading_window/ui_main.py`，包导出改为优先使用规范命名，同时保留历史拼写模块兼容；新增 `tests/test_naming_consistency.py` 与 CI 门禁，防止默认导入回退到历史拼写。
-2026-03-19：Phase D 第二批完成：新增 `docs/LEGACY_COMPATIBILITY.md` 梳理历史兼容入口与迁移窗口策略；新增 `tests/test_legacy_import_policy.py` 并接入 CI，禁止运行时代码新增对 `config_module/languge_module/ui_mian` 的依赖。
+2026-03-19：Phase D 第二批完成：新增 `Docs` 梳理历史兼容入口与迁移窗口策略；新增 `tests/test_legacy_import_policy.py` 并接入 CI，禁止运行时代码新增对 `config_module/languge_module/ui_mian` 的依赖。
 2026-03-19：Phase D 第三批试点完成：已移除低风险历史入口 `AppCore.SYS.module.languge_module`，`language_module.py` 转为真实实现并更新测试与兼容清单；其余旧入口（`config_module`、`ui_mian`）继续按窗口策略保留。
 2026-03-19：Phase D 第四批试点完成：已移除低风险历史入口 `GUI.windows.loading_window.ui_mian`，`ui_main.py` 转为真实实现并更新命名一致性测试、兼容清单与策略门禁；当前仅保留 `config_module` 作为历史兼容入口。
-2026-03-19：Phase D 第五批收口完成：已移除最后一个历史兼容入口 `AppCore.SYS.module.config_module`，并将兼容测试改为“旧入口已移除”断言；`docs/LEGACY_COMPATIBILITY.md` 更新为“当前无遗留入口”。
+2026-03-19：Phase D 第五批收口完成：已移除最后一个历史兼容入口 `AppCore.SYS.module.config_module`，并将兼容测试改为“旧入口已移除”断言；`Docs` 更新为“当前无遗留入口”。
 2026-03-19：结项收尾完成：README 已补齐迁移状态与发布前门禁说明，文档索引新增 Legacy Compatibility 入口；最终状态通过全量测试与文档生成校验。

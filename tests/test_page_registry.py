@@ -1,6 +1,6 @@
 from AppCore import Language
 from AppCore import get_plugin_registry
-from GUI.windows.main_window.user_define_pages import (
+from Guis.windows.main_window.user_define_pages import (
     PAGE_REGISTRY,
     get_default_page_object,
     get_page_routes,

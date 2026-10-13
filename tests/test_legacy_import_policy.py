@@ -3,20 +3,20 @@ from pathlib import Path
 
 
 ROOT = Path(__file__).resolve().parents[1]
-RUNTIME_DIRS = ["AppCore", "GUI", "GuiCore"]
+RUNTIME_DIRS = ["AppCore", "Guis", "GuiCore"]
 RUNTIME_FILES = ["main.py"]
 
 LEGACY_IMPORT_PATTERNS = [
     re.compile(r"^\s*from\s+AppCore\.SYS\.module\.config_module\b"),
     re.compile(r"^\s*from\s+AppCore\.SYS\.module\.languge_module\b"),
-    re.compile(r"^\s*from\s+GUI\.windows\.loading_window\.ui_mian\b"),
+    re.compile(r"^\s*from\s+Guis\.windows\.loading_window\.ui_mian\b"),
     re.compile(r"^\s*from\s+\.languge_module\b"),
     re.compile(r"^\s*from\s+\.ui_mian\b"),
 ]
 
 ALLOWED_FILES = {
     "AppCore/SYS/module/language_module.py",
-    "GUI/windows/loading_window/ui_main.py",
+    "Guis/windows/loading_window/ui_main.py",
 }
 
 

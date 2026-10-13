@@ -14,11 +14,11 @@ def test_legacy_language_module_is_removed():
 
 
 def test_canonical_loading_ui_module_imports():
-    from GUI.windows.loading_window.ui_main import LoadingWindow
+    from Guis.windows.loading_window.ui_main import LoadingWindow
 
     assert LoadingWindow is not None
 
 
 def test_legacy_loading_ui_module_is_removed():
     with pytest.raises(ModuleNotFoundError):
-        from GUI.windows.loading_window.ui_mian import LoadingWindow  # noqa: F401
+        from Guis.windows.loading_window.ui_mian import LoadingWindow  # noqa: F401

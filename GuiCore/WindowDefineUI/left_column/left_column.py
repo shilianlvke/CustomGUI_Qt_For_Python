@@ -9,7 +9,7 @@ from qt_core import (
 )
 from .left_button import PyLeftButton
 from .icon import PyIcon
-from GUI import Ui_LeftColumn
+from Guis import Ui_LeftColumn
 from AppCore import ColorPalette
 
 

@@ -7,17 +7,17 @@ on:
       - main
     paths:
       - "AppCore/**"
-      - "GUI/**"
+      - "../../Guis/**"
       - "GuiCore/**"
       - "scripts/generate_docs.py"
-      - ".github/.workflows/docs.yml"
+      - ".github/.workflows/Docs.yml"
   pull_request:
     paths:
       - "AppCore/**"
-      - "GUI/**"
+      - "../../Guis/**"
       - "GuiCore/**"
       - "scripts/generate_docs.py"
-      - ".github/.workflows/docs.yml"
+      - ".github/.workflows/Docs.yml"
 
 jobs:
   build-docs:
@@ -36,14 +36,14 @@ jobs:
       - name: Sync dependencies
         run: uv sync --frozen
 
-      - name: Generate docs
+      - name: Generate Docs
         run: uv run python scripts/generate_docs.py
 
-      - name: Upload docs artifact
+      - name: Upload Docs artifact
         uses: actions/upload-artifact@v4
         with:
-          name: customgui-docs
-          path: docs/
+          name: customgui-Docs
+          path: Docs/
 
-      - name: Check docs up-to-date
-        run: git diff --exit-code -- docs/
+      - name: Check Docs up-to-date
+        run: git diff --exit-code -- Docs/

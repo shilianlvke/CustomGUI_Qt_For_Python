@@ -1,5 +1,5 @@
-from GUI import Ui_RightColumn
-from GUI import Ui_MainPages
+from Guis import Ui_RightColumn
+from Guis import Ui_MainPages
 from GuiCore import CLeftMenu, CLeftColumn, CWindow, CTitleBar, CCredits
 from PySide6.QtWidgets import QFrame, QHBoxLayout, QVBoxLayout, QWidget
 from AppCore import PathFactory, ColorPalette, Language, AppSettings

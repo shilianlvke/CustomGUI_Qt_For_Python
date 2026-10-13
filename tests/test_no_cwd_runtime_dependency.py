@@ -3,7 +3,7 @@ from pathlib import Path
 
 
 ROOT = Path(__file__).resolve().parents[1]
-RUNTIME_DIRS = ["AppCore", "GUI", "GuiCore"]
+RUNTIME_DIRS = ["AppCore", "Guis", "GuiCore"]
 RUNTIME_FILES = ["main.py"]
 
 

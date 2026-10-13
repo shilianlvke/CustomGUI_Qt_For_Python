@@ -11,8 +11,8 @@ from AppCore import (
     initialize_app_context,
     record_event,
 )
-from GUI import UiMainWindow, SetupMainWindow, MainFunctions
-from GUI.windows.main_window.controller import MainWindowController
+from Guis import UiMainWindow, SetupMainWindow, MainFunctions
+from Guis.windows.main_window.controller import MainWindowController
 from PySide6.QtWidgets import QApplication, QMainWindow
 from PySide6.QtGui import QIcon
 

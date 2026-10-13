@@ -1,6 +1,6 @@
 from types import SimpleNamespace
 
-from GUI.windows.main_window.controller import ColumnController, MainWindowController, PageRouterController
+from Guis.windows.main_window.controller import ColumnController, MainWindowController, PageRouterController
 
 
 class _FakeButton:

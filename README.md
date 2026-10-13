@@ -148,7 +148,7 @@ uv run python scripts/generate_docs.py
 docs/
 ```
 
-`Docs` 工作流会在核心代码或脚本变更时自动生成文档，并上传 `docs/` 作为构建产物，同时检查仓库内文档是否与代码保持同步。
+`Docs` 工作流会在核心代码或脚本变更时自动生成文档，并上传 `Docs` 作为构建产物，同时检查仓库内文档是否与代码保持同步。
 
 ### 迁移与兼容状态（2026-03）
 
@@ -157,7 +157,7 @@ docs/
    - 配置：`AppCore.get_app_context().settings` / `AppCore.AppSettings`
    - 语言模块：`AppCore.SYS.module.language_module`
    - 加载窗口：`GUI.windows.loading_window.ui_main`
-- 兼容与下线记录：`docs/LEGACY_COMPATIBILITY.md`
+- 兼容与下线记录：`Docs`
 
 ---
 

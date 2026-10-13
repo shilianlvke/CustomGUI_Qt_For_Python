@@ -9,11 +9,11 @@ def test_core_config_smoke():
 
 def test_public_imports_smoke():
     import AppCore
-    import GUI
+    import Guis
     import GuiCore
 
     assert hasattr(AppCore, "Logger")
-    assert hasattr(GUI, "UiMainWindow")
+    assert hasattr(Guis, "UiMainWindow")
     assert hasattr(GuiCore, "Styles")
 
 

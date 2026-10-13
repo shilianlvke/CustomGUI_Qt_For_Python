@@ -1,6 +1,6 @@
 from types import SimpleNamespace
 
-from GUI.windows.main_window.controller import MainWindowController, PageRouterController, ThemeController
+from Guis.windows.main_window.controller import MainWindowController, PageRouterController, ThemeController
 
 
 class _StubMainFunctions:
