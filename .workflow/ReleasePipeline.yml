@@ -6,8 +6,10 @@
 # 【流程】质量检查（ruff + pytest）→ Linux 打包（PyInstaller）→
 #         调用 Gitee API 创建 Release 并上传 zip 附件（幂等，复用
 #         scripts/publish_gitee_release.py）。
-# 【一次性配置】Gitee 仓库「管理 → 环境变量管理」添加密文变量 GITEE_TOKEN：
+# 【一次性配置】Gitee 仓库「管理 → 环境变量管理」添加密文变量 RELEASE_TOKEN：
 #         Gitee「设置 → 私人令牌」生成（勾选 releases 权限）。
+#         注意：Gitee Go 保留 GITEE_ 前缀给平台内置变量，自定义变量不能以
+#         GITEE_ 开头，故命名为 RELEASE_TOKEN。
 # 【说明】
 #   - Gitee Go 构建环境为 Linux 容器（内置 Python 最高 3.9），无法直接产出
 #     Windows exe；Windows 安装包由 GitHub Actions（release-build.yml）构建，
@@ -68,10 +70,10 @@ stages:
           - uv run python scripts/archive_dist.py linux
           - ls -lh dist/release
           # ---- 发布 Gitee Release（幂等，可重复执行）----
-          # 未配置 GITEE_TOKEN 时提前失败，给出清晰提示（含冒号，需引号包裹）
-          - 'if [ -z "${GITEE_TOKEN}" ]; then echo "错误: 未配置 GITEE_TOKEN 密文变量（Gitee 仓库 管理→环境变量管理 添加）"; exit 1; fi'
+          # 未配置 RELEASE_TOKEN 时提前失败，给出清晰提示（含冒号，需引号包裹）
+          - 'if [ -z "${RELEASE_TOKEN}" ]; then echo "错误: 未配置 RELEASE_TOKEN 密文变量（Gitee 仓库 管理→环境变量管理 添加）"; exit 1; fi'
           - echo "${GITEE_COMMIT_MESSAGE}" > release_body.md
-          - uv run python scripts/publish_gitee_release.py --owner shilianlvke --repo CustomGUI_Qt_For_Python --token "${GITEE_TOKEN}" --tag auto --body-file release_body.md --assets-dir dist/release --prerelease false
+          - uv run python scripts/publish_gitee_release.py --owner shilianlvke --repo CustomGUI_Qt_For_Python --token "${RELEASE_TOKEN}" --tag auto --body-file release_body.md --assets-dir dist/release --prerelease false
         # 暂存构建产物（7 天后自动清除；Release 附件已上传，此处仅便于平台查看）
         artifacts:
           - name: BUILD_ARTIFACT

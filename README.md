@@ -347,11 +347,14 @@ uv run python main.py
      （幂等：同 tag 复用 Release、同名附件跳过）
    - Release tag 由脚本 `--tag auto` 解析：推送 tag 场景取 `GITEE_REF_NAME`
      （v*），手动运行场景回退 `v.<构建号>`
-   - 一次性配置：Gitee 仓库「管理 → 环境变量管理」添加密文变量 `GITEE_TOKEN`
+   - 一次性配置：在 Gitee「设置 → 私人令牌」生成令牌，到仓库
+     「管理 → 环境变量管理」添加密文变量 `RELEASE_TOKEN`（Gitee Go 保留
+     `GITEE_` 前缀给平台内置变量，自定义变量不能以 `GITEE_` 开头）
 - 本地演练发布脚本（不调用 API）：
   `uv run python scripts/publish_gitee_release.py --owner x --repo y --token z --dry-run`
-   - 一次性配置：在 Gitee「设置 → 私人令牌」生成令牌，到仓库
-     「管理 → 环境变量管理」添加密文变量 `GITEE_TOKEN`（与 GitHub 同步工作流共用）
+   - Gitee Go 密文变量：在 Gitee「设置 → 私人令牌」生成令牌，到仓库
+     「管理 → 环境变量管理」添加密文变量 `RELEASE_TOKEN`（不能以 `GITEE_` 开头；
+     GitHub 同步工作流则用 GitHub Secrets 的 `GITEE_TOKEN`，两者相互独立）
    - 限制：Gitee Go 构建环境为 Linux 容器（内置 Python 最高 3.9），模板内通过 uv 安装
      3.13 解释器，产出的为 **Linux 安装包**；Windows 安装包仍由 GitHub Actions 构建并
      经 `Release to Gitee` 工作流同步——两条链路互补
