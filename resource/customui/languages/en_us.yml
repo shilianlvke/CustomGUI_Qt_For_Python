@@ -162,3 +162,7 @@ P2PTester:
     storage_lib: Archived Test Library
     config_center: Configuration Center
 
+Log:
+  pyserial_not_install: "pyserial not install, can't get COM device list"
+  hidapi_not_install: "hidapi not install, can't get HID device list"
+  wmi_not_install: "wmi not install, can't get Network device list"
