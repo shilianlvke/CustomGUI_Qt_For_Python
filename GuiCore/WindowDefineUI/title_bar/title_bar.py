@@ -54,6 +54,9 @@ class CTitleBar(QWidget):
         self._custom_lang_keys: dict = {}
         self.setup_ui()
 
+        # 语言切换时自动刷新提示文本（弱引用订阅）
+        Language.subscribe(self.apply_language)
+
         # 添加背景色
         # self.bg.setStyleSheet(f"background-color: {self._bg_color}; border-radius: {radius}px;")
 
@@ -162,7 +165,7 @@ class CTitleBar(QWidget):
                 self.custom_buttons_layout.addWidget(self.div_3)
 
     def apply_language(self, resolver=None):
-        """语言切换后刷新窗口控制按钮与自定义菜单按钮的提示文本。"""
+        """语言切换后刷新窗口控制按钮与自定义菜单按钮的提示文本（订阅自动触发）。"""
         resolver = resolver or self._resolve_text
         self.minimize_button.set_tooltip(resolver("language.UI.ui_Minimize"))
         self.maximize_restore_button.set_tooltip(resolver("language.UI.ui_Maximize"))

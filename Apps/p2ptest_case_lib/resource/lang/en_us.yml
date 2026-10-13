@@ -1,2 +1,19 @@
 app_text: "Test Case Library"
 app_tooltip: "Test Case Library"
+lib_title: Test Library
+all_lib: All Test Libraries
+org_lib: Organization Library
+team_lib: Team Library
+new_lib: New Test Library
+filter: "Filter:"
+filter_all: All
+filter_star: Starred
+filter_recent: Recent
+card_func_lib: Functional Test Library
+card_perf_lib: Performance Test Library
+card_hw_lib: Hardware Test Library
+card_sw_lib_1: Software Test Library 1
+card_sw_lib_2: Software Test Library 2
+card_sw_lib_3: Software Test Library 3
+card_sw_lib_4: Software Test Library 4
+card_sw_lib_5: Software Test Library 5

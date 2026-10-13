@@ -11,7 +11,7 @@ from qt_core import (
     Qt,
     Slot,
 )
-from AppCore import PathFactory, ColorPalette, get_design_tokens
+from AppCore import PathFactory, ColorPalette, get_design_tokens, get_theme_manager
 
 
 class CLeftMenuButton(QPushButton):
@@ -59,6 +59,8 @@ class CLeftMenuButton(QPushButton):
         self._tooltip_text = tooltip_text
         self.tooltip = _ToolTip(app_parent, tooltip_text)
         self.tooltip.hide()
+        # 主题切换时刷新（已显示的）提示样式
+        get_theme_manager().subscribe(self.tooltip.update_style)
 
     # 绘制事件
     def paintEvent(self, event):

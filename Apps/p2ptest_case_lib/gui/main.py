@@ -5,6 +5,12 @@ from GuiCore import CCard, CPushButton, CShowCard, CStatusButton
 from AppCore import PathFactory, ColorPalette, Logger, AppSettings, Language
 from GuiCore.CustomUI.div import CHDiv
 
+_LANG = "app.p2ptest_case_lib"
+
+
+def _t(key):
+    return Language.resolve(f"{_LANG}.{key}", key)
+
 
 class P2PTestCaseLibPage:
 
@@ -37,16 +43,16 @@ class P2PTestCaseLibPage:
         left_scroller_area.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
         left_back_layout.addWidget(left_scroller_area)
 
-        label_1 = QLabel("测试库")
+        label_1 = QLabel(_t("lib_title"))
 
         case_lib_btn1 = CPushButton(
-            size=QSize(144, 32), text="全部测试库", icon=QIcon(PathFactory.set_svg_icon("icon_all"))
+            size=QSize(144, 32), text=_t("all_lib"), icon=QIcon(PathFactory.set_svg_icon("icon_all"))
         )
         case_lib_btn2 = CPushButton(
-            size=QSize(144, 32), text="组织测试库", icon=QIcon(PathFactory.set_svg_icon("icon_tree"))
+            size=QSize(144, 32), text=_t("org_lib"), icon=QIcon(PathFactory.set_svg_icon("icon_tree"))
         )
         case_lib_btn3 = CPushButton(
-            size=QSize(144, 32), text="团队测试库", icon=QIcon(PathFactory.set_svg_icon("icon_team"))
+            size=QSize(144, 32), text=_t("team_lib"), icon=QIcon(PathFactory.set_svg_icon("icon_team"))
         )
 
         left_card_layout.addWidget(label_1)
@@ -71,12 +77,12 @@ class P2PTestCaseLibPage:
         right_top_layout.setAlignment(Qt.AlignmentFlag.AlignTop)
         right_back_layout.addWidget(right_top_card)
 
-        label_4 = QLabel("全部测试库")
+        label_4 = QLabel(_t("all_lib"))
         font = QFont(AppSettings.family, AppSettings.title_size)
         label_4.setFont(font)
 
         case_lib_btn9 = CPushButton(
-            size=QSize(144, 32), text="新建测试库", icon=QIcon(PathFactory.set_svg_icon("icon_add"))
+            size=QSize(144, 32), text=_t("new_lib"), icon=QIcon(PathFactory.set_svg_icon("icon_add"))
         )
 
         right_top_layout.addWidget(label_4)
@@ -92,11 +98,11 @@ class P2PTestCaseLibPage:
         right_middle_layout.setAlignment(Qt.AlignmentFlag.AlignTop | Qt.AlignmentFlag.AlignLeft)
         right_back_layout.addWidget(right_middle_card)
 
-        label_5 = QLabel("筛选:")
+        label_5 = QLabel(_t("filter"))
 
-        case_lib_btnA = CStatusButton(size=QSize(64, 32), text_negative="全部", text_positive="全部")
-        case_lib_btnB = CStatusButton(size=QSize(64, 32), text_negative="星标", text_positive="星标")
-        case_lib_btnC = CStatusButton(size=QSize(64, 32), text_negative="最近", text_positive="最近")
+        case_lib_btnA = CStatusButton(size=QSize(64, 32), text_negative=_t("filter_all"), text_positive=_t("filter_all"))
+        case_lib_btnB = CStatusButton(size=QSize(64, 32), text_negative=_t("filter_star"), text_positive=_t("filter_star"))
+        case_lib_btnC = CStatusButton(size=QSize(64, 32), text_negative=_t("filter_recent"), text_positive=_t("filter_recent"))
         right_middle_layout.addWidget(label_5)
         right_middle_layout.addWidget(case_lib_btnA)
         right_middle_layout.addWidget(case_lib_btnB)
@@ -121,14 +127,14 @@ class P2PTestCaseLibPage:
         right_bottom_scroller_area.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
         right_back_layout.addWidget(right_bottom_scroller_area)
 
-        card_1 = CShowCard(None, Language.custom_ui.sys_github, "功能测试库")
-        card_2 = CShowCard(None, Language.custom_ui.sys_github, "性能测试库")
-        card_3 = CShowCard(None, Language.custom_ui.sys_github, "硬件测试库")
-        card_4 = CShowCard(None, Language.custom_ui.sys_github, "软件测试库1")
-        card_5 = CShowCard(None, Language.custom_ui.sys_github, "软件测试库2")
-        card_6 = CShowCard(None, Language.custom_ui.sys_github, "软件测试库3")
-        card_7 = CShowCard(None, Language.custom_ui.sys_github, "软件测试库4")
-        card_8 = CShowCard(None, Language.custom_ui.sys_github, "软件测试库5")
+        card_1 = CShowCard(None, Language.custom_ui.sys_github, _t("card_func_lib"))
+        card_2 = CShowCard(None, Language.custom_ui.sys_github, _t("card_perf_lib"))
+        card_3 = CShowCard(None, Language.custom_ui.sys_github, _t("card_hw_lib"))
+        card_4 = CShowCard(None, Language.custom_ui.sys_github, _t("card_sw_lib_1"))
+        card_5 = CShowCard(None, Language.custom_ui.sys_github, _t("card_sw_lib_2"))
+        card_6 = CShowCard(None, Language.custom_ui.sys_github, _t("card_sw_lib_3"))
+        card_7 = CShowCard(None, Language.custom_ui.sys_github, _t("card_sw_lib_4"))
+        card_8 = CShowCard(None, Language.custom_ui.sys_github, _t("card_sw_lib_5"))
         right_bottom_layout.addWidget(card_1)
         right_bottom_layout.addWidget(card_2)
         right_bottom_layout.addWidget(card_3)

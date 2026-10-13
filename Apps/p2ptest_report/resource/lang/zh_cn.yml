@@ -1,2 +1,8 @@
 app_text: "测试报告"
 app_tooltip: "测试报告"
+all_report: 全部测试报告
+new_report: 新建测试报告
+filter: "筛选:"
+filter_all: 全部
+filter_star: 星标
+filter_recent: 最近

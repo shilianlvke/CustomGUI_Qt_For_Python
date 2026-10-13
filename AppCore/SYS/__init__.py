@@ -13,6 +13,7 @@ from .config import (
 from .module import Logger
 from .other import PathFactory, PicFixFactory
 from .module import ColorPalette, Language
+from .module import ThemeManager, get_theme_manager
 from .module import DesignTokens, get_design_tokens
 from .module import AppError, DomainErrorBoundary, IOErrorBoundary, UIErrorBoundary, to_user_message
 from .module import CommandPlugin, MenuPlugin, PagePlugin, PluginRegistry, get_plugin_registry
@@ -35,6 +36,8 @@ __all__ = [
 	"initialize_app_context",
 	"ColorPalette",
 	"Language",
+	"ThemeManager",
+	"get_theme_manager",
 	"DesignTokens",
 	"get_design_tokens",
 	"AppError",

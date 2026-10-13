@@ -1,2 +1,12 @@
 app_text: "Test Plan"
 app_tooltip: "Test Plan"
+todo: To-do
+my_test: Assigned to Me
+my_join: Joined by Me
+my_todo: In Progress
+all_plan: All Test Plans
+new_plan: New Test Plan
+filter: "Filter:"
+filter_all: All
+filter_star: Starred
+filter_recent: Recent

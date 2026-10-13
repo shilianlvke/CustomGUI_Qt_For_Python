@@ -1,2 +1,11 @@
 app_text: "归档及配置"
 app_tooltip: "归档及配置"
+more: 更多
+storage_lib: 归档测试库
+config_center: 配置中心
+all_lib: 全部测试库
+new_lib: 新建测试库
+filter: "筛选:"
+filter_all: 全部
+filter_star: 星标
+filter_recent: 最近

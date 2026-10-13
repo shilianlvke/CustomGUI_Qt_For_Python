@@ -135,18 +135,15 @@ def test_controller_language_switch_is_recorded(diagnostics_dir):
 def test_theme_controller_records_theme_switch(diagnostics_dir):
     window = SimpleNamespace(ui=SimpleNamespace(window=SimpleNamespace(setStyleSheet=lambda _s: None)))
 
-    class _Palette:
-        def update(self, _data):
-            pass
-
     class _Styles:
         def __init__(self):
             self.style = "demo"
 
+    from AppCore import ThemeManager
+
     controller = ThemeController(
         window=window,
-        color_palette=_Palette(),
-        app_themes={"eye": SimpleNamespace(data={"x": 1})},
+        theme_manager=ThemeManager(),
         style_factory=_Styles,
         logger=SimpleNamespace(info=lambda *_a, **_k: None, debug=lambda *_a, **_k: None),
     )

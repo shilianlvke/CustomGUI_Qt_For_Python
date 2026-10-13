@@ -59,18 +59,6 @@ def test_page_router_switch_page_routes_target_widget():
 
 def test_theme_controller_cycles_expected_theme_sequence():
     style_calls = []
-    updates = []
-
-    class _ColorPalette:
-        @staticmethod
-        def update(data):
-            updates.append(data)
-
-    themes = {
-        "eye": SimpleNamespace(data={"theme": "eye"}),
-        "bright": SimpleNamespace(data={"theme": "bright"}),
-        "default": SimpleNamespace(data={"theme": "default"}),
-    }
 
     class _Styles:
         def __init__(self):
@@ -80,14 +68,17 @@ def test_theme_controller_cycles_expected_theme_sequence():
         ui=SimpleNamespace(window=SimpleNamespace(setStyleSheet=lambda style: style_calls.append(style)))
     )
 
-    controller = ThemeController(window=window, color_palette=_ColorPalette, app_themes=themes, style_factory=_Styles)
+    from AppCore import ThemeManager
+
+    manager = ThemeManager()  # 独立实例，不污染全局单例
+    controller = ThemeController(window=window, theme_manager=manager, style_factory=_Styles)
 
     controller.cycle_theme()
     controller.cycle_theme()
     controller.cycle_theme()
 
-    assert updates == [{"theme": "eye"}, {"theme": "bright"}, {"theme": "default"}]
     assert style_calls == ["demo-style", "demo-style", "demo-style"]
+    assert manager.current() == "default"  # default -> eye -> bright -> default
 
 
 def test_main_window_controller_dispatches_plugin_command_when_unhandled():

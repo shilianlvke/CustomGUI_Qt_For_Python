@@ -59,6 +59,9 @@ class CLeftMenu(QWidget):
         # 绘制UI
         self.setup_ui()
 
+        # 语言切换时自动刷新菜单文本（弱引用订阅）
+        Language.subscribe(self.apply_language)
+
         # 设置背景颜色
         # self.bg.setStyleSheet(f"background: {self._dark_one}; border-radius: {radius};")
 
@@ -124,7 +127,7 @@ class CLeftMenu(QWidget):
                     self.bottom_layout.addWidget(self.menu)
 
     def apply_language(self, resolver=None):
-        """语言切换后刷新全部菜单按钮文本与提示。"""
+        """语言切换后刷新全部菜单按钮文本与提示（订阅自动触发）。"""
         resolver = resolver or self._resolve_text
         self.toggle_button.setText(resolver("language.UI.ui_Hide"))
         self.toggle_button.set_tooltip(resolver("language.UI.ui_Show"))

@@ -88,14 +88,28 @@ def _load_app_lang_data(app_dir: Path, language: str) -> dict:
     return {}
 
 
-def apply_apps_language(language: str, app_dirs: list[Path] | None = None) -> None:
-    """把全部应用的语言文件注入 ``Language.app.<app_name>`` 命名空间。"""
+def collect_app_languages(language: str, app_dirs: list[Path] | None = None) -> Attrs:
+    """收集全部应用的语言数据，返回 {app_name: {key: text}} 命名空间。"""
     app_node = Attrs()
     for app_dir in app_dirs if app_dirs is not None else discover_app_dirs():
         data = _load_app_lang_data(app_dir, language)
         app_node[app_dir.name] = to_attrs(data)
-    setattr(Language, "app", app_node)
-    Logger.debug(f"应用语言注入完成: {language} ({len(app_node)} 个应用)")
+    return app_node
+
+
+def apply_apps_language(language: str, app_dirs: list[Path] | None = None) -> None:
+    """把全部应用的语言文件注入 ``Language.app.<app_name>`` 命名空间。"""
+    setattr(Language, "app", collect_app_languages(language, app_dirs))
+    Logger.debug(f"应用语言注入完成: {language}")
+
+
+def _app_language_provider(language: str) -> dict:
+    """供 Language.apply 使用的 App 语言提供者。"""
+    return collect_app_languages(language, _APP_DIRS or None)
+
+
+# 注册 App 语言提供者：语言切换时由 LanguageManager 自动调用
+Language.register_app_provider(_app_language_provider)
 
 
 def _resolve_icon(config: Attrs, app_dir: Path) -> str:

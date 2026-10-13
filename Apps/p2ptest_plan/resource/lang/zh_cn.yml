@@ -1,2 +1,12 @@
 app_text: "测试计划"
 app_tooltip: "测试计划"
+todo: 待办
+my_test: 我负责的
+my_join: 我参与的
+my_todo: 进行中的
+all_plan: 全部测试计划
+new_plan: 新建测试计划
+filter: "筛选:"
+filter_all: 全部
+filter_star: 星标
+filter_recent: 最近

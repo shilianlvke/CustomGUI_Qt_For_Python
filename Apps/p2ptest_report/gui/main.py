@@ -6,6 +6,13 @@ from AppCore import PathFactory, ColorPalette, Logger, AppSettings, Language
 from GuiCore.CustomUI.div import CHDiv
 
 
+
+
+_LANG = "app.p2ptest_report"
+
+
+def _t(key):
+    return Language.resolve(f"{_LANG}.{key}", key)
 class P2PTestReportPage:
 
     def load_page(self):
@@ -31,11 +38,11 @@ class P2PTestReportPage:
         right_top_layout.setAlignment(Qt.AlignmentFlag.AlignTop)
         right_back_layout.addWidget(right_top_card)
 
-        label_4 = QLabel("全部测试报告")
+        label_4 = QLabel(_t("all_report"))
         font = QFont(AppSettings.family, AppSettings.title_size)
         label_4.setFont(font)
 
-        case_lib_btn9 = CPushButton(size=QSize(144, 32), text="新建测试报告", icon=QIcon(PathFactory.set_svg_icon("icon_add")))
+        case_lib_btn9 = CPushButton(size=QSize(144, 32), text=_t("new_report"), icon=QIcon(PathFactory.set_svg_icon("icon_add")))
 
         right_top_layout.addWidget(label_4)
         right_top_layout.addStretch()
@@ -50,11 +57,11 @@ class P2PTestReportPage:
         right_middle_layout.setAlignment(Qt.AlignmentFlag.AlignTop | Qt.AlignmentFlag.AlignLeft)
         right_back_layout.addWidget(right_middle_card)
 
-        label_5 = QLabel("筛选:")
+        label_5 = QLabel(_t("filter"))
 
-        case_lib_btnA = CStatusButton(size=QSize(64, 32), text_negative="全部", text_positive="全部")
-        case_lib_btnB = CStatusButton(size=QSize(64, 32), text_negative="星标", text_positive="星标")
-        case_lib_btnC = CStatusButton(size=QSize(64, 32), text_negative="最近", text_positive="最近")
+        case_lib_btnA = CStatusButton(size=QSize(64, 32), text_negative=_t("filter_all"), text_positive=_t("filter_all"))
+        case_lib_btnB = CStatusButton(size=QSize(64, 32), text_negative=_t("filter_star"), text_positive=_t("filter_star"))
+        case_lib_btnC = CStatusButton(size=QSize(64, 32), text_negative=_t("filter_recent"), text_positive=_t("filter_recent"))
         right_middle_layout.addWidget(label_5)
         right_middle_layout.addWidget(case_lib_btnA)
         right_middle_layout.addWidget(case_lib_btnB)

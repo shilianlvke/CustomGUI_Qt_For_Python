@@ -8,6 +8,7 @@ from .error_module import (
 	UIErrorBoundary as UIErrorBoundary,
 	to_user_message as to_user_message,
 )
+from .theme_module import ThemeManager as ThemeManager, get_theme_manager as get_theme_manager
 from .token_module import DesignTokens as DesignTokens, get_design_tokens as get_design_tokens
 from .plugin_module import (
 	CommandPlugin as CommandPlugin,
@@ -26,6 +27,8 @@ __all__ = [
 	"Logger",
 	"ColorPalette",
 	"Language",
+	"ThemeManager",
+	"get_theme_manager",
 	"AppError",
 	"DomainErrorBoundary",
 	"IOErrorBoundary",

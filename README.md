@@ -172,14 +172,58 @@ def build_page(app):
 ### 语言
 
 - 应用语言文件内容整体挂在 `Language.app.<app_name>` 命名空间；
-- 菜单文本用 `language.app.<app_name>.<key>` 资源键引用，
-  语言切换时自动刷新菜单文本、提示与当前页标题；
-- 语言切换入口：`Guis.language_service.switch_language(window)`（标题栏
-  语言按钮已接入，中英文循环切换）。
+- 菜单文本用 `language.app.<app_name>.<key>` 资源键引用；
+- 页面内可见文本用 `Language.resolve("app.<app_name>.<key>")` 读取，
+  语言切换时基座会**重建页面**，使页面内文本完整切换；
+- 语言切换入口：标题栏语言按钮（中英文循环切换），
+  核心在 `AppCore.SYS.module.language_module`（订阅式 LanguageManager）。
 
 ### 环境变量
 
 - `CUSTOMGUI_APPS_DIR`：覆盖 Apps 目录位置（测试/外部模组目录用）。
+
+---
+
+## 主题与语言系统（订阅式模块）
+
+主题与语言切换已制作为 **AppCore 独立模块**（`AppCore.SYS.module` 目录）：
+
+| 模块 | 职责 |
+| --- | --- |
+| `theme_module` | `ThemeManager` / `get_theme_manager()`：主题状态、`apply`/`cycle`、订阅通知、遥测 |
+| `language_module` | `Language`：语言包容器 + 切换协调（`apply`/`cycle`、App 语言 provider、订阅通知、遥测） |
+| `color_module` | `ColorPalette`：当前调色板（主题颜色载体） |
+
+### 主题切换
+
+```python
+from AppCore import get_theme_manager
+
+manager = get_theme_manager()
+manager.subscribe(lambda: my_widget.update_style())  # 绑定方法为弱引用订阅
+manager.apply("bright")   # 更新 ColorPalette -> 通知订阅者
+manager.cycle()           # eye -> bright -> default 循环
+```
+
+约定：
+- 全局样式由 `GuiCore.styles.Styles` 生成，`ThemeController` 订阅管理器重建样式表；
+- 自绘组件在 `paintEvent` 中**实时读取** `ColorPalette`（禁止构造时快照）；
+- 内联样式/tooltip 组件实现 `update_style()` 并订阅管理器。
+
+### 语言切换
+
+```python
+from AppCore import Language
+from Guis.language_service import apply_language
+
+Language.register_app_provider(...)     # App 语言提供者（app_loader 已注册）
+Language.apply("en_us")                 # 整体切换并广播（菜单/标题栏/左列自刷新）
+apply_language("en_us", window)         # 额外执行页面重建与窗口标题刷新
+```
+
+组件订阅：`CLeftMenu`/`CTitleBar`/`CLeftColumn` 等构造时订阅 `Language`，
+切换后自动刷新按钮文本、提示与标题；页面内容通过**页面重建**完整切换。
+
 
 ---
 

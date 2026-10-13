@@ -1,2 +1,15 @@
 app_text: "Test Analysis"
 app_tooltip: "Test Analysis"
+todo: To-do
+more: More
+my_test: Assigned to Me
+my_join: Joined by Me
+my_todo: In Progress
+storage_lib: Archived Test Library
+config_center: Configuration Center
+all_lib: All Test Libraries
+new_lib: New Test Library
+filter: "Filter:"
+filter_all: All
+filter_star: Starred
+filter_recent: Recent

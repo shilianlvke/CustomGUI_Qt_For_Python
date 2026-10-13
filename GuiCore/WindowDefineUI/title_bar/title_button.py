@@ -11,7 +11,7 @@ from qt_core import (
     QRect,
     Qt,
 )
-from AppCore import ColorPalette, AppSettings
+from AppCore import ColorPalette, AppSettings, get_theme_manager
 
 
 # PY TITLE BUTTON
@@ -53,6 +53,8 @@ class CTitleButton(QPushButton):
         self._tooltip_text = tooltip_text
         self._tooltip = _ToolTip(app_parent, tooltip_text)
         self._tooltip.hide()
+        # 主题切换时刷新（已显示的）提示样式
+        get_theme_manager().subscribe(self._tooltip.update_style)
 
     # SET ACTIVE MENU
     # ///////////////////////////////////////////////////////////////

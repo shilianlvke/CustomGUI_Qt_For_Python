@@ -10,7 +10,7 @@ from qt_core import (
     QRect,
     Qt,
 )
-from AppCore import ColorPalette
+from AppCore import ColorPalette, AppSettings, get_theme_manager
 
 
 class PyLeftButton(QPushButton):
@@ -34,37 +34,36 @@ class PyLeftButton(QPushButton):
         self.setCursor(Qt.PointingHandCursor)
         self.setObjectName(btn_id)
 
-        # PROPERTIES
-        self._bg_color = ColorPalette.custom_bg_three
-        self._bg_color_hover = ColorPalette.custom_bg_two
-        self._bg_color_pressed = ColorPalette.custom_bg_one
-        self._icon_color = ColorPalette.custom_icon_color
-        self._icon_color_hover = ColorPalette.custom_icon_hover
-        self._icon_color_pressed = ColorPalette.custom_icon_pressed
-        self._icon_color_active = ColorPalette.custom_icon_pressed
-        self._context_color = ColorPalette.custom_context_color
+        # PROPERTIES（颜色实时读取 ColorPalette，主题切换自动生效）
+        self._state = "normal"  # normal / hover / pressed
         self._top_margin = self.height() + 6
         self._is_active = is_active
-        # Set Parameters
-        self._set_bg_color = ColorPalette.custom_bg_three
         self._set_icon_path = icon_path
-        self._set_icon_color = ColorPalette.custom_icon_color
         self._set_border_radius = radius
         # Parent
         # self._parent = parent
         self._app_parent = app_parent
 
-        # TOOLTIP
+        # TOOLTIP（实时样式 + 主题订阅刷新）
         self._tooltip_text = tooltip_text
-        self._tooltip = _ToolTip(
-            app_parent,
-            tooltip_text,
-            ColorPalette.custom_dark_one,
-            ColorPalette.custom_context_color,
-            ColorPalette.custom_text_foreground,
-            font_family,
-        )
+        self._tooltip = _ToolTip(app_parent, tooltip_text, font_family)
         self._tooltip.hide()
+        get_theme_manager().subscribe(self._tooltip.update_style)
+
+    # 按状态实时取色
+    def _bg_color(self):
+        if self._state == "pressed":
+            return ColorPalette.custom_bg_one
+        if self._state == "hover":
+            return ColorPalette.custom_bg_two
+        return ColorPalette.custom_bg_three
+
+    def _icon_color(self):
+        if self._state == "pressed":
+            return ColorPalette.custom_icon_pressed
+        if self._state == "hover":
+            return ColorPalette.custom_icon_hover
+        return ColorPalette.custom_icon_color
 
     # SET ACTIVE MENU
     # ///////////////////////////////////////////////////////////////
@@ -87,11 +86,9 @@ class PyLeftButton(QPushButton):
         paint.setRenderHint(QPainter.RenderHint.Antialiasing)
 
         if self._is_active:
-            # BRUSH
-            brush = QBrush(QColor(self._bg_color_pressed))
+            brush = QBrush(QColor(ColorPalette.custom_bg_one))
         else:
-            # BRUSH
-            brush = QBrush(QColor(self._set_bg_color))
+            brush = QBrush(QColor(self._bg_color()))
 
         # CREATE RECTANGLE
         rect = QRect(0, 0, self.width(), self.height())
@@ -110,20 +107,16 @@ class PyLeftButton(QPushButton):
     # ///////////////////////////////////////////////////////////////
     def change_style(self, event):
         if event == QEvent.Enter:
-            self._set_bg_color = self._bg_color_hover
-            self._set_icon_color = self._icon_color_hover
+            self._state = "hover"
             self.repaint()
         elif event == QEvent.Leave:
-            self._set_bg_color = self._bg_color
-            self._set_icon_color = self._icon_color
+            self._state = "normal"
             self.repaint()
         elif event == QEvent.MouseButtonPress:
-            self._set_bg_color = self._bg_color_pressed
-            self._set_icon_color = self._icon_color_pressed
+            self._state = "pressed"
             self.repaint()
         elif event == QEvent.MouseButtonRelease:
-            self._set_bg_color = self._bg_color_hover
-            self._set_icon_color = self._icon_color_hover
+            self._state = "hover"
             self.repaint()
 
     # MOUSE OVER
@@ -169,9 +162,9 @@ class PyLeftButton(QPushButton):
         painter = QPainter(icon)
         painter.setCompositionMode(QPainter.CompositionMode_SourceIn)
         if self._is_active:
-            painter.fillRect(icon.rect(), self._context_color)
+            painter.fillRect(icon.rect(), ColorPalette.custom_context_color)
         else:
-            painter.fillRect(icon.rect(), self._set_icon_color)
+            painter.fillRect(icon.rect(), self._icon_color())
         qp.drawPixmap((rect.width() - icon.width()) / 2, (rect.height() - icon.height()) / 2, icon)
         painter.end()
 
@@ -181,36 +174,25 @@ class PyLeftButton(QPushButton):
         self._set_icon_path = icon_path
         self.repaint()
 
+    # 更新提示文本（语言切换时使用）
+    def set_tooltip(self, text):
+        self._tooltip_text = text
+        self._tooltip.setText(text)
+        self._tooltip.adjustSize()
+
 
 # TOOLTIP
 # ///////////////////////////////////////////////////////////////
 class _ToolTip(QLabel):
     # TOOLTIP / LABEL StyleSheet
-    style_tooltip = """ 
-    QLabel {{		
-        background-color: {_dark_one};	
-        color: {_text_foreground};
-        padding-left: 10px;
-        padding-right: 10px;
-        border-radius: 17px;
-        border: 0px solid transparent;
-        border-right: 3px solid {_context_color};
-        font: 800 9pt "{_family}";
-    }}
-    """
 
-    def __init__(self, parent, tooltip, dark_one, context_color, text_foreground, family):
+    def __init__(self, parent, tooltip, family):
         QLabel.__init__(self)
+        self._family = family
 
         # LABEL SETUP
-        style = self.style_tooltip.format(
-            _dark_one=dark_one,
-            _context_color=context_color,
-            _text_foreground=text_foreground,
-            _family=family,
-        )
         self.setObjectName("label_tooltip")
-        self.setStyleSheet(style)
+        self.update_style()
         self.setMinimumHeight(34)
         self.setParent(parent)
         self.setText(tooltip)
@@ -223,3 +205,24 @@ class _ToolTip(QLabel):
         self.shadow.setYOffset(0)
         self.shadow.setColor(QColor(0, 0, 0, 80))
         self.setGraphicsEffect(self.shadow)
+
+    def show(self):
+        self.update_style()
+        super().show()
+
+    def update_style(self):
+        """按当前调色板实时刷新样式（主题订阅自动触发）。"""
+        self.setStyleSheet(
+            f"""
+            QLabel {{
+                background-color: {ColorPalette.custom_dark_one};
+                color: {ColorPalette.custom_text_foreground};
+                padding-left: {AppSettings.custom_padding}px;
+                padding-right: {AppSettings.custom_padding}px;
+                border-radius: {AppSettings.tooltip_border_radius}px;
+                border: 0px solid {ColorPalette.custom_transparent};
+                border-right: {AppSettings.custom_border}px solid {ColorPalette.custom_context_color};
+                font: {AppSettings.tooltip_font} {AppSettings.text_size}pt "{self._family}";
+            }}
+        """
+        )

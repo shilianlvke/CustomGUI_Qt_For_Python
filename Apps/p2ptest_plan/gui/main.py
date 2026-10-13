@@ -6,6 +6,13 @@ from AppCore import PathFactory, ColorPalette, Logger, AppSettings, Language
 from GuiCore.CustomUI.div import CHDiv
 
 
+
+
+_LANG = "app.p2ptest_plan"
+
+
+def _t(key):
+    return Language.resolve(f"{_LANG}.{key}", key)
 class P2PTestPlanPage:
 
     def load_page(self):
@@ -37,11 +44,11 @@ class P2PTestPlanPage:
         left_scroller_area.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
         left_back_layout.addWidget(left_scroller_area)
 
-        label_2 = QLabel("待办")
+        label_2 = QLabel(_t("todo"))
 
-        case_lib_btn4 = CPushButton(size=QSize(144, 32), text="我负责的", icon=QIcon(PathFactory.set_svg_icon("icon_me")))
-        case_lib_btn5 = CPushButton(size=QSize(144, 32), text="我参与的", icon=QIcon(PathFactory.set_svg_icon("icon_me_join")))
-        case_lib_btn6 = CPushButton(size=QSize(144, 32), text="进行中的", icon=QIcon(PathFactory.set_svg_icon("icon_time")))
+        case_lib_btn4 = CPushButton(size=QSize(144, 32), text=_t("my_test"), icon=QIcon(PathFactory.set_svg_icon("icon_me")))
+        case_lib_btn5 = CPushButton(size=QSize(144, 32), text=_t("my_join"), icon=QIcon(PathFactory.set_svg_icon("icon_me_join")))
+        case_lib_btn6 = CPushButton(size=QSize(144, 32), text=_t("my_todo"), icon=QIcon(PathFactory.set_svg_icon("icon_time")))
         left_card_layout.addWidget(label_2)
         left_card_layout.addWidget(case_lib_btn4)
         left_card_layout.addWidget(case_lib_btn5)
@@ -64,11 +71,11 @@ class P2PTestPlanPage:
         right_top_layout.setAlignment(Qt.AlignmentFlag.AlignTop)
         right_back_layout.addWidget(right_top_card)
 
-        label_4 = QLabel("全部测试计划")
+        label_4 = QLabel(_t("all_plan"))
         font = QFont(AppSettings.family, AppSettings.title_size)
         label_4.setFont(font)
 
-        case_lib_btn9 = CPushButton(size=QSize(144, 32), text="新建测试计划", icon=QIcon(PathFactory.set_svg_icon("icon_add")))
+        case_lib_btn9 = CPushButton(size=QSize(144, 32), text=_t("new_plan"), icon=QIcon(PathFactory.set_svg_icon("icon_add")))
 
         right_top_layout.addWidget(label_4)
         right_top_layout.addStretch()
@@ -83,11 +90,11 @@ class P2PTestPlanPage:
         right_middle_layout.setAlignment(Qt.AlignmentFlag.AlignTop | Qt.AlignmentFlag.AlignLeft)
         right_back_layout.addWidget(right_middle_card)
 
-        label_5 = QLabel("筛选:")
+        label_5 = QLabel(_t("filter"))
 
-        case_lib_btnA = CStatusButton(size=QSize(64, 32), text_negative="全部", text_positive="全部")
-        case_lib_btnB = CStatusButton(size=QSize(64, 32), text_negative="星标", text_positive="星标")
-        case_lib_btnC = CStatusButton(size=QSize(64, 32), text_negative="最近", text_positive="最近")
+        case_lib_btnA = CStatusButton(size=QSize(64, 32), text_negative=_t("filter_all"), text_positive=_t("filter_all"))
+        case_lib_btnB = CStatusButton(size=QSize(64, 32), text_negative=_t("filter_star"), text_positive=_t("filter_star"))
+        case_lib_btnC = CStatusButton(size=QSize(64, 32), text_negative=_t("filter_recent"), text_positive=_t("filter_recent"))
         right_middle_layout.addWidget(label_5)
         right_middle_layout.addWidget(case_lib_btnA)
         right_middle_layout.addWidget(case_lib_btnB)

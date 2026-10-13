@@ -56,14 +56,8 @@ def test_refresh_window_updates_menu_title_and_window_title():
 
         return _inner
 
-    left_menu = SimpleNamespace(
-        apply_language=_record("left"),
-        active_button_id=lambda: None,
-    )
-    title_bar = SimpleNamespace(
-        apply_language=_record("title_bar"),
-        set_title=_record("page_title"),
-    )
+    left_menu = SimpleNamespace(active_button_id=lambda: None)
+    title_bar = SimpleNamespace(set_title=_record("page_title"))
     window = SimpleNamespace(
         ui=SimpleNamespace(left_menu=left_menu, title_bar=title_bar),
         setWindowTitle=_record("win_title"),
@@ -72,10 +66,25 @@ def test_refresh_window_updates_menu_title_and_window_title():
     apply_language("en_us", window)
 
     assert calls["win_title"] == "P2PTester"
-    assert callable(calls["left"])
-    assert callable(calls["title_bar"])
 
 
 def test_refresh_window_missing_ui_is_safe():
     apply_language("en_us", SimpleNamespace())  # 无 ui 属性，安全跳过
     apply_language("zh_cn", None)  # 无窗口，安全跳过
+
+
+def test_language_subscription_notifies_listeners():
+    calls = []
+
+    def _listener():
+        calls.append(True)
+
+    from AppCore import Language
+
+    Language.subscribe(_listener)
+    try:
+        apply_language("en_us")
+    finally:
+        apply_language("zh_cn")
+
+    assert calls

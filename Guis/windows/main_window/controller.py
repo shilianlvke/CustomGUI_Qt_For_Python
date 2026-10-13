@@ -1,13 +1,12 @@
 from PySide6.QtWidgets import QWidget
 
 from AppCore import (
-    AppThemes,
     MainWindowButtonUseCase,
-    ColorPalette,
     Language,
     Logger,
     PathFactory,
     get_plugin_registry,
+    get_theme_manager,
     record_event,
 )
 from GuiCore import Styles
@@ -49,33 +48,30 @@ class PageRouterController:
 
 
 class ThemeController:
-    _THEME_SEQUENCE = ("eye", "bright", "default")
+    """主题切换控制器：委托 ThemeManager，样式重建由订阅驱动。"""
 
     def __init__(
         self,
         window,
-        color_palette=ColorPalette,
-        app_themes=AppThemes,
+        theme_manager=get_theme_manager(),
         style_factory=Styles,
         logger=Logger,
         event_recorder=record_event,
     ):
         self._window = window
-        self._color_palette = color_palette
-        self._app_themes = app_themes
+        self._theme_manager = theme_manager
         self._style_factory = style_factory
         self._logger = logger
         self._record_event = event_recorder
-        self._theme_index = -1
+        # 主题变更 -> 重建全局样式并应用（弱引用订阅）
+        self._theme_manager.subscribe(self._apply_styles)
 
     def cycle_theme(self):
-        self._theme_index = (self._theme_index + 1) % len(self._THEME_SEQUENCE)
-        theme_name = self._THEME_SEQUENCE[self._theme_index]
-        self._color_palette.update(self._app_themes[theme_name].data)
+        self._theme_manager.cycle()
+
+    def _apply_styles(self):
         now = self._style_factory()
         self._window.ui.window.setStyleSheet(now.style)
-        self._logger.info(f"切换主题: {theme_name}")
-        self._record_event("ui.theme_switch", category="ui", payload={"theme": theme_name})
 
 
 class ColumnController:

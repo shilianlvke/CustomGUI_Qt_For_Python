@@ -1,2 +1,8 @@
 app_text: "Test Report"
 app_tooltip: "Test Report"
+all_report: All Test Reports
+new_report: New Test Report
+filter: "Filter:"
+filter_all: All
+filter_star: Starred
+filter_recent: Recent

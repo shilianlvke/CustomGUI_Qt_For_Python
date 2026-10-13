@@ -1,2 +1,15 @@
 app_text: "用户管理"
 app_tooltip: "用户管理"
+todo: 待办
+more: 更多
+my_test: 我负责的
+my_join: 我参与的
+my_todo: 进行中的
+storage_lib: 归档测试库
+config_center: 配置中心
+all_lib: 全部测试库
+new_lib: 新建测试库
+filter: "筛选:"
+filter_all: 全部
+filter_star: 星标
+filter_recent: 最近
