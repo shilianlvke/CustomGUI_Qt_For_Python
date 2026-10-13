@@ -1,6 +1,7 @@
 from PySide6.QtCore import QObject, QRunnable, QMutex, QWaitCondition, QMutexLocker, Signal
 from AppCore import (
     AppError,
+    Attrs,
     DomainErrorBoundary,
     Logger,
     UIErrorBoundary,
@@ -9,7 +10,6 @@ from AppCore import (
     to_user_message,
     track_timing,
 )
-from easydict import EasyDict
 
 
 class LoadingSignalBus(QObject):
@@ -28,7 +28,7 @@ class ResourceLoader:
         self._lock = QMutex()
         self._cond = QWaitCondition()
         self.bus = LoadingSignalBus()
-        self.sys_config = EasyDict()
+        self.sys_config = Attrs()
         self.load_config()
 
     def load_config(self):

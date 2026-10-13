@@ -62,7 +62,7 @@ class DesignTokens:
 
 
 def get_design_tokens() -> DesignTokens:
-    from ..other.folder_tools import AppSettings
+    from ..config import AppSettings
 
     return DesignTokens(
         colors=ColorTokens(

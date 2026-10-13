@@ -9,9 +9,17 @@ RUNTIME_FILES = ["main.py"]
 LEGACY_IMPORT_PATTERNS = [
     re.compile(r"^\s*from\s+AppCore\.SYS\.module\.config_module\b"),
     re.compile(r"^\s*from\s+AppCore\.SYS\.module\.languge_module\b"),
+    re.compile(r"^\s*from\s+AppCore\.SYS\.module\.settings_module\b"),
+    re.compile(r"^\s*from\s+AppCore\.SYS\.other\.folder_tools\b"),
+    re.compile(r"^\s*from\s+AppCore\.SYS\.other\.resource_locator\b"),
+    re.compile(r"^\s*from\s+AppCore\.SYS\.locator\b"),
+    re.compile(r"^\s*from\s+AppCore\.SYS\.loader\b"),
     re.compile(r"^\s*from\s+Guis\.windows\.loading_window\.ui_mian\b"),
     re.compile(r"^\s*from\s+\.languge_module\b"),
     re.compile(r"^\s*from\s+\.ui_mian\b"),
+    re.compile(r"^\s*from\s+\.settings_module\b"),
+    re.compile(r"^\s*from\s+\.folder_tools\b"),
+    re.compile(r"^\s*from\s+\.resource_locator\b"),
 ]
 
 ALLOWED_FILES = {

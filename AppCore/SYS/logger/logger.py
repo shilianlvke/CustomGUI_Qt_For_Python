@@ -1,6 +1,5 @@
 import logging
 import os
-import re
 from logging.handlers import RotatingFileHandler
 from pathlib import Path
 
@@ -8,6 +7,11 @@ try:
     from colorama import just_fix_windows_console
 except Exception:
     just_fix_windows_console = None
+
+try:
+    import yaml
+except Exception:  # PyYAML 缺失时保持 logger 可用
+    yaml = None
 
 
 class _ColorFormatter(logging.Formatter):
@@ -89,38 +93,32 @@ class _Logger:
         self._configured = True
 
     @staticmethod
-    def _read_level_from_console_config() -> str:
-        root_dir = Path(__file__).resolve().parents[3]
-        config_path = root_dir / "resource" / "CustomUI" / "settings" / "console.yml"
-        if not config_path.exists():
-            return "debug"
+    def _read_console_config() -> dict:
+        """读取 console.yaml（logger 引导期专用，独立于配置框架以避免循环依赖）。"""
+        config_path = Path(__file__).resolve().parents[3] / "resource" / "CustomUI" / "settings" / "console.yaml"
+        if yaml is None or not config_path.exists():
+            return {}
 
         try:
             content = config_path.read_text(encoding="utf-8")
-        except OSError:
+            data = yaml.safe_load(content)
+        except (OSError, yaml.YAMLError):
+            return {}
+        return data if isinstance(data, dict) else {}
+
+    @classmethod
+    def _read_level_from_console_config(cls) -> str:
+        level = cls._read_console_config().get("logger_level")
+        if not isinstance(level, str) or not level.strip():
             return "debug"
+        return level.strip().lower()
 
-        match = re.search(r"^\s*logger_level\s*:\s*([A-Za-z]+)", content, re.MULTILINE)
-        if not match:
-            return "debug"
-        return match.group(1).lower()
-
-    @staticmethod
-    def _read_color_enabled_from_console_config() -> bool:
-        root_dir = Path(__file__).resolve().parents[3]
-        config_path = root_dir / "resource" / "CustomUI" / "settings" / "console.yml"
-        if not config_path.exists():
-            return True
-
-        try:
-            content = config_path.read_text(encoding="utf-8")
-        except OSError:
-            return True
-
-        match = re.search(r"^\s*logger_color\s*:\s*(true|false)\s*$", content, re.MULTILINE | re.IGNORECASE)
-        if not match:
-            return True
-        return match.group(1).lower() == "true"
+    @classmethod
+    def _read_color_enabled_from_console_config(cls) -> bool:
+        enabled = cls._read_console_config().get("logger_color", True)
+        if isinstance(enabled, str):
+            return enabled.strip().lower() in ("true", "1", "yes", "on")
+        return bool(enabled)
 
     def info(self, msg: str):
         self._logger.info(msg)

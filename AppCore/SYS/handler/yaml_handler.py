@@ -1,250 +1,100 @@
-import yaml
-from easydict import EasyDict
-import os
-from typing import Any, Dict, Union, Optional
+"""YamlHandler：单文件 YAML 配置处理器（薄封装，逻辑位于 AppCore.SYS.config）。
+
+- 相对路径基于项目根目录解析，不依赖当前工作目录；
+- ``data`` 为 :class:`AppCore.SYS.config.mapping.Attrs`（属性/字典双访问）；
+- 读写错误统一抛 :class:`IOErrorBoundary`（错误码与历史实现一致）。
+"""
+
+from __future__ import annotations
+
 import json
-from ..module.error_module import IOErrorBoundary
+from typing import Any, Mapping
+
+from ..config.mapping import Attrs, deep_merge, to_attrs, to_dict
+from ..config.paths import resolve_path
+from ..config.yaml_io import dump_yaml_file, load_yaml_file
 
 
 class YamlHandler:
+    """加载/修改/保存单个 YAML 文件。
+
+    Args:
+        file_path: YAML 文件路径（相对路径基于项目根目录）。
+        auto_load: 是否在初始化时立即加载。
+    """
+
     def __init__(self, file_path: str, auto_load: bool = True):
-        """
-        初始化YamlHandler
-
-        Args:
-            file_path: YAML文件路径
-            auto_load: 是否在初始化时自动加载文件
-        """
         self.file_path = file_path
-        self.data = EasyDict()
-
+        self.data: Attrs = Attrs()
         if auto_load:
             self.load()
 
-    def load(self, file_path: Optional[str] = None) -> EasyDict:
-        """
-        加载YAML文件
-
-        Args:
-            file_path: 可选，指定要加载的文件路径
-
-        Returns:
-            EasyDict对象
-        """
-        if file_path:
+    def load(self, file_path: str | None = None) -> Attrs:
+        """加载 YAML 文件，返回 Attrs 数据。"""
+        if file_path is not None:
             self.file_path = file_path
 
-        if not os.path.exists(self.file_path):
-            raise IOErrorBoundary(
-                code="YAML_FILE_NOT_FOUND",
-                message="配置文件不存在",
-                details=self.file_path,
-            )
-
-        try:
-            with open(self.file_path, "r", encoding="utf-8") as f:
-                raw_data = yaml.safe_load(f) or {}
-        except yaml.YAMLError as exc:
-            raise IOErrorBoundary(
-                code="YAML_PARSE_ERROR",
-                message="配置文件解析失败",
-                details=f"{self.file_path}: {exc}",
-            ) from exc
-        except OSError as exc:
-            raise IOErrorBoundary(
-                code="YAML_READ_ERROR",
-                message="配置文件读取失败",
-                details=f"{self.file_path}: {exc}",
-            ) from exc
-
-        # 将嵌套字典转换为EasyDict
-        self.data = self._dict_to_easydict(raw_data)
+        raw = load_yaml_file(resolve_path(self.file_path))
+        self.data = to_attrs(raw)
         return self.data
 
-    def save(self, data: Optional[Union[Dict, EasyDict]] = None, file_path: Optional[str] = None, **kwargs):
-        """
-        保存数据到YAML文件
+    def save(self, data: Mapping | None = None, file_path: str | None = None, **kwargs) -> None:
+        """保存数据到 YAML 文件（默认保存当前 data，自动创建目录）。"""
+        target = file_path or self.file_path
+        dump_yaml_file(resolve_path(target), to_dict(data if data is not None else self.data), **kwargs)
 
-        Args:
-            data: 要保存的数据，如果为None则保存当前data
-            file_path: 可选，指定保存的文件路径
-            **kwargs: 传递给yaml.dump的其他参数
-        """
-        if file_path:
-            save_path = file_path
-        else:
-            save_path = self.file_path
-
-        # 确保目录存在
-        os.makedirs(os.path.dirname(os.path.abspath(save_path)), exist_ok=True)
-
-        if data is None:
-            data = self.data
-
-        # 如果传入的是EasyDict，转换为普通字典
-        if isinstance(data, EasyDict):
-            data = self._easydict_to_dict(data)
-
-        try:
-            with open(save_path, "w", encoding="utf-8") as f:
-                yaml.dump(data, f, default_flow_style=False, allow_unicode=True, **kwargs)
-        except OSError as exc:
-            raise IOErrorBoundary(
-                code="YAML_WRITE_ERROR",
-                message="配置文件保存失败",
-                details=f"{save_path}: {exc}",
-            ) from exc
-
-    def update(self, new_data: Union[Dict, EasyDict], merge: bool = True):
-        """
-        更新数据
-
-        Args:
-            new_data: 新的数据
-            merge: 是否合并数据（True为合并，False为替换）
-        """
-        if isinstance(new_data, EasyDict):
-            new_data = self._easydict_to_dict(new_data)
-
+    def update(self, new_data: Mapping, merge: bool = True) -> None:
+        """更新数据：merge=True 深度合并，merge=False 整体替换。"""
         if merge:
-            # 深度合并字典
-            self._deep_update(self.data, new_data)
+            deep_merge(self.data, new_data)
         else:
-            self.data = self._dict_to_easydict(new_data)
+            self.data = to_attrs(new_data)
+
+    def merge(self, other: "YamlHandler | Attrs | Mapping") -> "YamlHandler":
+        """将另一个 YAML 配置（或其数据）深度合并进自身，返回 self。"""
+        source = getattr(other, "data", other)
+        if not isinstance(source, Mapping):
+            raise TypeError(f"merge 需要映射对象，收到 {type(other).__name__}")
+        deep_merge(self.data, source)
+        return self
 
     def get(self, key: str, default: Any = None) -> Any:
-        """
-        获取值，支持点符号访问嵌套键
+        """按点号路径读取嵌套值，如 ``"database.host"``。"""
+        return self.data.get_path(key, default)
 
-        Args:
-            key: 键名，支持点符号如 "database.host"
-            default: 默认值
+    def set(self, key: str, value: Any) -> None:
+        """按点号路径设置嵌套值，缺失的中间层自动创建。"""
+        parts = key.split(".")
+        current: Attrs = self.data
+        for part in parts[:-1]:
+            if part not in current or not isinstance(current[part], Attrs):
+                current[part] = Attrs()
+            current = current[part]
+        current[parts[-1]] = to_attrs(value)
 
-        Returns:
-            对应的值
-        """
-        keys = key.split(".")
-        value = self.data
-
-        for k in keys:
-            if hasattr(value, k):
-                value = getattr(value, k)
-            elif isinstance(value, dict) and k in value:
-                value = value[k]
-            else:
-                return default
-
-        return value
-
-    def set(self, key: str, value: Any):
-        """
-        设置值，支持点符号访问嵌套键
-
-        Args:
-            key: 键名，支持点符号如 "database.host"
-            value: 要设置的值
-        """
-        keys = key.split(".")
-        current = self.data
-
-        # 导航到最后一个键的父级
-        for k in keys[:-1]:
-            if not hasattr(current, k):
-                setattr(current, k, EasyDict())
-            current = getattr(current, k)
-
-        # 设置值
-        last_key = keys[-1]
-
-        # 如果值是字典，转换为EasyDict
-        if isinstance(value, dict):
-            value = self._dict_to_easydict(value)
-
-        setattr(current, last_key, value)
-
-    def to_dict(self) -> Dict:
-        """
-        将EasyDict转换为普通字典
-
-        Returns:
-            普通字典
-        """
-        return self._easydict_to_dict(self.data)
+    def to_dict(self) -> dict:
+        """还原为普通字典。"""
+        return to_dict(self.data)
 
     def to_json(self, indent: int = 2) -> str:
-        """
-        将数据转换为JSON字符串
-
-        Args:
-            indent: JSON缩进
-
-        Returns:
-            JSON字符串
-        """
+        """序列化为 JSON 字符串。"""
         return json.dumps(self.to_dict(), indent=indent, ensure_ascii=False)
 
-    def reload(self) -> EasyDict:
-        """
-        重新加载文件
-
-        Returns:
-            EasyDict对象
-        """
+    def reload(self) -> Attrs:
+        """重新加载文件。"""
         return self.load()
 
-    def _dict_to_easydict(self, data: Dict) -> EasyDict:
-        """递归将字典转换为EasyDict"""
-        if not isinstance(data, dict):
-            return data
-
-        result = EasyDict()
-        for key, value in data.items():
-            if isinstance(value, dict):
-                result[key] = self._dict_to_easydict(value)
-            elif isinstance(value, list):
-                result[key] = [self._dict_to_easydict(item) if isinstance(item, dict) else item for item in value]
-            else:
-                result[key] = value
-        return result
-
-    def _easydict_to_dict(self, data: Union[EasyDict, Any]) -> Dict:
-        """递归将EasyDict转换为普通字典"""
-        if isinstance(data, EasyDict):
-            return {key: self._easydict_to_dict(value) for key, value in data.items()}
-        elif isinstance(data, dict):
-            return {key: self._easydict_to_dict(value) for key, value in data.items()}
-        elif isinstance(data, list):
-            return [self._easydict_to_dict(item) for item in data]
-        else:
-            return data
-
-    def _deep_update(self, original: EasyDict, new_data: Dict):
-        """深度更新字典"""
-        for key, value in new_data.items():
-            if key in original and isinstance(original[key], (dict, EasyDict)) and isinstance(value, dict):
-                self._deep_update(original[key], value)
-            else:
-                # 如果值是字典，转换为EasyDict
-                if isinstance(value, dict):
-                    value = self._dict_to_easydict(value)
-                original[key] = value
-
     def __getitem__(self, key):
-        """支持字典式访问"""
-        return getattr(self.data, key)
+        return self.data[key]
 
     def __setitem__(self, key, value):
-        """支持字典式设置"""
-        setattr(self.data, key, value)
+        self.data[key] = value
 
     def __getattr__(self, name):
-        """代理属性访问到data"""
         return getattr(self.data, name)
 
     def __str__(self):
-        """字符串表示"""
         return str(self.data)
 
     def __repr__(self):
-        """repr表示"""
         return f"YamlHandler(file_path='{self.file_path}')"

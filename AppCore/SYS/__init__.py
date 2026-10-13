@@ -1,15 +1,15 @@
 from .handler import JsonHandler, YamlHandler
-from .logger import Logger
-from .other import (
+from .config import (
+	Attrs,
 	AppLanguages,
 	AppOthers,
 	AppSettings,
 	AppThemes,
-	PathFactory,
-	PicFixFactory,
 	get_app_context,
 	initialize_app_context,
 )
+from .logger import Logger
+from .other import PathFactory, PicFixFactory
 from .module import ColorPalette, Language
 from .module import DesignTokens, get_design_tokens
 from .module import AppError, DomainErrorBoundary, IOErrorBoundary, UIErrorBoundary, to_user_message
@@ -19,6 +19,7 @@ from .module import read_recent_events, record_event, track_timing
 __all__ = [
 	"JsonHandler",
 	"YamlHandler",
+	"Attrs",
 	"Logger",
 	"AppLanguages",
 	"AppOthers",

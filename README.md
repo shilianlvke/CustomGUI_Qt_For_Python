@@ -47,14 +47,68 @@
 
 ## 技术栈
 
-- **编程语言**: Python >= 3.12
+- **编程语言**: Python >= 3.13
 - **GUI 框架**: PySide6 >= 6.10
+- **配置系统**: 标准库 dataclass 类型化模型 + PyYAML（唯一第三方配置依赖）
 - **依赖管理**: uv ----> [安装教程](https://uv.doczh.com/getting-started/installation/)
    ```
   详情可查看pyproject.toml
    ```
 
 ---
+
+## 配置系统
+
+项目配置全部位于 `resource/customui/`，采用 **YAML 存储 + 类型化模型加载** 的架构：
+配置加载框架位于 `AppCore/SYS/config/`，仅依赖 Python 标准库（YAML 解析使用
+PyYAML，是唯一必要的第三方库，且被隔离在 `config/yaml_io.py` 一个文件中）。
+
+| 目录 | 加载方式 | 暴露入口 |
+| --- | --- | --- |
+| `settings/` | 目录内所有 yaml 深度合并 → 强类型校验 | `AppCore.AppSettings` |
+| `themes/` | 每个文件独立加载 + 校验 | `AppCore.AppThemes` |
+| `languages/` | 每个文件独立加载 + 校验 | `AppCore.AppLanguages` |
+| `others/` | 每个文件独立加载 | `AppCore.AppOthers` |
+
+### 使用示例
+
+```python
+from AppCore import AppSettings, AppThemes, initialize_app_context
+
+initialize_app_context()  # 可选：不调用则首次访问时自动惰性加载
+
+AppSettings.theme_name            # str，强类型
+AppSettings.startup_size          # (960, 540)，tuple[int, int]
+AppSettings.lef_menu_size.minimum # 50，嵌套 SizeRange 模型
+AppThemes[AppSettings.theme_name].data  # Attrs：属性/字典双访问
+```
+
+### 关键设计
+
+- **类型化 Schema**：`AppCore/SYS/config/schema.py` 中每个配置域对应一个
+  `@dataclass(frozen=True)` 模型（如 `AppSettingsModel`），字段即 Schema，
+  加载时自动完成类型转换与校验，错误信息带字段路径
+  （如 `AppSettings.lef_menu_size.minimum 必须为整数`）。
+- **通用转换引擎**：`from_mapping()` 按字段类型注解递归转换原始字典，
+  相当于一个极简的标准库版 pydantic；新配置只需声明 dataclass 字段。
+- **线程安全惰性单例**：`get_app_context()` 双重检查锁定；模块级
+  `AppSettings` 等为惰性视图，首次访问才加载，之后命中缓存。
+- **独立于工作目录**：所有路径基于项目根目录解析（可用环境变量
+  `CUSTOMGUI_ROOT_DIR` 覆盖），打包或任意目录启动均可正常加载。
+- **单一 YAML 边界**：读写错误统一转换为 `IOErrorBoundary`
+  （`YAML_FILE_NOT_FOUND` / `YAML_PARSE_ERROR` / `YAML_READ_ERROR` /
+  `YAML_WRITE_ERROR`），其余框架代码与存储格式解耦。
+
+### 新增配置
+
+- **新增主题**：在 `resource/customui/themes/` 放置一个 yaml 文件即可，
+  文件名即主题名，无需改任何代码（加载时自动校验必填颜色键）。
+- **新增语言包**：在 `resource/customui/languages/` 放置 yaml 文件，
+  需包含 `custom_ui` / `PAGE` / `UI` 三个分组。
+- **单文件读写**：使用 `AppCore.YamlHandler`（点号路径 get/set、
+  深度 merge、save，相对路径基于项目根目录）。
+
+
 
 ## 快速开始
 
@@ -74,8 +128,8 @@
 2. 创建虚拟环境和安装依赖
    ```bash
    # Windows PowerShell(项目路径下)
-   1. uv python install 3.12 (下载python3.12)
-   2. uv python pin 3.12 (将python版本固定到3.12)
+   1. uv python install 3.13 (下载python3.13)
+   2. uv python pin 3.13 (将python版本固定到3.13)
    3. uv venv (创建虚拟环境)
    4. .\.venv\Scripts\Activate (激活虚拟环境)
    4. uv sync (同步依赖包)
@@ -89,7 +143,7 @@
 ### 运行示例
 
 ```bash
-uv python main.py
+uv run python main.py
 ```
 
 ---
@@ -150,13 +204,15 @@ docs/
 
 `Docs` 工作流会在核心代码或脚本变更时自动生成文档，并上传 `Docs` 作为构建产物，同时检查仓库内文档是否与代码保持同步。
 
-### 迁移与兼容状态（2026-03）
+### 迁移与兼容状态（2026-10）
 
-- 历史兼容入口已全部移除：`config_module`、`languge_module`、`ui_mian`
+- 历史兼容入口已全部移除：`config_module`、`languge_module`、`ui_mian`、`folder_tools`、`settings_module`、`resource_locator`、`locator`、`loader`
 - 规范入口：
-   - 配置：`AppCore.get_app_context().settings` / `AppCore.AppSettings`
+   - 配置：`AppCore.AppSettings` / `AppCore.get_app_context()`（内部实现：`AppCore.SYS.config`）
+   - 单文件配置读写：`AppCore.YamlHandler` / `AppCore.JsonHandler`
+   - 路径解析：`AppCore.SYS.config.paths`
    - 语言模块：`AppCore.SYS.module.language_module`
-   - 加载窗口：`GUI.windows.loading_window.ui_main`
+   - 加载窗口：`Guis.windows.loading_window.ui_main`
 - 兼容与下线记录：`Docs`
 
 ---
@@ -175,8 +231,8 @@ docs/
    ```
 
 2. **自定义主题**
-   修改 `resource\custom_ui\themes` 中的颜色配置，或新增配置文件，参考示例代码：resource\custom_ui\themes\default.yml 和
-   resource\loading_config.yml
+   修改 `resource\customui\themes` 中的颜色配置，或新增配置文件，参考示例代码：
+   `resource\customui\themes\default.yaml`（详见上方「配置系统」章节）
 
 3. **扩展组件**
    参考示例代码：

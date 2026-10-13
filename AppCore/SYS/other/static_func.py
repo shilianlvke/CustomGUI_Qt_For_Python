@@ -1,6 +1,7 @@
-import os
+from pathlib import Path
+
 from AppCore.SYS import Logger
-from AppCore.SYS.other.resource_locator import ResourceLocator
+from AppCore.SYS.config.paths import resolve_path
 from PySide6.QtCore import QRectF, Qt
 from PySide6.QtGui import QPixmap, QPainter, QPainterPath
 
@@ -18,58 +19,52 @@ class PathFinder:
 
     @classmethod
     def __get_path(cls, folder, icon_name):
-        path = ResourceLocator.resolve(folder)
-        result = os.path.normpath(os.path.join(str(path), icon_name))
-        if os.path.exists(result):
-            return result
-        else:
-            Logger.error(f"路径文件不存在{result}")
-            result = str(
-                ResourceLocator.resolve(
-                    os.path.join(cls.images, "icon_pic_not_found.svg")
-                )
-            )
-            return result
+        path = resolve_path(folder) / icon_name
+        if path.is_file():
+            return str(path)
+        Logger.error(f"路径文件不存在{path}")
+        fallback = resolve_path(Path(cls.images) / "icon_pic_not_found.svg")
+        return str(fallback)
 
     # 设置svg类型的icon
     @classmethod
     def set_svg_icon(cls, name):
-        return cls.__get_path(os.path.join(cls.images, r"svg_icons/"), name + ".svg")
+        return cls.__get_path(Path(cls.images) / "svg_icons", name + ".svg")
 
     # 设置svg类型的image
     @classmethod
     def set_svg_image(cls, name):
-        return cls.__get_path(os.path.join(cls.images, r"svg_images/"), name + ".svg")
+        return cls.__get_path(Path(cls.images) / "svg_images", name + ".svg")
 
     # 设置png类型的image
     @classmethod
     def set_png_image(cls, name):
-        return cls.__get_path(os.path.join(cls.images, r"png_images/"), name + ".png")
+        return cls.__get_path(Path(cls.images) / "png_images", name + ".png")
 
     # 设置ico
     @classmethod
     def set_ico(cls, name):
-        return cls.__get_path(os.path.join(cls.images, r"ico/"), name + ".ico")
+        return cls.__get_path(Path(cls.images) / "ico", name + ".ico")
 
     @classmethod
     def set_jpg_image(cls, name):
-        return cls.__get_path(os.path.join(cls.images, r"jpg_images"), name + ".jpg")
+        return cls.__get_path(Path(cls.images) / "jpg_images", name + ".jpg")
 
     @classmethod
     def set_themes(cls, name):
-        return cls.__get_path(cls.themes, name + ".yml")
+        return cls.__get_path(cls.themes, name + ".yaml")
 
     @classmethod
     def set_languages(cls, name):
-        return cls.__get_path(cls.languages, name + ".yml")
+        return cls.__get_path(cls.languages, name + ".yaml")
 
     @classmethod
     def set_settings(cls):
-        return cls.__get_path(cls.settings, "settings" + ".yml")
+        return cls.__get_path(cls.settings, "config" + ".yaml")
 
     @classmethod
     def set_update_log(cls):
-        return cls.__get_path(cls.others, "UpdateLog" + ".yml")
+        return cls.__get_path(cls.others, "DevelopLog" + ".yaml")
 
 
 class PicFixFactory:

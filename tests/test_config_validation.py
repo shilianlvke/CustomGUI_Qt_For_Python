@@ -1,6 +1,6 @@
 import pytest
 
-from AppCore.SYS.module.settings_module import (
+from AppCore.SYS.config.schema import (
     validate_language_data,
     validate_settings_data,
     validate_theme_data,
@@ -9,6 +9,7 @@ from AppCore.SYS.module.settings_module import (
 
 def _base_settings():
     return {
+        # window.yaml
         "startup_size": [960, 540],
         "minimum_size": [960, 540],
         "icon_size": 32,
@@ -23,6 +24,10 @@ def _base_settings():
         "left_menu_content_margins": 2,
         "left_column_size": {"minimum": 0, "maximum": 240},
         "right_column_size": {"minimum": 0, "maximum": 240},
+        "right_menu_content_margins": 3,
+        "right_title_bar_height": 40,
+        "right_content_space": 6,
+        "right_credits_height": 40,
         "custom_padding": 10,
         "custom_border": 3,
         "tooltip_border_radius": 17,
@@ -32,6 +37,17 @@ def _base_settings():
         "title_size": 18,
         "subtitle_size": 15,
         "text_size": 12,
+        # config.yaml
+        "language": "zh_cn",
+        "theme_name": "default",
+        "logo": "icon",
+        "logo_home": "mihoutao",
+        "logo_title": "mihoutao",
+        "logo_loading": "zig",
+        # console.yaml
+        "display": ["banner"],
+        "logger_level": "DEBUG",
+        "logger_color": True,
     }
 
 

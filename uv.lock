@@ -55,8 +55,6 @@ name = "customgui"
 version = "0.1.0"
 source = { virtual = "." }
 dependencies = [
-    { name = "easydict" },
-    { name = "loadstructure" },
     { name = "pyside6" },
     { name = "pyyaml" },
 ]
@@ -76,9 +74,7 @@ windows-hardware = [
 [package.metadata]
 requires-dist = [
     { name = "black", marker = "extra == 'dev'" },
-    { name = "easydict", specifier = ">=1.13" },
     { name = "hidapi", marker = "sys_platform == 'win32' and extra == 'windows-hardware'", specifier = ">=0.14.0" },
-    { name = "loadstructure", specifier = ">=0.2.2" },
     { name = "pyserial", marker = "sys_platform == 'win32' and extra == 'windows-hardware'", specifier = ">=3.5" },
     { name = "pyside6", specifier = ">=6.10.1" },
     { name = "pytest", marker = "extra == 'dev'", specifier = ">=8.3.5" },
@@ -87,15 +83,6 @@ requires-dist = [
     { name = "wmi", marker = "sys_platform == 'win32' and extra == 'windows-hardware'", specifier = ">=1.5.1" },
 ]
 provides-extras = ["windows-hardware", "dev"]
-
-[[package]]
-name = "easydict"
-version = "1.13"
-source = { registry = "https://pypi.tuna.tsinghua.edu.cn/simple" }
-sdist = { url = "https://pypi.tuna.tsinghua.edu.cn/packages/24/9f/d18d6b5e19244788a6d09c14a8406376b4f4bfcc008e6d17a4f4c15362e8/easydict-1.13.tar.gz", hash = "sha256:b1135dedbc41c8010e2bc1f77ec9744c7faa42bce1a1c87416791449d6c87780", size = 6809, upload-time = "2024-03-04T12:04:41.251Z" }
-wheels = [
-    { url = "https://pypi.tuna.tsinghua.edu.cn/packages/05/ec/fa6963f1198172c2b75c9ab6ecefb3045991f92f75f5eb41b6621b198123/easydict-1.13-py3-none-any.whl", hash = "sha256:6b787daf4dcaf6377b4ad9403a5cee5a86adbc0ca9a5bcf5410e9902002aeac2", size = 6804, upload-time = "2024-03-04T12:04:39.508Z" },
-]
 
 [[package]]
 name = "hidapi"
@@ -118,20 +105,6 @@ source = { registry = "https://pypi.tuna.tsinghua.edu.cn/simple" }
 sdist = { url = "https://pypi.tuna.tsinghua.edu.cn/packages/72/34/14ca021ce8e5dfedc35312d08ba8bf51fdd999c576889fc2c24cb97f4f10/iniconfig-2.3.0.tar.gz", hash = "sha256:c76315c77db068650d49c5b56314774a7804df16fee4402c1f19d6d15d8c4730", size = 20503, upload-time = "2025-10-18T21:55:43.219Z" }
 wheels = [
     { url = "https://pypi.tuna.tsinghua.edu.cn/packages/cb/b1/3846dd7f199d53cb17f49cba7e651e9ce294d8497c8c150530ed11865bb8/iniconfig-2.3.0-py3-none-any.whl", hash = "sha256:f631c04d2c48c52b84d0d0549c99ff3859c98df65b3101406327ecc7d53fbf12", size = 7484, upload-time = "2025-10-18T21:55:41.639Z" },
-]
-
-[[package]]
-name = "loadstructure"
-version = "0.2.2"
-source = { registry = "https://pypi.tuna.tsinghua.edu.cn/simple" }
-dependencies = [
-    { name = "pyyaml" },
-    { name = "toml" },
-    { name = "xmltodict" },
-]
-sdist = { url = "https://pypi.tuna.tsinghua.edu.cn/packages/33/cf/38d2736a478cdd16cad95859e1da8961963fa3a49661a64b0a9b085fba61/loadstructure-0.2.2.tar.gz", hash = "sha256:c032c94c4379de2776862d45747ecd65e581480fa0b8405a9ebcbc4494a3cfa2", size = 10428, upload-time = "2025-12-04T20:36:05.631Z" }
-wheels = [
-    { url = "https://pypi.tuna.tsinghua.edu.cn/packages/32/34/213ae5efdce3be184515c3ba3bfdacc488a3b91b0ba03aff77306b921c18/loadstructure-0.2.2-py3-none-any.whl", hash = "sha256:c6e381ab9aa07737a2a3f34ab14697fa76e9c042e4a71642c66308689c3269a1", size = 9472, upload-time = "2025-12-04T20:36:04.162Z" },
 ]
 
 [[package]]
@@ -372,15 +345,6 @@ wheels = [
 ]
 
 [[package]]
-name = "toml"
-version = "0.10.2"
-source = { registry = "https://pypi.tuna.tsinghua.edu.cn/simple" }
-sdist = { url = "https://pypi.tuna.tsinghua.edu.cn/packages/be/ba/1f744cdc819428fc6b5084ec34d9b30660f6f9daaf70eead706e3203ec3c/toml-0.10.2.tar.gz", hash = "sha256:b3bda1d108d5dd99f4a20d24d9c348e91c4db7ab1b749200bded2f839ccbe68f", size = 22253, upload-time = "2020-11-01T01:40:22.204Z" }
-wheels = [
-    { url = "https://pypi.tuna.tsinghua.edu.cn/packages/44/6f/7120676b6d73228c96e17f1f794d8ab046fc910d781c8d151120c3f1569e/toml-0.10.2-py2.py3-none-any.whl", hash = "sha256:806143ae5bfb6a3c6e736a764057db0e6a0e05e338b5630894a5f779cabb4f9b", size = 16588, upload-time = "2020-11-01T01:40:20.672Z" },
-]
-
-[[package]]
 name = "wmi"
 version = "1.5.1"
 source = { registry = "https://pypi.tuna.tsinghua.edu.cn/simple" }
@@ -390,13 +354,4 @@ dependencies = [
 sdist = { url = "https://pypi.tuna.tsinghua.edu.cn/packages/d4/66/6364deb0a03415f96c66803d8c4379f808f2401da3bdb183348487b10510/WMI-1.5.1.tar.gz", hash = "sha256:b6a6be5711b1b6c8d55bda7a8befd75c48c12b770b9d227d31c1737dbf0d40a6", size = 26254, upload-time = "2020-04-28T08:22:58.096Z" }
 wheels = [
     { url = "https://pypi.tuna.tsinghua.edu.cn/packages/ee/b9/a80d1ed4d115dac8e2ac08d16af046a77ab58e3d186e22395bf2add24090/WMI-1.5.1-py2.py3-none-any.whl", hash = "sha256:1d6b085e5c445141c475476000b661f60fff1aaa19f76bf82b7abb92e0ff4942", size = 28912, upload-time = "2020-04-28T08:22:56.055Z" },
-]
-
-[[package]]
-name = "xmltodict"
-version = "1.0.4"
-source = { registry = "https://pypi.tuna.tsinghua.edu.cn/simple" }
-sdist = { url = "https://pypi.tuna.tsinghua.edu.cn/packages/19/70/80f3b7c10d2630aa66414bf23d210386700aa390547278c789afa994fd7e/xmltodict-1.0.4.tar.gz", hash = "sha256:6d94c9f834dd9e44514162799d344d815a3a4faec913717a9ecbfa5be1bb8e61", size = 26124, upload-time = "2026-02-22T02:21:22.074Z" }
-wheels = [
-    { url = "https://pypi.tuna.tsinghua.edu.cn/packages/38/34/98a2f52245f4d47be93b580dae5f9861ef58977d73a79eb47c58f1ad1f3a/xmltodict-1.0.4-py3-none-any.whl", hash = "sha256:a4a00d300b0e1c59fc2bfccb53d7b2e88c32f200df138a0dd2229f842497026a", size = 13580, upload-time = "2026-02-22T02:21:21.039Z" },
 ]
