@@ -105,7 +105,7 @@ class _Logger:
     @staticmethod
     def _read_console_config() -> dict:
         """读取 console.yaml（logger 引导期专用，独立于配置框架以避免循环依赖）。"""
-        config_path = Path(__file__).resolve().parents[3] / "resource" / "CustomUI" / "settings" / "console.yaml"
+        config_path = Path(__file__).resolve().parents[3] / "resource" / "customui" / "settings" / "console.yaml"
         if yaml is None or not config_path.exists():
             return {}
 

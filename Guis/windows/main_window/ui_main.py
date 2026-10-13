@@ -89,13 +89,6 @@ class UiMainWindow(object):
         self.content_area_right_layout.setSpacing(0)
         # 右背景
         self.content_area_right_bg_frame = QFrame()
-        # self.content_area_right_bg_frame.setObjectName("content_area_right_bg_frame")
-        # self.content_area_right_bg_frame.setStyleSheet(f"""
-        # #content_area_right_bg_frame {{
-        #     border-radius: 8px;
-        #     background-color: {ColorPalette.custom_bg_two};
-        # }}
-        # """)
         # ADD BG
         self.content_area_right_layout.addWidget(self.content_area_right_bg_frame)
         # ADD RIGHT PAGES TO RIGHT COLUMN

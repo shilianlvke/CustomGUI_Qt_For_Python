@@ -7,7 +7,7 @@ from AppCore.SYS.other.static_func import PathFinder
 
 
 def test_resolve_from_project_root():
-    path = resolve_path("resource/CustomUI/settings")
+    path = resolve_path("resource/customui/settings")
 
     assert path.exists()
     assert path.is_dir()
@@ -23,7 +23,7 @@ def test_project_root_env_override(tmp_path, monkeypatch):
 
 
 def test_iter_files_collects_sorted_yaml():
-    files = iter_files("resource/CustomUI/themes", ".yaml")
+    files = iter_files("resource/customui/themes", ".yaml")
 
     names = [path.stem for path in files]
     assert "default" in names

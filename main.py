@@ -91,28 +91,6 @@ if __name__ == "__main__":
         # 创建 Qt 应用对象
         app = QApplication(sys.argv)
 
-        # app.setQuitOnLastWindowClosed(False)
-        # # 创建托盘图标
-        # tray_icon = QSystemTrayIcon()
-        # tray_icon.setIcon(QIcon(PathFactory.set_jpg_image("托盘")))  # 设置托盘图标
-        # tray_icon.setToolTip("CustomUI Open Source")  # 设置提示信息
-        # menu = QMenu()
-        # show_action = QAction("显示主界面")
-        # quit_action = QAction("退出")
-        # # 绑定菜单事件
-        # show_action.triggered.connect(
-        #     lambda: MainWindow(
-        #         sys_settings=sys_settings,
-        #         sys_config=loading_window.loader.sys_config,
-        #     )
-        # )
-        # quit_action.triggered.connect(app.quit)
-        # menu.addAction(show_action)
-        # menu.addAction(quit_action)
-        # tray_icon.setContextMenu(menu)  # 设置右键菜单
-        # # 显示托盘图标
-        # tray_icon.setVisible(True)
-
         # 应用级样式和图标
         app.setStyle("windows11")
         app.setWindowIcon(QIcon(PathFactory.set_ico(AppSettings.logo)))

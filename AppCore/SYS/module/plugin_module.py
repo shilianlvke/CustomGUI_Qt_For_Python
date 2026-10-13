@@ -195,7 +195,7 @@ class PluginRegistry:
     @staticmethod
     def _default_manifest_path() -> str:
         root = Path(__file__).resolve().parents[4]
-        return str(root / "resource" / "CustomUI" / "settings" / "plugins.yml")
+        return str(root / "resource" / "customui" / "settings" / "plugins.yml")
 
     @staticmethod
     def _normalize_manifest_modules(raw_data) -> list[str]:

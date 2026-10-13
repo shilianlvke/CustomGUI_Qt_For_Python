@@ -12,11 +12,11 @@ class PathFinder:
     路径工厂类
     """
 
-    images = r"resource/CustomUI/images/"
-    languages = r"resource/CustomUI/languages/"
-    themes = r"resource/CustomUI/themes/"
-    settings = r"resource/CustomUI/settings/"
-    others = r"resource/CustomUI/others/"
+    images = r"resource/customui/images/"
+    languages = r"resource/customui/languages/"
+    themes = r"resource/customui/themes/"
+    settings = r"resource/customui/settings/"
+    others = r"resource/customui/others/"
 
     @classmethod
     def __get_path(cls, folder, icon_name):

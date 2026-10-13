@@ -17,14 +17,14 @@ QPushButton:pressed {{
     background-color: {_press_color};
 }}
 QPushButton::menu-indicator {{ 
-    image: url(resource/CustomUI/images/svg_icons/icon_arrow_right.svg);
+    image: url({_icon_arrow_right});
     width: 16px;
     height: 16px;
     padding-right: 4px;
     subcontrol-position: right;
 }}
 QPushButton::menu-indicator:pressed, QPushButton::menu-indicator:open {{
-    image: url(resource/CustomUI/images/svg_icons/icon_arrow_down.svg);
+    image: url({_icon_arrow_down});
     width: 16px;
     height: 16px;
     position: relative;
@@ -84,6 +84,9 @@ class CMenuButton(QPushButton):
         hover_color,
         press_active,
     ):
+        # 资源以绝对路径注入 QSS，避免相对路径依赖工作目录（跨平台路径统一为正斜杠）
+        icon_arrow_right = PathFactory.set_svg_icon("icon_arrow_right").replace("\\", "/")
+        icon_arrow_down = PathFactory.set_svg_icon("icon_arrow_down").replace("\\", "/")
         style_format = style.format(
             _radius=radius,
             _border_size=border_size,
@@ -91,5 +94,7 @@ class CMenuButton(QPushButton):
             _text_color=text_color,
             _hover_color=hover_color,
             _press_color=press_active,
+            _icon_arrow_right=icon_arrow_right,
+            _icon_arrow_down=icon_arrow_down,
         )
         self.setStyleSheet(style_format)
