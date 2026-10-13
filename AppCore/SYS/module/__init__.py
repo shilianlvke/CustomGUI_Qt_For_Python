@@ -1,3 +1,4 @@
+from .logger_module import Logger as Logger
 from .color_module import ColorPalette as ColorPalette
 from .language_module import Language as Language
 from .error_module import (
@@ -22,6 +23,7 @@ from .telemetry_module import (
 )
 
 __all__ = [
+	"Logger",
 	"ColorPalette",
 	"Language",
 	"AppError",

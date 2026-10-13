@@ -6,9 +6,14 @@ from contextlib import contextmanager
 from datetime import datetime, timezone
 from pathlib import Path
 
+from .logger_module import Logger
 
 # 遥测写入使用进程内互斥锁，避免并发写文件时数据竞争。
 _LOCK = threading.Lock()
+
+# 遥测属于「尽力而为」能力：写失败只降级记录一次日志，
+# 绝不向上抛出而影响主程序运行。
+_write_failure_reported = False
 
 
 def _utc_now_iso() -> str:
@@ -81,6 +86,14 @@ def _update_metrics(name: str, category: str):
     _safe_dump_json(metric_path, metrics)
 
 
+def _notify_write_failure(scope: str, exc: Exception):
+    """写失败降级：每个会话只记录一次错误日志，避免刷屏。"""
+    global _write_failure_reported
+    if not _write_failure_reported:
+        _write_failure_reported = True
+        Logger.error(f"遥测数据写入失败({scope})，本次会话不再重试: {exc}")
+
+
 def record_event(name: str, category: str = "app", level: str = "info", payload: dict | None = None):
     """记录一条遥测事件并更新聚合指标。
 
@@ -89,6 +102,9 @@ def record_event(name: str, category: str = "app", level: str = "info", payload:
     - category: 事件分类
     - level: 严重级别（仅记录，不做过滤）
     - payload: 事件附加数据
+
+    写入失败（磁盘满/权限不足等）不会抛出异常，
+    仅降级为一次错误日志，保证遥测不影响主程序。
     """
     event_payload = {
         "timestamp": _utc_now_iso(),
@@ -98,8 +114,11 @@ def record_event(name: str, category: str = "app", level: str = "info", payload:
         "payload": payload or {},
     }
     with _LOCK:
-        _append_event(event_payload)
-        _update_metrics(name=name, category=category)
+        try:
+            _append_event(event_payload)
+            _update_metrics(name=name, category=category)
+        except OSError as exc:
+            _notify_write_failure("events/metrics", exc)
 
 
 @contextmanager

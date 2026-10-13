@@ -10,7 +10,7 @@ import json
 
 from ..config.mapping import Attrs
 from ..config.paths import resolve_path
-from ..logger import Logger
+from ..module.logger_module import Logger
 
 
 class JsonHandler:

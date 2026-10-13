@@ -181,26 +181,6 @@ class PyLeftButton(QPushButton):
         self._set_icon_path = icon_path
         self.repaint()
 
-    # MOVE TOOLTIP
-    # ///////////////////////////////////////////////////////////////
-    def move_tooltip(self):
-        # # GET MAIN WINDOW PARENT
-        # gp = self.mapToGlobal(QPoint(0, 0))
-        #
-        # # SET WIDGET TO GET POSTION
-        # # Return absolute position of widget inside app
-        # pos = self._parent.mapFromGlobal(gp)
-        #
-        # # FORMAT POSITION
-        # # Adjust tooltip position with offset
-        # pos_x = (pos.x() - self._tooltip.width()) + self.width() + 5
-        # pos_y = pos.y() + self._top_margin
-        #
-        # # SET POSITION TO WIDGET
-        # # Move tooltip position
-        # self._tooltip.move(pos_x, pos_y)
-        pass
-
 
 # TOOLTIP
 # ///////////////////////////////////////////////////////////////

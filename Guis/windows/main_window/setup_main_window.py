@@ -58,6 +58,7 @@ class SetupMainWindow:
         return None
 
     def setup_gui(self):
+        Logger.debug("开始装配主窗口 UI")
         # 添加标题描述
         self.setWindowTitle(Language.custom_ui.sys_name)
         self.ui.title_bar.set_title(Language.custom_ui.sys_name)
@@ -89,9 +90,6 @@ class SetupMainWindow:
         #     icon_path=PathFactory.set_svg_icon("icon_setting"),
         # )
         # MainFunctions.set_right_column_menu(self, self.ui.right_column.menu_1)
-
-    def load_page1(self):
-        pass
 
     def load_page2(self):
         page_layout = QVBoxLayout(self.ui.load_pages.widget_show)

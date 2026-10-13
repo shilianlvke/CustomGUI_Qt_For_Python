@@ -17,11 +17,21 @@ from .user_define_pages import get_page_routes
 
 
 class PageRouterController:
-    def __init__(self, window, main_functions=MainFunctions, language=Language, get_routes=get_page_routes):
+    def __init__(
+        self,
+        window,
+        main_functions=MainFunctions,
+        language=Language,
+        get_routes=get_page_routes,
+        logger=Logger,
+        event_recorder=record_event,
+    ):
         self._window = window
         self._main_functions = main_functions
         self._language = language
         self._get_routes = get_routes
+        self._logger = logger
+        self._record_event = event_recorder
 
     def route_for(self, btn_name: str):
         return self._get_routes(self._language).get(btn_name)
@@ -30,16 +40,32 @@ class PageRouterController:
         self._window.ui.left_menu.select_only_one(btn_name)
         self._main_functions.set_page(self._window, self._window.ui.load_pages.pages.findChild(QWidget, page_name))
         self._window.ui.title_bar.set_title(title)
+        self._logger.debug(f"切换页面: {btn_name} -> {page_name} ({title})")
+        self._record_event(
+            "ui.page_switch",
+            category="ui",
+            payload={"button_id": btn_name, "page": page_name, "title": title},
+        )
 
 
 class ThemeController:
     _THEME_SEQUENCE = ("eye", "bright", "default")
 
-    def __init__(self, window, color_palette=ColorPalette, app_themes=AppThemes, style_factory=Styles):
+    def __init__(
+        self,
+        window,
+        color_palette=ColorPalette,
+        app_themes=AppThemes,
+        style_factory=Styles,
+        logger=Logger,
+        event_recorder=record_event,
+    ):
         self._window = window
         self._color_palette = color_palette
         self._app_themes = app_themes
         self._style_factory = style_factory
+        self._logger = logger
+        self._record_event = event_recorder
         self._theme_index = -1
 
     def cycle_theme(self):
@@ -48,6 +74,8 @@ class ThemeController:
         self._color_palette.update(self._app_themes[theme_name].data)
         now = self._style_factory()
         self._window.ui.window.setStyleSheet(now.style)
+        self._logger.info(f"切换主题: {theme_name}")
+        self._record_event("ui.theme_switch", category="ui", payload={"theme": theme_name})
 
 
 class ColumnController:
@@ -132,11 +160,11 @@ class MainWindowController:
         try:
             top_settings = self._main_functions.get_title_bar_btn(self._window, "btn_top_settings")
             top_settings.set_active(False)
-        except AttributeError:
-            pass
+        except AttributeError as exc:
+            self._logger.debug(f"标题栏按钮不可用，跳过状态复位: {exc}")
 
         route = self.page_router.route_for(btn_name)
-        Logger.debug(route)
+        self._logger.debug(f"路由解析: {btn_name} -> {route}")
         decision = self._button_use_case.decide(btn_name, route)
 
         if decision.kind == "page_route":
@@ -149,6 +177,7 @@ class MainWindowController:
             return
 
         if decision.kind != "action":
+            self._logger.warning(f"未知按钮决策类型: {decision.kind} (button={btn_name})")
             return
 
         action_name = decision.payload
@@ -158,10 +187,22 @@ class MainWindowController:
             "btn_more": lambda: self.column_controller.handle_more_button(btn_name),
             "btn_close_left_column": lambda: self.column_controller.handle_more_button(btn_name),
             "btn_top_settings": lambda: self.column_controller.handle_top_settings_button(btn),
-            "btn_language": lambda: None,
+            "btn_language": self._handle_language_switch,
             "btn_themes": self.theme_controller.cycle_theme,
         }
 
         action = action_routes.get(action_name)
         if action:
             action()
+        else:
+            self._logger.warning(f"按钮动作未实现: {action_name} (button={btn_name})")
+
+    def _handle_language_switch(self):
+        """语言切换入口（暂未实现，先记录日志与遥测，避免点击静默无响应）。"""
+        self._logger.warning("语言切换功能尚未实现")
+        self._record_event(
+            "ui.language_switch",
+            category="ui",
+            level="warning",
+            payload={"status": "unsupported"},
+        )

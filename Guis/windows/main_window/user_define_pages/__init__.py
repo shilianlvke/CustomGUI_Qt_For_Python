@@ -6,7 +6,7 @@ from .p2ptest_tester_manage import P2PTestTesterPage
 from .p2ptest_database_manage import P2PTestDataBasePage
 from .p2ptest_home_manage import P2PTestHomePage
 from .normal_widget_show import NormalWidgetShowPage
-from AppCore import MenuPlugin, PagePlugin, get_plugin_registry, Logger
+from AppCore import MenuPlugin, PagePlugin, Logger, get_plugin_registry, record_event
 
 BUILTIN_MENU_PLUGINS = [
     MenuPlugin(
@@ -235,6 +235,9 @@ def load_registered_pages(window):
     register_builtin_pages()
     registry = get_plugin_registry()
     registry.load_page_plugins(window)
+    page_count = len(registry.page_plugins())
+    Logger.debug(f"页面插件加载完成: {page_count} 个页面")
+    record_event("pages.loaded", category="ui", payload={"count": page_count})
 
 
 def get_page_routes(language):

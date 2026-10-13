@@ -56,4 +56,4 @@ if __name__ == "__main__":
     Language.update(AppLanguages[AppSettings.language].data)
     ad_list = get_net_adapter()
     for i in ad_list:
-        print(i)
+        Logger.info(f"网卡: {i}")

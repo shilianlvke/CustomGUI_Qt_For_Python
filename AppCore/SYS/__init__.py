@@ -8,7 +8,7 @@ from .config import (
 	get_app_context,
 	initialize_app_context,
 )
-from .logger import Logger
+from .module import Logger
 from .other import PathFactory, PicFixFactory
 from .module import ColorPalette, Language
 from .module import DesignTokens, get_design_tokens

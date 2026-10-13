@@ -1,12 +1,12 @@
 # 这里决定整个window的总体样式
-from AppCore import get_design_tokens
+from AppCore import Logger, get_design_tokens
 
 
 class Styles(object):
 
     def __init__(self):
         self.tokens = get_design_tokens()
-        print(self.tokens)
+        Logger.debug(f"生成全局样式（设计令牌）: {self.tokens}")
         self.style = f"""
             #CWindow_Frame {{
                 background-color: {self.tokens.colors.surface_app};

@@ -108,6 +108,37 @@ AppThemes[AppSettings.theme_name].data  # Attrs：属性/字典双访问
 - **单文件读写**：使用 `AppCore.YamlHandler`（点号路径 get/set、
   深度 merge、save，相对路径基于项目根目录）。
 
+---
+
+## 日志与遥测
+
+### 日志
+
+- 全局入口：`AppCore.Logger`（debug / info / warning / error / critical /
+  exception / tool），同时输出控制台（可选彩色）与 `logs/customgui.log`
+  （1MB × 5 滚动）。
+- 级别与彩色开关由 `resource/customui/settings/console.yaml` 的
+  `logger_level` / `logger_color` 控制。
+- 约定：错误必须记录日志（`Logger.error` / 带堆栈的 `Logger.exception`），
+  不得静默吞掉异常；调试信息使用 `Logger.debug`，禁止在运行时代码中使用
+  `print`。
+
+### 遥测
+
+- 入口：`AppCore.record_event(name, category, level, payload)` 与
+  `track_timing(name)`（自动记录 `duration_ms`）。
+- 落盘：`logs/diagnostics/events.jsonl`（事件流）与 `metrics.json`
+  （按事件名/分类聚合计数），目录可用环境变量 `CUSTOMGUI_DIAGNOSTICS_DIR`
+  覆盖。
+- 遥测是「尽力而为」能力：写入失败仅降级为一条错误日志，绝不影响主程序。
+- 主要事件：
+  - `app.config_load` / `app.config_loaded` / `app.startup_error`
+  - `app.main_window.init` / `app.main_window.ready`
+  - `pages.loaded`、`plugin.modules_loaded`、`plugin.page_load_error`、
+    `plugin.command_error`
+  - `ui.button_click` / `ui.page_switch` / `ui.theme_switch` /
+    `ui.language_switch`
+
 
 
 ## 快速开始

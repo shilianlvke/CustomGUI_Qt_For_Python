@@ -8,6 +8,7 @@ REMOVED_ENTRY_POINTS = [
     "AppCore.SYS.other.resource_locator",
     "AppCore.SYS.locator",
     "AppCore.SYS.loader",
+    "AppCore.SYS.logger",
 ]
 
 

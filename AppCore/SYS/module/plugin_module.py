@@ -1,10 +1,12 @@
-from dataclasses import dataclass, replace
 import importlib
+from collections.abc import Callable
+from dataclasses import dataclass, replace
 from pathlib import Path
-from typing import Any, Callable
+from typing import Any
 
 from .error_module import DomainErrorBoundary
-
+from .logger_module import Logger
+from .telemetry_module import record_event
 
 SUPPORTED_PLUGIN_PROTOCOL_VERSIONS = {"1"}
 
@@ -185,6 +187,7 @@ class PluginRegistry:
             except Exception as exc:
                 report["failed"] += 1
                 self._load_errors.append(f"{getattr(plugin, 'plugin_id', 'unknown')}: {exc}")
+                Logger.warning(f"插件注册失败: {getattr(plugin, 'plugin_id', 'unknown')}: {exc}")
                 if strict:
                     raise
         return report
@@ -215,10 +218,13 @@ class PluginRegistry:
     def discover_plugin_modules(self, manifest_path: str | None = None) -> list[str]:
         path = manifest_path or self._default_manifest_path()
         if not Path(path).exists():
+            Logger.debug(f"插件清单不存在，跳过插件发现: {path}")
             return []
         from ..handler import YamlHandler
         data = YamlHandler(path).data
-        return self._normalize_manifest_modules(data)
+        modules = self._normalize_manifest_modules(data)
+        Logger.debug(f"插件清单发现 {len(modules)} 个模块: {path}")
+        return modules
 
     def load_plugins_from_modules(self, module_paths: list[str], strict: bool = False) -> dict:
         report = {"modules_loaded": 0, "modules_failed": 0, "plugins_loaded": 0, "plugins_failed": 0}
@@ -230,6 +236,7 @@ class PluginRegistry:
             except Exception as exc:
                 report["modules_failed"] += 1
                 self._load_errors.append(f"module:{module_path}: {exc}")
+                Logger.warning(f"插件模块导入失败: {module_path}: {exc}")
                 if strict:
                     raise
                 continue
@@ -253,9 +260,12 @@ class PluginRegistry:
             except Exception as exc:
                 report["modules_failed"] += 1
                 self._load_errors.append(f"module:{module_path}: {exc}")
+                Logger.warning(f"插件模块加载失败: {module_path}: {exc}")
                 if strict:
                     raise
 
+        Logger.info(f"插件加载完成: {report}")
+        record_event("plugin.modules_loaded", category="plugin", payload=dict(report))
         return report
 
     def discover_and_load_plugins(self, manifest_path: str | None = None, strict: bool = False) -> dict:
@@ -281,6 +291,13 @@ class PluginRegistry:
                     plugin.loader(window)
                 except Exception as exc:
                     self._load_errors.append(f"{plugin.plugin_id}: {exc}")
+                    Logger.error(f"页面插件加载失败: {plugin.plugin_id}: {exc}")
+                    record_event(
+                        "plugin.page_load_error",
+                        category="plugin",
+                        level="error",
+                        payload={"plugin_id": plugin.plugin_id, "error": str(exc)},
+                    )
                     if on_error:
                         on_error(plugin, exc)
 
@@ -289,7 +306,8 @@ class PluginRegistry:
         for plugin in self.page_plugins():
             try:
                 title = plugin.title_getter(language)
-            except Exception:
+            except Exception as exc:
+                Logger.warning(f"插件标题获取失败: {plugin.button_id}: {exc}")
                 title = title_fallback(plugin.button_id)
             routes[plugin.button_id] = (plugin.page_object, title)
         return routes
@@ -316,7 +334,15 @@ class PluginRegistry:
                     return plugin.handler(*args, **kwargs)
                 except Exception as exc:
                     self._load_errors.append(f"{plugin.plugin_id}: {exc}")
+                    Logger.error(f"插件命令执行失败: {plugin.plugin_id}:{command_id}: {exc}")
+                    record_event(
+                        "plugin.command_error",
+                        category="plugin",
+                        level="error",
+                        payload={"plugin_id": plugin.plugin_id, "command_id": command_id, "error": str(exc)},
+                    )
                     return None
+        Logger.warning(f"插件命令未注册: {command_id}")
         return None
 
 

@@ -1,3 +1,12 @@
+"""日志系统（标准库 logging 封装）。
+
+- 全局入口：模块级单例 ``Logger``；
+- 同时输出控制台（可选彩色，由 console.yaml 的 ``logger_color`` 控制）
+  与 ``logs/customgui.log``（1MB × 5 滚动文件）；
+- 级别由 console.yaml 的 ``logger_level`` 控制（默认 debug）；
+- 引导期直接读取 console.yaml，独立于配置框架，避免循环依赖。
+"""
+
 import logging
 import os
 from logging.handlers import RotatingFileHandler
@@ -38,6 +47,7 @@ class _Logger:
         "info": logging.INFO,
         "warning": logging.WARNING,
         "error": logging.ERROR,
+        "critical": logging.CRITICAL,
     }
 
     def __init__(self):
@@ -132,9 +142,18 @@ class _Logger:
     def error(self, msg: str):
         self._logger.error(msg)
 
+    def critical(self, msg: str):
+        self._logger.critical(msg)
+
+    def exception(self, msg: str):
+        """记录错误信息并附带当前异常堆栈（请在 except 块内调用）。"""
+        self._logger.exception(msg)
+
     def tool(self, msg: str):
         self._logger.info(f"[TOOL] ====={msg}=====")
 
 
-# 全局logger实例，直接导入logger.Logger即可用
+# 全局logger实例，直接导入Logger即可用
 Logger = _Logger()
+
+__all__ = ["Logger"]

@@ -21,8 +21,8 @@ from collections.abc import Callable
 from dataclasses import dataclass
 from pathlib import Path
 
-from ..logger import Logger
 from ..module.error_module import DomainErrorBoundary
+from ..module.logger_module import Logger
 from .mapping import Attrs, deep_merge, to_attrs
 from .paths import iter_files
 from .schema import (

@@ -4,6 +4,7 @@ from PySide6.QtGui import QIcon
 from PySide6.QtWidgets import QApplication, QMainWindow
 
 from AppCore import (
+    AppError,
     AppLanguages,
     AppSettings,
     AppThemes,
@@ -13,8 +14,9 @@ from AppCore import (
     PathFactory,
     initialize_app_context,
     record_event,
+    track_timing,
 )
-from Guis import MainFunctions, SetupMainWindow, UiMainWindow
+from Guis import UiMainWindow, SetupMainWindow
 from Guis.windows.main_window.controller import MainWindowController
 
 
@@ -72,42 +74,67 @@ class MainWindow(QMainWindow):
 
 
 if __name__ == "__main__":
-    # 启动前初始化全局应用上下文（配置、主题、语言等）
-    initialize_app_context()
-    # 启动阶段加载主题与语言资源
-    Logger.debug(f"当前窗口主题：{AppSettings.theme_name}")
-    Logger.debug(f"当前语言包：{AppSettings.language}")
-    ColorPalette.update(AppThemes[AppSettings.theme_name].data)
-    Language.update(AppLanguages[AppSettings.language].data)
-    # 创建 Qt 应用对象
-    app = QApplication(sys.argv)
+    try:
+        # 启动前初始化全局应用上下文（配置、主题、语言等），并接入计时与遥测
+        with track_timing("app.config_load", category="perf"):
+            initialize_app_context()
+        record_event(
+            "app.config_loaded",
+            category="app",
+            payload={"theme": AppSettings.theme_name, "language": AppSettings.language},
+        )
+        # 启动阶段加载主题与语言资源
+        Logger.debug(f"当前窗口主题：{AppSettings.theme_name}")
+        Logger.debug(f"当前语言包：{AppSettings.language}")
+        ColorPalette.update(AppThemes[AppSettings.theme_name].data)
+        Language.update(AppLanguages[AppSettings.language].data)
+        # 创建 Qt 应用对象
+        app = QApplication(sys.argv)
 
-    # app.setQuitOnLastWindowClosed(False)
-    # # 创建托盘图标
-    # tray_icon = QSystemTrayIcon()
-    # tray_icon.setIcon(QIcon(PathFactory.set_jpg_image("托盘")))  # 设置托盘图标
-    # tray_icon.setToolTip("CustomUI Open Source")  # 设置提示信息
-    # menu = QMenu()
-    # show_action = QAction("显示主界面")
-    # quit_action = QAction("退出")
-    # # 绑定菜单事件
-    # show_action.triggered.connect(
-    #     lambda: MainWindow(
-    #         sys_settings=sys_settings,
-    #         sys_config=loading_window.loader.sys_config,
-    #     )
-    # )
-    # quit_action.triggered.connect(app.quit)
-    # menu.addAction(show_action)
-    # menu.addAction(quit_action)
-    # tray_icon.setContextMenu(menu)  # 设置右键菜单
-    # # 显示托盘图标
-    # tray_icon.setVisible(True)
+        # app.setQuitOnLastWindowClosed(False)
+        # # 创建托盘图标
+        # tray_icon = QSystemTrayIcon()
+        # tray_icon.setIcon(QIcon(PathFactory.set_jpg_image("托盘")))  # 设置托盘图标
+        # tray_icon.setToolTip("CustomUI Open Source")  # 设置提示信息
+        # menu = QMenu()
+        # show_action = QAction("显示主界面")
+        # quit_action = QAction("退出")
+        # # 绑定菜单事件
+        # show_action.triggered.connect(
+        #     lambda: MainWindow(
+        #         sys_settings=sys_settings,
+        #         sys_config=loading_window.loader.sys_config,
+        #     )
+        # )
+        # quit_action.triggered.connect(app.quit)
+        # menu.addAction(show_action)
+        # menu.addAction(quit_action)
+        # tray_icon.setContextMenu(menu)  # 设置右键菜单
+        # # 显示托盘图标
+        # tray_icon.setVisible(True)
 
-    # 应用级样式和图标
-    app.setStyle("windows11")
-    app.setWindowIcon(QIcon(PathFactory.set_ico(AppSettings.logo)))
+        # 应用级样式和图标
+        app.setStyle("windows11")
+        app.setWindowIcon(QIcon(PathFactory.set_ico(AppSettings.logo)))
 
-    # 创建主窗口并进入事件循环
-    MainWindow()
-    sys.exit(app.exec())
+        # 创建主窗口并进入事件循环
+        MainWindow()
+        sys.exit(app.exec())
+    except AppError as exc:
+        Logger.error(str(exc))
+        record_event(
+            "app.startup_error",
+            category="app",
+            level="error",
+            payload={"code": exc.code, "layer": exc.layer, "details": exc.details},
+        )
+        sys.exit(1)
+    except Exception as exc:
+        Logger.exception(f"应用启动失败: {exc}")
+        record_event(
+            "app.startup_error",
+            category="app",
+            level="error",
+            payload={"error": str(exc)},
+        )
+        sys.exit(1)

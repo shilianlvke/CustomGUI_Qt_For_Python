@@ -1,5 +1,6 @@
 from dataclasses import dataclass
 
+
 @dataclass
 class ColorHandler:
     # 默认暗色系
