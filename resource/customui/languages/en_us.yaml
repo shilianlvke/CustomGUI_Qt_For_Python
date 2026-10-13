@@ -127,40 +127,23 @@ UI:
   ui_CheckForUpdates: Check for Updates
   ui_About: About
 
+  # Title bar & base menus
+  ui_SwitchLanguage: Switch Language
+  ui_SwitchTheme: Switch Theme
+  ui_SoftwareInfo: Software Info
+
 TEXT:
   home_page_welcome: Hello! I am P2PTester~
   login: Log in to P2PTester
 
+# Base built-in dialog language (app business language moved to Apps/<app>/resource/lang)
 P2PTester:
-  login:
-    username: Username
-    password: Password
-    test_team: Team
-    btn_login: Log in to Team
-    input_username: Enter your username
-    input_password: Enter your password
-    team_combox_tooltip: Select your test team
-    team_create: No team? Click to create one
-    team_create_window: Create Team
-    team_search: Already have a team? Search on network
-    team_search_window: Team Search
   team_create_dialog:
     team_name_label: Team Name
     team_name_input: Enter team name~
     team_doc_label: Team Description
     team_doc_input: Enter team description~
     team_create_btn: Create Team
-  case_lib:
-    all_lib: All Test Libraries
-    org_lib: Organization Test Library
-    team_lib: Team Test Library
-  case_plan:
-    my_test_plan: Assigned to Me
-    my_join_plan: Joined by Me
-    my_todo_plan: In Progress
-  case_more:
-    storage_lib: Archived Test Library
-    config_center: Configuration Center
 
 Log:
   pyserial_not_install: "pyserial not install, can't get COM device list"

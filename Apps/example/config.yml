@@ -1,8 +1,10 @@
 app_name: "example"
 app_id: "builtin.menu.left.example"
+button_id: "btn_example"
+page_object: "examplePage"
 app_icon: "icon.app.example.app_icon"
 app_text: "language.app.example.app_text"
 app_tooltip: "language.app.example.app_tooltip"
 app_target: "LeftMenu"
 show_top: true
-is_active: true
+is_active: false

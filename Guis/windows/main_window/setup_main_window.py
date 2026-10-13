@@ -5,6 +5,7 @@ from .functions import MainFunctions
 from .user_define_pages import get_default_page_object, get_menu_items, load_registered_pages
 from GuiCore import CCard, CComboBox, CGrips, CMenu, CMenuButton, CPushButton, CShowCard, CStatusButton
 from AppCore import AppSettings, ColorPalette, Language, Logger, MenuPlugin, PathFactory, get_plugin_registry
+from Guis.app_loader import load_apps
 
 BUILTIN_TITLE_MENU_PLUGINS = [
     MenuPlugin(
@@ -13,7 +14,7 @@ BUILTIN_TITLE_MENU_PLUGINS = [
         item={
             "btn_icon": "icon_search",
             "btn_id": "btn_search",
-            "btn_tooltip": "搜索",
+            "btn_tooltip": "language.UI.ui_Search",
             "is_active": False,
         },
     ),
@@ -23,7 +24,7 @@ BUILTIN_TITLE_MENU_PLUGINS = [
         item={
             "btn_icon": "icon_chinese",
             "btn_id": "btn_language",
-            "btn_tooltip": "切换语言",
+            "btn_tooltip": "language.UI.ui_SwitchLanguage",
             "is_active": False,
         },
     ),
@@ -33,7 +34,7 @@ BUILTIN_TITLE_MENU_PLUGINS = [
         item={
             "btn_icon": "icon_moon",
             "btn_id": "btn_themes",
-            "btn_tooltip": "切换主题",
+            "btn_tooltip": "language.UI.ui_SwitchTheme",
             "is_active": False,
         },
     ),
@@ -59,6 +60,8 @@ class SetupMainWindow:
 
     def setup_gui(self):
         Logger.debug("开始装配主窗口 UI")
+        # 装载 Apps 目录下的应用模组（菜单 + 页面 + 语言）
+        load_apps()
         # 添加标题描述
         self.setWindowTitle(Language.custom_ui.sys_name)
         self.ui.title_bar.set_title(Language.custom_ui.sys_name)

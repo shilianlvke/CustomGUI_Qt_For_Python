@@ -108,7 +108,11 @@ class _StubMainFunctions:
         raise AttributeError(name)
 
 
-def test_controller_language_switch_unsupported_is_recorded(diagnostics_dir):
+def test_controller_language_switch_is_recorded(diagnostics_dir):
+    from Guis.language_service import apply_language
+
+    apply_language("zh_cn")  # 重置语言状态，确保切换方向确定
+
     window = SimpleNamespace(
         ui=SimpleNamespace(left_menu=SimpleNamespace(deselect_all_tab=lambda: None))
     )
@@ -125,7 +129,7 @@ def test_controller_language_switch_unsupported_is_recorded(diagnostics_dir):
     names = _event_names()
     assert "ui.language_switch" in names
     switch_events = [e for e in read_recent_events(limit=10) if e["name"] == "ui.language_switch"]
-    assert switch_events[-1]["payload"]["status"] == "unsupported"
+    assert switch_events[-1]["payload"]["language"] == "en_us"
 
 
 def test_theme_controller_records_theme_switch(diagnostics_dir):

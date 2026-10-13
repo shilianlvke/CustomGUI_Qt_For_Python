@@ -49,6 +49,9 @@ class CTitleBar(QWidget):
         self.minimize_btn = Language.UI.ui_Minimize
         self.maximize_btn = Language.UI.ui_Maximize
         self.close_btn = Language.UI.ui_Close
+        # 自定义菜单按钮注册表：btn_id -> 按钮；语言键映射：btn_id -> tooltip_key
+        self._custom_buttons: dict = {}
+        self._custom_lang_keys: dict = {}
         self.setup_ui()
 
         # 添加背景色
@@ -123,19 +126,24 @@ class CTitleBar(QWidget):
     # 在标题栏中添加按钮
     # 添加btns并发出信号
     # ///////////////////////////////////////////////////////////////
+    @staticmethod
+    def _resolve_text(value):
+        """解析 ``language.*`` 资源键；普通字符串原样返回。"""
+        return Language.resolve_key(value) if isinstance(value, str) else value
+
     def add_menus(self, parameters):
         if parameters is not None and len(parameters) > 0:
             for parameter in parameters:
-                _btn_icon = PathFactory.set_svg_icon(parameter["btn_icon"])
+                _btn_icon = PathFactory.resolve_svg(parameter["btn_icon"])
                 _btn_id = parameter["btn_id"]
-                _btn_tooltip = parameter["btn_tooltip"]
+                _btn_tooltip_key = parameter["btn_tooltip"]
                 _is_active = parameter["is_active"]
 
                 self.menu = CTitleButton(
                     self._parent,
                     self._app_parent,
                     btn_id=_btn_id,
-                    tooltip_text=_btn_tooltip,
+                    tooltip_text=self._resolve_text(_btn_tooltip_key),
                     bg_color=self._bg_color,
                     icon_color=self._icon_color,
                     icon_path=_btn_icon,
@@ -143,6 +151,8 @@ class CTitleBar(QWidget):
                 )
                 self.menu.clicked.connect(self.btn_clicked)
                 self.menu.released.connect(self.btn_released)
+                self._custom_buttons[_btn_id] = self.menu
+                self._custom_lang_keys[_btn_id] = _btn_tooltip_key
 
                 # ADD TO LAYOUT
                 self.custom_buttons_layout.addWidget(self.menu)
@@ -150,6 +160,17 @@ class CTitleBar(QWidget):
             # ADD DIV
             if self._is_custom_title_bar:
                 self.custom_buttons_layout.addWidget(self.div_3)
+
+    def apply_language(self, resolver=None):
+        """语言切换后刷新窗口控制按钮与自定义菜单按钮的提示文本。"""
+        resolver = resolver or self._resolve_text
+        self.minimize_button.set_tooltip(resolver("language.UI.ui_Minimize"))
+        self.maximize_restore_button.set_tooltip(resolver("language.UI.ui_Maximize"))
+        self.close_button.set_tooltip(resolver("language.UI.ui_Close"))
+        for btn_id, tooltip_key in self._custom_lang_keys.items():
+            button = self._custom_buttons.get(btn_id)
+            if button is not None:
+                button.set_tooltip(resolver(tooltip_key))
 
     # 标题栏菜单发出信号
     def btn_clicked(self):

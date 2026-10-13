@@ -1,0 +1,10 @@
+app_name: "p2ptest_analysis"
+app_id: "app.menu.left.p2ptest_analysis"
+button_id: "btn_test_plan_show"
+page_object: "p2pTestAnalysisPage"
+app_icon: "icon.app.p2ptest_analysis.app_icon"
+app_text: "language.app.p2ptest_analysis.app_text"
+app_tooltip: "language.app.p2ptest_analysis.app_tooltip"
+app_target: "LeftMenu"
+show_top: true
+is_active: false

@@ -1,0 +1,14 @@
+app_text: "P2PTester"
+app_tooltip: "P2PTester 首页"
+login:
+  username: 用户名
+  password: 密码
+  test_team: 归属团队
+  btn_login: 登录到团队
+  input_username: 输入你的用户名
+  input_password: 输入你的密码
+  team_combox_tooltip: 选择归属测试团队
+  team_create: 没有团队？点击创建团队
+  team_create_window: 团队创建
+  team_search: 已有团队！在网络中搜寻
+  team_search_window: 团队搜索

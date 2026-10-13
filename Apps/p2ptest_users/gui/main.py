@@ -6,12 +6,12 @@ from AppCore import PathFactory, ColorPalette, Logger, AppSettings, Language
 from GuiCore.CustomUI.div import CHDiv
 
 
-class P2PTestAnalysisPage:
+class P2PTestTesterPage:
 
     def load_page(self):
         # 新增页面
         page = QWidget()
-        page.setObjectName("p2pTestAnalysisPage")
+        page.setObjectName("p2pTestTesterPage")
         self.ui.load_pages.pages.addWidget(page)
         # 绘制页面
         page_layout = QHBoxLayout(page)
@@ -139,3 +139,7 @@ class P2PTestAnalysisPage:
         right_bottom_layout.addWidget(card_6, 1, 2)
         right_bottom_layout.addWidget(card_7, 2, 0)
         right_bottom_layout.addWidget(card_8, 2, 1)
+
+
+PAGE = P2PTestTesterPage
+

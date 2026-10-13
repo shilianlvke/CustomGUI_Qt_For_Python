@@ -5,8 +5,10 @@ from .config import (
 	AppOthers,
 	AppSettings,
 	AppThemes,
+	apps_root,
 	get_app_context,
 	initialize_app_context,
+	to_attrs,
 )
 from .module import Logger
 from .other import PathFactory, PicFixFactory
@@ -20,11 +22,13 @@ __all__ = [
 	"JsonHandler",
 	"YamlHandler",
 	"Attrs",
+	"to_attrs",
 	"Logger",
 	"AppLanguages",
 	"AppOthers",
 	"AppSettings",
 	"AppThemes",
+	"apps_root",
 	"PathFactory",
 	"PicFixFactory",
 	"get_app_context",

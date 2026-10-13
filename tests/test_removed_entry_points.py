@@ -9,6 +9,7 @@ REMOVED_ENTRY_POINTS = [
     "AppCore.SYS.locator",
     "AppCore.SYS.loader",
     "AppCore.SYS.logger",
+    "Guis.windows.main_window.user_define_window",
 ]
 
 

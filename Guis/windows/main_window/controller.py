@@ -198,11 +198,7 @@ class MainWindowController:
             self._logger.warning(f"按钮动作未实现: {action_name} (button={btn_name})")
 
     def _handle_language_switch(self):
-        """语言切换入口（暂未实现，先记录日志与遥测，避免点击静默无响应）。"""
-        self._logger.warning("语言切换功能尚未实现")
-        self._record_event(
-            "ui.language_switch",
-            category="ui",
-            level="warning",
-            payload={"status": "unsupported"},
-        )
+        """语言切换：整体切换基座 + 全部应用语言并刷新 UI。"""
+        from Guis.language_service import switch_language
+
+        switch_language(self._window)

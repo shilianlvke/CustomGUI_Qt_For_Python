@@ -1,17 +1,17 @@
 from PySide6.QtCore import Qt, QMargins, QSize
 from PySide6.QtGui import QIcon, QFont
-from PySide6.QtWidgets import QVBoxLayout, QLabel, QWidget, QGridLayout, QScrollArea, QHBoxLayout
+from PySide6.QtWidgets import QVBoxLayout, QLabel, QWidget, QScrollArea, QHBoxLayout
 from GuiCore import CCard, CPushButton, CShowCard, CStatusButton
 from AppCore import PathFactory, ColorPalette, Logger, AppSettings, Language
 from GuiCore.CustomUI.div import CHDiv
 
 
-class P2PTestPlanPage:
+class P2PTestCaseLibPage:
 
     def load_page(self):
         # 新增页面
         page = QWidget()
-        page.setObjectName("p2pTestPlanPage")
+        page.setObjectName("p2pTestCaseLibPage")
         self.ui.load_pages.pages.addWidget(page)
         # 绘制页面
         page_layout = QHBoxLayout(page)
@@ -28,28 +28,35 @@ class P2PTestPlanPage:
         left_card_layout = QVBoxLayout(left_card)
         left_card_layout.setAlignment(Qt.AlignmentFlag.AlignCenter | Qt.AlignmentFlag.AlignTop)
         left_card_layout.setContentsMargins(QMargins(0, 6, 0, 0))
-
         left_scroller_area = QScrollArea()
+        left_scroller_area.setObjectName("widget_show_scroller_area")
         left_scroller_area.setWidget(left_card)
         left_scroller_area.setWidgetResizable(True)
-        left_scroller_area.setStyleSheet(f"background:{ColorPalette.custom_dark_three};")
+        left_scroller_area.setStyleSheet(f"#widget_show_scroller_area{{background:{ColorPalette.custom_dark_three}}};")
         left_scroller_area.setVerticalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
         left_scroller_area.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
         left_back_layout.addWidget(left_scroller_area)
 
-        label_2 = QLabel("待办")
+        label_1 = QLabel("测试库")
 
-        case_lib_btn4 = CPushButton(size=QSize(144, 32), text="我负责的", icon=QIcon(PathFactory.set_svg_icon("icon_me")))
-        case_lib_btn5 = CPushButton(size=QSize(144, 32), text="我参与的", icon=QIcon(PathFactory.set_svg_icon("icon_me_join")))
-        case_lib_btn6 = CPushButton(size=QSize(144, 32), text="进行中的", icon=QIcon(PathFactory.set_svg_icon("icon_time")))
-        left_card_layout.addWidget(label_2)
-        left_card_layout.addWidget(case_lib_btn4)
-        left_card_layout.addWidget(case_lib_btn5)
-        left_card_layout.addWidget(case_lib_btn6)
+        case_lib_btn1 = CPushButton(
+            size=QSize(144, 32), text="全部测试库", icon=QIcon(PathFactory.set_svg_icon("icon_all"))
+        )
+        case_lib_btn2 = CPushButton(
+            size=QSize(144, 32), text="组织测试库", icon=QIcon(PathFactory.set_svg_icon("icon_tree"))
+        )
+        case_lib_btn3 = CPushButton(
+            size=QSize(144, 32), text="团队测试库", icon=QIcon(PathFactory.set_svg_icon("icon_team"))
+        )
 
-        case_lib_btn4.clicked.connect(lambda: Logger.info("点击了'我负责的'"))
-        case_lib_btn5.clicked.connect(lambda: Logger.info("点击了'我参与的'"))
-        case_lib_btn6.clicked.connect(lambda: Logger.info("点击了'进行中的'"))
+        left_card_layout.addWidget(label_1)
+        left_card_layout.addWidget(case_lib_btn1)
+        left_card_layout.addWidget(case_lib_btn2)
+        left_card_layout.addWidget(case_lib_btn3)
+
+        case_lib_btn1.clicked.connect(lambda: Logger.info("点击了'全部测试库'"))
+        case_lib_btn2.clicked.connect(lambda: Logger.info("点击了'组织测试库'"))
+        case_lib_btn3.clicked.connect(lambda: Logger.info("点击了'团队测试库'"))
 
         right_back_card = CCard()
         right_back_layout = QVBoxLayout(right_back_card)
@@ -64,18 +71,20 @@ class P2PTestPlanPage:
         right_top_layout.setAlignment(Qt.AlignmentFlag.AlignTop)
         right_back_layout.addWidget(right_top_card)
 
-        label_4 = QLabel("全部测试计划")
+        label_4 = QLabel("全部测试库")
         font = QFont(AppSettings.family, AppSettings.title_size)
         label_4.setFont(font)
 
-        case_lib_btn9 = CPushButton(size=QSize(144, 32), text="新建测试计划", icon=QIcon(PathFactory.set_svg_icon("icon_add")))
+        case_lib_btn9 = CPushButton(
+            size=QSize(144, 32), text="新建测试库", icon=QIcon(PathFactory.set_svg_icon("icon_add"))
+        )
 
         right_top_layout.addWidget(label_4)
         right_top_layout.addStretch()
         right_top_layout.addWidget(case_lib_btn9)
         right_back_layout.addWidget(CHDiv())
 
-        case_lib_btn9.clicked.connect(lambda: Logger.info("点击了'新建测试计划'"))
+        case_lib_btn9.clicked.connect(lambda: Logger.info("点击了'新建测试库'"))
 
         right_middle_card = CCard()
         right_middle_layout = QHBoxLayout(right_middle_card)
@@ -99,7 +108,7 @@ class P2PTestPlanPage:
         case_lib_btnC.clicked.connect(lambda: Logger.info("点击了'最近'"))
 
         right_bottom_card = CCard()
-        right_bottom_layout = QGridLayout(right_bottom_card)
+        right_bottom_layout = QVBoxLayout(right_bottom_card)
         right_bottom_layout.setContentsMargins(QMargins(0, 0, 0, 0))
         right_bottom_layout.setAlignment(Qt.AlignmentFlag.AlignTop | Qt.AlignmentFlag.AlignCenter)
         right_bottom_layout.setSpacing(0)
@@ -112,19 +121,23 @@ class P2PTestPlanPage:
         right_bottom_scroller_area.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
         right_back_layout.addWidget(right_bottom_scroller_area)
 
-        card_1 = CShowCard(QSize(230, 128), Language.custom_ui.sys_github, "功能测试计划")
-        card_2 = CShowCard(QSize(230, 128), Language.custom_ui.sys_github, "性能测试计划")
-        card_3 = CShowCard(QSize(230, 128), Language.custom_ui.sys_github, "硬件测试计划")
-        card_4 = CShowCard(QSize(230, 128), Language.custom_ui.sys_github, "软件测试计划1")
-        card_5 = CShowCard(QSize(230, 128), Language.custom_ui.sys_github, "软件测试计划2")
-        card_6 = CShowCard(QSize(230, 128), Language.custom_ui.sys_github, "软件测试计划3")
-        card_7 = CShowCard(QSize(230, 128), Language.custom_ui.sys_github, "软件测试计划4")
-        card_8 = CShowCard(QSize(230, 128), Language.custom_ui.sys_github, "软件测试计划5")
-        right_bottom_layout.addWidget(card_1, 0, 0)
-        right_bottom_layout.addWidget(card_2, 0, 1)
-        right_bottom_layout.addWidget(card_3, 0, 2)
-        right_bottom_layout.addWidget(card_4, 1, 0)
-        right_bottom_layout.addWidget(card_5, 1, 1)
-        right_bottom_layout.addWidget(card_6, 1, 2)
-        right_bottom_layout.addWidget(card_7, 2, 0)
-        right_bottom_layout.addWidget(card_8, 2, 1)
+        card_1 = CShowCard(None, Language.custom_ui.sys_github, "功能测试库")
+        card_2 = CShowCard(None, Language.custom_ui.sys_github, "性能测试库")
+        card_3 = CShowCard(None, Language.custom_ui.sys_github, "硬件测试库")
+        card_4 = CShowCard(None, Language.custom_ui.sys_github, "软件测试库1")
+        card_5 = CShowCard(None, Language.custom_ui.sys_github, "软件测试库2")
+        card_6 = CShowCard(None, Language.custom_ui.sys_github, "软件测试库3")
+        card_7 = CShowCard(None, Language.custom_ui.sys_github, "软件测试库4")
+        card_8 = CShowCard(None, Language.custom_ui.sys_github, "软件测试库5")
+        right_bottom_layout.addWidget(card_1)
+        right_bottom_layout.addWidget(card_2)
+        right_bottom_layout.addWidget(card_3)
+        right_bottom_layout.addWidget(card_4)
+        right_bottom_layout.addWidget(card_5)
+        right_bottom_layout.addWidget(card_6)
+        right_bottom_layout.addWidget(card_7)
+        right_bottom_layout.addWidget(card_8)
+
+
+PAGE = P2PTestCaseLibPage
+

@@ -1,0 +1,14 @@
+app_text: "P2PTester"
+app_tooltip: "P2PTester Home"
+login:
+  username: Username
+  password: Password
+  test_team: Team
+  btn_login: Log in to Team
+  input_username: Enter your username
+  input_password: Enter your password
+  team_combox_tooltip: Select your test team
+  team_create: No team? Click to create one
+  team_create_window: Create Team
+  team_search: Already have a team? Search on network
+  team_search_window: Team Search

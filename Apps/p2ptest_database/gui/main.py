@@ -6,12 +6,12 @@ from AppCore import PathFactory, ColorPalette, Logger, AppSettings, Language
 from GuiCore.CustomUI.div import CHDiv
 
 
-class P2PTestTesterPage:
+class P2PTestDataBasePage:
 
     def load_page(self):
         # 新增页面
         page = QWidget()
-        page.setObjectName("p2pTestTesterPage")
+        page.setObjectName("p2pTestDataBasePage")
         self.ui.load_pages.pages.addWidget(page)
         # 绘制页面
         page_layout = QHBoxLayout(page)
@@ -37,28 +37,15 @@ class P2PTestTesterPage:
         left_scroller_area.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
         left_back_layout.addWidget(left_scroller_area)
 
-        label_2 = QLabel("待办")
         label_3 = QLabel("更多")
-
-        case_lib_btn4 = CPushButton(size=QSize(144, 32), text="我负责的", icon=QIcon(PathFactory.set_svg_icon("icon_me")))
-        case_lib_btn5 = CPushButton(size=QSize(144, 32), text="我参与的", icon=QIcon(PathFactory.set_svg_icon("icon_me_join")))
-        case_lib_btn6 = CPushButton(size=QSize(144, 32), text="进行中的", icon=QIcon(PathFactory.set_svg_icon("icon_time")))
 
         case_lib_btn7 = CPushButton(size=QSize(144, 32), text="归档测试库", icon=QIcon(PathFactory.set_svg_icon("icon_save_s")))
         case_lib_btn8 = CPushButton(size=QSize(144, 32), text="配置中心", icon=QIcon(PathFactory.set_svg_icon("icon_config")))
 
-        left_card_layout.addWidget(label_2)
-        left_card_layout.addWidget(case_lib_btn4)
-        left_card_layout.addWidget(case_lib_btn5)
-        left_card_layout.addWidget(case_lib_btn6)
-        left_card_layout.addWidget(CHDiv())
         left_card_layout.addWidget(label_3)
         left_card_layout.addWidget(case_lib_btn7)
         left_card_layout.addWidget(case_lib_btn8)
 
-        case_lib_btn4.clicked.connect(lambda: Logger.info("点击了'我负责的'"))
-        case_lib_btn5.clicked.connect(lambda: Logger.info("点击了'我参与的'"))
-        case_lib_btn6.clicked.connect(lambda: Logger.info("点击了'进行中的'"))
         case_lib_btn7.clicked.connect(lambda: Logger.info("点击了'归档测试库'"))
         case_lib_btn8.clicked.connect(lambda: Logger.info("点击了'配置中心'"))
 
@@ -139,3 +126,7 @@ class P2PTestTesterPage:
         right_bottom_layout.addWidget(card_6, 1, 2)
         right_bottom_layout.addWidget(card_7, 2, 0)
         right_bottom_layout.addWidget(card_8, 2, 1)
+
+
+PAGE = P2PTestDataBasePage
+

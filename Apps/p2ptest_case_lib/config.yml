@@ -1,0 +1,10 @@
+app_name: "p2ptest_case_lib"
+app_id: "app.menu.left.p2ptest_case_lib"
+button_id: "btn_test_case_lib"
+page_object: "p2pTestCaseLibPage"
+app_icon: "icon.app.p2ptest_case_lib.app_icon"
+app_text: "language.app.p2ptest_case_lib.app_text"
+app_tooltip: "language.app.p2ptest_case_lib.app_tooltip"
+app_target: "LeftMenu"
+show_top: true
+is_active: false

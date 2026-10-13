@@ -1,0 +1,10 @@
+app_name: "p2ptest_home"
+app_id: "app.menu.left.p2ptest_home"
+button_id: "btn_home"
+page_object: "p2pTestHomePage"
+app_icon: "icon.app.p2ptest_home.app_icon"
+app_text: "language.app.p2ptest_home.app_text"
+app_tooltip: "language.app.p2ptest_home.app_tooltip"
+app_target: "LeftMenu"
+show_top: true
+is_active: false

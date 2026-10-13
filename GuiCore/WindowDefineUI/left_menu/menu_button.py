@@ -42,7 +42,7 @@ class CLeftMenuButton(QPushButton):
         self.setMinimumHeight(50)
         self.setObjectName(btn_id)
         # APP PATH
-        self._icon_path = PathFactory.set_svg_icon(icon_path)
+        self._icon_path = PathFactory.resolve_svg(icon_path)
         self._icon_active_menu = PathFactory.set_svg_icon(icon_active_menu)
         self._icon_enter = False
         # PROPERTIES
@@ -180,6 +180,12 @@ class CLeftMenuButton(QPushButton):
     def set_icon(self, icon_path):
         self._icon_path = icon_path
         self.repaint()
+
+    # 更新提示文本（语言切换时使用）
+    def set_tooltip(self, text):
+        self._tooltip_text = text
+        self.tooltip.setText(text)
+        self.tooltip.adjustSize()
 
     # 用颜色绘制图标
     def icon_paint(self, qp, image, rect, color):

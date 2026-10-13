@@ -95,3 +95,7 @@ class P2PTestReportPage:
         right_bottom_layout.addWidget(card_6, 1, 2)
         right_bottom_layout.addWidget(card_7, 2, 0)
         right_bottom_layout.addWidget(card_8, 2, 1)
+
+
+PAGE = P2PTestReportPage
+

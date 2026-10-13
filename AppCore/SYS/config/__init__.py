@@ -11,7 +11,7 @@
 """
 
 from .mapping import Attrs, deep_merge, to_attrs, to_dict
-from .paths import iter_files, project_root, resolve_path
+from .paths import apps_root, iter_files, project_root, resolve_path
 from .schema import (
     AppSettingsModel,
     SizeRange,
@@ -43,6 +43,7 @@ __all__ = [
     "to_dict",
     "project_root",
     "resolve_path",
+    "apps_root",
     "iter_files",
     "AppSettingsModel",
     "SizeRange",

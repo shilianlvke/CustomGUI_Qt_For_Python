@@ -49,6 +49,9 @@ class CLeftMenu(QWidget):
         self._icon_path = PathFactory.set_svg_icon(icon_path)
         self._icon_path_close = PathFactory.set_svg_icon(icon_path_close)
         self._font_family = AppSettings.family
+        # 菜单按钮注册表：btn_id -> 按钮；语言键映射：btn_id -> (text_key, tooltip_key)
+        self._menu_buttons: dict = {}
+        self._menu_lang_keys: dict = {}
         # 获取父类
         self._parent = parent
         self._app_parent = app_parent
@@ -83,27 +86,35 @@ class CLeftMenu(QWidget):
 
     # 为左侧菜单添加按钮
     # 添加按钮并设置信号
+    # ///////////////////////////////////////////////////////////////
+    @staticmethod
+    def _resolve_text(value):
+        """解析 ``language.*`` 资源键；普通字符串原样返回。"""
+        return Language.resolve_key(value) if isinstance(value, str) else value
+
     def add_menus(self, parameters):
         if parameters is not None:
             for parameter in parameters:
-                _btn_icon = parameter["btn_icon"]
+                _btn_icon = PathFactory.resolve_svg(parameter["btn_icon"])
                 _btn_id = parameter["btn_id"]
-                _btn_text = parameter["btn_text"]
-                _btn_tooltip = parameter["btn_tooltip"]
+                _btn_text_key = parameter["btn_text"]
+                _btn_tooltip_key = parameter["btn_tooltip"]
                 _show_top = parameter["show_top"]
                 _is_active = parameter["is_active"]
 
                 self.menu = CLeftMenuButton(
                     self._app_parent,
-                    text=_btn_text,
+                    text=self._resolve_text(_btn_text_key),
                     btn_id=_btn_id,
-                    tooltip_text=_btn_tooltip,
+                    tooltip_text=self._resolve_text(_btn_tooltip_key),
                     icon_path=_btn_icon,
                     is_active=_is_active,
                     font_family=self._font_family,
                 )
                 self.menu.clicked.connect(self.btn_clicked)
                 self.menu.released.connect(self.btn_released)
+                self._menu_buttons[_btn_id] = self.menu
+                self._menu_lang_keys[_btn_id] = (_btn_text_key, _btn_tooltip_key)
 
                 # 添加到布局
                 if _show_top:
@@ -111,6 +122,25 @@ class CLeftMenu(QWidget):
                 else:
                     self.div_bottom.show()
                     self.bottom_layout.addWidget(self.menu)
+
+    def apply_language(self, resolver=None):
+        """语言切换后刷新全部菜单按钮文本与提示。"""
+        resolver = resolver or self._resolve_text
+        self.toggle_button.setText(resolver("language.UI.ui_Hide"))
+        self.toggle_button.set_tooltip(resolver("language.UI.ui_Show"))
+        for btn_id, (text_key, tooltip_key) in self._menu_lang_keys.items():
+            button = self._menu_buttons.get(btn_id)
+            if button is None:
+                continue
+            button.setText(resolver(text_key))
+            button.set_tooltip(resolver(tooltip_key))
+
+    def active_button_id(self):
+        """返回当前激活的菜单按钮 ID（无激活按钮时返回 None）。"""
+        for btn_id, button in self._menu_buttons.items():
+            if button.is_active():
+                return btn_id
+        return None
 
     # 左侧菜单发射信号
     def btn_clicked(self):

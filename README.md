@@ -110,6 +110,79 @@ AppThemes[AppSettings.theme_name].data  # Attrs：属性/字典双访问
 
 ---
 
+## Apps 应用模组（基座 + 模组架构）
+
+本项目是一个 **基座（加载器）**：只提供固定页面布局、GuiCore UI 组件库和
+欢迎界面（组件展示页）。具体业务内容由用户以「应用模组」形式放入 `Apps/`
+目录，像安装模组一样被自动发现、挂载菜单并注册页面，删除目录即卸载。
+
+### 模组结构
+
+```text
+Apps/<app_name>/
+├── config.yml                   # 应用清单
+├── resource/
+│   ├── icon/app_icon.svg        # 应用图标
+│   └── lang/{zh_cn,en_us}.yml   # 应用语言文件
+└── gui/
+    ├── main.py                  # 页面实现
+    └── style.py                 # 可选：应用私有样式
+```
+
+### config.yml 字段
+
+| 字段 | 说明 | 缺省值 |
+| --- | --- | --- |
+| `app_name` | 应用名（目录名） | 目录名 |
+| `app_id` | 菜单插件 ID | `app.menu.<target>.<name>` |
+| `button_id` | 菜单按钮 ID（路由键） | `app_<name>` |
+| `page_object` | 页面控件对象名 | `<name>Page` |
+| `app_icon` | 图标资源键 `icon.app.<name>.app_icon` | 同左 |
+| `app_text` / `app_tooltip` | 菜单文本语言键 `language.app.<name>.*` | 同左 |
+| `app_target` | 菜单挂载点（LeftMenu / TitleMenu） | `LeftMenu` |
+| `show_top` / `is_active` | 菜单项位置 / 默认激活 | `true` / `false` |
+
+### 页面协议（gui/main.py 按优先级识别其一）
+
+```python
+# 1) 完全自由注册（多页面应用）
+def register_plugins(registry, app): ...
+
+# 2) PAGE：含 load_page(window) 方法的类/实例（与基座历史页面风格一致）
+class MyPage:
+    def load_page(self):
+        page = QWidget()
+        page.setObjectName("myPage")
+        self.ui.load_pages.pages.addWidget(page)
+        ...
+
+PAGE = MyPage
+
+# 3) build_page：最简形态，返回 QWidget
+def build_page(app):
+    page = QWidget()
+    page.setObjectName(app.config.get("page_object") or "myPage")
+    ...
+    return page
+```
+
+`app` 为 `AppContext`：`app.config`（清单）、`app.app_dir`、`app.icon_path`、
+`app.lang_text("key")`（本应用语言文本）。
+
+### 语言
+
+- 应用语言文件内容整体挂在 `Language.app.<app_name>` 命名空间；
+- 菜单文本用 `language.app.<app_name>.<key>` 资源键引用，
+  语言切换时自动刷新菜单文本、提示与当前页标题；
+- 语言切换入口：`Guis.language_service.switch_language(window)`（标题栏
+  语言按钮已接入，中英文循环切换）。
+
+### 环境变量
+
+- `CUSTOMGUI_APPS_DIR`：覆盖 Apps 目录位置（测试/外部模组目录用）。
+
+---
+
 ## 日志与遥测
 
 ### 日志
@@ -134,6 +207,7 @@ AppThemes[AppSettings.theme_name].data  # Attrs：属性/字典双访问
 - 主要事件：
   - `app.config_load` / `app.config_loaded` / `app.startup_error`
   - `app.main_window.init` / `app.main_window.ready`
+  - `apps.loaded` / `app.load_error`
   - `pages.loaded`、`plugin.modules_loaded`、`plugin.page_load_error`、
     `plugin.command_error`
   - `ui.button_click` / `ui.page_switch` / `ui.theme_switch` /
@@ -253,9 +327,10 @@ docs/
 1. **项目结构**
    ```
    CustomGUI/
-   ├── AppCore/         # 程序核心
+   ├── AppCore/         # 程序核心（配置/日志/遥测/插件协议）
    ├── GuiCore/         # UI 核心组件库
-   ├── GUI/             # UI 界面基础框架
+   ├── Guis/            # 基座界面框架（布局/欢迎页/App 加载器/语言服务）
+   ├── Apps/            # 应用模组（业务内容，见「Apps 应用模组」章节）
    ├── resource/        # 配置文件/资源
    ├── main.py          # 主入口
    └── pyproject.toml   # 项目配置信息

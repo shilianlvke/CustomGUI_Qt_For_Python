@@ -1,0 +1,10 @@
+app_name: "p2ptest_report"
+app_id: "app.menu.left.p2ptest_report"
+button_id: "btn_test_result"
+page_object: "p2pTestReportPage"
+app_icon: "icon.app.p2ptest_report.app_icon"
+app_text: "language.app.p2ptest_report.app_text"
+app_tooltip: "language.app.p2ptest_report.app_tooltip"
+app_target: "LeftMenu"
+show_top: true
+is_active: false

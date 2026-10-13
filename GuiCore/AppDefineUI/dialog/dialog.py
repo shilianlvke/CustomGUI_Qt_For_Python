@@ -1,5 +1,5 @@
 from qt_core import QDialog, QPoint, QVBoxLayout, Qt
-from AppCore import AppSettings, Language
+from AppCore import AppSettings
 from GuiCore import CCard, CTitleBar, CWindow
 
 

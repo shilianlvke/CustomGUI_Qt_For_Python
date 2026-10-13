@@ -29,6 +29,14 @@ class PathFinder:
 
     # 设置svg类型的icon
     @classmethod
+    def resolve_svg(cls, name_or_path):
+        """解析 SVG 图标：已存在的文件路径直接使用，否则按内置图标名解析。"""
+        if Path(name_or_path).is_file():
+            return str(Path(name_or_path))
+        return cls.set_svg_icon(name_or_path)
+
+    # 设置svg类型的icon
+    @classmethod
     def set_svg_icon(cls, name):
         return cls.__get_path(Path(cls.images) / "svg_icons", name + ".svg")
 

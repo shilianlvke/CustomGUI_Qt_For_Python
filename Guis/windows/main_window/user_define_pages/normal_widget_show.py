@@ -1,22 +1,16 @@
 from qt_core import (
     QGridLayout,
-    QHBoxLayout,
     QIcon,
-    QLabel,
-    QLineEdit,
     QMargins,
     QSize,
     QSizePolicy,
-    QSvgWidget,
     QVBoxLayout,
     QWidget,
     Qt,
     QScrollArea,
 )
-from GuiCore import CCard, CComboBox, CStatusButton, CPushButton, CMenuButton, CMenu, CShowCard, CLineEdit, CHDiv
-from AppCore import PathFactory, Language, Logger, ColorPalette, AppSettings
-from .dialogs.team_create import TeamCreateDialog
-from .dialogs.team_search import TeamSearchDialog
+from GuiCore import CCard, CComboBox, CStatusButton, CPushButton, CMenuButton, CMenu, CShowCard
+from AppCore import PathFactory, Language, Logger, ColorPalette
 
 
 class NormalWidgetShowPage:

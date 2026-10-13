@@ -1,0 +1,10 @@
+app_name: "p2ptest_users"
+app_id: "app.menu.left.p2ptest_users"
+button_id: "btn_test_users"
+page_object: "p2pTestTesterPage"
+app_icon: "icon.app.p2ptest_users.app_icon"
+app_text: "language.app.p2ptest_users.app_text"
+app_tooltip: "language.app.p2ptest_users.app_tooltip"
+app_target: "LeftMenu"
+show_top: true
+is_active: false

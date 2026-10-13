@@ -12,6 +12,7 @@ import os
 from pathlib import Path
 
 _ROOT_ENV = "CUSTOMGUI_ROOT_DIR"
+_APPS_ENV = "CUSTOMGUI_APPS_DIR"
 
 
 def project_root() -> Path:
@@ -21,6 +22,14 @@ def project_root() -> Path:
         return Path(custom_root).expanduser().resolve()
     # AppCore/SYS/config/paths.py -> parents: config, SYS, AppCore, root
     return Path(__file__).resolve().parents[3]
+
+
+def apps_root() -> Path:
+    """返回 Apps 应用模组目录（环境变量 CUSTOMGUI_APPS_DIR 优先）。"""
+    custom_apps = os.getenv(_APPS_ENV, "").strip()
+    if custom_apps:
+        return Path(custom_apps).expanduser().resolve()
+    return project_root() / "Apps"
 
 
 def resolve_path(path: str | Path) -> Path:

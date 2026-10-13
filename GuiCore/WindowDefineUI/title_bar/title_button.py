@@ -60,6 +60,12 @@ class CTitleButton(QPushButton):
         self._is_active = is_active
         self.repaint()
 
+    # 更新提示文本（语言切换时使用）
+    def set_tooltip(self, text):
+        self._tooltip_text = text
+        self._tooltip.setText(text)
+        self._tooltip.adjustSize()
+
     # RETURN IF IS ACTIVE MENU
     # ///////////////////////////////////////////////////////////////
     def is_active(self):
