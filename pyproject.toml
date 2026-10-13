@@ -28,7 +28,7 @@ default = true
 
 [tool.ruff]
 line-length = 120
-target-version = "py312"
+target-version = "py313"
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
