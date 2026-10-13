@@ -47,5 +47,6 @@ class ColorHandler:
         for key, value in new_colors.items():
             setattr(self, key, value)
 
+
 ColorPalette = ColorHandler()
 __all__ = ["ColorHandler", "ColorPalette"]

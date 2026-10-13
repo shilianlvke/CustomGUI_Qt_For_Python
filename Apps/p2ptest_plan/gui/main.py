@@ -6,15 +6,14 @@ from AppCore import PathFactory, ColorPalette, Logger, AppSettings, Language
 from GuiCore.CustomUI.div import CHDiv
 
 
-
-
 _LANG = "app.p2ptest_plan"
 
 
 def _t(key):
     return Language.resolve(f"{_LANG}.{key}", key)
-class P2PTestPlanPage:
 
+
+class P2PTestPlanPage:
     def load_page(self):
         # 新增页面
         page = QWidget()
@@ -45,9 +44,15 @@ class P2PTestPlanPage:
 
         label_2 = QLabel(_t("todo"))
 
-        case_lib_btn4 = CPushButton(size=QSize(144, 32), text=_t("my_test"), icon=QIcon(PathFactory.set_svg_icon("icon_me")))
-        case_lib_btn5 = CPushButton(size=QSize(144, 32), text=_t("my_join"), icon=QIcon(PathFactory.set_svg_icon("icon_me_join")))
-        case_lib_btn6 = CPushButton(size=QSize(144, 32), text=_t("my_todo"), icon=QIcon(PathFactory.set_svg_icon("icon_time")))
+        case_lib_btn4 = CPushButton(
+            size=QSize(144, 32), text=_t("my_test"), icon=QIcon(PathFactory.set_svg_icon("icon_me"))
+        )
+        case_lib_btn5 = CPushButton(
+            size=QSize(144, 32), text=_t("my_join"), icon=QIcon(PathFactory.set_svg_icon("icon_me_join"))
+        )
+        case_lib_btn6 = CPushButton(
+            size=QSize(144, 32), text=_t("my_todo"), icon=QIcon(PathFactory.set_svg_icon("icon_time"))
+        )
         left_card_layout.addWidget(label_2)
         left_card_layout.addWidget(case_lib_btn4)
         left_card_layout.addWidget(case_lib_btn5)
@@ -74,7 +79,9 @@ class P2PTestPlanPage:
         font = QFont(AppSettings.family, AppSettings.title_size)
         label_4.setFont(font)
 
-        case_lib_btn9 = CPushButton(size=QSize(144, 32), text=_t("new_plan"), icon=QIcon(PathFactory.set_svg_icon("icon_add")))
+        case_lib_btn9 = CPushButton(
+            size=QSize(144, 32), text=_t("new_plan"), icon=QIcon(PathFactory.set_svg_icon("icon_add"))
+        )
 
         right_top_layout.addWidget(label_4)
         right_top_layout.addStretch()
@@ -91,9 +98,15 @@ class P2PTestPlanPage:
 
         label_5 = QLabel(_t("filter"))
 
-        case_lib_btnA = CStatusButton(size=QSize(64, 32), text_negative=_t("filter_all"), text_positive=_t("filter_all"))
-        case_lib_btnB = CStatusButton(size=QSize(64, 32), text_negative=_t("filter_star"), text_positive=_t("filter_star"))
-        case_lib_btnC = CStatusButton(size=QSize(64, 32), text_negative=_t("filter_recent"), text_positive=_t("filter_recent"))
+        case_lib_btnA = CStatusButton(
+            size=QSize(64, 32), text_negative=_t("filter_all"), text_positive=_t("filter_all")
+        )
+        case_lib_btnB = CStatusButton(
+            size=QSize(64, 32), text_negative=_t("filter_star"), text_positive=_t("filter_star")
+        )
+        case_lib_btnC = CStatusButton(
+            size=QSize(64, 32), text_negative=_t("filter_recent"), text_positive=_t("filter_recent")
+        )
         right_middle_layout.addWidget(label_5)
         right_middle_layout.addWidget(case_lib_btnA)
         right_middle_layout.addWidget(case_lib_btnB)
@@ -136,4 +149,3 @@ class P2PTestPlanPage:
 
 
 PAGE = P2PTestPlanPage
-

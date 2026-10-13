@@ -221,6 +221,7 @@ class PluginRegistry:
             Logger.debug(f"插件清单不存在，跳过插件发现: {path}")
             return []
         from ..handler import YamlHandler
+
         data = YamlHandler(path).data
         modules = self._normalize_manifest_modules(data)
         Logger.debug(f"插件清单发现 {len(modules)} 个模块: {path}")

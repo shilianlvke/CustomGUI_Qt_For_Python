@@ -20,7 +20,6 @@ QPushButton:pressed {{
 
 
 class CStatusButton(QPushButton):
-
     statusChanged = Signal(int)
 
     def __init__(

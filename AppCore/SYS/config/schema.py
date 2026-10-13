@@ -29,6 +29,7 @@ _NONE_TYPE = type(None)
 # 通用强制转换引擎
 # ---------------------------------------------------------------------------
 
+
 def _missing_fields(cls, data: Mapping) -> list[str]:
     missing: list[str] = []
     for field in fields(cls):
@@ -157,6 +158,7 @@ def from_mapping(cls, data: Any, *, label: str) -> Any:
 # 应用配置模型（settings 目录内全部 yaml 合并后的扁平结构）
 # ---------------------------------------------------------------------------
 
+
 @dataclass(frozen=True)
 class SizeRange:
     """尺寸区间（minimum/maximum）。"""
@@ -230,6 +232,7 @@ class AppSettingsModel:
 # 主题模型（每个主题文件一份）
 # ---------------------------------------------------------------------------
 
+
 @dataclass(frozen=True)
 class ThemeModel:
     """主题配色模型：必填颜色 + 可选颜色（历史兼容）。"""
@@ -270,6 +273,7 @@ class ThemeModel:
 # ---------------------------------------------------------------------------
 # 兼容入口：校验函数（保持历史函数名与错误信息）
 # ---------------------------------------------------------------------------
+
 
 def validate_settings_data(settings_data: Any) -> AppSettingsModel:
     """校验合并后的系统设置，成功时返回强类型模型。"""

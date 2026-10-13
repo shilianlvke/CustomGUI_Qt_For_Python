@@ -34,7 +34,6 @@ QPushButton::menu-indicator:pressed, QPushButton::menu-indicator:open {{
 
 
 class CMenuButton(QPushButton):
-
     def __init__(
         self,
         size: QSize = QSize(64, 32),

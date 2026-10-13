@@ -5,7 +5,6 @@ from GuiCore import CDialog, CCard, CPushButton, CLineEdit
 
 
 class TeamCreateDialog:
-
     @staticmethod
     def setup_ui(title) -> None:
         create_team = CDialog(title)

@@ -15,7 +15,6 @@ from AppCore import PathFactory, ColorPalette, get_design_tokens, get_theme_mana
 
 
 class CLeftMenuButton(QPushButton):
-
     style_change = Slot("style_change")
 
     def __init__(

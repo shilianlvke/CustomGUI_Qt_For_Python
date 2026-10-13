@@ -6,7 +6,6 @@ from AppCore import PathFactory, AppSettings
 
 
 class UiMainWindow(object):
-
     def setup_ui(self, parent):
         self.parent = parent
         # 界面主体

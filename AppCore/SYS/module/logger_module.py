@@ -26,11 +26,11 @@ except Exception:  # PyYAML 缺失时保持 logger 可用
 class _ColorFormatter(logging.Formatter):
     RESET = "\033[0m"
     LEVEL_COLORS = {
-        logging.DEBUG: "\033[36m",   # Cyan
-        logging.INFO: "\033[32m",    # Green
-        logging.WARNING: "\033[33m", # Yellow
-        logging.ERROR: "\033[31m",   # Red
-        logging.CRITICAL: "\033[35m",# Magenta
+        logging.DEBUG: "\033[36m",  # Cyan
+        logging.INFO: "\033[32m",  # Green
+        logging.WARNING: "\033[33m",  # Yellow
+        logging.ERROR: "\033[31m",  # Red
+        logging.CRITICAL: "\033[35m",  # Magenta
     }
 
     def format(self, record):

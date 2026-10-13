@@ -7,4 +7,17 @@ from .div import CHDiv as CHDiv, CVDiv as CVDiv
 from .line_edit import CLineEdit as CLineEdit
 from .scroll import CScrollArea as CScrollArea
 
-__all__ = ["CPushButton", "CStatusButton", "CMenuButton", "CComboBox", "CMenu", "CCard", "CShowCard", "CPixmap", "CHDiv", "CVDiv", "CLineEdit", "CScrollArea"]
+__all__ = [
+    "CPushButton",
+    "CStatusButton",
+    "CMenuButton",
+    "CComboBox",
+    "CMenu",
+    "CCard",
+    "CShowCard",
+    "CPixmap",
+    "CHDiv",
+    "CVDiv",
+    "CLineEdit",
+    "CScrollArea",
+]

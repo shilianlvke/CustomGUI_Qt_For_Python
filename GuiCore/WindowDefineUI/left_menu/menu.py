@@ -20,12 +20,7 @@ class CLeftMenu(QWidget):
     released = Signal(object)
 
     def __init__(
-            self,
-            parent=None,
-            app_parent=None,
-            radius=8,
-            icon_path="icon_menu",
-            icon_path_close="icon_menu_close"
+        self, parent=None, app_parent=None, radius=8, icon_path="icon_menu", icon_path_close="icon_menu_close"
     ):
         super().__init__()
         self.setObjectName("CLeftMenu_QWidget")

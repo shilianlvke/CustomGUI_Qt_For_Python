@@ -3,7 +3,6 @@ from AppCore import Logger, get_design_tokens
 
 
 class Styles(object):
-
     def __init__(self):
         self.tokens = get_design_tokens()
         Logger.debug(f"生成全局样式（设计令牌）: {self.tokens}")

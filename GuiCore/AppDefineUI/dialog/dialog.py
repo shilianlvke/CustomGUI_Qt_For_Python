@@ -4,7 +4,6 @@ from GuiCore import CCard, CTitleBar, CWindow
 
 
 class CDialog(QDialog):
-
     def __init__(self, title):
         super().__init__()
         self.dragPos = QPoint(0, 0)

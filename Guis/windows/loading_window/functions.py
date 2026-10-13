@@ -19,7 +19,6 @@ class LoadingSignalBus(QObject):
 
 
 class ResourceLoader:
-
     def __init__(self):
         Logger.tool(__class__)
         self.value = 0
@@ -61,7 +60,9 @@ class ResourceLoader:
                         if self._stopped:
                             return
                         self._load_step(step, category)
-            Logger.info(f"{self.sys_config.app_lang.custom_ui.sys_name}-{self.sys_config.app_lang.custom_ui.sys_copyright}")
+            Logger.info(
+                f"{self.sys_config.app_lang.custom_ui.sys_name}-{self.sys_config.app_lang.custom_ui.sys_copyright}"
+            )
             record_event("loading.finished", category="loading")
             self.bus.finished.emit()
         except AppError as e:

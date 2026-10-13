@@ -15,7 +15,7 @@ from Guis.app_loader import (
     reset_apps_cache,
 )
 
-PAGE_CODE = '''
+PAGE_CODE = """
 from PySide6.QtWidgets import QWidget
 
 
@@ -28,9 +28,9 @@ class DemoPage:
 
 
 PAGE = DemoPage
-'''
+"""
 
-BUILD_PAGE_CODE = '''
+BUILD_PAGE_CODE = """
 from PySide6.QtWidgets import QLabel, QWidget
 
 
@@ -38,9 +38,9 @@ def build_page(app):
     page = QWidget()
     page.setObjectName(app.config.get("page_object") or "buildPage")
     return page
-'''
+"""
 
-REGISTER_PLUGINS_CODE = '''
+REGISTER_PLUGINS_CODE = """
 from AppCore import CommandPlugin
 
 
@@ -52,7 +52,7 @@ def register_plugins(registry, app):
             handler=lambda *args, **kwargs: app.name,
         )
     )
-'''
+"""
 
 
 @pytest.fixture
@@ -67,8 +67,12 @@ def _write_app(app_dir: Path, page_code: str | None = None, config_extra: str = 
     (app_dir / "resource" / "icon").mkdir(parents=True, exist_ok=True)
     (app_dir / "resource" / "lang").mkdir(parents=True, exist_ok=True)
     (app_dir / "resource" / "icon" / "app_icon.svg").write_text("<svg/>", encoding="utf-8")
-    (app_dir / "resource" / "lang" / "zh_cn.yml").write_text('app_text: "演示应用"\napp_tooltip: "演示提示"\n', encoding="utf-8")
-    (app_dir / "resource" / "lang" / "en_us.yml").write_text('app_text: "Demo App"\napp_tooltip: "Demo tooltip"\n', encoding="utf-8")
+    (app_dir / "resource" / "lang" / "zh_cn.yml").write_text(
+        'app_text: "演示应用"\napp_tooltip: "演示提示"\n', encoding="utf-8"
+    )
+    (app_dir / "resource" / "lang" / "en_us.yml").write_text(
+        'app_text: "Demo App"\napp_tooltip: "Demo tooltip"\n', encoding="utf-8"
+    )
     if page_code is not None:
         (app_dir / "gui" / "main.py").write_text(page_code, encoding="utf-8")
 

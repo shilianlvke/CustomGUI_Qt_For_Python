@@ -3,7 +3,6 @@ from AppCore import PicFixFactory
 
 
 class CPushButton(QPushButton):
-
     def __init__(
         self,
         size: QSize = QSize(64, 32),

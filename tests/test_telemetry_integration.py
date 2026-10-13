@@ -30,6 +30,7 @@ def _event_names(limit: int = 50) -> list[str]:
 # 遥测故障隔离
 # ---------------------------------------------------------------------------
 
+
 def test_record_event_swallows_write_failures(diagnostics_dir, monkeypatch):
     def _boom(*_args, **_kwargs):
         raise OSError("disk full")
@@ -46,6 +47,7 @@ def test_record_event_swallows_write_failures(diagnostics_dir, monkeypatch):
 # ---------------------------------------------------------------------------
 # 插件错误路径的日志/遥测
 # ---------------------------------------------------------------------------
+
 
 def test_plugin_page_load_error_is_recorded(diagnostics_dir):
     registry = PluginRegistry()
@@ -102,6 +104,7 @@ def test_plugin_modules_load_summary_is_recorded(diagnostics_dir):
 # UI 交互的遥测
 # ---------------------------------------------------------------------------
 
+
 class _StubMainFunctions:
     @staticmethod
     def get_title_bar_btn(_window, name):
@@ -113,9 +116,7 @@ def test_controller_language_switch_is_recorded(diagnostics_dir):
 
     apply_language("zh_cn")  # 重置语言状态，确保切换方向确定
 
-    window = SimpleNamespace(
-        ui=SimpleNamespace(left_menu=SimpleNamespace(deselect_all_tab=lambda: None))
-    )
+    window = SimpleNamespace(ui=SimpleNamespace(left_menu=SimpleNamespace(deselect_all_tab=lambda: None)))
     controller = MainWindowController(
         window=window,
         main_functions=_StubMainFunctions,

@@ -148,7 +148,7 @@ class Ui_LeftColumn(object):
         self.label_2.setText(QCoreApplication.translate("LeftColumn", "Menu 2 - Left Menu", None))
         self.label_3.setText(
             QCoreApplication.translate(
-                "LeftColumn", "This is just an example menu.\n" "Add Qt Widgets or your custom widgets here.", None
+                "LeftColumn", "This is just an example menu.\nAdd Qt Widgets or your custom widgets here.", None
             )
         )
 

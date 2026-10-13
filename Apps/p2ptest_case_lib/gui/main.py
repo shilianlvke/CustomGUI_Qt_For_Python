@@ -13,7 +13,6 @@ def _t(key):
 
 
 class P2PTestCaseLibPage:
-
     def load_page(self):
         # 新增页面
         page = QWidget()
@@ -99,9 +98,15 @@ class P2PTestCaseLibPage:
 
         label_5 = QLabel(_t("filter"))
 
-        case_lib_btnA = CStatusButton(size=QSize(64, 32), text_negative=_t("filter_all"), text_positive=_t("filter_all"))
-        case_lib_btnB = CStatusButton(size=QSize(64, 32), text_negative=_t("filter_star"), text_positive=_t("filter_star"))
-        case_lib_btnC = CStatusButton(size=QSize(64, 32), text_negative=_t("filter_recent"), text_positive=_t("filter_recent"))
+        case_lib_btnA = CStatusButton(
+            size=QSize(64, 32), text_negative=_t("filter_all"), text_positive=_t("filter_all")
+        )
+        case_lib_btnB = CStatusButton(
+            size=QSize(64, 32), text_negative=_t("filter_star"), text_positive=_t("filter_star")
+        )
+        case_lib_btnC = CStatusButton(
+            size=QSize(64, 32), text_negative=_t("filter_recent"), text_positive=_t("filter_recent")
+        )
         right_middle_layout.addWidget(label_5)
         right_middle_layout.addWidget(case_lib_btnA)
         right_middle_layout.addWidget(case_lib_btnB)
@@ -144,4 +149,3 @@ class P2PTestCaseLibPage:
 
 
 PAGE = P2PTestCaseLibPage
-

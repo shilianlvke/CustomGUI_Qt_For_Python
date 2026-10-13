@@ -28,7 +28,6 @@ _LANG = "app.p2ptest_home"
 
 
 class P2PTestHomePage:
-
     def load_page(self):
         # 新增页面
         page = QWidget()

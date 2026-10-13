@@ -4,5 +4,3 @@ from .functions import MainFunctions as MainFunctions
 from .controller import MainWindowController as MainWindowController
 
 __all__ = ["UiMainWindow", "SetupMainWindow", "MainFunctions", "MainWindowController"]
-
-

@@ -27,7 +27,6 @@ QMenu::icon {{
 
 
 class CMenu(QMenu):
-
     def __init__(
         self,
         parent=None,

@@ -2,7 +2,6 @@ from qt_core import QComboBox, QSize, Qt
 
 
 class CComboBox(QComboBox):
-
     def __init__(
         self,
         size: QSize = QSize(64, 32),

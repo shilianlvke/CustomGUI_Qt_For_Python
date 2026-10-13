@@ -201,6 +201,7 @@ def register_app(app_dir: Path, registry=None) -> AppContext | None:
 
     # 协议 3：build_page(app) -> QWidget
     if callable(getattr(module, "build_page", None)):
+
         def _loader(window):
             widget = module.build_page(context)
             if widget is not None:

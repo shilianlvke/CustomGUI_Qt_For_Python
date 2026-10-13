@@ -29,6 +29,7 @@ from AppCore.SYS.module.error_module import DomainErrorBoundary, IOErrorBoundary
 # Attrs（属性访问映射）
 # ---------------------------------------------------------------------------
 
+
 def test_attrs_attribute_and_item_access():
     data = to_attrs({"window": {"width": 960}, "title": "demo"})
 
@@ -73,6 +74,7 @@ def test_to_dict_roundtrip():
 # ---------------------------------------------------------------------------
 # 类型化模型与通用强制转换引擎
 # ---------------------------------------------------------------------------
+
 
 def test_size_range_coercion_from_mapping():
     model = from_mapping(SizeRange, {"minimum": 0, "maximum": 240}, label="SizeRange")
@@ -274,6 +276,7 @@ def test_language_validation_requires_group_keys():
 # 注册表与全局上下文（真实资源文件）
 # ---------------------------------------------------------------------------
 
+
 def test_app_settings_view_exposes_typed_fields():
     initialize_app_context(force_reload=True)
 
@@ -424,6 +427,7 @@ def test_registry_settings_merge_across_files(tmp_path):
 # ---------------------------------------------------------------------------
 # YAML 读写边界
 # ---------------------------------------------------------------------------
+
 
 def test_yaml_file_roundtrip(tmp_path):
     target = tmp_path / "nested" / "demo.yaml"

@@ -150,9 +150,7 @@ def main() -> None:
         api_map[module] = _collect_api(path)
         edges.update(_collect_edges(path))
 
-    (DOCS_DIR / "ARCHITECTURE.md").write_text(
-        generate_architecture_md(edges), encoding="utf-8"
-    )
+    (DOCS_DIR / "ARCHITECTURE.md").write_text(generate_architecture_md(edges), encoding="utf-8")
     (DOCS_DIR / "API.md").write_text(generate_api_md(api_map), encoding="utf-8")
     (DOCS_DIR / "README.md").write_text(generate_index_md(), encoding="utf-8")
 

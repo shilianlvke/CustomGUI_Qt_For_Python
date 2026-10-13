@@ -139,8 +139,7 @@ class LanguageHandler:
             self._listeners = [
                 entry
                 for entry in self._listeners
-                if not (isinstance(entry, weakref.WeakMethod) and entry() is callback)
-                and entry is not callback
+                if not (isinstance(entry, weakref.WeakMethod) and entry() is callback) and entry is not callback
             ]
 
     def _remove_listener(self, ref) -> None:
