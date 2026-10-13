@@ -1,7 +1,7 @@
 from PySide6.QtCore import Qt, QMargins, QSize
 from PySide6.QtGui import QIcon, QFont
-from PySide6.QtWidgets import QVBoxLayout, QLabel, QWidget, QScrollArea, QHBoxLayout
-from GuiCore import CCard, CPushButton, CShowCard, CStatusButton
+from PySide6.QtWidgets import QVBoxLayout, QLabel, QWidget, QHBoxLayout
+from GuiCore import CCard, CPushButton, CScrollArea, CShowCard, CStatusButton
 from AppCore import PathFactory, ColorPalette, Logger, AppSettings, Language
 from GuiCore.CustomUI.div import CHDiv
 
@@ -34,11 +34,10 @@ class P2PTestCaseLibPage:
         left_card_layout = QVBoxLayout(left_card)
         left_card_layout.setAlignment(Qt.AlignmentFlag.AlignCenter | Qt.AlignmentFlag.AlignTop)
         left_card_layout.setContentsMargins(QMargins(0, 6, 0, 0))
-        left_scroller_area = QScrollArea()
+        left_scroller_area = CScrollArea()
         left_scroller_area.setObjectName("widget_show_scroller_area")
         left_scroller_area.setWidget(left_card)
         left_scroller_area.setWidgetResizable(True)
-        left_scroller_area.setStyleSheet(f"#widget_show_scroller_area{{background:{ColorPalette.custom_dark_three}}};")
         left_scroller_area.setVerticalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
         left_scroller_area.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
         left_back_layout.addWidget(left_scroller_area)
@@ -119,10 +118,9 @@ class P2PTestCaseLibPage:
         right_bottom_layout.setAlignment(Qt.AlignmentFlag.AlignTop | Qt.AlignmentFlag.AlignCenter)
         right_bottom_layout.setSpacing(0)
 
-        right_bottom_scroller_area = QScrollArea()
+        right_bottom_scroller_area = CScrollArea()
         right_bottom_scroller_area.setWidget(right_bottom_card)
         right_bottom_scroller_area.setWidgetResizable(True)
-        right_bottom_scroller_area.setStyleSheet(f"background:{ColorPalette.custom_dark_three};")
         right_bottom_scroller_area.setVerticalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
         right_bottom_scroller_area.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
         right_back_layout.addWidget(right_bottom_scroller_area)

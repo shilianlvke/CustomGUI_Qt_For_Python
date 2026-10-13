@@ -7,9 +7,8 @@ from qt_core import (
     QVBoxLayout,
     QWidget,
     Qt,
-    QScrollArea,
 )
-from GuiCore import CCard, CComboBox, CStatusButton, CPushButton, CMenuButton, CMenu, CShowCard
+from GuiCore import CCard, CComboBox, CStatusButton, CPushButton, CMenuButton, CMenu, CScrollArea, CShowCard
 from AppCore import PathFactory, Language, Logger, ColorPalette
 
 
@@ -43,12 +42,10 @@ class NormalWidgetShowPage:
         welcome_card_layout = QGridLayout(Card)
         welcome_card_layout.setContentsMargins(QMargins(0, 0, 0, 0))
 
-        scroller_area = QScrollArea()
-        scroller_area.setObjectName("widget_show_scroller_area")
+        scroller_area = CScrollArea(object_name="widget_show_scroller_area")
         scroller_area.setWidget(Card)
         scroller_area.setWidgetResizable(True)
         scroller_area.setVerticalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
-        scroller_area.setStyleSheet(f"#widget_show_scroller_area{{background:{ColorPalette.custom_dark_three}}};")
         page_card_layout.addWidget(scroller_area)
 
         stander_btn = CPushButton(text=_t("btn_standard"))

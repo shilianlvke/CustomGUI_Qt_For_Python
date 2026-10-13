@@ -5,5 +5,6 @@ from .card import CCard as CCard, CShowCard as CShowCard
 from .picture import CPixmap as CPixmap
 from .div import CHDiv as CHDiv, CVDiv as CVDiv
 from .line_edit import CLineEdit as CLineEdit
+from .scroll import CScrollArea as CScrollArea
 
-__all__ = ["CPushButton", "CStatusButton", "CMenuButton", "CComboBox", "CMenu", "CCard", "CShowCard", "CPixmap", "CHDiv", "CVDiv", "CLineEdit"]
+__all__ = ["CPushButton", "CStatusButton", "CMenuButton", "CComboBox", "CMenu", "CCard", "CShowCard", "CPixmap", "CHDiv", "CVDiv", "CLineEdit", "CScrollArea"]

@@ -1,5 +1,5 @@
 from qt_core import QIcon, QPixmap, QPushButton, QSize, Qt, Signal
-from AppCore import PathFactory, ColorPalette
+from AppCore import PathFactory, ColorPalette, get_theme_manager
 
 style = """
 /* 主控件样式 */
@@ -79,6 +79,8 @@ class CStatusButton(QPushButton):
         self.text_change()
         self.icon_change()
         self.style_change()
+        # 主题切换时按当前状态实时刷新样式（弱引用订阅）
+        get_theme_manager().subscribe(self.style_change)
         # 禁用虚线焦点框
         self.setFocusPolicy(Qt.StrongFocus)
 

@@ -71,7 +71,13 @@ class ThemeController:
 
     def _apply_styles(self):
         now = self._style_factory()
-        self._window.ui.window.setStyleSheet(now.style)
+        window_widget = self._window.ui.window
+        # 优先走 CWindow.apply_style（保留最大化等框架样式覆盖）
+        apply_style = getattr(window_widget, "apply_style", None)
+        if callable(apply_style):
+            apply_style()
+        else:
+            window_widget.setStyleSheet(now.style)
 
 
 class ColumnController:

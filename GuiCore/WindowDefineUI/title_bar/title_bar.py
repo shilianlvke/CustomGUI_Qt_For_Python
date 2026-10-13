@@ -203,7 +203,7 @@ class CTitleBar(QWidget):
                     self.maximize_restore_button.set_icon(PathFactory.set_svg_icon("icon_restore"))
                 else:
                     self._parent.ui.central_widget_layout.setContentsMargins(10, 10, 10, 10)
-                    self._parent.ui.window.set_stylesheet(border_radius=10, border_size=2)
+                    self._parent.ui.window.set_stylesheet()  # 清除覆盖，恢复主题默认圆角/边框
                     self.maximize_restore_button.set_icon(PathFactory.set_svg_icon("icon_maximize"))
 
         # 检查事件

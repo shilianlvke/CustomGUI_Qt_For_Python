@@ -11,7 +11,7 @@ from qt_core import (
     QWidget,
     Qt,
 )
-from AppCore import PathFactory, ColorPalette
+from AppCore import PathFactory, ColorPalette, get_theme_manager
 
 
 class CShowCard(QFrame):
@@ -74,11 +74,13 @@ class CShowCard(QFrame):
             self.set_top_widget(widget)
         # 样式
         self._setup_style()
+        # 主题切换时实时刷新样式（弱引用订阅）
+        get_theme_manager().subscribe(self._setup_style)
         # 绑定点击事件
         self.bottom_area.mousePressEvent = self._on_source_click
 
     def _setup_style(self):
-        """现代简约风格样式表"""
+        """现代简约风格样式表（颜色实时读取调色板，随主题切换刷新）"""
         self.setStyleSheet(f"""
             #CShowCard {{
                 border: {self.border_size}px solid transparent;

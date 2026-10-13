@@ -1,7 +1,7 @@
 from PySide6.QtCore import Qt, QMargins, QSize
 from PySide6.QtGui import QIcon, QFont
-from PySide6.QtWidgets import QVBoxLayout, QLabel, QWidget, QGridLayout, QScrollArea, QHBoxLayout
-from GuiCore import CCard, CPushButton, CShowCard, CStatusButton
+from PySide6.QtWidgets import QVBoxLayout, QLabel, QWidget, QGridLayout, QHBoxLayout
+from GuiCore import CCard, CPushButton, CScrollArea, CShowCard, CStatusButton
 from AppCore import PathFactory, ColorPalette, Logger, AppSettings, Language
 from GuiCore.CustomUI.div import CHDiv
 
@@ -78,10 +78,9 @@ class P2PTestReportPage:
         right_bottom_layout.setAlignment(Qt.AlignmentFlag.AlignTop | Qt.AlignmentFlag.AlignCenter)
         right_bottom_layout.setSpacing(0)
 
-        right_bottom_scroller_area = QScrollArea()
+        right_bottom_scroller_area = CScrollArea()
         right_bottom_scroller_area.setWidget(right_bottom_card)
         right_bottom_scroller_area.setWidgetResizable(True)
-        right_bottom_scroller_area.setStyleSheet(f"background:{ColorPalette.custom_dark_three};")
         right_bottom_scroller_area.setVerticalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
         right_bottom_scroller_area.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
         right_back_layout.addWidget(right_bottom_scroller_area)

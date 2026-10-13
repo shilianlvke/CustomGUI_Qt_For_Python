@@ -9,7 +9,6 @@ from qt_core import (
 )
 from .left_button import PyLeftButton
 from .icon import PyIcon
-from Guis import Ui_LeftColumn
 from AppCore import ColorPalette, Language, get_theme_manager
 
 
@@ -41,7 +40,9 @@ class CLeftColumn(QWidget):
         self._family = font_family
         self.setup_ui()
 
-        # 在BG框架中添加左列
+        # 在BG框架中添加左列（惰性导入，避免 GuiCore <-> Guis 循环导入）
+        from Guis import Ui_LeftColumn
+
         self.menus = Ui_LeftColumn()
         self.menus.setupUi(self.content_frame)
 

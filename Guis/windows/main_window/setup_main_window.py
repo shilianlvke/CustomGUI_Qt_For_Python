@@ -1,9 +1,9 @@
 from PySide6.QtCore import QMargins, QSize, Qt
 from PySide6.QtGui import QIcon
-from PySide6.QtWidgets import QGridLayout, QScrollArea, QVBoxLayout, QWidget
+from PySide6.QtWidgets import QGridLayout, QVBoxLayout, QWidget
 from .functions import MainFunctions
 from .user_define_pages import get_default_page_object, get_menu_items, load_registered_pages
-from GuiCore import CCard, CComboBox, CGrips, CMenu, CMenuButton, CPushButton, CShowCard, CStatusButton
+from GuiCore import CCard, CComboBox, CGrips, CMenu, CMenuButton, CPushButton, CScrollArea, CShowCard, CStatusButton
 from AppCore import AppSettings, ColorPalette, Language, Logger, MenuPlugin, PathFactory, get_plugin_registry
 from Guis.app_loader import load_apps
 
@@ -106,11 +106,10 @@ class SetupMainWindow:
         Card = CCard()
         card_layout = QGridLayout(Card)
         card_layout.setContentsMargins(QMargins(0, 0, 0, 0))
-        scroller_area = QScrollArea()
+        scroller_area = CScrollArea()
         scroller_area.setWidget(Card)
         scroller_area.setWidgetResizable(True)
         scroller_area.setVerticalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
-        scroller_area.setStyleSheet(f"background:{ColorPalette.custom_dark_three};")
         back_layout.addWidget(scroller_area)
 
         stander_btn = CPushButton(text="标准按钮")

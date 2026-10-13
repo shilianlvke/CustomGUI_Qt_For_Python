@@ -23,8 +23,8 @@ from __future__ import annotations
 
 import threading
 import weakref
+from collections.abc import Callable
 from dataclasses import dataclass, field
-from typing import Callable
 
 from .color_module import ColorPalette
 from .logger_module import Logger
@@ -75,25 +75,65 @@ class ThemeManager:
     def subscribe(self, callback: Callable[[], None]) -> None:
         """订阅主题变更通知。
 
-        绑定方法使用弱引用（组件销毁后自动移除）；
-        普通函数/闭包使用强引用（需自行保证生命周期）。
+        绑定方法使用弱引用；若订阅者提供 ``destroyed`` 信号（如 QObject
+        组件），自动连接信号在其销毁时退订，避免回调命中已删除的
+        C++ 对象。普通函数/闭包使用强引用（需自行保证生命周期）。
         """
         with self._lock:
             if hasattr(callback, "__self__"):
-                self._listeners.append(weakref.WeakMethod(callback))
+                ref = weakref.WeakMethod(callback)
+                self._listeners.append(ref)
+                self._bind_destroyed_cleanup(callback.__self__, ref)
             else:
                 self._listeners.append(callback)
+
+    def unsubscribe(self, callback: Callable[[], None]) -> None:
+        """退订（按等价回调移除）。"""
+        with self._lock:
+            self._listeners = [
+                entry
+                for entry in self._listeners
+                if not (isinstance(entry, weakref.WeakMethod) and entry() is callback)
+                and entry is not callback
+            ]
+
+    def _remove_listener(self, ref) -> None:
+        with self._lock:
+            if ref in self._listeners:
+                self._listeners.remove(ref)
+
+    def _bind_destroyed_cleanup(self, obj, ref) -> None:
+        """鸭子类型连接 QObject.destroyed 信号（AppCore 不依赖 PySide6）。"""
+        destroyed = getattr(obj, "destroyed", None)
+        if destroyed is not None and callable(getattr(destroyed, "connect", None)):
+            try:
+                destroyed.connect(lambda *_args, _ref=ref: self._remove_listener(_ref))
+            except Exception:
+                pass
+
+    @staticmethod
+    def _is_deleted_cpp_error(exc: RuntimeError) -> bool:
+        message = str(exc)
+        return "Internal C++ object" in message or "has been deleted" in message
 
     def _notify(self) -> None:
         with self._lock:
             listeners = list(self._listeners)
         for entry in listeners:
             callback = entry() if isinstance(entry, (weakref.WeakMethod, weakref.ref)) else entry
-            if callback is not None:
-                try:
-                    callback()
-                except Exception as exc:
+            if callback is None:
+                continue
+            try:
+                callback()
+            except RuntimeError as exc:
+                if self._is_deleted_cpp_error(exc):
+                    # C++ 对象已销毁：移除失效订阅，不再重试
+                    self._remove_listener(entry)
+                    Logger.debug(f"移除已销毁组件的主题订阅: {exc}")
+                else:
                     Logger.warning(f"主题订阅回调执行失败: {exc}")
+            except Exception as exc:
+                Logger.warning(f"主题订阅回调执行失败: {exc}")
 
 
 _THEME_MANAGER = ThemeManager()
