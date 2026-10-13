@@ -1,15 +1,17 @@
 import os
 import threading
+
 from easydict import EasyDict
+
 from ..handler import YamlHandler
 from ..logger import Logger
-from .resource_locator import ResourceLocator
+from ..module.error_module import DomainErrorBoundary
 from ..module.settings_module import (
     validate_language_data,
     validate_settings_data,
     validate_theme_data,
 )
-from ..module.error_module import DomainErrorBoundary
+from .resource_locator import ResourceLocator
 
 
 class ConfigHandler:
