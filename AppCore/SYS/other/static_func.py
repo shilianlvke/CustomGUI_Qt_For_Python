@@ -1,9 +1,10 @@
 from pathlib import Path
 
+from PySide6.QtCore import QRectF, Qt
+from PySide6.QtGui import QPainter, QPainterPath, QPixmap
+
 from AppCore.SYS import Logger
 from AppCore.SYS.config.paths import resolve_path
-from PySide6.QtCore import QRectF, Qt
-from PySide6.QtGui import QPixmap, QPainter, QPainterPath
 
 
 class PathFinder:
@@ -68,6 +69,7 @@ class PathFinder:
 
 
 class PicFixFactory:
+    @staticmethod
     def create_rounded_pixmap(pixmap: QPixmap, radius: int | float) -> QPixmap:
         # 不处理空数据或者错误数据
         if pixmap.isNull():

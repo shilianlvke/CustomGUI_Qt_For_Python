@@ -1,20 +1,21 @@
 import sys
 
+from PySide6.QtGui import QIcon
+from PySide6.QtWidgets import QApplication, QMainWindow
+
 from AppCore import (
-    Logger,
-    ColorPalette,
-    Language,
-    PathFactory,
+    AppLanguages,
     AppSettings,
     AppThemes,
-    AppLanguages,
+    ColorPalette,
+    Language,
+    Logger,
+    PathFactory,
     initialize_app_context,
     record_event,
 )
-from Guis import UiMainWindow, SetupMainWindow, MainFunctions
+from Guis import MainFunctions, SetupMainWindow, UiMainWindow
 from Guis.windows.main_window.controller import MainWindowController
-from PySide6.QtWidgets import QApplication, QMainWindow
-from PySide6.QtGui import QIcon
 
 
 class MainWindow(QMainWindow):
