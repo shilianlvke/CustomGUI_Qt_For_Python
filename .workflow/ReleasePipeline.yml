@@ -50,8 +50,12 @@ stages:
         pythonVersion: 3.9
         commands:
           # ---- 依赖与解释器 ----
+          # 注意：容器内 pip 以 user 模式安装，uv 落在 ~/.local/bin，必须加入 PATH；
+          # Gitee Go 会把每条 command 单独引号包裹执行，发布命令必须写成单行（不能用 \ 续行）。
           - python3 -m pip config set global.index-url https://pypi.tuna.tsinghua.edu.cn/simple
           - python3 -m pip install uv
+          - export PATH="$HOME/.local/bin:$PATH"
+          - uv --version
           - uv python install 3.13
           - uv venv --python 3.13
           - uv sync --extra dev
@@ -64,16 +68,10 @@ stages:
           - uv run python scripts/archive_dist.py linux
           - ls -lh dist/release
           # ---- 发布 Gitee Release（幂等，可重复执行）----
-          # 描述取本次构建的 commit message；tag 由脚本按 GITEE_REF_NAME 解析
+          # 未配置 GITEE_TOKEN 时提前失败，给出清晰提示（含冒号，需引号包裹）
+          - 'if [ -z "${GITEE_TOKEN}" ]; then echo "错误: 未配置 GITEE_TOKEN 密文变量（Gitee 仓库 管理→环境变量管理 添加）"; exit 1; fi'
           - echo "${GITEE_COMMIT_MESSAGE}" > release_body.md
-          - uv run python scripts/publish_gitee_release.py \
-              --owner shilianlvke \
-              --repo CustomGUI_Qt_For_Python \
-              --token "${GITEE_TOKEN}" \
-              --tag auto \
-              --body-file release_body.md \
-              --assets-dir dist/release \
-              --prerelease false
+          - uv run python scripts/publish_gitee_release.py --owner shilianlvke --repo CustomGUI_Qt_For_Python --token "${GITEE_TOKEN}" --tag auto --body-file release_body.md --assets-dir dist/release --prerelease false
         # 暂存构建产物（7 天后自动清除；Release 附件已上传，此处仅便于平台查看）
         artifacts:
           - name: BUILD_ARTIFACT
