@@ -73,7 +73,7 @@ stages:
       # ---------------------------------------------------------
       # 步骤 2：创建/更新 Gitee Release 并附加安装包（串行依赖步骤 1）
       # ---------------------------------------------------------
-      - step: release@gitee-release
+      - step: gitee-release
         # 注：插件 step 标识以 Gitee Go 平台「添加插件」时 YAML 视图
         #     自动生成的 step 值为准；若平台显示不同请照实替换。
         name: publish_gitee_release
