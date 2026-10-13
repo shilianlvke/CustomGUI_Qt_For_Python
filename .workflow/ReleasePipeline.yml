@@ -1,26 +1,21 @@
 # =============================================================================
 # Gitee Go 原生流水线：版本发布（ReleasePipeline）
 # =============================================================================
-# 【重要】文件位置：仓库根目录 .workflow/ 下（Gitee Go 只读取该目录的 YAML；
-#        平台「新建流水线 → 选择模板」也会在仓库根目录自动生成 .workflow/）。
-# 【使用方式】提交本文件到仓库后，Gitee Go 会自动发现并创建流水线。
+# 【文件位置】仓库根目录 .workflow/ 下（Gitee Go 只读取该目录的 YAML）。
 # 【触发】推送 v* tag（如 v1.2.3）自动执行；也可在平台手动运行。
 # 【流程】质量检查（ruff + pytest）→ Linux 打包（PyInstaller）→
-#         调用 Gitee API 创建 Release 并上传 zip 附件（复用 scripts/publish_gitee_release.py）。
-# 【一次性配置】Gitee 仓库「管理 → 环境变量管理」添加 GITEE_TOKEN：
-#        在 Gitee「设置 → 私人令牌」生成令牌，填为密文变量。
-#        （保持与 GitHub 同步工作流共用同一个令牌即可）
-# 【已知限制】
-#   - Gitee Go 构建环境为 Linux 容器（CentOS 8.3，内置 Python 最高 3.9），
-#     无法直接产出 Windows exe；Windows 安装包由 GitHub Actions（Release Build）
-#     构建，并经 .github/workflows/gitee-release.yml 同步到 Gitee —— 两条链路互补。
-#   - build@python 内置 Python 最高 3.9，本项目要求 >= 3.13，故通过 uv 安装
-#     独立 3.13 解释器（首次需联网下载，若容器网络受限请反馈）。
-#   - 平台官方「Gitee Release」插件的 step 标识未公开（仅表单配置），且其
-#     附件只能引用已提交到仓库的文件、无法使用 CI 工作区产物；因此本模板
-#     改为直接复用脚本走 Gitee API 发布（幂等：同 tag 复用 Release、同名附件跳过）。
-#     若仍希望在平台 UI 使用该插件（仅发布仓库内文件），可在「添加插件」时
-#     选中它，把平台自动生成的 YAML step 标识发给我们再整合。
+#         调用 Gitee API 创建 Release 并上传 zip 附件（幂等，复用
+#         scripts/publish_gitee_release.py）。
+# 【一次性配置】Gitee 仓库「管理 → 环境变量管理」添加密文变量 GITEE_TOKEN：
+#         Gitee「设置 → 私人令牌」生成（勾选 releases 权限）。
+# 【说明】
+#   - Gitee Go 构建环境为 Linux 容器（内置 Python 最高 3.9），无法直接产出
+#     Windows exe；Windows 安装包由 GitHub Actions（release-build.yml）构建，
+#     并经 gitee-release.yml 同步到 Gitee —— 两条链路互补，均复用同一发布脚本。
+#   - build@python 内置 Python 3.9 仅用于引导 uv，实际运行解释器为 3.13
+#     （首次需联网下载，若容器网络受限请反馈）。
+#   - Release tag 由脚本按 --tag auto 解析：推送 tag 场景取 GITEE_REF_NAME
+#     （v*），手动运行场景回退 v.<构建号>。
 # =============================================================================
 
 # 当前 yml 文件版本（固定）
@@ -37,13 +32,11 @@ triggers:
       prefix:
         - v
 
-# 阶段定义（新版平铺格式：- name: 直接作为 stage 列表项）
+# 阶段定义
 stages:
   - name: release_build
     displayName: 发布构建
-    # naturally：失败不阻断并行分支；fast：快速失败
     strategy: naturally
-    # auto：上游成功后自动触发下游
     trigger: auto
     steps:
       # ---------------------------------------------------------
@@ -51,12 +44,10 @@ stages:
       # 单步骤完成全部工作：同一工作区，避免跨步骤产物传递问题。
       # ---------------------------------------------------------
       - step: build@python
-        # 任务标识：阶段内唯一
         name: quality_package_release
         displayName: 质量检查与打包发布
-        # 平台最高支持 3.9（仅用于引导 uv，实际运行解释器为 3.13）
+        # 平台内置最高 3.9，仅用于引导 uv（实际解释器为 3.13）
         pythonVersion: 3.9
-        # 命令执行目录为代码库根目录
         commands:
           # ---- 依赖与解释器 ----
           - python3 -m pip config set global.index-url https://pypi.tuna.tsinghua.edu.cn/simple
@@ -73,18 +64,17 @@ stages:
           - uv run python scripts/archive_dist.py linux
           - ls -lh dist/release
           # ---- 发布 Gitee Release（幂等，可重复执行）----
-          # 描述取本次构建的 commit message
+          # 描述取本次构建的 commit message；tag 由脚本按 GITEE_REF_NAME 解析
           - echo "${GITEE_COMMIT_MESSAGE}" > release_body.md
-          - python3 scripts/publish_gitee_release.py \
+          - uv run python scripts/publish_gitee_release.py \
               --owner shilianlvke \
               --repo CustomGUI_Qt_For_Python \
               --token "${GITEE_TOKEN}" \
-              --tag "v.${GITEE_PIPELINE_BUILD_NUMBER}" \
+              --tag auto \
               --body-file release_body.md \
               --assets-dir dist/release \
               --prerelease false
-        # 暂存构建产物（7 天后自动清除；Release 附件已上传制品库/Gitee Release，
-        # 此处仅便于平台页面查看产物）
+        # 暂存构建产物（7 天后自动清除；Release 附件已上传，此处仅便于平台查看）
         artifacts:
           - name: BUILD_ARTIFACT
             path:

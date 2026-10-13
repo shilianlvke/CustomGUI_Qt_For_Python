@@ -7,17 +7,17 @@ on:
       - main
     paths:
       - "AppCore/**"
-      - "../../Guis/**"
+      - "Guis/**"
       - "GuiCore/**"
+      - "Apps/**"
       - "scripts/generate_docs.py"
-      - ".github/.workflows/Docs.yml"
   pull_request:
     paths:
       - "AppCore/**"
-      - "../../Guis/**"
+      - "Guis/**"
       - "GuiCore/**"
+      - "Apps/**"
       - "scripts/generate_docs.py"
-      - ".github/.workflows/Docs.yml"
 
 jobs:
   build-docs:
@@ -31,7 +31,7 @@ jobs:
         uses: astral-sh/setup-uv@v5
 
       - name: Setup Python
-        run: uv python install 3.12
+        run: uv python install 3.13
 
       - name: Sync dependencies
         run: uv sync --frozen

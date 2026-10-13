@@ -345,6 +345,11 @@ uv run python main.py
    - `v*` tag 推送自动触发：质量检查（ruff + pytest）→ Linux 打包 → 复用
      `scripts/publish_gitee_release.py` 通过 Gitee API 创建 Release 并上传 zip 附件
      （幂等：同 tag 复用 Release、同名附件跳过）
+   - Release tag 由脚本 `--tag auto` 解析：推送 tag 场景取 `GITEE_REF_NAME`
+     （v*），手动运行场景回退 `v.<构建号>`
+   - 一次性配置：Gitee 仓库「管理 → 环境变量管理」添加密文变量 `GITEE_TOKEN`
+- 本地演练发布脚本（不调用 API）：
+  `uv run python scripts/publish_gitee_release.py --owner x --repo y --token z --dry-run`
    - 一次性配置：在 Gitee「设置 → 私人令牌」生成令牌，到仓库
      「管理 → 环境变量管理」添加密文变量 `GITEE_TOKEN`（与 GitHub 同步工作流共用）
    - 限制：Gitee Go 构建环境为 Linux 容器（内置 Python 最高 3.9），模板内通过 uv 安装

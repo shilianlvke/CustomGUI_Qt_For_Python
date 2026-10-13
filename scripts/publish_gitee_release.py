@@ -63,7 +63,7 @@ def _encode_multipart(fields: dict[str, str], file_path: Path) -> tuple[bytes, s
 
 
 def find_or_create_release(owner: str, repo: str, token: str, tag: str, body: str, prerelease: bool) -> int:
-    """返回 release id：存在则复用，不存在则创建。"""
+    """返回 release id：存在则复用（正文有变化时更新），不存在则创建。"""
     tag_quoted = urllib.parse.quote(tag, safe="")
     check_url = f"{GITEE_API}/repos/{owner}/{repo}/releases/tags/{tag_quoted}"
     try:
@@ -71,6 +71,13 @@ def find_or_create_release(owner: str, repo: str, token: str, tag: str, body: st
         release_id = existing.get("id")
         if release_id:
             print(f"[Gitee] 已存在 Release（tag={tag}），复用 id={release_id}")
+            # 复用场景同步正文，保证重复执行时描述一致
+            if body:
+                _request(
+                    "PATCH",
+                    f"{GITEE_API}/repos/{owner}/{repo}/releases/{release_id}",
+                    json_body={"access_token": token, "body": body},
+                )
             return int(release_id)
     except RuntimeError as exc:
         if "HTTP 404" not in str(exc):
@@ -125,35 +132,65 @@ def parse_prerelease(value: str | None) -> bool:
     return value is not None and value.strip().lower() in ("true", "1", "yes", "on")
 
 
+def resolve_tag(explicit: str) -> str:
+    """解析 tag。
+
+    - 显式值（非 ``auto``）原样返回；
+    - ``auto``（Gitee Go 场景）：优先环境变量 ``GITEE_REF_NAME``（推送 v* tag），
+      否则回退 ``v.<GITEE_PIPELINE_BUILD_NUMBER>``（手动运行）。
+    """
+    if explicit != "auto":
+        return explicit
+
+    ref_name = os.environ.get("GITEE_REF_NAME", "").strip()
+    if ref_name.startswith("v"):
+        return ref_name
+
+    build_number = os.environ.get("GITEE_PIPELINE_BUILD_NUMBER", "").strip() or "0"
+    return f"v.{build_number}"
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description="同步发布版本到 Gitee Release")
     parser.add_argument("--owner", required=True, help="Gitee 仓库所属空间地址（个人/组织 path）")
     parser.add_argument("--repo", required=True, help="Gitee 仓库路径")
     parser.add_argument("--token", required=True, help="Gitee 私人令牌（Personal Access Token）")
-    parser.add_argument("--tag", required=True, help="要发布的 tag（如 v1.2.3）")
+    parser.add_argument("--tag", default="auto", help="要发布的 tag（如 v1.2.3；auto 时按 Gitee Go 环境变量解析）")
     parser.add_argument("--body-file", help="Release 描述（markdown 文件路径），缺省为空")
     parser.add_argument("--assets-dir", default="assets", help="待上传附件目录，缺省 assets")
     parser.add_argument("--prerelease", default="false", help="是否为预览版本（true/false），缺省 false")
+    parser.add_argument("--dry-run", action="store_true", help="只打印计划，不调用 API")
     args = parser.parse_args()
 
     if not args.token:
         print("[Gitee] 错误: 缺少 Gitee 私人令牌（GITEE_TOKEN）", file=sys.stderr)
         return 2
 
+    tag = resolve_tag(args.tag)
     body = ""
     if args.body_file and Path(args.body_file).is_file():
         body = Path(args.body_file).read_text(encoding="utf-8")
 
+    assets_dir = Path(args.assets_dir)
+    files = sorted(assets_dir.iterdir()) if assets_dir.is_dir() else []
+    print(f"[Gitee] 计划发布: {args.owner}/{args.repo} tag={tag} prerelease={parse_prerelease(args.prerelease)} "
+          f"附件数={sum(1 for f in files if f.is_file())}")
+    if args.dry_run:
+        for file_path in files:
+            if file_path.is_file():
+                print(f"[Gitee] [dry-run] 将上传: {file_path.name}")
+        return 0
+
     try:
         release_id = find_or_create_release(
-            args.owner, args.repo, args.token, args.tag, body, parse_prerelease(args.prerelease)
+            args.owner, args.repo, args.token, tag, body, parse_prerelease(args.prerelease)
         )
-        upload_assets(args.owner, args.repo, args.token, release_id, Path(args.assets_dir))
+        upload_assets(args.owner, args.repo, args.token, release_id, assets_dir)
     except RuntimeError as exc:
         print(f"[Gitee] 失败: {exc}", file=sys.stderr)
         return 1
 
-    print(f"[Gitee] 发布完成: https://gitee.com/{args.owner}/{args.repo}/releases/tag/{urllib.parse.quote(args.tag, safe='')}")
+    print(f"[Gitee] 发布完成: https://gitee.com/{args.owner}/{args.repo}/releases/tag/{urllib.parse.quote(tag, safe='')}")
     return 0
 
 
