@@ -17,9 +17,9 @@
 from __future__ import annotations
 
 import threading
+from collections.abc import Callable
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Callable
 
 from ..logger import Logger
 from ..module.error_module import DomainErrorBoundary
