@@ -1,6 +1,6 @@
 from AppCore import Language
 from AppCore import get_plugin_registry
-from Guis.windows.main_window.user_define_pages import (
+from Guis.windows.main_window.registry import (
     get_default_page_object,
     get_page_routes,
 )
@@ -17,7 +17,7 @@ def test_page_routes_contains_core_entries():
     assert "btn_home" in routes
     assert "btn_test_case_lib" in routes
     assert "btn_test_plan" in routes
-    assert "btn_widget_show" in routes  # 基座欢迎页
+    assert "btn_widget_show" in routes  # Apps/welcome 欢迎页
 
 
 def test_default_page_exists_in_routes():
@@ -28,16 +28,14 @@ def test_default_page_exists_in_routes():
     assert default_page in page_names
 
 
-def test_builtin_welcome_page_registered():
-    registry = get_plugin_registry()
-    pages = registry.page_plugins()
-
-    assert any(plugin.plugin_id == "builtin.page.widget_show" for plugin in pages)
+def test_default_page_is_welcome():
+    assert get_default_page_object() == "normalWidgetShowPage"
 
 
 def test_app_pages_registered_from_apps_directory():
     registry = get_plugin_registry()
     pages = registry.page_plugins()
 
+    assert any(plugin.plugin_id == "app.page.welcome" for plugin in pages)
     assert any(plugin.plugin_id == "app.page.p2ptest_home" for plugin in pages)
     assert any(plugin.plugin_id == "app.page.example" for plugin in pages)

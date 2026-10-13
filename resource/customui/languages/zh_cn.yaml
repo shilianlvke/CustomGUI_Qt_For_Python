@@ -8,23 +8,7 @@ custom_ui:
   sys_description: P2PTester 是一个开源的系统测试管理工具，用于系统测试的管理。
   sys_license: MIT
   sys_github: https://gitee.com/shilianlvke/CustomGUI
-PAGE:
-  widget_show:
-    title: 组件展示
-    btn_standard: 标准按钮
-    btn_icon: 图标按钮
-    btn_text_icon: QIcon-文字按钮
-    btn_two_state: 双态按钮
-    btn_three_state: 三态按钮
-    btn_menu: 菜单按钮
-    btn_combo: 下拉框
-    state_left: 左
-    state_right: 右
-    state_middle: 中
-    menu_mail: 邮件
-    menu_save: 保存
-    menu_send: 发送
-    combo_placeholder: 选择你的英雄
+PAGE: {}
 UI:
   # 窗口
   ui_Minimize: 最小化
@@ -149,15 +133,6 @@ UI:
 TEXT:
   home_page_welcome: 你好！我是P2PTester~
   login: 登录到P2PTester
-
-# 基座内置对话框语言（App 业务语言已迁移至 Apps/<app>/resource/lang）
-P2PTester:
-  team_create_dialog:
-    team_name_label: 团队名称
-    team_name_input: 输入团队名称~
-    team_doc_label: 团队描述
-    team_doc_input: 输入团队描述~
-    team_create_btn: 创建团队
 
 Log:
   pyserial_not_install: "pyserial 未安装，无法获取 COM 设备列表"

@@ -12,7 +12,7 @@ from AppCore import (
 from GuiCore import Styles
 
 from .functions import MainFunctions
-from .user_define_pages import get_page_routes
+from .registry import get_page_routes
 
 
 class PageRouterController:

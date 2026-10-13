@@ -2,7 +2,7 @@ from PySide6.QtCore import QMargins, QSize, Qt
 from PySide6.QtGui import QFont, QIcon
 from PySide6.QtWidgets import QGridLayout, QHBoxLayout, QLabel, QVBoxLayout, QWidget
 
-from AppCore import AppSettings, ColorPalette, Language, Logger, PathFactory
+from AppCore import AppSettings, Language, Logger, PathFactory
 from GuiCore import CCard, CPushButton, CScrollArea, CShowCard, CStatusButton
 from GuiCore.CustomUI.div import CHDiv
 

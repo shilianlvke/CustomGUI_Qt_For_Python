@@ -1,0 +1,16 @@
+app_text: "组件展示"
+app_tooltip: "组件展示"
+btn_standard: 标准按钮
+btn_icon: 图标按钮
+btn_text_icon: QIcon-文字按钮
+btn_two_state: 双态按钮
+btn_three_state: 三态按钮
+btn_menu: 菜单按钮
+btn_combo: 下拉框
+state_left: 左
+state_right: 右
+state_middle: 中
+menu_mail: 邮件
+menu_save: 保存
+menu_send: 发送
+combo_placeholder: 选择你的英雄

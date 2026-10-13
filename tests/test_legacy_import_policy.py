@@ -18,7 +18,9 @@ LEGACY_IMPORT_PATTERNS = [
     re.compile(r"^\s*from\s+Guis\.windows\.loading_window\.ui_mian\b"),
     # 业务页面已迁移至 Apps/ 目录，基座运行时代码不得再引用
     re.compile(r"^\s*from\s+Guis\.windows\.main_window\.user_define_pages\.p2ptest\w*\b"),
+    re.compile(r"^\s*from\s+Guis\.windows\.main_window\.user_define_pages\b"),
     re.compile(r"^\s*from\s+\.p2ptest\w*\b"),
+    re.compile(r"^\s*from\s+\.normal_widget_show\b"),
     re.compile(r"^\s*from\s+\.\.logger\b"),
     re.compile(r"^\s*from\s+\.logger\b"),
     re.compile(r"^\s*from\s+\.languge_module\b"),

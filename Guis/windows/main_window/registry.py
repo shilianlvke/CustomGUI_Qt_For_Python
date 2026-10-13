@@ -1,26 +1,17 @@
-"""基座内置页面注册：欢迎页（组件展示）与底部信息按钮。
+"""基座菜单与页面路由聚合。
 
-业务页面已迁移至 ``Apps/`` 目录，由 ``Guis.app_loader`` 发现并注册。
-本模块只保留基座自带的欢迎界面与菜单聚合函数。
+基座本身不包含任何页面：全部页面由 ``Apps/`` 目录的应用模组提供
+（由 ``Guis.app_loader`` 发现注册）。本模块只负责：
+
+- 基座内置菜单（底部「信息」按钮，属窗口控制入口而非页面）；
+- 菜单项/页面路由/默认页的聚合查询。
 """
 
-from .normal_widget_show import NormalWidgetShowPage
-from AppCore import MenuPlugin, PagePlugin, Logger, get_plugin_registry, record_event
+from AppCore import MenuPlugin, Logger, get_plugin_registry, record_event
 from Guis.app_loader import load_apps
 
+# 基座内置菜单：仅窗口控制入口（左列开关），不含页面
 BUILTIN_MENU_PLUGINS = [
-    MenuPlugin(
-        plugin_id="builtin.menu.left.widget_show",
-        target="LeftMenu",
-        item={
-            "btn_icon": "icon_home",
-            "btn_id": "btn_widget_show",
-            "btn_text": "language.PAGE.widget_show.title",
-            "btn_tooltip": "language.PAGE.widget_show.title",
-            "show_top": True,
-            "is_active": True,
-        },
-    ),
     MenuPlugin(
         plugin_id="builtin.menu.left.info",
         target="LeftMenu",
@@ -35,30 +26,9 @@ BUILTIN_MENU_PLUGINS = [
     ),
 ]
 
-BUILTIN_PAGE_PLUGINS = [
-    PagePlugin(
-        plugin_id="builtin.page.widget_show",
-        button_id="btn_widget_show",
-        page_object="normalWidgetShowPage",
-        title_getter=lambda language: language.PAGE.widget_show.title,
-        loader=NormalWidgetShowPage.load_page,
-        default=True,
-    ),
-]
-
 
 def _default_title_by_button(button_id):
-    defaults = {
-        "btn_widget_show": "Widget Show",
-    }
-    return defaults.get(button_id, "CustomUI")
-
-
-def register_builtin_pages():
-    registry = get_plugin_registry()
-    for plugin in BUILTIN_PAGE_PLUGINS:
-        if not registry.has_page(plugin.plugin_id):
-            registry.register_page(plugin)
+    return "CustomUI"
 
 
 def register_builtin_menus():
@@ -87,7 +57,6 @@ def _as_legacy_registry():
 def load_registered_pages(window):
     load_apps()
     register_builtin_menus()
-    register_builtin_pages()
     registry = get_plugin_registry()
     registry.load_page_plugins(window)
     page_count = len(registry.page_plugins())
@@ -98,7 +67,6 @@ def load_registered_pages(window):
 def get_page_routes(language):
     load_apps()
     register_builtin_menus()
-    register_builtin_pages()
     registry = get_plugin_registry()
     return registry.build_page_routes(language, _default_title_by_button)
 
@@ -106,7 +74,6 @@ def get_page_routes(language):
 def get_default_page_object():
     load_apps()
     register_builtin_menus()
-    register_builtin_pages()
     registry = get_plugin_registry()
     return registry.get_default_page_object()
 
@@ -119,12 +86,10 @@ def get_menu_items(target: str):
 
 
 register_builtin_menus()
-register_builtin_pages()
 PAGE_REGISTRY = _as_legacy_registry()
 
 
 __all__ = [
-    "NormalWidgetShowPage",
     "PAGE_REGISTRY",
     "load_registered_pages",
     "get_page_routes",

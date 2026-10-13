@@ -12,3 +12,9 @@ login:
   team_create_window: 团队创建
   team_search: 已有团队！在网络中搜寻
   team_search_window: 团队搜索
+team_create_dialog:
+  team_name_label: 团队名称
+  team_name_input: 输入团队名称~
+  team_doc_label: 团队描述
+  team_doc_input: 输入团队描述~
+  team_create_btn: 创建团队

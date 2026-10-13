@@ -1,0 +1,16 @@
+app_text: "Component Showcase"
+app_tooltip: "Component Showcase"
+btn_standard: Standard Button
+btn_icon: Icon Button
+btn_text_icon: QIcon-Text Button
+btn_two_state: Two-State Button
+btn_three_state: Three-State Button
+btn_menu: Menu Button
+btn_combo: Combo Box
+state_left: Left
+state_right: Right
+state_middle: Middle
+menu_mail: Mail
+menu_save: Save
+menu_send: Send
+combo_placeholder: Choose your hero

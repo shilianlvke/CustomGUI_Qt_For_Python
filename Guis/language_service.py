@@ -71,7 +71,7 @@ def _rebuild_pages(window) -> None:
         widget.setParent(None)
         widget.deleteLater()
 
-    from .windows.main_window.user_define_pages import (
+    from .windows.main_window.registry import (
         get_default_page_object,
         get_page_routes,
         load_registered_pages,
@@ -100,7 +100,7 @@ def _refresh_current_page_title(window) -> None:
     if not callable(getattr(left_menu, "active_button_id", None)):
         return
 
-    from .windows.main_window.user_define_pages import get_page_routes
+    from .windows.main_window.registry import get_page_routes
 
     routes = get_page_routes(Language)
     active_id = left_menu.active_button_id()

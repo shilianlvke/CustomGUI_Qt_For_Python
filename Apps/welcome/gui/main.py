@@ -1,3 +1,9 @@
+"""基座欢迎页应用（Apps/welcome）：组件展示。
+
+应用页面协议：导出 PAGE（含 load_page(window) 方法）。
+全部可见文本走本应用语言包（app.welcome.*）。
+"""
+
 from qt_core import (
     QGridLayout,
     QIcon,
@@ -14,11 +20,11 @@ from AppCore import PathFactory, Language, Logger, ColorPalette
 
 def _t(key):
     """读取欢迎页语言键（load_page 的 self 是 window，故用模块级函数）。"""
-    return Language.resolve(f"PAGE.widget_show.{key}", key)
+    return Language.resolve(f"app.welcome.{key}", key)
 
 
 class NormalWidgetShowPage:
-    """基座欢迎页（组件展示）：全部可见文本走语言包，语言切换时随页面重建刷新。"""
+    """组件展示页：全部可见文本走语言包，语言切换时随页面重建刷新。"""
 
     def load_page(self):
         # 新增页面
@@ -109,3 +115,6 @@ class NormalWidgetShowPage:
         welcome_card_layout.addWidget(card_6)
         welcome_card_layout.addWidget(card_7)
         welcome_card_layout.addWidget(card_8)
+
+
+PAGE = NormalWidgetShowPage

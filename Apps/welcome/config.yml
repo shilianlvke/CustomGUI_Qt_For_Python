@@ -1,0 +1,11 @@
+app_name: "welcome"
+app_id: "app.menu.left.welcome"
+button_id: "btn_widget_show"
+page_object: "normalWidgetShowPage"
+app_icon: "icon.app.welcome.app_icon"
+app_text: "language.app.welcome.app_text"
+app_tooltip: "language.app.welcome.app_tooltip"
+app_target: "LeftMenu"
+show_top: true
+is_active: true
+is_default: true

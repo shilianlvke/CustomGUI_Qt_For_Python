@@ -39,6 +39,9 @@ def main() -> int:
         _build_add_data_arg("resource", "resource"),
         "--add-data",
         _build_add_data_arg("ReadMeRes", "ReadMeRes"),
+        # Apps 应用模组（基座启动时扫描加载，必须随包分发）
+        "--add-data",
+        _build_add_data_arg("Apps", "Apps"),
         "main.py",
     ]
 

@@ -146,6 +146,7 @@ def register_app(app_dir: Path, registry=None) -> AppContext | None:
     text_key = config.get("app_text") or f"language.app.{name}.app_text"
     tooltip_key = config.get("app_tooltip") or f"language.app.{name}.app_tooltip"
     icon_path = _resolve_icon(config, app_dir)
+    is_default = bool(config.get("is_default", False))
 
     registry.register_menu(
         MenuPlugin(
@@ -195,6 +196,7 @@ def register_app(app_dir: Path, registry=None) -> AppContext | None:
                 page_object=page_object,
                 title_getter=lambda language: language.resolve_key(text_key, name),
                 loader=loader,
+                default=is_default,
             )
         )
         return context
@@ -215,6 +217,7 @@ def register_app(app_dir: Path, registry=None) -> AppContext | None:
                 page_object=page_object,
                 title_getter=lambda language: language.resolve_key(text_key, name),
                 loader=_loader,
+                default=is_default,
             )
         )
         return context

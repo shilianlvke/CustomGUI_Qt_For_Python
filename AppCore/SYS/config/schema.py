@@ -315,7 +315,9 @@ def validate_language_data(language_data: Any, language_name: str = "unknown") -
         ["sys_name", "sys_version", "sys_copyright", "sys_github"],
         f"{label}.custom_ui",
     )
-    _require_keys(language_data["PAGE"], ["widget_show"], f"{label}.PAGE")
+    # PAGE 段仅要求存在（页面文本由 Apps/<app>/resource/lang 提供）
+    if not isinstance(language_data["PAGE"], Mapping):
+        raise ValueError(f"{label}.PAGE 必须是字典")
     _require_keys(language_data["UI"], ["ui_Settings", "ui_Show", "ui_Hide"], f"{label}.UI")
 
 

@@ -16,7 +16,7 @@ from AppCore import (
     record_event,
     track_timing,
 )
-from Guis import UiMainWindow, SetupMainWindow
+from Guis import SetupMainWindow, UiMainWindow
 from Guis.windows.main_window.controller import MainWindowController
 
 

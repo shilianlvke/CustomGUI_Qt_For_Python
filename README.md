@@ -112,9 +112,17 @@ AppThemes[AppSettings.theme_name].data  # Attrs：属性/字典双访问
 
 ## Apps 应用模组（基座 + 模组架构）
 
-本项目是一个 **基座（加载器）**：只提供固定页面布局、GuiCore UI 组件库和
-欢迎界面（组件展示页）。具体业务内容由用户以「应用模组」形式放入 `Apps/`
-目录，像安装模组一样被自动发现、挂载菜单并注册页面，删除目录即卸载。
+本项目是一个 **基座（加载器）**：只提供固定页面布局、GuiCore UI 组件库、
+菜单/路由/主题/语言框架——**基座本身不包含任何页面**（含欢迎页）。
+全部页面由用户以「应用模组」形式放入 `Apps/` 目录，像安装模组一样被自动
+发现、挂载菜单并注册页面，删除目录即卸载；清空 `Apps/` 后基座仍可启动
+（内容区留空，仅剩窗口控制菜单）。
+
+内置模组（随仓库分发，均可删除）：
+
+- `Apps/welcome`：欢迎页（组件展示，默认页 `is_default: true`）
+- `Apps/example`：最小模组范本
+- `Apps/p2ptest_*`：P2PTester 业务页面（7 个独立模组）
 
 ### 模组结构
 
@@ -141,6 +149,7 @@ Apps/<app_name>/
 | `app_text` / `app_tooltip` | 菜单文本语言键 `language.app.<name>.*` | 同左 |
 | `app_target` | 菜单挂载点（LeftMenu / TitleMenu） | `LeftMenu` |
 | `show_top` / `is_active` | 菜单项位置 / 默认激活 | `true` / `false` |
+| `is_default` | 是否为启动默认页 | `false` |
 
 ### 页面协议（gui/main.py 按优先级识别其一）
 
@@ -316,19 +325,6 @@ uv run python main.py
 • 启用 `One Directory` 打包模式
 • 添加 `ui` 和 `themes` 目录到附加文件
 
-### 命令行打包（跨平台）
-
-```bash
-uv pip install "pyinstaller>=6.10.0"
-uv run python scripts/build_package.py
-```
-
-构建产物目录：
-
-```text
-dist/CustomGUI/
-```
-
 ### CI/CD 发布流水线
 
 - `CI` 工作流：用于 lint + 测试
@@ -345,13 +341,26 @@ dist/CustomGUI/
 uv run python scripts/generate_docs.py
 ```
 
-生成目录：
+生成目录（ARCHITECTURE.md / API.md / LEGACY_COMPATIBILITY.md）：
 
 ```text
-docs/
+Docs/
 ```
 
-`Docs` 工作流会在核心代码或脚本变更时自动生成文档，并上传 `Docs` 作为构建产物，同时检查仓库内文档是否与代码保持同步。
+CI 工作流包含「文档同步检查」：每次提交都会重新生成文档并与仓库内
+`Docs/` 对比，不一致则失败——修改核心代码或脚本后请记得重新生成并提交
+`Docs/`。
+
+### 打包脚本
+
+```bash
+# 构建独立应用（PyInstaller，含 resource/ReadMeRes/Apps 应用模组）
+uv pip install "pyinstaller>=6.10.0"
+uv run python scripts/build_package.py
+
+# 将构建产物压缩为 zip（dist/release/）
+uv run python scripts/archive_dist.py <target-name>
+```
 
 ### 迁移与兼容状态（2026-10）
 

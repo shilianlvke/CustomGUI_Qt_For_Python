@@ -2,7 +2,7 @@ from PySide6.QtCore import QMargins, QSize, Qt
 from PySide6.QtGui import QIcon
 from PySide6.QtWidgets import QGridLayout, QVBoxLayout, QWidget
 from .functions import MainFunctions
-from .user_define_pages import get_default_page_object, get_menu_items, load_registered_pages
+from .registry import get_default_page_object, get_menu_items, load_registered_pages
 from GuiCore import CCard, CComboBox, CGrips, CMenu, CMenuButton, CPushButton, CScrollArea, CShowCard, CStatusButton
 from AppCore import AppSettings, ColorPalette, Language, Logger, MenuPlugin, PathFactory, get_plugin_registry
 from Guis.app_loader import load_apps
@@ -83,9 +83,11 @@ class SetupMainWindow:
         SetupMainWindow.menu_add_btn(self)
         # PAGES
         load_registered_pages(self)
-        # 设置初始页面/设置左右列菜单
+        # 设置初始页面/设置左右列菜单（无任何应用时内容区留空）
         default_page = get_default_page_object()
-        MainFunctions.set_page(self, self.ui.load_pages.pages.findChild(QWidget, default_page))
+        page = self.ui.load_pages.pages.findChild(QWidget, default_page) if default_page else None
+        if page is not None:
+            MainFunctions.set_page(self, page)
         # MainFunctions.set_left_column_menu(
         #     self,
         #     menu=self.ui.left_column.menus.menu_1,

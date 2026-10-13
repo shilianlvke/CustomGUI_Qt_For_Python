@@ -8,23 +8,7 @@ custom_ui:
   sys_description: P2PTester is an open-source system test management tool for managing system testing.
   sys_license: MIT
   sys_github: https://gitee.com/shilianlvke/CustomGUI
-PAGE:
-  widget_show:
-    title: Component Showcase
-    btn_standard: Standard Button
-    btn_icon: Icon Button
-    btn_text_icon: QIcon-Text Button
-    btn_two_state: Two-State Button
-    btn_three_state: Three-State Button
-    btn_menu: Menu Button
-    btn_combo: Combo Box
-    state_left: Left
-    state_right: Right
-    state_middle: Middle
-    menu_mail: Mail
-    menu_save: Save
-    menu_send: Send
-    combo_placeholder: Choose your hero
+PAGE: {}
 UI:
   # Window
   ui_Minimize: Minimize
@@ -149,15 +133,6 @@ UI:
 TEXT:
   home_page_welcome: Hello! I am P2PTester~
   login: Log in to P2PTester
-
-# Base built-in dialog language (app business language moved to Apps/<app>/resource/lang)
-P2PTester:
-  team_create_dialog:
-    team_name_label: Team Name
-    team_name_input: Enter team name~
-    team_doc_label: Team Description
-    team_doc_input: Enter team description~
-    team_create_btn: Create Team
 
 Log:
   pyserial_not_install: "pyserial not install, can't get COM device list"
