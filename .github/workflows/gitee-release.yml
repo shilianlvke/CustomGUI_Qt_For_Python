@@ -1,0 +1,83 @@
+name: Release to Gitee
+
+# 将 GitHub Release 及其附件同步发布到 Gitee（版本发布双平台同步）。
+#
+# 触发方式：
+#   1. GitHub Release 发布（release: published）——常规路径，与 Release Build 联动：
+#      推送 v* tag → Release Build 构建并创建 GitHub Release → 本工作流自动同步到 Gitee。
+#   2. 手动触发（workflow_dispatch）——指定 tag 补发，或留空使用最新 Release。
+#
+# 前置配置（一次性）：
+#   1. 在 Gitee 生成私人令牌：头像 → 设置 → 私人令牌 → 生成新令牌（需勾选 releases 相关权限）。
+#   2. 在本仓库 GitHub Settings → Secrets and variables → Actions 中配置：
+#        - Secrets:   GITEE_TOKEN   Gitee 私人令牌
+#        - Variables: GITEE_OWNER   Gitee 仓库所属空间地址（个人/组织 path，可选，缺省用 GitHub 同名）
+#                     GITEE_REPO    Gitee 仓库路径（可选，缺省用 GitHub 同名）
+#
+# 说明：Gitee 侧 tag 不存在时，创建 Release 会基于默认分支自动生成 tag；
+#       同名附件自动跳过，工作流可重复执行。
+
+on:
+  release:
+    types: [published]
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "要发布到 Gitee 的 GitHub Release 标签（留空则使用最新 Release）"
+        required: false
+        type: string
+
+permissions:
+  contents: read
+
+jobs:
+  publish-to-gitee:
+    name: Publish to Gitee Release
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Resolve release tag
+        id: resolve
+        run: |
+          if [ "${{ github.event_name }}" = "release" ]; then
+            echo "tag=${{ github.event.release.tag_name }}" >> "$GITHUB_OUTPUT"
+          elif [ -n "${{ inputs.tag }}" ]; then
+            echo "tag=${{ inputs.tag }}" >> "$GITHUB_OUTPUT"
+          else
+            tag="$(gh api "repos/${{ github.repository }}/releases/latest" --jq .tag_name)"
+            echo "tag=$tag" >> "$GITHUB_OUTPUT"
+          fi
+        env:
+          GH_TOKEN: ${{ github.token }}
+
+      - name: Download release assets
+        run: |
+          mkdir -p assets
+          gh release download "${{ steps.resolve.outputs.tag }}" --dir assets --clobber
+        env:
+          GH_TOKEN: ${{ github.token }}
+
+      - name: Write release body
+        run: |
+          gh api "repos/${{ github.repository }}/releases/tags/${{ steps.resolve.outputs.tag }}" --jq .body > release_body.md
+        env:
+          GH_TOKEN: ${{ github.token }}
+
+      - name: Publish to Gitee
+        env:
+          GITEE_TOKEN: ${{ secrets.GITEE_TOKEN }}
+          GITEE_OWNER: ${{ vars.GITEE_OWNER }}
+          GITEE_REPO: ${{ vars.GITEE_REPO }}
+          GITEE_TAG: ${{ steps.resolve.outputs.tag }}
+          GITEE_PRERELEASE: ${{ github.event.release.prerelease || 'false' }}
+        run: |
+          python3 scripts/publish_gitee_release.py \
+            --owner "${GITEE_OWNER:-${{ github.repository_owner }}}" \
+            --repo "${GITEE_REPO:-${{ github.event.repository.name }}}" \
+            --token "$GITEE_TOKEN" \
+            --tag "$GITEE_TAG" \
+            --body-file release_body.md \
+            --assets-dir assets \
+            --prerelease "$GITEE_PRERELEASE"

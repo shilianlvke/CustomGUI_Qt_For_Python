@@ -332,6 +332,14 @@ uv run python main.py
    - 支持 Windows 打包
    - 推送 `v*` tag 自动触发
    - 自动上传构建产物到 GitHub Release
+- `Release to Gitee` 工作流：GitHub Release 发布后自动同步到 Gitee（双平台版本发布）：
+   - 复用 `Release Build` 产物：创建同名 Gitee Release 并上传 zip 附件，同名附件自动跳过、可重复执行
+   - 也可手动触发（指定 tag 补发，或留空使用最新 Release）
+   - 一次性配置：在 Gitee「设置 → 私人令牌」生成令牌；在本仓库
+     `Settings → Secrets and variables → Actions` 中添加
+     `GITEE_TOKEN`（Secret），可选 `GITEE_OWNER` / `GITEE_REPO`（Variables，
+     缺省使用 GitHub 同名仓库）
+   - 实现：`.github/workflows/gitee-release.yml` + `scripts/publish_gitee_release.py`
 
 ### 文档自动化（架构图/API）
 
