@@ -1,5 +1,6 @@
 """滚动区域组件：背景色实时跟随主题切换。"""
 
+from PySide6.QtCore import Qt
 from PySide6.QtWidgets import QScrollArea
 
 from AppCore import ColorPalette, get_theme_manager
@@ -14,6 +15,9 @@ class CScrollArea(QScrollArea):
 
     def __init__(self, parent=None, background=None, object_name=None):
         super().__init__(parent)
+        self.setWidgetResizable(True)
+        self.setVerticalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
+        self.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
         if object_name is not None:
             self.setObjectName(object_name)
         self._background = background
