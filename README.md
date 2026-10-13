@@ -342,24 +342,24 @@ uv run python main.py
    - 实现：`.github/workflows/gitee-release.yml` + `scripts/publish_gitee_release.py`
 - `Gitee Go` 原生流水线（可选，配置文件 `.workflow/ReleasePipeline.yml`）：
    - Gitee Go 读取仓库根目录 `.workflow/` 下的 YAML，提交即被平台自动发现（无需在平台粘贴）
-   - `v*` tag 推送自动触发：质量检查（ruff + pytest）→ Linux 打包 → 复用
-     `scripts/publish_gitee_release.py` 通过 Gitee API 创建 Release 并上传 zip 附件
-     （幂等：同 tag 复用 Release、同名附件跳过）
-   - Release tag 由脚本 `--tag auto` 解析：推送 tag 场景取 `GITEE_REF_NAME`
-     （v*），手动运行场景回退 `v.<构建号>`
-   - 一次性配置：在 Gitee「设置 → 私人令牌」生成令牌，到仓库
+   - `v*` tag 推送自动触发：质量检查（ruff + pytest）→ Linux 打包 → 产物暂存
+   - **默认「无令牌模式」**：只构建不自动发布；发布方式三选一——
+     ① 构建历史页下载产物后到 Gitee「发行版」手动创建 Release 并上传 zip；
+     ② 平台「添加插件 → Gitee Release」表单发布（附件仅限仓库内文件）；
+     ③ 配置密文变量 `RELEASE_TOKEN` 后取消流水线中「可选：自动发布」注释，
+        由 `scripts/publish_gitee_release.py` 全自动创建 Release 并上传 zip
+        （幂等：同 tag 复用 Release、同名附件跳过；tag 由 `--tag auto` 解析）
+   - 为什么自动挂 zip 需要令牌：流水线容器无 Gitee 登录态，调用 Gitee API
+     上传构建产物必须携带私人令牌；官方插件附件只能引用仓库内已有文件，
+     无法使用构建工作区产物
+   - 一次性配置（仅全自动模式）：Gitee「设置 → 私人令牌」生成令牌 → 仓库
      「管理 → 环境变量管理」添加密文变量 `RELEASE_TOKEN`（Gitee Go 保留
      `GITEE_` 前缀给平台内置变量，自定义变量不能以 `GITEE_` 开头）
 - 本地演练发布脚本（不调用 API）：
   `uv run python scripts/publish_gitee_release.py --owner x --repo y --token z --dry-run`
-   - Gitee Go 密文变量：在 Gitee「设置 → 私人令牌」生成令牌，到仓库
-     「管理 → 环境变量管理」添加密文变量 `RELEASE_TOKEN`（不能以 `GITEE_` 开头；
-     GitHub 同步工作流则用 GitHub Secrets 的 `GITEE_TOKEN`，两者相互独立）
    - 限制：Gitee Go 构建环境为 Linux 容器（内置 Python 最高 3.9），模板内通过 uv 安装
      3.13 解释器，产出的为 **Linux 安装包**；Windows 安装包仍由 GitHub Actions 构建并
      经 `Release to Gitee` 工作流同步——两条链路互补
-   - 说明：平台官方「Gitee Release」插件的 step 标识未公开且附件仅支持已提交仓库的
-     文件，故模板直接复用发布脚本走 API，不依赖该插件
 
 ### 文档自动化（架构图/API）
 

@@ -3,21 +3,28 @@
 # =============================================================================
 # 【文件位置】仓库根目录 .workflow/ 下（Gitee Go 只读取该目录的 YAML）。
 # 【触发】推送 v* tag（如 v1.2.3）自动执行；也可在平台手动运行。
-# 【流程】质量检查（ruff + pytest）→ Linux 打包（PyInstaller）→
-#         调用 Gitee API 创建 Release 并上传 zip 附件（幂等，复用
-#         scripts/publish_gitee_release.py）。
-# 【一次性配置】Gitee 仓库「管理 → 环境变量管理」添加密文变量 RELEASE_TOKEN：
-#         Gitee「设置 → 私人令牌」生成（勾选 releases 权限）。
-#         注意：Gitee Go 保留 GITEE_ 前缀给平台内置变量，自定义变量不能以
-#         GITEE_ 开头，故命名为 RELEASE_TOKEN。
-# 【说明】
-#   - Gitee Go 构建环境为 Linux 容器（内置 Python 最高 3.9），无法直接产出
-#     Windows exe；Windows 安装包由 GitHub Actions（release-build.yml）构建，
-#     并经 gitee-release.yml 同步到 Gitee —— 两条链路互补，均复用同一发布脚本。
-#   - build@python 内置 Python 3.9 仅用于引导 uv，实际运行解释器为 3.13
-#     （首次需联网下载，若容器网络受限请反馈）。
-#   - Release tag 由脚本按 --tag auto 解析：推送 tag 场景取 GITEE_REF_NAME
-#     （v*），手动运行场景回退 v.<构建号>。
+# 【流程】质量检查（ruff + pytest）→ Linux 打包（PyInstaller）→ 暂存产物。
+# =============================================================================
+# 【为什么发布 Release 需要令牌（RELEASE_TOKEN）？】
+#   流水线容器没有你的 Gitee 登录态。要把刚构建出的 zip 自动挂到
+#   「Gitee Release」上，只能调用 Gitee API 上传附件，API 调用必须携带
+#   私人令牌（Personal Access Token）证明身份——这是 Gitee 平台的硬性要求。
+#   平台官方「Gitee Release」插件的附件只能引用【已提交到仓库的文件】，
+#   无法使用构建工作区产物，所以自动挂 zip 只能走 API + 令牌。
+# 【无令牌模式（当前默认）】
+#   本流水线只做「构建 + 质量检查 + 产物暂存」，不做自动发布。
+#   发布方式（任选其一）：
+#     1) 平台手动：流水线页面「下载构建产物」→ Gitee 网页「发行版」新建 Release
+#        手动上传 zip（约 1 分钟）；
+#     2) 官方插件：流水线页面「添加插件」→「Gitee Release」→ 表单配置
+#        （只能发布 tag/标题/说明，附件需选仓库内已有文件）；
+#     3) 全自动（推荐，一次性配置）：配置 RELEASE_TOKEN 密文变量后，
+#        取消下方【可选：自动发布】三条命令的注释即可。
+# 【一次性配置（全自动模式需要）】
+#   - Gitee「设置 → 私人令牌」生成令牌（勾选 releases 权限）；
+#   - 仓库「管理 → 环境变量管理」添加密文变量 RELEASE_TOKEN。
+#     注意：Gitee Go 保留 GITEE_ 前缀给平台内置变量，自定义变量不能以
+#     GITEE_ 开头，故命名为 RELEASE_TOKEN。
 # =============================================================================
 
 # 当前 yml 文件版本（固定）
@@ -42,18 +49,17 @@ stages:
     trigger: auto
     steps:
       # ---------------------------------------------------------
-      # 步骤 1：质量检查 + Linux 打包 + 发布 Gitee Release
-      # 单步骤完成全部工作：同一工作区，避免跨步骤产物传递问题。
+      # 步骤 1：质量检查 + Linux 打包 + 暂存产物
       # ---------------------------------------------------------
       - step: build@python
         name: quality_package_release
-        displayName: 质量检查与打包发布
+        displayName: 质量检查与打包
         # 平台内置最高 3.9，仅用于引导 uv（实际解释器为 3.13）
         pythonVersion: 3.9
         commands:
           # ---- 依赖与解释器 ----
           # 注意：容器内 pip 以 user 模式安装，uv 落在 ~/.local/bin，必须加入 PATH；
-          # Gitee Go 会把每条 command 单独引号包裹执行，发布命令必须写成单行（不能用 \ 续行）。
+          # Gitee Go 会把每条 command 单独引号包裹执行，命令必须写成单行（不能用 \ 续行）。
           - python3 -m pip config set global.index-url https://pypi.tuna.tsinghua.edu.cn/simple
           - python3 -m pip install uv
           - export PATH="$HOME/.local/bin:$PATH"
@@ -69,12 +75,11 @@ stages:
           - uv run python scripts/build_package.py
           - uv run python scripts/archive_dist.py linux
           - ls -lh dist/release
-          # ---- 发布 Gitee Release（幂等，可重复执行）----
-          # 未配置 RELEASE_TOKEN 时提前失败，给出清晰提示（含冒号，需引号包裹）
-          - 'if [ -z "${RELEASE_TOKEN}" ]; then echo "错误: 未配置 RELEASE_TOKEN 密文变量（Gitee 仓库 管理→环境变量管理 添加）"; exit 1; fi'
-          - echo "${GITEE_COMMIT_MESSAGE}" > release_body.md
-          - uv run python scripts/publish_gitee_release.py --owner shilianlvke --repo CustomGUI_Qt_For_Python --token "${RELEASE_TOKEN}" --tag auto --body-file release_body.md --assets-dir dist/release --prerelease false
-        # 暂存构建产物（7 天后自动清除；Release 附件已上传，此处仅便于平台查看）
+          # ---- 可选：自动发布（配置 RELEASE_TOKEN 后取消以下三条命令的注释）----
+          # - 'if [ -z "${RELEASE_TOKEN}" ]; then echo "错误: 未配置 RELEASE_TOKEN 密文变量（Gitee 仓库 管理→环境变量管理 添加）"; exit 1; fi'
+          # - echo "${GITEE_COMMIT_MESSAGE}" > release_body.md
+          # - uv run python scripts/publish_gitee_release.py --owner shilianlvke --repo CustomGUI_Qt_For_Python --token "${RELEASE_TOKEN}" --tag auto --body-file release_body.md --assets-dir dist/release --prerelease false
+        # 暂存构建产物（7 天后自动清除；构建历史页可下载）
         artifacts:
           - name: BUILD_ARTIFACT
             path:
