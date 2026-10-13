@@ -3,9 +3,10 @@ name = "customgui"
 version = "0.1.0"
 description = "CustomUI 是一个开源的UI库，用于快速开发UI界面。"
 readme = "README.md"
-requires-python = ">=3.12"
+requires-python = ">=3.13"
 dependencies = [
     "easydict>=1.13",
+    "loadstructure>=0.2.2",
     "pyside6>=6.10.1",
     "pyyaml>=6.0.3",
 ]
@@ -22,13 +23,13 @@ dev = [
     "black"
 ]
 
+[[tool.uv.index]]
+url = "https://pypi.tuna.tsinghua.edu.cn/simple"
+default = true
+
 [tool.ruff]
 line-length = 120
 target-version = "py312"
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
-
-[[tool.uv.index]]
-url = "https://pypi.tuna.tsinghua.edu.cn/simple"
-default = true

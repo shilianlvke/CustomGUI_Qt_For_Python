@@ -1,6 +1,5 @@
 from AppCore import AppLanguages, Logger, Language, AppSettings
 
-Language.update(AppLanguages[AppSettings.language].data)
 try:
     import serial.tools.list_ports as serial_list_ports
 except Exception:
@@ -54,6 +53,7 @@ def get_net_adapter():
 
 
 if __name__ == "__main__":
+    Language.update(AppLanguages[AppSettings.language].data)
     ad_list = get_net_adapter()
     for i in ad_list:
         print(i)
