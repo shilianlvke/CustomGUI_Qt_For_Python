@@ -1,0 +1,96 @@
+# =============================================================================
+# Gitee Go 原生流水线：版本发布（ReleasePipeline）
+# =============================================================================
+# 【重要】文件位置：仓库根目录 .workflow/ 下（Gitee Go 只读取该目录的 YAML；
+#        平台「新建流水线 → 选择模板」也会在仓库根目录自动生成 .workflow/）。
+# 【使用方式】提交本文件到仓库后，Gitee Go 会自动发现并创建流水线；
+#        也可在平台「新建流水线 → 空模板 → YAML 编排」粘贴本内容。
+# 【触发】推送 v* tag（如 v1.2.3）自动执行；也可在平台手动运行。
+# 【流程】质量检查（ruff + pytest）→ Linux 打包（PyInstaller）→ 创建 Gitee Release。
+# 【已知限制】
+#   - Gitee Go 构建环境为 Linux 容器（CentOS 8.3），无法直接产出 Windows exe；
+#     Windows 安装包由 GitHub Actions（Release Build）构建，
+#     并经 .github/workflows/gitee-release.yml 同步到 Gitee —— 两条流水线互补。
+#   - build@python 插件内置 Python 最高 3.9，本项目要求 >= 3.13，
+#     故通过 uv 安装独立 3.13 解释器（首次需联网下载 python，若容器网络受限，
+#     可将发布阶段退化为「质量检查 + 创建空 Release」）。
+#   - Gitee Release 插件的附件（assertFiles）取自流水线工作区路径；
+#     个别平台版本仅支持已提交到仓库的文件，若附件上传失败，
+#     请将产物复制到仓库内路径后再引用。
+# =============================================================================
+
+# 当前 yml 文件版本（固定）
+version: '1.0'
+# 流水线唯一标识（仓库内唯一）
+name: release-pipeline
+# 流水线展示名称（支持中文）
+displayName: 版本发布
+
+# 触发规则：推送 v* tag 时自动触发
+triggers:
+  push:
+    tags:
+      prefix:
+        - v
+
+# 阶段定义（新版平铺格式：- name: 直接作为 stage 列表项）
+stages:
+  - name: release_build
+    displayName: 发布构建
+    # naturally：失败不阻断并行分支；fast：快速失败
+    strategy: naturally
+    # auto：上游成功后自动触发下游
+    trigger: auto
+    steps:
+      # ---------------------------------------------------------
+      # 步骤 1：质量检查 + Linux 打包
+      # ---------------------------------------------------------
+      - step: build@python
+        # 任务标识：阶段内唯一
+        name: quality_and_package
+        displayName: 质量检查与打包
+        # 平台最高支持 3.9（仅用于引导 uv，实际运行解释器为 3.13）
+        pythonVersion: 3.9
+        # 命令执行目录为代码库根目录
+        commands:
+          - python3 -m pip config set global.index-url https://pypi.tuna.tsinghua.edu.cn/simple
+          - python3 -m pip install uv
+          - uv python install 3.13
+          - uv venv --python 3.13
+          - uv sync --extra dev
+          - uv run ruff check . --select E9,F63,F7,F82
+          - uv run pytest -q
+          - uv pip install "pyinstaller>=6.10.0"
+          - uv run python scripts/build_package.py
+          - uv run python scripts/archive_dist.py linux
+          - ls -lh dist/release
+        # 暂存构建产物（7 天后自动清除）
+        artifacts:
+          - name: BUILD_ARTIFACT
+            path:
+              - ./dist/release
+
+      # ---------------------------------------------------------
+      # 步骤 2：创建/更新 Gitee Release 并附加安装包（串行依赖步骤 1）
+      # ---------------------------------------------------------
+      - step: release@gitee-release
+        # 注：插件 step 标识以 Gitee Go 平台「添加插件」时 YAML 视图
+        #     自动生成的 step 值为准；若平台显示不同请照实替换。
+        name: publish_gitee_release
+        displayName: 发布 Gitee Release
+        # 串行执行：依赖步骤 1 完成
+        dependsOn: quality_and_package
+        # 版本号：官方示例模式（构建号即版本）。
+        # 若需与推送的 v* tag 同名发布，可在平台配置流水线级参数
+        # RELEASE_TAG，此处改为 ${RELEASE_TAG}。
+        tagName: v.${GITEE_PIPELINE_BUILD_NUMBER}
+        releaseName: CustomGUI v.${GITEE_PIPELINE_BUILD_NUMBER}
+        # Release 描述：可直接写文本，或引用仓库内文件（如 releaseNode.md）
+        description: 自动发布：CustomGUI v.${GITEE_PIPELINE_BUILD_NUMBER}
+        # 附件：流水线工作区内相对路径，支持多文件
+        assertFiles:
+          - ./dist/release/CustomGUI-linux.zip
+        # 预览版本：false（正式版）
+        prerelease: false
+        # 允许覆盖：同 tag 已存在 Release 时覆盖更新（建议开启便于重跑）
+        allowUpdate: true
