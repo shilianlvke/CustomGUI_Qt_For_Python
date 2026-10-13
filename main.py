@@ -34,14 +34,8 @@ class MainWindow(QMainWindow):
         # 允许窗口追踪鼠标移动
         self.setMouseTracking(True)
 
-        # 启动阶段加载主题与语言资源
-        Logger.debug(f"窗口主题：{AppSettings.theme_name}")
-        Logger.debug(f"语言包：{AppSettings.language}")
-        ColorPalette.update(AppThemes[AppSettings.theme_name].data)
-        Language.update(AppLanguages[AppSettings.language].data)
-
         # 设置初始尺寸与最小尺寸
-        Logger.debug(f"窗口大小：{AppSettings.startup_size}")
+        Logger.debug(f"当前窗口大小：{AppSettings.startup_size}")
         self.resize(AppSettings.startup_size[0], AppSettings.startup_size[1])
         self.setMinimumSize(AppSettings.minimum_size[0], AppSettings.minimum_size[1])
 
@@ -79,7 +73,11 @@ class MainWindow(QMainWindow):
 if __name__ == "__main__":
     # 启动前初始化全局应用上下文（配置、主题、语言等）
     initialize_app_context()
-
+    # 启动阶段加载主题与语言资源
+    Logger.debug(f"当前窗口主题：{AppSettings.theme_name}")
+    Logger.debug(f"当前语言包：{AppSettings.language}")
+    ColorPalette.update(AppThemes[AppSettings.theme_name].data)
+    Language.update(AppLanguages[AppSettings.language].data)
     # 创建 Qt 应用对象
     app = QApplication(sys.argv)
 
