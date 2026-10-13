@@ -340,6 +340,13 @@ uv run python main.py
      `GITEE_TOKEN`（Secret），可选 `GITEE_OWNER` / `GITEE_REPO`（Variables，
      缺省使用 GitHub 同名仓库）
    - 实现：`.github/workflows/gitee-release.yml` + `scripts/publish_gitee_release.py`
+- `Gitee Go` 原生流水线（可选，参考模板 `.gitee/workflows/gitee-go-release.yml`）：
+   - 用于国内镜像仓库完全独立的发布链路：Gitee Go 平台新建流水线 →「YAML 编排」粘贴模板
+   - `v*` tag 推送自动触发：质量检查（ruff + pytest）→ Linux 打包 → 创建 Gitee Release
+   - 限制：Gitee Go 构建环境为 Linux 容器（内置 Python 最高 3.9），模板内通过 uv 安装
+     3.13 解释器，产出的为 **Linux 安装包**；Windows 安装包仍由 GitHub Actions 构建并
+     经 `Release to Gitee` 工作流同步——两条链路互补
+   - 插件 step 标识以 Gitee Go 平台 YAML 视图自动生成的值为准（模板已标注）
 
 ### 文档自动化（架构图/API）
 
