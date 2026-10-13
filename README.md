@@ -342,11 +342,16 @@ uv run python main.py
    - 实现：`.github/workflows/gitee-release.yml` + `scripts/publish_gitee_release.py`
 - `Gitee Go` 原生流水线（可选，配置文件 `.workflow/ReleasePipeline.yml`）：
    - Gitee Go 读取仓库根目录 `.workflow/` 下的 YAML，提交即被平台自动发现（无需在平台粘贴）
-   - `v*` tag 推送自动触发：质量检查（ruff + pytest）→ Linux 打包 → 创建 Gitee Release
+   - `v*` tag 推送自动触发：质量检查（ruff + pytest）→ Linux 打包 → 复用
+     `scripts/publish_gitee_release.py` 通过 Gitee API 创建 Release 并上传 zip 附件
+     （幂等：同 tag 复用 Release、同名附件跳过）
+   - 一次性配置：在 Gitee「设置 → 私人令牌」生成令牌，到仓库
+     「管理 → 环境变量管理」添加密文变量 `GITEE_TOKEN`（与 GitHub 同步工作流共用）
    - 限制：Gitee Go 构建环境为 Linux 容器（内置 Python 最高 3.9），模板内通过 uv 安装
      3.13 解释器，产出的为 **Linux 安装包**；Windows 安装包仍由 GitHub Actions 构建并
      经 `Release to Gitee` 工作流同步——两条链路互补
-   - 插件 step 标识以 Gitee Go 平台添加插件时 YAML 视图自动生成的值为准（模板已标注）
+   - 说明：平台官方「Gitee Release」插件的 step 标识未公开且附件仅支持已提交仓库的
+     文件，故模板直接复用发布脚本走 API，不依赖该插件
 
 ### 文档自动化（架构图/API）
 
