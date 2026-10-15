@@ -43,7 +43,8 @@ def apply_language(language: str, window=None) -> str:
 
 def switch_language(window=None) -> str:
     """在可用语言间循环切换，返回新语言名。"""
-    return apply_language(Language.cycle(), window=window)
+    target = "en_us" if current_language() == "zh_cn" else "zh_cn"
+    return apply_language(target, window=window)
 
 
 def _refresh_window(window) -> None:

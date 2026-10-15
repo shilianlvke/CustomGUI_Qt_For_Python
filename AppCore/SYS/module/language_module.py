@@ -97,9 +97,15 @@ class LanguageHandler:
             return self._current
 
     def apply(self, language: str) -> str:
-        """整体切换语言并通知订阅者，返回新语言名。"""
+        """整体切换语言并通知订阅者，返回新语言名。
+
+        相同语言重复调用直接返回（幂等，避免重复刷新与日志）。
+        """
         if language not in LANGUAGE_OPTIONS:
             raise ValueError(f"不支持的语言: {language}（可选: {LANGUAGE_OPTIONS}）")
+
+        if self._current == language:
+            return language
 
         from ..config import AppLanguages
 

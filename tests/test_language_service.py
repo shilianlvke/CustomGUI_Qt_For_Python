@@ -89,3 +89,21 @@ def test_language_subscription_notifies_listeners():
         apply_language("zh_cn")
 
     assert calls
+
+
+def test_apply_same_language_is_idempotent():
+    """相同语言重复应用：不重复通知订阅者（避免重复刷新与日志）。"""
+    apply_language("en_us")
+    calls = []
+
+    def _listener():
+        calls.append(True)
+
+    from AppCore import Language
+
+    Language.subscribe(_listener)
+    try:
+        apply_language("en_us")  # 幂等：直接返回，不触发 notify
+        assert calls == []
+    finally:
+        apply_language("zh_cn")
