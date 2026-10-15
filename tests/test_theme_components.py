@@ -5,6 +5,7 @@ import os
 os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
 
 import pytest
+from PySide6.QtGui import QColor, QPalette
 from PySide6.QtWidgets import QApplication
 
 from AppCore import ColorPalette, get_theme_manager
@@ -21,6 +22,11 @@ def qapp():
 def _restore_theme():
     yield
     get_theme_manager().apply("default")
+
+
+def _viewport_bg(area):
+    """CScrollArea 通过 viewport 调色板着色（而非 QSS，避免裸规则级联污染子控件）。"""
+    return area.viewport().palette().color(QPalette.ColorRole.Window).name()
 
 
 def test_show_card_style_follows_theme(qapp):
@@ -67,24 +73,26 @@ def test_scroll_area_background_follows_theme(qapp):
     manager.apply("default")
 
     area = CScrollArea(object_name="demo_scroller")
-    assert area.styleSheet().startswith("background:")
+    # 不得使用 QSS：不带选择器的规则会级联到滚动区内所有子控件，破坏其自身样式
+    assert area.styleSheet() == ""
+    assert _viewport_bg(area) == QColor(ColorPalette.custom_dark_three).name()
 
     manager.apply("eye")
-    assert ColorPalette.custom_dark_three in area.styleSheet()
+    assert _viewport_bg(area) == QColor(ColorPalette.custom_dark_three).name()
 
     manager.apply("default")
-    assert ColorPalette.custom_dark_three in area.styleSheet()
+    assert _viewport_bg(area) == QColor(ColorPalette.custom_dark_three).name()
 
 
 def test_scroll_area_custom_background(qapp):
     area = CScrollArea(background="#123456")
-    assert "#123456" in area.styleSheet()
+    assert _viewport_bg(area) == "#123456"
 
     get_theme_manager().apply("eye")
-    assert "#123456" in area.styleSheet()  # 自定义背景不随主题变化
+    assert _viewport_bg(area) == "#123456"  # 自定义背景不随主题变化
 
     area.set_background(None)
-    assert ColorPalette.custom_dark_three in area.styleSheet()  # 恢复跟随主题
+    assert _viewport_bg(area) == QColor(ColorPalette.custom_dark_three).name()  # 恢复跟随主题
 
 
 def test_window_frame_override(qapp):
