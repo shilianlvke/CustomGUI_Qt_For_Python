@@ -6,6 +6,7 @@ from .picture import CPixmap as CPixmap
 from .div import CHDiv as CHDiv, CVDiv as CVDiv
 from .line_edit import CLineEdit as CLineEdit
 from .scroll import CScrollArea as CScrollArea
+from .tooltip import CToolTip as CToolTip
 
 __all__ = [
     "CPushButton",
@@ -20,4 +21,5 @@ __all__ = [
     "CVDiv",
     "CLineEdit",
     "CScrollArea",
+    "CToolTip",
 ]

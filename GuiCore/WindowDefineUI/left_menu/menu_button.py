@@ -1,7 +1,9 @@
 from PySide6.QtCore import QEvent, QPoint, QRect, Qt, Slot
 from PySide6.QtGui import QColor, QPainter, QPixmap
-from PySide6.QtWidgets import QGraphicsDropShadowEffect, QLabel, QPushButton
+from PySide6.QtWidgets import QPushButton
 from AppCore import PathFactory, ColorPalette
+
+from ...CustomUI import CToolTip
 
 
 class CLeftMenuButton(QPushButton):
@@ -46,7 +48,7 @@ class CLeftMenuButton(QPushButton):
         self._maximum_width = maximum_width
         # TOOLTIP
         self._tooltip_text = tooltip_text
-        self.tooltip = _ToolTip(app_parent, tooltip_text)
+        self.tooltip = CToolTip(app_parent, tooltip_text, accent="left")
         self.tooltip.hide()
 
     # 绘制事件
@@ -262,31 +264,3 @@ class CLeftMenuButton(QPushButton):
         # 为小部件设置位置
         # 移动工具提示位置
         self.tooltip.move(pos_x, pos_y)
-
-
-# TOOLTIP
-# ///////////////////////////////////////////////////////////////
-class _ToolTip(QLabel):
-    """提示气泡。
-
-    样式统一由 ``GuiCore/styles.py`` 的 ``#label_tooltip`` 提供（左侧强调边经
-    动态属性 ``accent`` 选择），本类不再持有样式与主题订阅。
-    """
-
-    def __init__(self, parent, tooltip):
-        QLabel.__init__(self)
-        # LABEL SETUP
-        self.setObjectName("label_tooltip")
-        self.setProperty("accent", "left")
-        self.setMinimumHeight(34)
-        self.setParent(parent)
-        self.setText(tooltip)
-        self.adjustSize()
-
-        # SET DROP SHADOW
-        self.shadow = QGraphicsDropShadowEffect(self)
-        self.shadow.setBlurRadius(30)
-        self.shadow.setXOffset(0)
-        self.shadow.setYOffset(0)
-        self.shadow.setColor(QColor(0, 0, 0, 80))
-        self.setGraphicsEffect(self.shadow)

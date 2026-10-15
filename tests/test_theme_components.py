@@ -3,7 +3,9 @@
 样式统一后的契约（与 ``CPushButton`` 一致）：
 
 - 组件实例只声明 ``objectName``，颜色/状态/字体一律定义在 ``GuiCore/styles.py``；
-- 组件实例上仅保留**与主题无关的几何量**（圆角、边框宽度）；
+- **几何量不进中央样式表**：圆角、边框宽度、内边距、固定宽高、偏移一律由组件
+  本地用一条只含几何属性的样式表提供；
+- 组件暴露的几何参数默认取 ``None`` 并回落到设计令牌；
 - 主题切换由 ``CWindow.apply_style()`` 重建中央样式表并下发，组件自身不订阅主题。
 """
 
@@ -16,8 +18,17 @@ import pytest
 from PySide6.QtGui import QColor, QPalette
 from PySide6.QtWidgets import QApplication
 
-from AppCore import ColorPalette, get_theme_manager
-from GuiCore import CScrollArea, CShowCard, CMenu, CStatusButton, Styles
+from AppCore import ColorPalette, get_design_tokens, get_theme_manager
+from GuiCore import (
+    CLineEdit,
+    CMenu,
+    CMenuButton,
+    CScrollArea,
+    CShowCard,
+    CStatusButton,
+    CToolTip,
+    Styles,
+)
 
 _HEX_COLOR_RE = re.compile(r"#[0-9a-fA-F]{3,8}\b")
 _COLOR_KEYWORDS = ("background", "color:", "rgb(", "rgba(")
@@ -38,6 +49,14 @@ def _restore_theme():
 def _viewport_bg(area):
     """CScrollArea 通过 viewport 调色板着色（而非 QSS，避免裸规则级联污染子控件）。"""
     return area.viewport().palette().color(QPalette.ColorRole.Window).name()
+
+
+def _central_block(selector):
+    """取出中央样式表中某个选择器块的声明文本（到第一个 ``}`` 为止）。"""
+    sheet = Styles().style
+    start = sheet.find(selector)
+    assert start >= 0, f"中央样式表缺少选择器 {selector!r}"
+    return sheet[start : sheet.find("}", start)]
 
 
 def _assert_geometry_only(sheet, selector):
@@ -175,3 +194,82 @@ def test_window_frame_override(qapp):
     get_theme_manager().apply("default")
     window.set_stylesheet()
     assert window.styleSheet() == default_style
+
+
+# --------------------------------------------------------------------------
+# 几何量与颜色/字体的职责边界：几何一律在组件本地，不进中央样式表
+# --------------------------------------------------------------------------
+@pytest.mark.parametrize(
+    ("selector", "keyword"),
+    [
+        ("#CLeftMenu_Bg_Frame", "border-radius"),
+        ("#CMenuButton_PushButton {", "border-width"),
+        ("#CMenuButton_PushButton {", "border-radius"),
+        ("#CMenuButton_PushButton::menu-indicator {", "padding-right"),
+        ("#CMenu_Menu::item {", "padding-left"),
+        ("#CMenu_Menu::item {", "padding-top"),
+        ("#CLeftColumnTitle_Label", "padding-bottom"),
+        ("#CLeftColumnTitle_Label", "font:"),
+        ("#CLineEdit_LineEdit {", "height:"),
+        ("#CComboBox_ComboBox::drop-down", "width:"),
+        ("#label_tooltip {", "border-radius"),
+        ("#label_tooltip {", "padding-left"),
+    ],
+)
+def test_geometry_not_in_central_stylesheet(qapp, selector, keyword):
+    """几何量不得出现在中央样式表里（只允许颜色/状态/字体与令牌化尺寸）。"""
+    assert keyword not in _central_block(selector), f"{selector} 仍残留几何声明 {keyword}"
+
+
+def test_menu_button_geometry_follows_params(qapp):
+    """CMenuButton 的圆角/边框宽度由实例参数决定，未传时回落设计令牌。"""
+    tokens = get_design_tokens()
+    default = CMenuButton()
+    assert f"border-radius: {tokens.radius.window}px" in default.styleSheet()
+    assert f"border-width: {tokens.border.width}px" in default.styleSheet()
+
+    custom = CMenuButton(radius=4, border_size=6)
+    assert "border-radius: 4px" in custom.styleSheet()
+    assert "border-width: 6px" in custom.styleSheet()
+
+
+def test_menu_item_padding_is_local(qapp):
+    """CMenu 的菜单项内边距由组件本地提供。"""
+    sheet = CMenu(colorpalette=ColorPalette).styleSheet()
+    assert "padding-left: 20px" in sheet
+    assert "padding-top: 5px" in sheet
+    assert "padding-bottom: 5px" in sheet
+
+
+def test_tooltip_geometry_follows_params(qapp):
+    """CToolTip 的圆角/内边距由实例参数决定，未传时回落设计令牌。"""
+    tokens = get_design_tokens()
+    tip = CToolTip(None, "提示", accent="right")
+    assert tip.objectName() == "label_tooltip"
+    assert tip.property("accent") == "right"
+    assert f"border-radius: {tokens.radius.tooltip}px" in tip.styleSheet()
+
+    custom = CToolTip(None, "提示", radius=3, padding=2)
+    assert "border-radius: 3px" in custom.styleSheet()
+    assert "padding-left: 2px" in custom.styleSheet()
+    assert "padding-right: 2px" in custom.styleSheet()
+
+
+def test_left_menu_radius_falls_back_to_token(qapp):
+    """CLeftMenu 的圆角默认回落设计令牌，且由组件本地提供。"""
+    from AppCore import AppLanguages, AppSettings, Language
+    from GuiCore import CLeftMenu
+
+    # CLeftMenu 构造期会读取语言资源，测试里按应用启动的方式初始化一次
+    Language.update(AppLanguages[AppSettings.language].data)
+
+    menu = CLeftMenu()
+    assert f"border-radius: {get_design_tokens().radius.window}px" in menu.bg.styleSheet()
+
+    custom = CLeftMenu(radius=3)
+    assert "border-radius: 3px" in custom.bg.styleSheet()
+
+
+def test_line_edit_height_is_local(qapp):
+    """CLineEdit 的固定高度由组件本地提供。"""
+    assert "height: 32px" in CLineEdit().styleSheet()

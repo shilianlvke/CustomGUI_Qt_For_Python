@@ -3,7 +3,7 @@ from PySide6.QtWidgets import QFrame, QPushButton, QVBoxLayout, QWidget
 from .menu_button import CLeftMenuButton
 from GuiCore.CustomUI.div import CHDiv
 
-from AppCore import PathFactory, ColorPalette, AppSettings, Language
+from AppCore import PathFactory, ColorPalette, AppSettings, Language, get_design_tokens
 
 
 class CLeftMenu(QWidget):
@@ -12,7 +12,7 @@ class CLeftMenu(QWidget):
     released = Signal(object)
 
     def __init__(
-        self, parent=None, app_parent=None, radius=8, icon_path="icon_menu", icon_path_close="icon_menu_close"
+        self, parent=None, app_parent=None, radius=None, icon_path="icon_menu", icon_path_close="icon_menu_close"
     ):
         super().__init__()
         self.setObjectName("CLeftMenu_QWidget")
@@ -30,7 +30,8 @@ class CLeftMenu(QWidget):
         self._text_foreground = ColorPalette.custom_text_foreground
         self._text_active = ColorPalette.custom_text_active
         self._duration_time = AppSettings.time_animation
-        self._radius = radius
+        # 圆角为实例级几何：未显式传入时回落到设计令牌
+        self._radius = get_design_tokens().radius.window if radius is None else radius
         self._minimum_width = AppSettings.lef_menu_size.minimum
         self._maximum_width = AppSettings.lef_menu_size.maximum
         self._icon_path = PathFactory.set_svg_icon(icon_path)
@@ -188,9 +189,10 @@ class CLeftMenu(QWidget):
         self.left_menu_layout = QVBoxLayout(self)
         self.left_menu_layout.setContentsMargins(0, 0, 0, 0)
 
-        # 添加背景框架
+        # 添加背景框架（配色见 GuiCore/styles.py；圆角是实例参数，本地覆盖）
         self.bg = QFrame()
         self.bg.setObjectName("CLeftMenu_Bg_Frame")
+        self.bg.setStyleSheet(f"#CLeftMenu_Bg_Frame {{ border-radius: {self._radius}px; }}")
 
         # 添加顶部框架
         self.top_frame = QFrame()

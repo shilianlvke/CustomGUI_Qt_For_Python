@@ -3,16 +3,18 @@ from AppCore import Logger, PathFactory, get_design_tokens
 
 
 class Styles(object):
-    """全局样式表：所有组件的样式定义都集中在这里。
+    """全局样式表：所有组件的**颜色 / 状态 / 字体**都集中在这里。
 
     约定（与 ``CPushButton`` 一致）：
 
     1. 组件在 ``__init__`` 里只声明 ``setObjectName("<组件名>_<Qt类名>")``；
-    2. 组件的全部**颜色/状态/字体**样式在本文件内按该 objectName 定义；
+    2. 组件的全部颜色/状态/字体样式在本文件内按该 objectName 定义；
     3. 组件**不订阅主题**——主题切换时由 ``CWindow.apply_style()`` 整体重建
        本样式表并下发（窗口级 + 应用级），组件自动跟随；
-    4. 仅当组件存在**实例级几何参数**（圆角、边框宽度等与主题无关的量）时，
-       组件本地用一条只含几何属性的 ``setStyleSheet`` 覆盖，并注明原因。
+    4. **几何量不进本文件**：圆角、边框宽度、内边距、固定宽高、偏移等与主题
+       无关的尺寸，一律由组件本地用一条只含几何属性的 ``setStyleSheet`` 提供
+       （见 ``CStatusButton._apply_geometry``）。组件若暴露几何参数，默认值取
+       ``None`` 并回落到设计令牌，这样既不改变既有外观又能被显式覆盖。
     """
 
     def __init__(self):
@@ -29,7 +31,6 @@ class Styles(object):
             }}
             #CLeftMenu_Bg_Frame {{
                 background: {self.tokens.colors.surface_sidebar};
-                border-radius: {self.tokens.radius.window};
             }}
             #CTitleBar_Bg_Frame {{
                 background: {self.tokens.colors.surface_panel};
@@ -74,10 +75,15 @@ class Styles(object):
         self.update_grips_style()
 
     def update_btn_style(self):
+        """按钮族样式。
+
+        ``CMenuButton`` / ``CPushButton`` 的圆角与边框宽度属实例级几何，由组件
+        本地覆盖；这里只提供颜色、内边距与 ``::menu-indicator`` 的图标资源。
+        """
         self.style += f"""
             #CMenuButton_PushButton {{
-                border: {self.tokens.border.width}px solid {self.tokens.colors.surface_interactive};
-                border-radius: {self.tokens.radius.window}px;
+                border-style: solid;
+                border-color: {self.tokens.colors.surface_interactive};
                 background-color: {self.tokens.colors.surface_interactive};
                 color: {self.tokens.colors.text_primary};
                 padding-left: {self.tokens.spacing.padding_md}px;
@@ -92,15 +98,12 @@ class Styles(object):
                 image: url({self._icon_arrow_right});
                 width: {self.tokens.size.icon}px;
                 height: {self.tokens.size.icon}px;
-                padding-right: 4px;
                 subcontrol-position: right;
             }}
             #CMenuButton_PushButton::menu-indicator:pressed, #CMenuButton_PushButton::menu-indicator:open {{
                 image: url({self._icon_arrow_down});
                 width: {self.tokens.size.icon}px;
                 height: {self.tokens.size.icon}px;
-                position: relative;
-                top: 2px; left: 2px; /* shift the arrow by 2 px */
             }}
         """
         self.style += f"""
@@ -123,6 +126,7 @@ class Styles(object):
         """
 
     def update_lineedit_style(self):
+        """CLineEdit：颜色与状态（固定高度由组件本地覆盖）。"""
         self.style += f"""
             #CLineEdit_LineEdit {{
                 background-color: {self.tokens.colors.surface_interactive};
@@ -133,7 +137,6 @@ class Styles(object):
                 selection-color: {self.tokens.colors.surface_interactive_pressed};
                 selection-background-color: {self.tokens.colors.surface_interactive_hover};
                 color: {self.tokens.colors.text_primary};
-                height: 32px;
             }}
             #CLineEdit_LineEdit:focus {{
                 border: {self.tokens.border.width}px solid {self.tokens.colors.surface_interactive_hover};
@@ -146,6 +149,7 @@ class Styles(object):
         """
 
     def update_combobox_style(self):
+        """CComboBox：颜色与状态（下拉箭头区域宽度由组件本地覆盖）。"""
         self.style += f"""
             #CComboBox_ComboBox {{
                 border: {self.tokens.border.width}px solid {self.tokens.colors.surface_interactive};
@@ -180,7 +184,6 @@ class Styles(object):
             #CComboBox_ComboBox::drop-down {{
                 subcontrol-origin: padding;
                 subcontrol-position: right center;
-                width: 20px;
                 border: none;
             }}
             #CComboBox_ComboBox::down-arrow {{
@@ -226,8 +229,8 @@ class Styles(object):
         """CMenu 弹出菜单：颜色与结构。
 
         弹出菜单是独立顶层窗口，不经过 CWindow，故依赖 ``CWindow.apply_style``
-        下发的应用级样式表着色。圆角/边框宽度为实例参数，由组件本地覆盖；
-        ``is_transparent`` 经动态属性 ``transparent`` 选择。
+        下发的应用级样式表着色。圆角/边框宽度/菜单项内边距为实例级几何，由组件
+        本地覆盖；``is_transparent`` 经动态属性 ``transparent`` 选择。
         """
         self.style += f"""
             #CMenu_Menu {{
@@ -240,18 +243,12 @@ class Styles(object):
                 background-color: {self.tokens.colors.border_transparent};
             }}
             #CMenu_Menu::item {{
-                padding-left: 20px;
-                padding-top: 5px;
-                padding-bottom: 5px;
                 border-style: solid;
                 border-color: {self.tokens.colors.border_transparent};
                 background-color: transparent;
             }}
             #CMenu_Menu::item:selected {{
                 background-color: {self.tokens.colors.surface_interactive_hover};
-            }}
-            #CMenu_Menu::icon {{
-                padding-left: 20px;
             }}
         """
 
@@ -274,18 +271,16 @@ class Styles(object):
         """
 
     def update_tooltip_style(self):
-        """提示气泡（``label_tooltip``）：三种按钮共用一套样式。
+        """提示气泡（``CToolTip``）：三种按钮共用一套样式。
 
-        提示气泡挂在主窗口下（不经过 CWindow），故同样依赖应用级样式表；
-        左侧强调边通过动态属性 ``accent`` 选择（left / top / right）。
+        提示气泡挂在主窗口下（不经过 CWindow），故依赖应用级样式表；强调边方向
+        通过动态属性 ``accent`` 选择（left / top / right）。圆角与左右内边距是
+        实例级几何，由组件本地覆盖。
         """
         self.style += f"""
             #label_tooltip {{
                 background-color: {self.tokens.colors.surface_sidebar};
                 color: {self.tokens.colors.text_primary};
-                padding-left: {self.tokens.spacing.padding_md}px;
-                padding-right: {self.tokens.spacing.padding_md}px;
-                border-radius: {self.tokens.radius.tooltip}px;
                 border: 0px solid {self.tokens.colors.border_transparent};
                 font: {self.tokens.typography.weight_tooltip} {self.tokens.typography.size_text}pt "{self.tokens.typography.family}";
             }}
@@ -311,8 +306,8 @@ class Styles(object):
     def update_left_column_style(self):
         """左列标题区（背景框 + 标题文字）与三个无背景容器框。
 
-        背景框圆角是实例参数，由组件本地覆盖。容器框改用 ID 选择器（原来是不带
-        选择器的裸规则，会级联到所有子孙控件）。
+        背景框圆角与标题的内边距/字体是组件本地几何，由组件覆盖。容器框改用 ID
+        选择器（原来是不带选择器的裸规则，会级联到所有子孙控件）。
         """
         self.style += f"""
             #CLeftColumnTitle_Frame {{
@@ -320,9 +315,7 @@ class Styles(object):
             }}
             #CLeftColumnTitle_Label {{
                 color: {self.tokens.colors.text_primary};
-                padding-bottom: 2px;
                 background: none;
-                font: 700 9pt "{self.tokens.typography.family}";
             }}
             #CLeftColumnIcon_Frame, #CLeftColumnBtn_Frame, #CLeftColumnContent_Frame {{
                 background: none;

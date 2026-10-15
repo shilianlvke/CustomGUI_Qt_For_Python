@@ -105,9 +105,13 @@ class CLeftColumn(QWidget):
         self.icon = PyIcon(self._icon_path, ColorPalette.custom_icon_color)
         self.icon_layout.addWidget(self.icon, Qt.AlignCenter, Qt.AlignCenter)
 
-        # 标签
+        # 标签（配色见 GuiCore/styles.py；内边距与字体是组件本地几何，此处覆盖）
         self.title_label = QLabel()
         self.title_label.setObjectName("CLeftColumnTitle_Label")
+        self.title_label.setStyleSheet(
+            f"#CLeftColumnTitle_Label {{"
+            f' padding-bottom: 2px; font: 700 9pt "{self._family}"; }}'
+        )
 
         # 按钮框架
         self.btn_frame = QFrame()

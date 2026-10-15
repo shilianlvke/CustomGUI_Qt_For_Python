@@ -9,6 +9,7 @@ from .CustomUI import (
     CScrollArea,
     CShowCard,
     CStatusButton,
+    CToolTip,
     CHDiv,
     CVDiv,
 )
@@ -27,6 +28,7 @@ __all__ = [
     "CScrollArea",
     "CShowCard",
     "CStatusButton",
+    "CToolTip",
     "CHDiv",
     "CVDiv",
     "CCredits",

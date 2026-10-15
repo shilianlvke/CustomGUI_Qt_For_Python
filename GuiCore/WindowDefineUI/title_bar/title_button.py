@@ -1,7 +1,9 @@
 from PySide6.QtCore import QEvent, QPoint, QRect, Qt
 from PySide6.QtGui import QBrush, QColor, QPainter, QPixmap
-from PySide6.QtWidgets import QGraphicsDropShadowEffect, QLabel, QPushButton
+from PySide6.QtWidgets import QPushButton
 from AppCore import ColorPalette
+
+from ...CustomUI import CToolTip
 
 
 # PY TITLE BUTTON
@@ -41,7 +43,7 @@ class CTitleButton(QPushButton):
 
         # TOOLTIP
         self._tooltip_text = tooltip_text
-        self._tooltip = _ToolTip(app_parent, tooltip_text)
+        self._tooltip = CToolTip(app_parent, tooltip_text, accent="top")
         self._tooltip.hide()
 
     # SET ACTIVE MENU
@@ -184,31 +186,3 @@ class CTitleButton(QPushButton):
         # SET POSITION TO WIDGET
         # Move tooltip position
         self._tooltip.move(pos_x, pos_y)
-
-
-# TOOLTIP
-# ///////////////////////////////////////////////////////////////
-class _ToolTip(QLabel):
-    """提示气泡。
-
-    样式统一由 ``GuiCore/styles.py`` 的 ``#label_tooltip`` 提供（顶部强调边经
-    动态属性 ``accent`` 选择），本类不再持有样式与主题订阅。
-    """
-
-    def __init__(self, parent, tooltip):
-        QLabel.__init__(self)
-        # LABEL SETUP
-        self.setObjectName("label_tooltip")
-        self.setProperty("accent", "top")
-        self.setMinimumHeight(34)
-        self.setParent(parent)
-        self.setText(tooltip)
-        self.adjustSize()
-
-        # SET DROP SHADOW
-        self.shadow = QGraphicsDropShadowEffect(self)
-        self.shadow.setBlurRadius(30)
-        self.shadow.setXOffset(0)
-        self.shadow.setYOffset(0)
-        self.shadow.setColor(QColor(0, 0, 0, 80))
-        self.setGraphicsEffect(self.shadow)
