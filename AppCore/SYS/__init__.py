@@ -1,4 +1,4 @@
-from .handler import JsonHandler, YamlHandler
+from .handler import YamlHandler
 from .config import (
     Attrs,
     AppLanguages,
@@ -7,7 +7,6 @@ from .config import (
     AppThemes,
     apps_root,
     get_app_context,
-    initialize_app_context,
     to_attrs,
 )
 from .module import Logger
@@ -20,7 +19,6 @@ from .module import CommandPlugin, MenuPlugin, PagePlugin, PluginRegistry, get_p
 from .module import read_recent_events, record_event, track_timing
 
 __all__ = [
-    "JsonHandler",
     "YamlHandler",
     "Attrs",
     "to_attrs",
@@ -33,7 +31,6 @@ __all__ = [
     "PathFactory",
     "PicFixFactory",
     "get_app_context",
-    "initialize_app_context",
     "ColorPalette",
     "Language",
     "ThemeManager",

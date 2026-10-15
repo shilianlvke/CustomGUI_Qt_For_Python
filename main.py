@@ -12,7 +12,7 @@ from AppCore import (
     Language,
     Logger,
     PathFactory,
-    initialize_app_context,
+    get_app_context,
     record_event,
     track_timing,
 )
@@ -77,7 +77,7 @@ if __name__ == "__main__":
     try:
         # 启动前初始化全局应用上下文（配置、主题、语言等），并接入计时与遥测
         with track_timing("app.config_load", category="perf"):
-            initialize_app_context()
+            get_app_context()
         record_event(
             "app.config_loaded",
             category="app",

@@ -129,6 +129,9 @@ The following legacy entry points have been removed and must not be imported:
 - `Guis.windows.main_window.user_define_window` -> removed (dead code)
 - `Guis.windows.main_window.user_define_pages.p2ptest_*` -> moved to `Apps/` app modules
 - `AppCore.SYS.module.config_module` / `languge_module` / `ui_mian` -> removed
+- `AppCore.SYS.handler.json_handler` -> removed (unused; use `AppCore.YamlHandler`)
+- `AppCore.initialize_app_context` -> use `AppCore.get_app_context()`
+- `AppCore.SYS.config.registry.AppContext` -> renamed to `ConfigContext` (disambiguate from `Guis.app_loader.AppContext`)
 
 ## Canonical Entry Points
 

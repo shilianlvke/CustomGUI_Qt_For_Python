@@ -1,8 +1,8 @@
 """配置注册表：目录级加载、校验与线程安全的惰性单例。
 
-对外入口（保持历史 API）：
+对外入口：
 
-- :func:`get_app_context` / :func:`initialize_app_context`：获取全局应用上下文；
+- :func:`get_app_context`：获取全局配置上下文（首次调用时惰性加载）；
 - ``AppSettings`` / ``AppThemes`` / ``AppLanguages`` / ``AppOthers``：
   模块级惰性视图，首次访问时自动触发加载，之后直接命中缓存。
 
@@ -144,8 +144,12 @@ class ConfigRegistry:
         return _load_group(self.OTHERS_DIR, log_label="其他配置")
 
 
-class AppContext:
-    """已加载的应用配置上下文（settings / themes / languages / others）。"""
+class ConfigContext:
+    """已加载的配置上下文（settings / themes / languages / others）。
+
+    注意与 :class:`Guis.app_loader.AppContext`（应用插件上下文）区分：
+    本类是配置框架内部对象，不对外导出。
+    """
 
     def __init__(self, registry: ConfigRegistry):
         self._registry = registry
@@ -156,7 +160,7 @@ class AppContext:
         self.languages: ConfigGroup | None = None
         self.others: ConfigGroup | None = None
 
-    def load(self, force_reload: bool = False) -> "AppContext":
+    def load(self, force_reload: bool = False) -> "ConfigContext":
         with self._load_lock:
             if self._loaded and not force_reload:
                 return self
@@ -169,37 +173,32 @@ class AppContext:
         return self
 
 
-class _AppContextProvider:
+class _ConfigContextProvider:
     """全局单例提供者：双重检查锁定，保证线程安全的惰性初始化。"""
 
     def __init__(self, registry: ConfigRegistry):
         self._registry = registry
-        self._context: AppContext | None = None
+        self._context: ConfigContext | None = None
         self._lock = threading.Lock()
 
-    def get(self, force_reload: bool = False) -> AppContext:
+    def get(self, force_reload: bool = False) -> ConfigContext:
         context = self._context
         if context is not None and not force_reload:
             return context.load(force_reload=False)
 
         with self._lock:
             if self._context is None:
-                self._context = AppContext(self._registry)
+                self._context = ConfigContext(self._registry)
             return self._context.load(force_reload=force_reload)
 
 
 _REGISTRY = ConfigRegistry()
-_PROVIDER = _AppContextProvider(_REGISTRY)
+_PROVIDER = _ConfigContextProvider(_REGISTRY)
 
 
-def get_app_context(force_reload: bool = False) -> AppContext:
-    """获取全局应用配置上下文（首次调用时惰性加载）。"""
+def get_app_context(force_reload: bool = False) -> ConfigContext:
+    """获取全局配置上下文（首次调用时惰性加载）。"""
     return _PROVIDER.get(force_reload=force_reload)
-
-
-def initialize_app_context(force_reload: bool = False) -> AppContext:
-    """显式初始化（等价于 get_app_context，保留历史入口）。"""
-    return get_app_context(force_reload=force_reload)
 
 
 class _ContextView:
@@ -261,9 +260,8 @@ __all__ = [
     "ConfigFile",
     "ConfigGroup",
     "ConfigRegistry",
-    "AppContext",
+    "ConfigContext",
     "get_app_context",
-    "initialize_app_context",
     "AppSettings",
     "AppThemes",
     "AppLanguages",

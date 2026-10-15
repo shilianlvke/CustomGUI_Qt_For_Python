@@ -1,5 +1,4 @@
 from .SYS import (
-    JsonHandler,
     YamlHandler,
     Logger,
     Attrs,
@@ -12,7 +11,6 @@ from .SYS import (
     PathFactory,
     PicFixFactory,
     get_app_context,
-    initialize_app_context,
     ColorPalette,
     Language,
     ThemeManager,
@@ -36,7 +34,6 @@ from .SYS import (
 from .APP import ButtonDecision, MainWindowButtonUseCase
 
 __all__ = [
-    "JsonHandler",
     "YamlHandler",
     "Logger",
     "Attrs",
@@ -49,7 +46,6 @@ __all__ = [
     "PathFactory",
     "PicFixFactory",
     "get_app_context",
-    "initialize_app_context",
     "ColorPalette",
     "Language",
     "ThemeManager",

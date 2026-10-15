@@ -73,9 +73,9 @@ PyYAML，是唯一必要的第三方库，且被隔离在 `config/yaml_io.py` �
 ### 使用示例
 
 ```python
-from AppCore import AppSettings, AppThemes, initialize_app_context
+from AppCore import AppSettings, AppThemes, get_app_context
 
-initialize_app_context()  # 可选：不调用则首次访问时自动惰性加载
+get_app_context()  # 可选：不调用则首次访问时自动惰性加载
 
 AppSettings.theme_name            # str，强类型
 AppSettings.startup_size          # (960, 540)，tuple[int, int]
@@ -178,7 +178,8 @@ def build_page(app):
     return page
 ```
 
-`app` 为 `AppContext`：`app.config`（清单）、`app.app_dir`、`app.icon_path`、
+`app` 为 `AppContext`（`Guis.app_loader`，与配置框架内部的 `ConfigContext` 无关）：
+`app.config`（清单）、`app.app_dir`、`app.icon_path`、
 `app.lang_text("key")`（本应用语言文本）。
 
 ### 应用内自定义逻辑目录（lib 等）
@@ -427,10 +428,10 @@ uv run python scripts/archive_dist.py <target-name>
 
 ### 迁移与兼容状态（2026-10）
 
-- 历史兼容入口已全部移除：`config_module`、`languge_module`、`ui_mian`、`folder_tools`、`settings_module`、`resource_locator`、`locator`、`loader`
+- 历史兼容入口已全部移除：`config_module`、`languge_module`、`ui_mian`、`folder_tools`、`settings_module`、`resource_locator`、`locator`、`loader`、`handler.json_handler`、`initialize_app_context`
 - 规范入口：
    - 配置：`AppCore.AppSettings` / `AppCore.get_app_context()`（内部实现：`AppCore.SYS.config`）
-   - 单文件配置读写：`AppCore.YamlHandler` / `AppCore.JsonHandler`
+   - 单文件配置读写：`AppCore.YamlHandler`
    - 路径解析：`AppCore.SYS.config.paths`
    - 语言模块：`AppCore.SYS.module.language_module`
    - 加载窗口：`Guis.windows.loading_window.ui_main`

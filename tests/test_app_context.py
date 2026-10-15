@@ -1,10 +1,10 @@
 from threading import Thread
 
-from AppCore import AppSettings, get_app_context, initialize_app_context
+from AppCore import AppSettings, get_app_context
 
 
 def test_lazy_context_view_access():
-    initialize_app_context(force_reload=True)
+    get_app_context(force_reload=True)
 
     assert hasattr(AppSettings, "theme_name")
     assert isinstance(AppSettings.theme_name, str)
@@ -21,7 +21,7 @@ def test_context_reload_returns_loaded_context():
 
 
 def test_get_app_context_thread_safe_initialization():
-    initialize_app_context(force_reload=True)
+    get_app_context(force_reload=True)
     contexts = []
 
     def worker():

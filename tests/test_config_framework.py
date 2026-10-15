@@ -9,7 +9,6 @@ from AppCore import (
     Attrs,
     YamlHandler,
     get_app_context,
-    initialize_app_context,
 )
 from AppCore.SYS.config.mapping import deep_merge, to_attrs, to_dict
 from AppCore.SYS.config.registry import ConfigFile, ConfigRegistry
@@ -278,7 +277,7 @@ def test_language_validation_requires_group_keys():
 
 
 def test_app_settings_view_exposes_typed_fields():
-    initialize_app_context(force_reload=True)
+    get_app_context(force_reload=True)
 
     assert AppSettings.family == "微软雅黑"
     assert AppSettings.startup_size == (960, 540)
