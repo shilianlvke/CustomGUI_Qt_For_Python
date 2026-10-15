@@ -26,6 +26,8 @@
 from __future__ import annotations
 
 import importlib.util
+import sys
+import types
 from dataclasses import dataclass
 from pathlib import Path
 from types import ModuleType
@@ -123,11 +125,50 @@ def _resolve_icon(config: Attrs, app_dir: Path) -> str:
     return str(icon_ref)
 
 
-def _import_app_module(module_name: str, file_path: Path) -> ModuleType:
+def _ensure_parent_packages(module_name: str, app_dir: Path) -> None:
+    """为应用主模块建立父包层级，使 App 内部相对导入可用。
+
+    例：加载 ``customgui_apps.example.gui.main`` 时建立：
+
+    - ``customgui_apps``：__path__ = Apps 根目录；
+    - ``customgui_apps.example``：__path__ = 应用目录（由此支持
+      ``from ..lib import ...`` 等自定义逻辑目录的常规导入）；
+    - ``customgui_apps.example.gui``：__path__ = gui 子目录。
+
+    应用内的子模块（如 lib/__init__.py）由 Python 常规导入机制按
+    ``__path__`` 自动发现，无需逐文件注册。
+    """
+    parts = module_name.split(".")
+    app_name = app_dir.name
+
+    for index in range(len(parts) - 1):
+        package_name = ".".join(parts[: index + 1])
+        # 已存在的包也需更新 __path__（同名 App 目录可能变化，如测试注入）
+        package = sys.modules.get(package_name) or types.ModuleType(package_name)
+        if index == 0:
+            # customgui_apps -> Apps 根目录
+            package.__path__ = [str(apps_root())]
+        elif index == 1:
+            # customgui_apps.<app_name> -> 应用目录
+            package.__path__ = [str(app_dir)]
+        else:
+            # customgui_apps.<app_name>.<子包> -> 应用内同名子目录
+            sub_dir = app_dir.joinpath(*parts[2 : index + 1])
+            package.__path__ = [str(sub_dir)]
+        sys.modules[package_name] = package
+
+    # 确保模块名中的应用名与目录名一致（防御：加载器始终按目录名生成）
+    if parts[1] != app_name:
+        Logger.warning(f"应用模块名与目录名不一致: {module_name} vs {app_dir.name}")
+
+
+def _import_app_module(module_name: str, app_dir: Path, file_path: Path) -> ModuleType:
+    _ensure_parent_packages(module_name, app_dir)
     spec = importlib.util.spec_from_file_location(module_name, file_path)
     if spec is None or spec.loader is None:
         raise ImportError(f"无法加载应用模块: {file_path}")
     module = importlib.util.module_from_spec(spec)
+    sys.modules[module_name] = module
     spec.loader.exec_module(module)
     return module
 
@@ -147,6 +188,12 @@ def register_app(app_dir: Path, registry=None) -> AppContext | None:
     tooltip_key = config.get("app_tooltip") or f"language.app.{name}.app_tooltip"
     icon_path = _resolve_icon(config, app_dir)
     is_default = bool(config.get("is_default", False))
+
+    # 注入本应用语言：保证 app.lang_text 与菜单文本解析立即可用
+    # （语言切换时由 Language.apply -> _app_language_provider 整体重建）
+    app_node = getattr(Language, "app", None) or Attrs()
+    app_node[name] = to_attrs(_load_app_lang_data(app_dir, AppSettings.language))
+    setattr(Language, "app", app_node)
 
     registry.register_menu(
         MenuPlugin(
@@ -176,7 +223,7 @@ def register_app(app_dir: Path, registry=None) -> AppContext | None:
         Logger.warning(f"应用缺少页面实现: {name} (gui/main.py)")
         return context
 
-    module = _import_app_module(f"apps.{name}.gui.main", main_py)
+    module = _import_app_module(f"customgui_apps.{name}.gui.main", app_dir, main_py)
 
     # 协议 1：register_plugins(registry, app) —— 完全自由
     if callable(getattr(module, "register_plugins", None)):

@@ -1,2 +1,5 @@
 app_text: "示例插件"
 app_tooltip: "这是一个示例插件...."
+detail_text: "本页演示：基座类/方法/资源访问 + 自身逻辑目录、语言、图标、样式"
+result_text: "用户逻辑计算结果: {}"
+token_text: "基座设计令牌 window 圆角: {}px"

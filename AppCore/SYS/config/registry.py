@@ -51,7 +51,7 @@ class ConfigGroup(Attrs):
 
 
 def _load_group(
-        directory: str,
+    directory: str,
     *,
     validator: Callable | None = None,
     validator_arg: str = "name",

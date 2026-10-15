@@ -1,2 +1,5 @@
-app_text: "plugin's example"
+app_text: "Example App"
 app_tooltip: "this is a plugin's example...."
+detail_text: "This page demonstrates base class/method/resource access + own lib, language, icon and style"
+result_text: "User logic result: {}"
+token_text: "Base design token window radius: {}px"

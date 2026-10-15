@@ -1,5 +1,6 @@
 """Apps 应用模组加载器测试（使用临时 Apps 目录注入）。"""
 
+import os
 from pathlib import Path
 
 import pytest
@@ -14,6 +15,15 @@ from Guis.app_loader import (
     register_app,
     reset_apps_cache,
 )
+
+
+@pytest.fixture(scope="module")
+def qapp():
+    os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
+    from PySide6.QtWidgets import QApplication
+
+    app = QApplication.instance() or QApplication([])
+    yield app
 
 PAGE_CODE = """
 from PySide6.QtWidgets import QWidget
@@ -194,3 +204,47 @@ def test_manifest_defaults(apps_root):
     assert item["btn_text"] == "language.app.minimal.app_text"
     pages = registry.page_plugins()
     assert pages[0].page_object == "minimalPage"
+
+
+def test_app_relative_import_of_user_lib_directory(apps_root, qapp):
+    """App 内部自定义逻辑目录（lib）可通过相对导入使用。"""
+    app_dir = apps_root / "demo"
+    _write_app(app_dir, page_code=None)
+    (app_dir / "lib").mkdir(parents=True, exist_ok=True)
+    (app_dir / "lib" / "__init__.py").write_text("from .calc import add\n__all__ = ['add']\n", encoding="utf-8")
+    (app_dir / "lib" / "calc.py").write_text("def add(a, b):\n    return a + b\n", encoding="utf-8")
+    (app_dir / "gui" / "main.py").write_text(
+        '''
+from PySide6.QtWidgets import QLabel, QWidget
+
+from ..lib import add
+
+
+def build_page(app):
+    page = QWidget()
+    page.setObjectName(app.config.get("page_object") or "demoPage")
+    page.result_label = QLabel(str(add(1, 2)))
+    return page
+''',
+        encoding="utf-8",
+    )
+
+    registry = PluginRegistry()
+    context = register_app(app_dir, registry=registry)
+
+    pages = registry.page_plugins()
+    assert len(pages) == 1
+
+    # 调用 build_page：内部相对导入 lib 成功，页面构建成功
+    class _Pages:
+        def addWidget(self, _widget):
+            pass
+
+    class _Ui:
+        load_pages = type("Pages", (), {"pages": _Pages()})()
+
+    class _Window:
+        ui = _Ui()
+
+    pages[0].loader(_Window())
+    assert context is not None

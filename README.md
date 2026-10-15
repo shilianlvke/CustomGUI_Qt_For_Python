@@ -121,7 +121,10 @@ AppThemes[AppSettings.theme_name].data  # Attrs：属性/字典双访问
 内置模组（随仓库分发，均可删除）：
 
 - `Apps/welcome`：欢迎页（组件展示，默认页 `is_default: true`）
-- `Apps/example`：最小模组范本
+- `Apps/example`：**完美范本**——逐项演示基座类/方法/资源访问
+  （AppSettings/Logger/ColorPalette/get_design_tokens/record_event/PathFactory/
+  GuiCore 组件）与自身能力（lib 逻辑目录、app.lang_text 语言、app.icon_path
+  图标、gui/style.py 样式、app.config 清单）
 - `Apps/p2ptest_*`：P2PTester 业务页面（7 个独立模组）
 
 ### 模组结构
@@ -177,6 +180,21 @@ def build_page(app):
 
 `app` 为 `AppContext`：`app.config`（清单）、`app.app_dir`、`app.icon_path`、
 `app.lang_text("key")`（本应用语言文本）。
+
+### 应用内自定义逻辑目录（lib 等）
+
+应用可以带任意子目录（如 `lib/`、`services/`）组织业务逻辑，`gui/main.py`
+中通过**相对导入**使用（基座加载时会自动建立应用包结构）：
+
+```text
+Apps/<app_name>/
+├── gui/main.py          # from ..lib import add
+├── lib/__init__.py      # from .calc import add
+└── lib/calc.py
+```
+
+约定：被导入的子目录建议带 `__init__.py`（常规包，兼容性最好）；
+相对导入基于应用目录层级（`..lib` = 应用目录下的 lib 包）。
 
 ### 语言
 
