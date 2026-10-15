@@ -48,6 +48,17 @@ def register_builtin_title_menus():
 
 
 class SetupMainWindow:
+    def __init__(self):
+        self.bottom_right_grip = None
+        self.bottom_left_grip = None
+        self.top_right_grip = None
+        self.top_left_grip = None
+        self.bottom_grip = None
+        self.top_grip = None
+        self.right_grip = None
+        self.left_grip = None
+        self.ui = None
+
     def setup_btns(self):
         if self.ui.title_bar.sender() is not None:
             return self.ui.title_bar.sender()

@@ -50,6 +50,34 @@ class ConfigGroup(Attrs):
         return list(self.keys())
 
 
+def _load_group(
+        directory: str,
+    *,
+    validator: Callable | None = None,
+    validator_arg: str = "name",
+    error_code: str = "GROUP_CONFIG_INVALID",
+    error_message: str = "配置校验失败",
+    log_label: str,
+) -> ConfigGroup:
+    group = ConfigGroup()
+    for path in iter_files(directory, ".yaml"):
+        name = path.stem.lower()
+        data = to_attrs(load_yaml_file(path))
+        if validator is not None:
+            try:
+                validator(data, **{validator_arg: name})
+            except ValueError as exc:
+                raise DomainErrorBoundary(
+                    code=error_code,
+                    message=error_message,
+                    details=str(exc),
+                ) from exc
+        group[name] = ConfigFile(name=name, path=path, data=data)
+
+    Logger.debug(f"{log_label}: {group.names()}")
+    return group
+
+
 class ConfigRegistry:
     """按目录加载并校验配置组。
 
@@ -79,7 +107,7 @@ class ConfigRegistry:
         return model
 
     def load_themes(self) -> ConfigGroup:
-        return self._load_group(
+        return _load_group(
             self.THEMES_DIR,
             validator=validate_theme_data,
             validator_arg="theme_name",
@@ -89,7 +117,7 @@ class ConfigRegistry:
         )
 
     def load_languages(self) -> ConfigGroup:
-        return self._load_group(
+        return _load_group(
             self.LANGUAGES_DIR,
             validator=validate_language_data,
             validator_arg="language_name",
@@ -99,35 +127,7 @@ class ConfigRegistry:
         )
 
     def load_others(self) -> ConfigGroup:
-        return self._load_group(self.OTHERS_DIR, log_label="其他配置")
-
-    def _load_group(
-        self,
-        directory: str,
-        *,
-        validator: Callable | None = None,
-        validator_arg: str = "name",
-        error_code: str = "GROUP_CONFIG_INVALID",
-        error_message: str = "配置校验失败",
-        log_label: str,
-    ) -> ConfigGroup:
-        group = ConfigGroup()
-        for path in iter_files(directory, ".yaml"):
-            name = path.stem.lower()
-            data = to_attrs(load_yaml_file(path))
-            if validator is not None:
-                try:
-                    validator(data, **{validator_arg: name})
-                except ValueError as exc:
-                    raise DomainErrorBoundary(
-                        code=error_code,
-                        message=error_message,
-                        details=str(exc),
-                    ) from exc
-            group[name] = ConfigFile(name=name, path=path, data=data)
-
-        Logger.debug(f"{log_label}: {group.names()}")
-        return group
+        return _load_group(self.OTHERS_DIR, log_label="其他配置")
 
 
 class AppContext:
