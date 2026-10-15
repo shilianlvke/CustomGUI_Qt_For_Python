@@ -51,13 +51,15 @@ class CMenuButton(QPushButton):
 
     def _apply_geometry(self):
         """实例级几何：圆角、边框宽度与下拉箭头偏移（与主题无关，故不放进全局样式表）。"""
+        tokens = get_design_tokens()
         self.setStyleSheet(
             f"#CMenuButton_PushButton {{"
             f" border-width: {self.border_size}px;"
             f" border-radius: {self.radius}px; }}"
             f"#CMenuButton_PushButton::menu-indicator {{"
-            f" padding-right: 4px; }}"
+            f" padding-right: {tokens.spacing.menu_indicator_right}px; }}"
             f"#CMenuButton_PushButton::menu-indicator:pressed,"
             f"#CMenuButton_PushButton::menu-indicator:open {{"
-            f" position: relative; top: 2px; left: 2px; }}"
+            f" position: relative; top: {tokens.spacing.menu_indicator_offset}px;"
+            f" left: {tokens.spacing.menu_indicator_offset}px; }}"
         )

@@ -1,7 +1,7 @@
 from PySide6.QtCore import QSize, Qt, Signal
 from PySide6.QtGui import QIcon, QPixmap
 from PySide6.QtWidgets import QPushButton
-from AppCore import PathFactory
+from AppCore import PathFactory, get_design_tokens
 
 
 class CStatusButton(QPushButton):
@@ -11,6 +11,8 @@ class CStatusButton(QPushButton):
     由 ``GuiCore/styles.py`` 的 ``#CStatusButton_PushButton`` 提供；状态经动态
     属性 ``status`` 由 QSS 属性选择器匹配。本类只保留实例级几何（圆角、边框
     宽度）覆盖，且不订阅主题——主题切换由全局样式表整体重建后自动生效。
+
+    ``radius`` / ``border_size`` 默认回落到设计令牌，显式传参即可覆盖。
     """
 
     statusChanged = Signal(int)
@@ -24,16 +26,17 @@ class CStatusButton(QPushButton):
         icon_negative: QIcon | str | None = None,
         icon_normal: QIcon | str | None = None,
         icon_positive: QIcon | str | None = None,
-        radius: int = 8,
-        border_size: int = 2,
+        radius: int | None = None,
+        border_size: int | None = None,
         is_normal: bool = False,  # 三态开关
     ):
         super().__init__()
         self.setObjectName("CStatusButton_PushButton")
         self.status_list = [-1, 0, 1] if is_normal else [0, 1]
         self.status = self.status_list[0]
-        self.radius = radius
-        self.border_size = border_size
+        tokens = get_design_tokens()
+        self.radius = tokens.radius.window if radius is None else radius
+        self.border_size = tokens.border.width if border_size is None else border_size
 
         if text_negative is not None:
             self.text_negative = text_negative

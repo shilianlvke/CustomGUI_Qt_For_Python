@@ -1,15 +1,15 @@
 from PySide6.QtCore import QSize, Qt
 from PySide6.QtWidgets import QComboBox
 
-# 下拉箭头区域宽度（与主题无关，故不进全局样式表）
-_DROP_DOWN_WIDTH = 20
+from AppCore import get_design_tokens
 
 
 class CComboBox(QComboBox):
     """下拉选择框。
 
     样式约定（与 ``CPushButton`` 一致）：颜色与状态由 ``GuiCore/styles.py`` 的
-    ``#CComboBox_ComboBox`` 提供；下拉箭头区域宽度属组件几何，由本类本地覆盖。
+    ``#CComboBox_ComboBox`` 提供；下拉箭头区域宽度属组件几何，由本类本地覆盖
+    并取设计令牌 ``size.drop_down_width``。
     """
 
     def __init__(
@@ -36,4 +36,5 @@ class CComboBox(QComboBox):
 
     def _apply_geometry(self):
         """实例级几何：下拉箭头区域宽度（与主题无关，故不放进全局样式表）。"""
-        self.setStyleSheet(f"#CComboBox_ComboBox::drop-down {{ width: {_DROP_DOWN_WIDTH}px; }}")
+        width = get_design_tokens().size.drop_down_width
+        self.setStyleSheet(f"#CComboBox_ComboBox::drop-down {{ width: {width}px; }}")

@@ -5,7 +5,8 @@
 - 组件实例只声明 ``objectName``，颜色/状态/字体一律定义在 ``GuiCore/styles.py``；
 - **几何量不进中央样式表**：圆角、边框宽度、内边距、固定宽高、偏移一律由组件
   本地用一条只含几何属性的样式表提供；
-- 组件暴露的几何参数默认取 ``None`` 并回落到设计令牌；
+- 组件几何**全部取设计令牌**（``AppCore.SYS.module.token_module``）：组件暴露的
+  几何参数默认取 ``None`` 并回落到对应令牌，显式传参可覆盖；
 - 主题切换由 ``CWindow.apply_style()`` 重建中央样式表并下发，组件自身不订阅主题。
 """
 
@@ -233,12 +234,52 @@ def test_menu_button_geometry_follows_params(qapp):
     assert "border-width: 6px" in custom.styleSheet()
 
 
-def test_menu_item_padding_is_local(qapp):
-    """CMenu 的菜单项内边距由组件本地提供。"""
+def test_menu_button_indicator_geometry_follows_token(qapp):
+    """CMenuButton 下拉箭头的内边距与位移取设计令牌，不再硬编码。"""
+    tokens = get_design_tokens()
+    sheet = CMenuButton().styleSheet()
+    assert f"padding-right: {tokens.spacing.menu_indicator_right}px" in sheet
+    assert f"top: {tokens.spacing.menu_indicator_offset}px" in sheet
+    assert f"left: {tokens.spacing.menu_indicator_offset}px" in sheet
+
+
+def test_menu_geometry_follows_token(qapp):
+    """CMenu 的圆角/边框宽度与菜单项内边距取设计令牌，显式传参可覆盖。"""
+    tokens = get_design_tokens()
     sheet = CMenu(colorpalette=ColorPalette).styleSheet()
-    assert "padding-left: 20px" in sheet
-    assert "padding-top: 5px" in sheet
-    assert "padding-bottom: 5px" in sheet
+    assert f"border-radius: {tokens.radius.window}px" in sheet
+    assert f"border-width: {tokens.border.width}px" in sheet
+    assert f"padding-left: {tokens.spacing.menu_item_left}px" in sheet
+    assert f"padding-top: {tokens.spacing.menu_item_vertical}px" in sheet
+    assert f"padding-bottom: {tokens.spacing.menu_item_vertical}px" in sheet
+
+    custom = CMenu(radius=3, border_size=1)
+    assert "border-radius: 3px" in custom.styleSheet()
+    assert "border-width: 1px" in custom.styleSheet()
+
+
+def test_show_card_geometry_follows_token(qapp):
+    """CShowCard 的圆角与透明边框宽度取设计令牌，显式传参可覆盖。"""
+    tokens = get_design_tokens()
+    sheet = CShowCard(bottom_text="demo").styleSheet()
+    assert f"border-radius: {tokens.radius.window}px" in sheet
+    assert f"border: {tokens.size.card_inset}px solid transparent" in sheet
+
+    custom = CShowCard(bottom_text="demo", radius=3, border_size=1)
+    assert "border-radius: 3px" in custom.styleSheet()
+    assert "border: 1px solid transparent" in custom.styleSheet()
+
+
+def test_status_button_geometry_follows_token(qapp):
+    """CStatusButton 的圆角与边框宽度取设计令牌，显式传参可覆盖。"""
+    tokens = get_design_tokens()
+    sheet = CStatusButton().styleSheet()
+    assert f"border-radius: {tokens.radius.window}px" in sheet
+    assert f"border-width: {tokens.border.width}px" in sheet
+
+    custom = CStatusButton(radius=3, border_size=1)
+    assert "border-radius: 3px" in custom.styleSheet()
+    assert "border-width: 1px" in custom.styleSheet()
 
 
 def test_tooltip_geometry_follows_params(qapp):
@@ -255,13 +296,18 @@ def test_tooltip_geometry_follows_params(qapp):
     assert "padding-right: 2px" in custom.styleSheet()
 
 
+def _init_language():
+    """CLeftMenu / CLeftColumn 构造期会读取语言资源，按应用启动的方式初始化一次。"""
+    from AppCore import AppLanguages, AppSettings, Language
+
+    Language.update(AppLanguages[AppSettings.language].data)
+
+
 def test_left_menu_radius_falls_back_to_token(qapp):
     """CLeftMenu 的圆角默认回落设计令牌，且由组件本地提供。"""
-    from AppCore import AppLanguages, AppSettings, Language
     from GuiCore import CLeftMenu
 
-    # CLeftMenu 构造期会读取语言资源，测试里按应用启动的方式初始化一次
-    Language.update(AppLanguages[AppSettings.language].data)
+    _init_language()
 
     menu = CLeftMenu()
     assert f"border-radius: {get_design_tokens().radius.window}px" in menu.bg.styleSheet()
@@ -270,6 +316,49 @@ def test_left_menu_radius_falls_back_to_token(qapp):
     assert "border-radius: 3px" in custom.bg.styleSheet()
 
 
-def test_line_edit_height_is_local(qapp):
-    """CLineEdit 的固定高度由组件本地提供。"""
-    assert "height: 32px" in CLineEdit().styleSheet()
+def test_left_column_geometry_follows_token(qapp):
+    """CLeftColumn 的圆角与标题标签几何取设计令牌，显式传参可覆盖。"""
+    from GuiCore import CLeftColumn
+
+    _init_language()
+    tokens = get_design_tokens()
+
+    column = CLeftColumn(
+        app_parent=None,
+        text_title="",
+        text_title_size=tokens.typography.size_title,
+        icon_path="icon_menu",
+        icon_close_path="icon_menu_close",
+        font_family=tokens.typography.family,
+    )
+    assert f"border-radius: {tokens.radius.window}px" in column.title_bg_frame.styleSheet()
+
+    label_sheet = column.title_label.styleSheet()
+    assert f"padding-bottom: {tokens.spacing.label_padding_bottom}px" in label_sheet
+    assert f"{tokens.typography.weight_label} {tokens.typography.size_label}pt" in label_sheet
+
+    custom = CLeftColumn(
+        app_parent=None,
+        text_title="",
+        text_title_size=tokens.typography.size_title,
+        icon_path="icon_menu",
+        icon_close_path="icon_menu_close",
+        font_family=tokens.typography.family,
+        radius=3,
+    )
+    assert "border-radius: 3px" in custom.title_bg_frame.styleSheet()
+
+
+def test_line_edit_height_follows_token(qapp):
+    """CLineEdit 的固定高度取设计令牌。"""
+    tokens = get_design_tokens()
+    assert f"height: {tokens.size.control_height}px" in CLineEdit().styleSheet()
+
+
+def test_combo_box_drop_down_width_follows_token(qapp):
+    """CComboBox 的下拉箭头区域宽度取设计令牌。"""
+    from GuiCore import CComboBox
+
+    tokens = get_design_tokens()
+    sheet = CComboBox().styleSheet()
+    assert f"width: {tokens.size.drop_down_width}px" in sheet

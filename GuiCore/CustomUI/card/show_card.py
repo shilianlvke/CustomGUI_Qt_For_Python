@@ -2,7 +2,7 @@ import webbrowser
 from PySide6.QtCore import QSize, Qt
 from PySide6.QtGui import QCursor, QPixmap
 from PySide6.QtWidgets import QFrame, QHBoxLayout, QLabel, QSizePolicy, QVBoxLayout, QWidget
-from AppCore import PathFactory, ColorPalette
+from AppCore import PathFactory, ColorPalette, get_design_tokens
 
 
 class CShowCard(QFrame):
@@ -12,6 +12,8 @@ class CShowCard(QFrame):
     样式约定（与 ``CPushButton`` 一致）：上下分区的配色由 ``GuiCore/styles.py``
     的 ``#CShowCard #topArea`` 等规则提供并随主题切换自动生效；本类只保留实例
     级几何（圆角、透明边框宽度）覆盖，不再订阅主题。
+
+    ``radius`` / ``border_size`` 默认回落到设计令牌，显式传参即可覆盖。
     """
 
     def __init__(
@@ -20,16 +22,17 @@ class CShowCard(QFrame):
         source_url="https://example.com",
         bottom_text="查看源代码",
         widget=None,
-        radius: int = 8,
-        border_size: int = 12,
+        radius: int | None = None,
+        border_size: int | None = None,
     ):
         super().__init__()
         self.setObjectName("CShowCard")
         if size is not None:
             self.setFixedSize(size)
         self.setMinimumHeight(96)
-        self.radius = radius
-        self.border_size = border_size
+        tokens = get_design_tokens()
+        self.radius = tokens.radius.window if radius is None else radius
+        self.border_size = tokens.size.card_inset if border_size is None else border_size
         self.colorpalette = ColorPalette
         self.bottom_text = bottom_text
         self.source_url = source_url

@@ -13,8 +13,9 @@ class Styles(object):
        本样式表并下发（窗口级 + 应用级），组件自动跟随；
     4. **几何量不进本文件**：圆角、边框宽度、内边距、固定宽高、偏移等与主题
        无关的尺寸，一律由组件本地用一条只含几何属性的 ``setStyleSheet`` 提供
-       （见 ``CStatusButton._apply_geometry``）。组件若暴露几何参数，默认值取
-       ``None`` 并回落到设计令牌，这样既不改变既有外观又能被显式覆盖。
+       （见 ``CStatusButton._apply_geometry``）；这些尺寸的取值**全部来自设计
+       令牌**（``AppCore.SYS.module.token_module``），组件暴露的几何参数默认取
+       ``None`` 并回落到对应令牌，显式传参即可覆盖。
     """
 
     def __init__(self):

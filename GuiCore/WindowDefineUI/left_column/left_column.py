@@ -2,7 +2,7 @@ from PySide6.QtCore import Qt, Signal
 from PySide6.QtWidgets import QFrame, QHBoxLayout, QLabel, QVBoxLayout, QWidget
 from .left_button import PyLeftButton
 from .icon import PyIcon
-from AppCore import ColorPalette, Language, get_theme_manager
+from AppCore import ColorPalette, Language, get_design_tokens, get_theme_manager
 
 
 class CLeftColumn(QWidget):
@@ -19,7 +19,7 @@ class CLeftColumn(QWidget):
         icon_path,
         icon_close_path,
         font_family,
-        radius=8,
+        radius=None,
     ):
         super().__init__()
 
@@ -29,7 +29,7 @@ class CLeftColumn(QWidget):
         self._text_title_size = text_title_size
         self._icon_path = icon_path
         self._icon_close_path = icon_close_path
-        self._radius = radius
+        self._radius = get_design_tokens().radius.window if radius is None else radius
         self._family = font_family
         self.setup_ui()
 
@@ -106,11 +106,13 @@ class CLeftColumn(QWidget):
         self.icon_layout.addWidget(self.icon, Qt.AlignCenter, Qt.AlignCenter)
 
         # 标签（配色见 GuiCore/styles.py；内边距与字体是组件本地几何，此处覆盖）
+        tokens = get_design_tokens()
         self.title_label = QLabel()
         self.title_label.setObjectName("CLeftColumnTitle_Label")
         self.title_label.setStyleSheet(
             f"#CLeftColumnTitle_Label {{"
-            f' padding-bottom: 2px; font: 700 9pt "{self._family}"; }}'
+            f" padding-bottom: {tokens.spacing.label_padding_bottom}px;"
+            f' font: {tokens.typography.weight_label} {tokens.typography.size_label}pt "{self._family}"; }}'
         )
 
         # 按钮框架

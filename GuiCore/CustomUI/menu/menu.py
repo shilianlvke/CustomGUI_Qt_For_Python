@@ -1,8 +1,6 @@
 from PySide6.QtWidgets import QMenu
 
-# 菜单项的固定布局度量（与主题无关，故不进全局样式表）
-_ITEM_PADDING_LEFT = 20
-_ITEM_PADDING_Y = 5
+from AppCore import get_design_tokens
 
 
 class CMenu(QMenu):
@@ -12,22 +10,25 @@ class CMenu(QMenu):
     ``#CMenu_Menu`` 提供，透明度经动态属性 ``transparent`` 选择。菜单是独立
     顶层窗口，不经过 ``CWindow``，因此依赖 ``CWindow.apply_style`` 下发的应用级
     样式表着色。**实例级几何**（圆角、边框宽度、菜单项内边距）由本类本地覆盖。
+
+    ``radius`` / ``border_size`` 默认回落到设计令牌，显式传参即可覆盖。
     """
 
     def __init__(
         self,
         parent=None,
         width: int = 64 + 36,
-        radius: int = 8,
-        border_size: int = 2,
+        radius: int | None = None,
+        border_size: int | None = None,
         colorpalette=None,
         is_transparent: bool = False,
     ):
         super().__init__(parent)
         self.setObjectName("CMenu_Menu")
         self.setFixedWidth(width)
-        self.radius = radius
-        self.border_size = border_size
+        tokens = get_design_tokens()
+        self.radius = tokens.radius.window if radius is None else radius
+        self.border_size = tokens.border.width if border_size is None else border_size
         self.color = colorpalette
         self._is_transparent = is_transparent
         self._apply_geometry()
@@ -35,13 +36,14 @@ class CMenu(QMenu):
 
     def _apply_geometry(self):
         """实例级几何：圆角、边框宽度与菜单项内边距（与主题无关，故不放进全局样式表）。"""
+        tokens = get_design_tokens()
         self.setStyleSheet(
             f"#CMenu_Menu {{ border-width: {self.border_size}px;"
             f" border-radius: {self.radius}px; }}"
             f"#CMenu_Menu::item {{ border-width: {self.border_size}px;"
             f" border-radius: {self.radius}px;"
-            f" padding-left: {_ITEM_PADDING_LEFT}px;"
-            f" padding-top: {_ITEM_PADDING_Y}px;"
-            f" padding-bottom: {_ITEM_PADDING_Y}px; }}"
-            f"#CMenu_Menu::icon {{ padding-left: {_ITEM_PADDING_LEFT}px; }}"
+            f" padding-left: {tokens.spacing.menu_item_left}px;"
+            f" padding-top: {tokens.spacing.menu_item_vertical}px;"
+            f" padding-bottom: {tokens.spacing.menu_item_vertical}px; }}"
+            f"#CMenu_Menu::icon {{ padding-left: {tokens.spacing.menu_item_left}px; }}"
         )
