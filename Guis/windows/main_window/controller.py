@@ -70,13 +70,14 @@ class ThemeController:
         self._theme_manager.cycle()
 
     def _apply_styles(self):
-        now = self._style_factory()
         window_widget = self._window.ui.window
-        # 优先走 CWindow.apply_style（保留最大化等框架样式覆盖）
+        # 优先委托 CWindow.apply_style（内部重建样式，并保留最大化等框架样式覆盖）
         apply_style = getattr(window_widget, "apply_style", None)
         if callable(apply_style):
             apply_style()
         else:
+            # 旧组件/测试桩：回落到直接设置样式（样式仅在此处构造一次）
+            now = self._style_factory()
             window_widget.setStyleSheet(now.style)
 
 
