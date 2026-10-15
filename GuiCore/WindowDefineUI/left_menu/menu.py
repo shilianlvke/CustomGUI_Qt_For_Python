@@ -1,13 +1,5 @@
-from qt_core import (
-    QEasingCurve,
-    QFrame,
-    QPropertyAnimation,
-    QPushButton,
-    QVBoxLayout,
-    Qt,
-    Signal,
-    QWidget,
-)
+from PySide6.QtCore import QEasingCurve, QPropertyAnimation, Qt, Signal
+from PySide6.QtWidgets import QFrame, QPushButton, QVBoxLayout, QWidget
 from .menu_button import CLeftMenuButton
 from GuiCore.CustomUI.div import CHDiv
 

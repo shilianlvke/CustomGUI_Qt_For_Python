@@ -1,16 +1,7 @@
 import webbrowser
-from qt_core import (
-    QCursor,
-    QFrame,
-    QHBoxLayout,
-    QLabel,
-    QPixmap,
-    QSize,
-    QSizePolicy,
-    QVBoxLayout,
-    QWidget,
-    Qt,
-)
+from PySide6.QtCore import QSize, Qt
+from PySide6.QtGui import QCursor, QPixmap
+from PySide6.QtWidgets import QFrame, QHBoxLayout, QLabel, QSizePolicy, QVBoxLayout, QWidget
 from AppCore import PathFactory, ColorPalette, get_theme_manager
 
 

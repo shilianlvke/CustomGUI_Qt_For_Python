@@ -1,4 +1,5 @@
-from qt_core import QDialog, QPoint, QVBoxLayout, Qt
+from PySide6.QtCore import QPoint, Qt
+from PySide6.QtWidgets import QDialog, QVBoxLayout
 from AppCore import AppSettings
 from GuiCore import CCard, CTitleBar, CWindow
 

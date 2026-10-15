@@ -1,16 +1,6 @@
-from qt_core import (
-    QBrush,
-    QColor,
-    QEvent,
-    QGraphicsDropShadowEffect,
-    QLabel,
-    QPainter,
-    QPixmap,
-    QPoint,
-    QPushButton,
-    QRect,
-    Qt,
-)
+from PySide6.QtCore import QEvent, QPoint, QRect, Qt
+from PySide6.QtGui import QBrush, QColor, QPainter, QPixmap
+from PySide6.QtWidgets import QGraphicsDropShadowEffect, QLabel, QPushButton
 from AppCore import ColorPalette, AppSettings, get_theme_manager
 
 

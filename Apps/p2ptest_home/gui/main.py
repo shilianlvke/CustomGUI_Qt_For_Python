@@ -3,20 +3,18 @@
 应用页面协议：导出 PAGE（含 load_page(window) 方法）。
 """
 
-from qt_core import (
+from PySide6.QtCore import QMargins, QSize, Qt
+from PySide6.QtGui import QIcon
+from PySide6.QtWidgets import (
     QGridLayout,
     QHBoxLayout,
-    QIcon,
     QLabel,
     QLineEdit,
-    QMargins,
-    QSize,
     QSizePolicy,
-    QSvgWidget,
     QVBoxLayout,
     QWidget,
-    Qt,
 )
+from PySide6.QtSvgWidgets import QSvgWidget
 from GuiCore import CCard, CComboBox, CLineEdit, CPushButton, CDialog, CHDiv
 from AppCore import PathFactory, AppSettings, Language
 

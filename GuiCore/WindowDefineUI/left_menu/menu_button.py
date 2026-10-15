@@ -1,16 +1,6 @@
-from qt_core import (
-    QColor,
-    QEvent,
-    QGraphicsDropShadowEffect,
-    QLabel,
-    QPainter,
-    QPixmap,
-    QPoint,
-    QPushButton,
-    QRect,
-    Qt,
-    Slot,
-)
+from PySide6.QtCore import QEvent, QPoint, QRect, Qt, Slot
+from PySide6.QtGui import QColor, QPainter, QPixmap
+from PySide6.QtWidgets import QGraphicsDropShadowEffect, QLabel, QPushButton
 from AppCore import PathFactory, ColorPalette, get_design_tokens, get_theme_manager
 
 

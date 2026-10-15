@@ -1,12 +1,5 @@
-from qt_core import (
-    QFrame,
-    QHBoxLayout,
-    QLabel,
-    QVBoxLayout,
-    Qt,
-    Signal,
-    QWidget,
-)
+from PySide6.QtCore import Qt, Signal
+from PySide6.QtWidgets import QFrame, QHBoxLayout, QLabel, QVBoxLayout, QWidget
 from .left_button import PyLeftButton
 from .icon import PyIcon
 from AppCore import ColorPalette, Language, get_theme_manager

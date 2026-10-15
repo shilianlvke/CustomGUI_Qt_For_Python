@@ -1,4 +1,4 @@
-from qt_core import QMenu
+from PySide6.QtWidgets import QMenu
 
 from AppCore import get_theme_manager
 

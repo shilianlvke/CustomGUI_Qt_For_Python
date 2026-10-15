@@ -4,16 +4,9 @@
 全部可见文本走本应用语言包（app.welcome.*）。
 """
 
-from qt_core import (
-    QGridLayout,
-    QIcon,
-    QMargins,
-    QSize,
-    QSizePolicy,
-    QVBoxLayout,
-    QWidget,
-    Qt,
-)
+from PySide6.QtCore import QMargins, QSize, Qt
+from PySide6.QtGui import QIcon
+from PySide6.QtWidgets import QGridLayout, QSizePolicy, QVBoxLayout, QWidget
 from GuiCore import CCard, CComboBox, CStatusButton, CPushButton, CMenuButton, CMenu, CScrollArea, CShowCard
 from AppCore import PathFactory, Language, Logger, ColorPalette
 

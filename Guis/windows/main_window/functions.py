@@ -1,13 +1,8 @@
 import os
 
 from PySide6 import QtCore, QtGui
-from qt_core import (
-    QEasingCurve,
-    QFileDialog,
-    QParallelAnimationGroup,
-    QPropertyAnimation,
-    QPushButton,
-)
+from PySide6.QtCore import QEasingCurve, QParallelAnimationGroup, QPropertyAnimation
+from PySide6.QtWidgets import QFileDialog, QPushButton
 from AppCore import AppSettings
 
 

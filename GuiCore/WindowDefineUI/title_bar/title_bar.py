@@ -1,15 +1,7 @@
-from qt_core import (
-    QCursor,
-    QFrame,
-    QHBoxLayout,
-    QLabel,
-    QSize,
-    QSvgWidget,
-    QVBoxLayout,
-    Qt,
-    Signal,
-    QWidget,
-)
+from PySide6.QtCore import QSize, Qt, Signal
+from PySide6.QtGui import QCursor
+from PySide6.QtWidgets import QFrame, QHBoxLayout, QLabel, QVBoxLayout, QWidget
+from PySide6.QtSvgWidgets import QSvgWidget
 from AppCore import ColorPalette, PathFactory, AppSettings, Language
 from GuiCore.CustomUI.div import CVDiv
 from .title_button import CTitleButton
