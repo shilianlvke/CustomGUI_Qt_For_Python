@@ -49,9 +49,6 @@ class CLeftMenu(QWidget):
         # 语言切换时自动刷新菜单文本（弱引用订阅）
         Language.subscribe(self.apply_language)
 
-        # 设置背景颜色
-        # self.bg.setStyleSheet(f"background: {self._dark_one}; border-radius: {radius};")
-
         # 切换按钮和DIV菜单
         self.toggle_button = CLeftMenuButton(
             app_parent,

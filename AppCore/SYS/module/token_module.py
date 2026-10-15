@@ -17,6 +17,7 @@ class ColorTokens:
     text_active: str
     border_context: str
     border_transparent: str
+    state_active: str
 
 
 @dataclass(frozen=True)
@@ -78,6 +79,7 @@ def get_design_tokens() -> DesignTokens:
             text_active=ColorPalette.custom_text_active,
             border_context=ColorPalette.custom_context_color,
             border_transparent=ColorPalette.custom_transparent,
+            state_active=ColorPalette.custom_bg_active_one,
         ),
         typography=TypographyTokens(
             family=AppSettings.family,

@@ -1,7 +1,7 @@
 from PySide6.QtCore import QEvent, QPoint, QRect, Qt, Slot
 from PySide6.QtGui import QColor, QPainter, QPixmap
 from PySide6.QtWidgets import QGraphicsDropShadowEffect, QLabel, QPushButton
-from AppCore import PathFactory, ColorPalette, get_design_tokens, get_theme_manager
+from AppCore import PathFactory, ColorPalette
 
 
 class CLeftMenuButton(QPushButton):
@@ -48,8 +48,6 @@ class CLeftMenuButton(QPushButton):
         self._tooltip_text = tooltip_text
         self.tooltip = _ToolTip(app_parent, tooltip_text)
         self.tooltip.hide()
-        # 主题切换时刷新（已显示的）提示样式
-        get_theme_manager().subscribe(self.tooltip.update_style)
 
     # 绘制事件
     def paintEvent(self, event):
@@ -239,7 +237,6 @@ class CLeftMenuButton(QPushButton):
             self.tooltip.hide()
             self.clicked.emit()
             self.change_style(QEvent.MouseButtonPress)
-            self.tooltip.update_style()
 
     # 鼠标释放
     # 松开鼠标按钮后触发的事件
@@ -270,13 +267,17 @@ class CLeftMenuButton(QPushButton):
 # TOOLTIP
 # ///////////////////////////////////////////////////////////////
 class _ToolTip(QLabel):
-    # TOOLTIP / LABEL StyleSheet
+    """提示气泡。
+
+    样式统一由 ``GuiCore/styles.py`` 的 ``#label_tooltip`` 提供（左侧强调边经
+    动态属性 ``accent`` 选择），本类不再持有样式与主题订阅。
+    """
 
     def __init__(self, parent, tooltip):
         QLabel.__init__(self)
         # LABEL SETUP
         self.setObjectName("label_tooltip")
-        self.update_style()
+        self.setProperty("accent", "left")
         self.setMinimumHeight(34)
         self.setParent(parent)
         self.setText(tooltip)
@@ -289,23 +290,3 @@ class _ToolTip(QLabel):
         self.shadow.setYOffset(0)
         self.shadow.setColor(QColor(0, 0, 0, 80))
         self.setGraphicsEffect(self.shadow)
-
-    def show(self):
-        self.update_style()
-        super().show()
-
-    def update_style(self):
-        tokens = get_design_tokens()
-        self.style = f"""
-            QLabel {{
-                background-color: {tokens.colors.surface_sidebar};	
-                color: {tokens.colors.text_primary};
-                padding-left: {tokens.spacing.padding_md}px;
-                padding-right: {tokens.spacing.padding_md}px;
-                border-radius: {tokens.radius.tooltip}px;
-                border: 0px solid {tokens.colors.border_transparent};
-                border-left: {tokens.border.accent_width}px solid {tokens.colors.border_context};
-                font: {tokens.typography.weight_tooltip} {tokens.typography.size_text}pt "{tokens.typography.family}";
-            }}
-        """
-        self.setStyleSheet(self.style)

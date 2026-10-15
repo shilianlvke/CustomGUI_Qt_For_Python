@@ -2,12 +2,16 @@ import webbrowser
 from PySide6.QtCore import QSize, Qt
 from PySide6.QtGui import QCursor, QPixmap
 from PySide6.QtWidgets import QFrame, QHBoxLayout, QLabel, QSizePolicy, QVBoxLayout, QWidget
-from AppCore import PathFactory, ColorPalette, get_theme_manager
+from AppCore import PathFactory, ColorPalette
 
 
 class CShowCard(QFrame):
     """
     现代简约风格卡片组件：上半部分自定义组件，下半部分点击跳转
+
+    样式约定（与 ``CPushButton`` 一致）：上下分区的配色由 ``GuiCore/styles.py``
+    的 ``#CShowCard #topArea`` 等规则提供并随主题切换自动生效；本类只保留实例
+    级几何（圆角、透明边框宽度）覆盖，不再订阅主题。
     """
 
     def __init__(
@@ -63,36 +67,25 @@ class CShowCard(QFrame):
         main_layout.addWidget(self.bottom_area)
         if widget is not None:
             self.set_top_widget(widget)
-        # 样式
-        self._setup_style()
-        # 主题切换时实时刷新样式（弱引用订阅）
-        get_theme_manager().subscribe(self._setup_style)
+        # 实例级几何（与主题无关）
+        self._apply_geometry()
         # 绑定点击事件
         self.bottom_area.mousePressEvent = self._on_source_click
 
-    def _setup_style(self):
-        """现代简约风格样式表（颜色实时读取调色板，随主题切换刷新）"""
+    def _apply_geometry(self):
+        """实例级几何：透明边框宽度与圆角（与主题无关，故不放进全局样式表）。"""
         self.setStyleSheet(f"""
             #CShowCard {{
                 border: {self.border_size}px solid transparent;
                 border-radius: {self.radius}px;
             }}
             #topArea {{
-                background-color: {self.colorpalette.custom_bg_three};
                 border-top-left-radius: {self.radius}px;
                 border-top-right-radius: {self.radius}px;
             }}
             #bottomArea {{
-                background-color: {self.colorpalette.custom_bg_two};
                 border-bottom-left-radius: {self.radius}px;
                 border-bottom-right-radius: {self.radius}px;
-            }}
-            #SourceLabel {{
-                color: {self.colorpalette.custom_text_foreground};
-                background-color: {self.colorpalette.custom_bg_two};
-            }}
-            #IconLabel {{
-                background-color: {self.colorpalette.custom_bg_two};
             }}
         """)
 

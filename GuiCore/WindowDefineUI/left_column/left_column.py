@@ -65,26 +65,7 @@ class CLeftColumn(QWidget):
         self.btn_close.set_tooltip(Language.resolve_key("language.UI.ui_Close"))
 
     def update_style(self):
-        """主题切换回调：重建内联样式并重新着色图标。"""
-        self.title_bg_frame.setStyleSheet(
-            f"""
-            #title_bg_frame {{
-                background-color: {ColorPalette.custom_bg_three};
-                border-radius: {self._radius}px;
-            }}
-            """
-        )
-        self.title_label.setStyleSheet(
-            f"""
-            #title_label {{
-                font-size: {self._text_title_size}pt;
-                color: {ColorPalette.custom_text_foreground};
-                padding-bottom: 2px;
-                background: none;
-                font: 700 9pt "{self._family}";
-            }}
-            """
-        )
+        """主题切换回调：重新着色图标（颜色样式由全局样式表统一提供）。"""
         self.icon.set_icon(self._icon_path, ColorPalette.custom_icon_color)
         self.repaint()
 
@@ -103,9 +84,10 @@ class CLeftColumn(QWidget):
         self.title_base_layout = QVBoxLayout(self.title_frame)
         self.title_base_layout.setContentsMargins(5, 3, 5, 3)
 
-        # 标题背景框架
+        # 标题背景框架（配色见 GuiCore/styles.py；圆角是实例参数，本地覆盖）
         self.title_bg_frame = QFrame()
-        self.title_bg_frame.setObjectName("title_bg_frame")
+        self.title_bg_frame.setObjectName("CLeftColumnTitle_Frame")
+        self.title_bg_frame.setStyleSheet(f"#CLeftColumnTitle_Frame {{ border-radius: {self._radius}px; }}")
 
         # 布局标题BG
         self.title_bg_layout = QHBoxLayout(self.title_bg_frame)
@@ -114,8 +96,8 @@ class CLeftColumn(QWidget):
 
         # 图标
         self.icon_frame = QFrame()
+        self.icon_frame.setObjectName("CLeftColumnIcon_Frame")
         self.icon_frame.setFixedSize(30, 30)
-        self.icon_frame.setStyleSheet("background: none;")
         self.icon_layout = QVBoxLayout(self.icon_frame)
         self.icon_layout.setContentsMargins(0, 0, 0, 0)
         self.icon_layout.setSpacing(5)
@@ -125,12 +107,12 @@ class CLeftColumn(QWidget):
 
         # 标签
         self.title_label = QLabel()
-        self.title_label.setObjectName("title_label")
+        self.title_label.setObjectName("CLeftColumnTitle_Label")
 
         # 按钮框架
         self.btn_frame = QFrame()
+        self.btn_frame.setObjectName("CLeftColumnBtn_Frame")
         self.btn_frame.setFixedSize(30, 30)
-        self.btn_frame.setStyleSheet("background: none;")
         # 关闭按钮
         self.btn_close = PyLeftButton(
             # self._parent,
@@ -152,7 +134,7 @@ class CLeftColumn(QWidget):
 
         # 文本框架
         self.content_frame = QFrame()
-        self.content_frame.setStyleSheet("background: none")
+        self.content_frame.setObjectName("CLeftColumnContent_Frame")
 
         # 添加标题框架、内容框架到基础布局
         self.base_layout.addWidget(self.title_frame)

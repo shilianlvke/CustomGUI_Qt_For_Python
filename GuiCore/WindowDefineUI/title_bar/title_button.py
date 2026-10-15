@@ -1,7 +1,7 @@
 from PySide6.QtCore import QEvent, QPoint, QRect, Qt
 from PySide6.QtGui import QBrush, QColor, QPainter, QPixmap
 from PySide6.QtWidgets import QGraphicsDropShadowEffect, QLabel, QPushButton
-from AppCore import ColorPalette, AppSettings, get_theme_manager
+from AppCore import ColorPalette
 
 
 # PY TITLE BUTTON
@@ -43,8 +43,6 @@ class CTitleButton(QPushButton):
         self._tooltip_text = tooltip_text
         self._tooltip = _ToolTip(app_parent, tooltip_text)
         self._tooltip.hide()
-        # 主题切换时刷新（已显示的）提示样式
-        get_theme_manager().subscribe(self._tooltip.update_style)
 
     # SET ACTIVE MENU
     # ///////////////////////////////////////////////////////////////
@@ -139,7 +137,6 @@ class CTitleButton(QPushButton):
             # EMIT SIGNAL
             self.clicked.emit()
             self.change_style(QEvent.MouseButtonPress)
-            self._tooltip.update_style()
 
     # MOUSE RELEASED
     # Event triggered after the mouse button is released
@@ -192,13 +189,17 @@ class CTitleButton(QPushButton):
 # TOOLTIP
 # ///////////////////////////////////////////////////////////////
 class _ToolTip(QLabel):
-    # TOOLTIP / LABEL StyleSheet
+    """提示气泡。
+
+    样式统一由 ``GuiCore/styles.py`` 的 ``#label_tooltip`` 提供（顶部强调边经
+    动态属性 ``accent`` 选择），本类不再持有样式与主题订阅。
+    """
 
     def __init__(self, parent, tooltip):
         QLabel.__init__(self)
         # LABEL SETUP
         self.setObjectName("label_tooltip")
-        self.update_style()
+        self.setProperty("accent", "top")
         self.setMinimumHeight(34)
         self.setParent(parent)
         self.setText(tooltip)
@@ -211,22 +212,3 @@ class _ToolTip(QLabel):
         self.shadow.setYOffset(0)
         self.shadow.setColor(QColor(0, 0, 0, 80))
         self.setGraphicsEffect(self.shadow)
-
-    def show(self):
-        self.update_style()
-        super().show()
-
-    def update_style(self):
-        self.style = f"""
-            QLabel {{
-                background-color: {ColorPalette.custom_dark_one};	
-                color: {ColorPalette.custom_text_foreground};
-                padding-left: {AppSettings.custom_padding}px;
-                padding-right: {AppSettings.custom_padding}px;
-                border-radius: {AppSettings.tooltip_border_radius}px;
-                border: 0px solid {ColorPalette.custom_transparent};
-                border-top: {AppSettings.custom_border}px solid {ColorPalette.custom_context_color};
-               font: {AppSettings.tooltip_font} {AppSettings.text_size}pt "{AppSettings.family}";
-            }}
-        """
-        self.setStyleSheet(self.style)

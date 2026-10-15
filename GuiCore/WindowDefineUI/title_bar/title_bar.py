@@ -49,9 +49,6 @@ class CTitleBar(QWidget):
         # 语言切换时自动刷新提示文本（弱引用订阅）
         Language.subscribe(self.apply_language)
 
-        # 添加背景色
-        # self.bg.setStyleSheet(f"background-color: {self._bg_color}; border-radius: {radius}px;")
-
         # 设置logo宽度
         self.top_logo.setMinimumWidth(AppSettings.icon_size)
         self.top_logo.setMaximumWidth(AppSettings.icon_size)
@@ -238,10 +235,10 @@ class CTitleBar(QWidget):
         self.logo_svg.load(PathFactory.set_svg_image(self._logo_image))
         self.top_logo_layout.addWidget(self.logo_svg, Qt.AlignCenter, Qt.AlignCenter)
 
-        # TITLE LABEL
+        # TITLE LABEL（字号/字体由 GuiCore/styles.py 的 #CTitleBar_Title_Label 提供）
         self.title_label = QLabel()
+        self.title_label.setObjectName("CTitleBar_Title_Label")
         self.title_label.setAlignment(Qt.AlignVCenter)
-        self.title_label.setStyleSheet(f'font: {self._title_size}pt "{self._font_family}"')
 
         # CUSTOM BUTTONS LAYOUT
         self.custom_buttons_layout = QHBoxLayout()

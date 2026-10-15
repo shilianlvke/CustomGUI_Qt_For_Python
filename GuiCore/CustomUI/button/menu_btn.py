@@ -3,39 +3,15 @@ from PySide6.QtGui import QIcon, QPixmap
 from PySide6.QtWidgets import QPushButton
 from AppCore import PathFactory
 
-style = """
-/* 主控件样式 */
-QPushButton {{
-    border: {_border_size}px solid {_bg_color};
-    border-radius: {_radius}px;
-    background-color: {_bg_color};
-    color: {_text_color};
-    padding-left: 10px
-}}
-QPushButton:hover {{
-    background-color: {_press_color};
-}}
-QPushButton:pressed {{
-    background-color: {_press_color};
-}}
-QPushButton::menu-indicator {{ 
-    image: url({_icon_arrow_right});
-    width: 16px;
-    height: 16px;
-    padding-right: 4px;
-    subcontrol-position: right;
-}}
-QPushButton::menu-indicator:pressed, QPushButton::menu-indicator:open {{
-    image: url({_icon_arrow_down});
-    width: 16px;
-    height: 16px;
-    position: relative;
-    top: 2px; left: 2px; /* shift the arrow by 2 px */
-}}
-"""
-
 
 class CMenuButton(QPushButton):
+    """带下拉菜单的按钮。
+
+    样式约定（与 ``CPushButton`` 一致）：全部样式由 ``GuiCore/styles.py`` 的
+    ``#CMenuButton_PushButton`` 提供（含 ``::menu-indicator`` 箭头图标），本类
+    只声明 objectName，不做任何内联样式与主题订阅。
+    """
+
     def __init__(
         self,
         size: QSize = QSize(64, 32),
@@ -64,39 +40,6 @@ class CMenuButton(QPushButton):
         self.radius = radius
         self.border_size = border_size
         self.color = colorpalette
-        # 设置样式
-        # self.set_stylesheet(
-        #     radius,
-        #     border_size,
-        #     bg,
-        #     colorpalette.custom_text_foreground,
-        #     colorpalette.custom_bg_one,
-        #     colorpalette.custom_bg_three,
-        # )
 
         # 禁用虚线焦点框
         self.setFocusPolicy(Qt.StrongFocus)
-
-    def set_stylesheet(
-        self,
-        radius,
-        border_size,
-        bg_color,
-        text_color,
-        hover_color,
-        press_active,
-    ):
-        # 资源以绝对路径注入 QSS，避免相对路径依赖工作目录（跨平台路径统一为正斜杠）
-        icon_arrow_right = PathFactory.set_svg_icon("icon_arrow_right").replace("\\", "/")
-        icon_arrow_down = PathFactory.set_svg_icon("icon_arrow_down").replace("\\", "/")
-        style_format = style.format(
-            _radius=radius,
-            _border_size=border_size,
-            _bg_color=bg_color,
-            _text_color=text_color,
-            _hover_color=hover_color,
-            _press_color=press_active,
-            _icon_arrow_right=icon_arrow_right,
-            _icon_arrow_down=icon_arrow_down,
-        )
-        self.setStyleSheet(style_format)

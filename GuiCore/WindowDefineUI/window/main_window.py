@@ -1,5 +1,5 @@
 from PySide6.QtGui import QColor
-from PySide6.QtWidgets import QHBoxLayout, QVBoxLayout, QFrame, QGraphicsDropShadowEffect
+from PySide6.QtWidgets import QApplication, QHBoxLayout, QVBoxLayout, QFrame, QGraphicsDropShadowEffect
 
 from AppCore import AppSettings, get_design_tokens
 
@@ -50,6 +50,13 @@ class CWindow(QFrame):
             }}
             """
         self.setStyleSheet(style)
+        # 同步下发到应用级：弹出类组件（QMenu、提示气泡）是独立顶层窗口，
+        # 不经过本控件，只能通过应用级样式表着色。
+        # 内容不变时跳过：setStyleSheet 会触发整棵控件树重新 polish，
+        # 而 apply_style 在最大化/还原等场景会被反复调用。
+        app = QApplication.instance()
+        if app is not None and app.styleSheet() != style:
+            app.setStyleSheet(style)
 
     def set_stylesheet(self, border_radius=None, border_size=None):
         """覆盖框架圆角/边框；两个参数均为 None 时清除覆盖（恢复主题默认）。"""

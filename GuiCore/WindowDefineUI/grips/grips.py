@@ -23,7 +23,7 @@ class CGrips(QWidget):
 
             # ENABLE COLOR
             if disable_color:
-                self.wi.top_left_grip.setStyleSheet("background: transparent")
+                self._set_colored(self.wi.top_left_grip, disable_color)
 
         # SHOW TOP RIGHT GRIP
         # ///////////////////////////////////////////////////////////////
@@ -35,7 +35,7 @@ class CGrips(QWidget):
 
             # ENABLE COLOR
             if disable_color:
-                self.wi.top_right_grip.setStyleSheet("background: transparent")
+                self._set_colored(self.wi.top_right_grip, disable_color)
 
         # SHOW BOTTOM LEFT GRIP
         # ///////////////////////////////////////////////////////////////
@@ -47,7 +47,7 @@ class CGrips(QWidget):
 
             # ENABLE COLOR
             if disable_color:
-                self.wi.bottom_left_grip.setStyleSheet("background: transparent")
+                self._set_colored(self.wi.bottom_left_grip, disable_color)
 
         # SHOW BOTTOM RIGHT GRIP
         # ///////////////////////////////////////////////////////////////
@@ -59,7 +59,7 @@ class CGrips(QWidget):
 
             # ENABLE COLOR
             if disable_color:
-                self.wi.bottom_right_grip.setStyleSheet("background: transparent")
+                self._set_colored(self.wi.bottom_right_grip, disable_color)
 
         # SHOW TOP GRIP
         # ///////////////////////////////////////////////////////////////
@@ -81,7 +81,7 @@ class CGrips(QWidget):
 
             # ENABLE COLOR
             if disable_color:
-                self.wi.top_grip.setStyleSheet("background: transparent")
+                self._set_colored(self.wi.top_grip, disable_color)
 
         # SHOW BOTTOM GRIP
         # ///////////////////////////////////////////////////////////////
@@ -101,7 +101,7 @@ class CGrips(QWidget):
 
             # ENABLE COLOR
             if disable_color:
-                self.wi.bottom_grip.setStyleSheet("background: transparent")
+                self._set_colored(self.wi.bottom_grip, disable_color)
 
         # SHOW LEFT GRIP
         # ///////////////////////////////////////////////////////////////
@@ -123,7 +123,7 @@ class CGrips(QWidget):
 
             # ENABLE COLOR
             if disable_color:
-                self.wi.left_grip.setStyleSheet("background: transparent")
+                self._set_colored(self.wi.left_grip, disable_color)
 
         # RESIZE RIGHT
         # ///////////////////////////////////////////////////////////////
@@ -142,7 +142,15 @@ class CGrips(QWidget):
 
             # ENABLE COLOR
             if disable_color:
-                self.wi.right_grip.setStyleSheet("background: transparent")
+                self._set_colored(self.wi.right_grip, disable_color)
+
+    @staticmethod
+    def _set_colored(frame, disable_color):
+        """夹点配色统一由 ``GuiCore/styles.py`` 按 objectName 提供。
+
+        ``hide_grips`` 为真时经动态属性 ``colored="false"`` 置为透明（无边框）。
+        """
+        frame.setProperty("colored", "false" if disable_color else "true")
 
     # MOUSE RELEASE
     # ///////////////////////////////////////////////////////////////
@@ -181,38 +189,32 @@ class Widgets(object):
         self.top_left_grip = QFrame(form)
         self.top_left_grip.setObjectName("top_left_grip")
         self.top_left_grip.setFixedSize(15, 15)
-        self.top_left_grip.setStyleSheet("background-color: #333; border: 2px solid #55FF00;")
 
     def top_right(self, form):
         self.top_right_grip = QFrame(form)
         self.top_right_grip.setObjectName("top_right_grip")
         self.top_right_grip.setFixedSize(15, 15)
-        self.top_right_grip.setStyleSheet("background-color: #333; border: 2px solid #55FF00;")
 
     def bottom_left(self, form):
         self.bottom_left_grip = QFrame(form)
         self.bottom_left_grip.setObjectName("bottom_left_grip")
         self.bottom_left_grip.setFixedSize(15, 15)
-        self.bottom_left_grip.setStyleSheet("background-color: #333; border: 2px solid #55FF00;")
 
     def bottom_right(self, form):
         self.bottom_right_grip = QFrame(form)
         self.bottom_right_grip.setObjectName("bottom_right_grip")
         self.bottom_right_grip.setFixedSize(15, 15)
-        self.bottom_right_grip.setStyleSheet("background-color: #333; border: 2px solid #55FF00;")
 
     def top(self, form):
         self.top_grip = QFrame(form)
         self.top_grip.setObjectName("top_grip")
         self.top_grip.setGeometry(QRect(0, 0, 500, 10))
-        self.top_grip.setStyleSheet("background-color: rgb(85, 255, 255);")
         self.top_grip.setCursor(QCursor(Qt.SizeVerCursor))
 
     def bottom(self, form):
         self.bottom_grip = QFrame(form)
         self.bottom_grip.setObjectName("bottom_grip")
         self.bottom_grip.setGeometry(QRect(0, 0, 500, 10))
-        self.bottom_grip.setStyleSheet("background-color: rgb(85, 170, 0);")
         self.bottom_grip.setCursor(QCursor(Qt.SizeVerCursor))
 
     def left(self, form):
@@ -221,7 +223,6 @@ class Widgets(object):
         self.left_grip.setGeometry(QRect(0, 10, 10, 480))
         self.left_grip.setMinimumSize(QSize(10, 0))
         self.left_grip.setCursor(QCursor(Qt.SizeHorCursor))
-        self.left_grip.setStyleSheet("background-color: rgb(255, 121, 198);")
 
     def right(self, form):
         self.right_grip = QFrame(form)
@@ -229,4 +230,3 @@ class Widgets(object):
         self.right_grip.setGeometry(QRect(0, 0, 10, 500))
         self.right_grip.setMinimumSize(QSize(10, 0))
         self.right_grip.setCursor(QCursor(Qt.SizeHorCursor))
-        self.right_grip.setStyleSheet("background-color: rgb(255, 0, 127);")

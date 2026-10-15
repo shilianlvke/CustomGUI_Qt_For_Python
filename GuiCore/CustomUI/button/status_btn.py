@@ -1,27 +1,18 @@
 from PySide6.QtCore import QSize, Qt, Signal
 from PySide6.QtGui import QIcon, QPixmap
 from PySide6.QtWidgets import QPushButton
-from AppCore import PathFactory, ColorPalette, get_theme_manager
-
-style = """
-/* 主控件样式 */
-QPushButton {{
-    border: {_border_size}px solid transparent;
-    border-radius: {_radius}px;
-    border-color: {_border_hover_color};
-    background-color: {_bg_color};
-    color: {_text_color};
-}}
-QPushButton:hover {{
-    background-color: {_hover_color};
-}}
-QPushButton:pressed {{
-    background-color: {_press_color};
-}}
-"""
+from AppCore import PathFactory
 
 
 class CStatusButton(QPushButton):
+    """多态按钮：点击在若干状态间循环，边框颜色随状态变化。
+
+    样式约定（与 ``CPushButton`` 一致）：颜色、悬停/按下、各状态的边框色统一
+    由 ``GuiCore/styles.py`` 的 ``#CStatusButton_PushButton`` 提供；状态经动态
+    属性 ``status`` 由 QSS 属性选择器匹配。本类只保留实例级几何（圆角、边框
+    宽度）覆盖，且不订阅主题——主题切换由全局样式表整体重建后自动生效。
+    """
+
     statusChanged = Signal(int)
 
     def __init__(
@@ -38,11 +29,11 @@ class CStatusButton(QPushButton):
         is_normal: bool = False,  # 三态开关
     ):
         super().__init__()
+        self.setObjectName("CStatusButton_PushButton")
         self.status_list = [-1, 0, 1] if is_normal else [0, 1]
         self.status = self.status_list[0]
         self.radius = radius
         self.border_size = border_size
-        self.color = ColorPalette
 
         if text_negative is not None:
             self.text_negative = text_negative
@@ -79,23 +70,26 @@ class CStatusButton(QPushButton):
         # 绘制
         self.text_change()
         self.icon_change()
-        self.style_change()
-        # 主题切换时按当前状态实时刷新样式（弱引用订阅）
-        get_theme_manager().subscribe(self.style_change)
+        self._apply_geometry()
+        self._sync_status_property()
         # 禁用虚线焦点框
         self.setFocusPolicy(Qt.StrongFocus)
 
-    def set_stylesheet(self, radius, border_size, bg_color, text_color, hover_color, press_active, border_hover_color):
-        style_format = style.format(
-            _radius=radius,
-            _border_size=border_size,
-            _bg_color=bg_color,
-            _text_color=text_color,
-            _hover_color=hover_color,
-            _press_color=press_active,
-            _border_hover_color=border_hover_color,
+    def _apply_geometry(self):
+        """实例级几何：圆角与边框宽度（与主题无关，故不放进全局样式表）。"""
+        self.setStyleSheet(
+            f"#CStatusButton_PushButton {{"
+            f" border-width: {self.border_size}px;"
+            f" border-radius: {self.radius}px; }}"
         )
-        self.setStyleSheet(style_format)
+
+    def _sync_status_property(self):
+        """把当前状态写入动态属性并重新抛光，使 QSS 属性选择器立即生效。"""
+        self.setProperty("status", self.status)
+        style = self.style()
+        style.unpolish(self)
+        style.polish(self)
+        self.update()
 
     def text_change(self):
         if self.status == 1:
@@ -131,27 +125,10 @@ class CStatusButton(QPushButton):
             if hasattr(self, "icon_size_normal"):
                 self.setIconSize(self.icon_size_normal)
 
-    def style_change(self):
-        if self.status == 1:
-            border_haver_color = self.color.custom_context_color
-        elif self.status == 0:
-            border_haver_color = "transparent"
-        elif self.status == -1:
-            border_haver_color = self.color.custom_bg_active_one
-        self.set_stylesheet(
-            self.radius,
-            self.border_size,
-            self.color.custom_bg_one,
-            self.color.custom_text_foreground,
-            self.color.custom_bg_two,
-            self.color.custom_bg_three,
-            border_haver_color,
-        )
-
     def mousePressEvent(self, event):
         super().mousePressEvent(event)
         self.status = self.status_list[(self.status_list.index(self.status) + 1) % len(self.status_list)]
         self.statusChanged.emit(self.status)
         self.text_change()
         self.icon_change()
-        self.style_change()
+        self._sync_status_property()
