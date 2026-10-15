@@ -196,6 +196,23 @@ Apps/<app_name>/
 约定：被导入的子目录建议带 `__init__.py`（常规包，兼容性最好）；
 相对导入基于应用目录层级（`..lib` = 应用目录下的 lib 包）。
 
+### 应用自身资源（插件自包含）
+
+应用全部资源放在自身 `resource/` 目录，通过 `AppContext` 的统一访问器引用
+（全部解析到应用内路径，与基座资源互不干扰）：
+
+| 资源 | 访问器 | 目录 |
+| --- | --- | --- |
+| 任意资源 | `app.resource("sub", "file")` | `resource/sub/file` |
+| 图标 | `app.icon("app_icon.svg")` / `app.icon_path` | `resource/icon/` |
+| 图片 | `app.image("a.png")` | `resource/images/` |
+| 语音/音频 | `app.voice("a.wav")` | `resource/voice/` |
+| 语言文件 | `app.lang_file("zh_cn")` / `app.lang_text("key")` | `resource/lang/` |
+
+插件只依赖 `AppCore` / `GuiCore` 顶层公共 API（含 `AppContext`），不引用
+基座内部模块路径；基座仅通过 `config.yml` + 页面协议发现插件，不含任何
+插件专属代码——**双方完全解耦**，删除插件目录即卸载。
+
 ### 语言
 
 - 应用语言文件内容整体挂在 `Language.app.<app_name>` 命名空间；

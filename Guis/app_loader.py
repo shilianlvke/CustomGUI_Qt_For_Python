@@ -55,7 +55,15 @@ _LOADED = False
 
 @dataclass
 class AppContext:
-    """传递给应用页面代码的上下文。"""
+    """传递给应用页面代码的上下文。
+
+    - 清单：``config``（config.yml 全部字段）；
+    - 语言：``lang_text(key)``（应用内 language 命名空间）；
+    - 资源：``resource(*parts)`` / ``icon(name)`` / ``image(name)`` /
+      ``voice(name)`` / ``lang_file(lang)`` —— 全部解析到应用内
+      ``resource/`` 目录，插件自包含、与基座资源互不干扰；
+    - 目录：``app_dir``（应用根目录）、``icon_path``（默认图标）。
+    """
 
     name: str
     app_dir: Path
@@ -63,9 +71,31 @@ class AppContext:
     icon_path: Path
     language: str
 
+    # ------------------------------------------------------------------
+    # 语言
+    # ------------------------------------------------------------------
     def lang_text(self, key: str, default: Any = None) -> Any:
         """从本应用语言命名空间读取文本，如 ``lang_text("app_text")``。"""
         return Language.resolve(f"app.{self.name}.{key}", default)
+
+    # ------------------------------------------------------------------
+    # 资源（应用内 resource/ 目录，插件自包含）
+    # ------------------------------------------------------------------
+    def resource(self, *parts: str) -> Path:
+        """应用内资源路径：``resource("images", "a.png")`` -> ``<app>/resource/images/a.png``。"""
+        return self.app_dir.joinpath("resource", *parts)
+
+    def icon(self, name: str) -> Path:
+        return self.resource("icon", name)
+
+    def image(self, name: str) -> Path:
+        return self.resource("images", name)
+
+    def voice(self, name: str) -> Path:
+        return self.resource("voice", name)
+
+    def lang_file(self, language: str | None = None) -> Path:
+        return self.resource("lang", f"{language or self.language}.yml")
 
 
 def discover_app_dirs(root: str | Path | None = None) -> list[Path]:

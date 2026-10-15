@@ -1,9 +1,8 @@
 from PySide6.QtCore import Qt, QMargins, QSize
 from PySide6.QtGui import QIcon, QFont
 from PySide6.QtWidgets import QVBoxLayout, QLabel, QWidget, QGridLayout, QHBoxLayout
-from GuiCore import CCard, CPushButton, CScrollArea, CShowCard, CStatusButton
+from GuiCore import CCard, CPushButton, CScrollArea, CShowCard, CStatusButton, CHDiv
 from AppCore import PathFactory, Logger, AppSettings, Language
-from GuiCore.CustomUI.div import CHDiv
 
 
 _LANG = "app.p2ptest_users"

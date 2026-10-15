@@ -17,8 +17,7 @@ from qt_core import (
     QWidget,
     Qt,
 )
-from GuiCore import CCard, CComboBox, CLineEdit, CPushButton, CDialog
-from GuiCore.CustomUI.div import CHDiv
+from GuiCore import CCard, CComboBox, CLineEdit, CPushButton, CDialog, CHDiv
 from AppCore import PathFactory, AppSettings, Language
 
 _LANG = "app.p2ptest_home"

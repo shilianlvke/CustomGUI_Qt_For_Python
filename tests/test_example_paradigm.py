@@ -120,3 +120,29 @@ def test_example_paradigm_theme_manager_accessible(qapp):
     """基座主题管理器可访问（应用可订阅主题变更）。"""
     manager = get_theme_manager()
     assert manager.current() in ("default", "bright", "dracula", "eye")
+
+
+def test_example_paradigm_resource_accessor(qapp, diagnostics_dir):
+    """自身资源统一访问器：icon/image/voice/resource/lang_file 均指向应用内路径。"""
+    _registry, context = _load_example()
+
+    # icon
+    assert context.icon("app_icon.svg").is_file()
+    # images
+    assert context.image("mihoutao.svg").is_file()
+    assert context.image("头像.jpg").is_file()
+    # voice（目录存在，具体音频文件由应用自备）
+    assert context.voice("welcome.wav").parent.is_dir()
+    # 通用 resource + lang_file
+    assert context.resource("images", "mihoutao.svg") == context.image("mihoutao.svg")
+    assert context.lang_file("zh_cn").is_file()
+    assert context.lang_file("en_us").is_file()
+
+    # 页面演示控件
+    registry, _context2 = _load_example()
+    window, container = _build_window()
+    registry.page_plugins()[0].loader(window)
+    page = container.widgets[0]
+    assert "mihoutao.svg" in page.image_label.text()
+    assert "有" in page.image_label.text()  # 文件存在
+    assert "有" in page.voice_label.text()  # voice 目录存在
