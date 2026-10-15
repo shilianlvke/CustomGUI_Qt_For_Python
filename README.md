@@ -505,7 +505,7 @@ uv run python scripts/archive_dist.py <target-name>
 
 ## 许可证
 
-本项目采用 [MIT License](LICENSE)，请自由使用并保留原始作者信息。
+本项目采用 [木兰宽松许可证，第 2 版](LICENSE)，请自由使用并保留原始作者信息。
 
 ## 代码分支
 
