@@ -7,7 +7,6 @@
 
 from __future__ import annotations
 
-import json
 from typing import Any, Mapping
 
 from ..config.mapping import Attrs, deep_merge, to_attrs, to_dict
@@ -43,13 +42,6 @@ class YamlHandler:
         target = file_path or self.file_path
         dump_yaml_file(resolve_path(target), to_dict(data if data is not None else self.data), **kwargs)
 
-    def update(self, new_data: Mapping, merge: bool = True) -> None:
-        """更新数据：merge=True 深度合并，merge=False 整体替换。"""
-        if merge:
-            deep_merge(self.data, new_data)
-        else:
-            self.data = to_attrs(new_data)
-
     def merge(self, other: "YamlHandler | Attrs | Mapping") -> "YamlHandler":
         """将另一个 YAML 配置（或其数据）深度合并进自身，返回 self。"""
         source = getattr(other, "data", other)
@@ -75,14 +67,6 @@ class YamlHandler:
     def to_dict(self) -> dict:
         """还原为普通字典。"""
         return to_dict(self.data)
-
-    def to_json(self, indent: int = 2) -> str:
-        """序列化为 JSON 字符串。"""
-        return json.dumps(self.to_dict(), indent=indent, ensure_ascii=False)
-
-    def reload(self) -> Attrs:
-        """重新加载文件。"""
-        return self.load()
 
     def __getitem__(self, key):
         return self.data[key]

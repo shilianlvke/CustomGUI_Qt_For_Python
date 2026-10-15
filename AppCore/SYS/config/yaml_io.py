@@ -59,20 +59,25 @@ def load_yaml_file(path: str | Path) -> dict:
     return raw
 
 
+_DEFAULT_DUMP_OPTIONS: dict[str, Any] = {
+    "default_flow_style": False,
+    "allow_unicode": True,
+    "sort_keys": False,
+}
+
+
 def dump_yaml_file(path: str | Path, data: Mapping, **kwargs: Any) -> None:
-    """将映射写入 YAML 文件（自动创建父目录）。"""
+    """将映射写入 YAML 文件（自动创建父目录）。
+
+    默认采用 :data:`_DEFAULT_DUMP_OPTIONS`；``kwargs`` 中的同名选项会**覆盖**
+    默认值（而非与之冲突），调用方无需担心重复传参。
+    """
     target = resolve_path(path)
+    options = {**_DEFAULT_DUMP_OPTIONS, **kwargs}
     try:
         target.parent.mkdir(parents=True, exist_ok=True)
         with target.open("w", encoding="utf-8") as stream:
-            yaml.dump(
-                dict(data),
-                stream,
-                default_flow_style=False,
-                allow_unicode=True,
-                sort_keys=False,
-                **kwargs,
-            )
+            yaml.dump(dict(data), stream, **options)
     except OSError as exc:
         raise IOErrorBoundary(
             code="YAML_WRITE_ERROR",

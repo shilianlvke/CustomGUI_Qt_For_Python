@@ -8,61 +8,34 @@
     AppSettings.theme_name                 # 强类型 str
     AppSettings.lef_menu_size.minimum      # 强类型 SizeRange
     AppThemes[AppSettings.theme_name].data # Attrs（属性/字典双访问）
+
+本包顶层只暴露上述「配置访问入口」。框架内部实现按子模块组织，
+需要时直接从子模块导入，避免包顶层堆砌无人使用的再导出：
+
+    from AppCore.SYS.config.registry import ConfigRegistry
+    from AppCore.SYS.config.schema import AppSettingsModel, SizeRange
+    from AppCore.SYS.config.yaml_io import load_yaml_file
 """
 
-from .mapping import Attrs, deep_merge, to_attrs, to_dict
-from .paths import apps_root, iter_files, project_root, resolve_path
-from .schema import (
-    AppSettingsModel,
-    SizeRange,
-    ThemeModel,
-    coerce_value,
-    from_mapping,
-    validate_language_data,
-    validate_settings_data,
-    validate_theme_data,
-)
-from .yaml_io import dump_yaml_file, load_yaml_file
+from .mapping import Attrs, to_attrs
+from .paths import apps_root
 from .registry import (
-    AppContext,
     AppLanguages,
     AppOthers,
     AppSettings,
     AppThemes,
-    ConfigFile,
-    ConfigGroup,
-    ConfigRegistry,
     get_app_context,
     initialize_app_context,
 )
 
 __all__ = [
-    "Attrs",
-    "deep_merge",
-    "to_attrs",
-    "to_dict",
-    "project_root",
-    "resolve_path",
-    "apps_root",
-    "iter_files",
-    "AppSettingsModel",
-    "SizeRange",
-    "ThemeModel",
-    "coerce_value",
-    "from_mapping",
-    "validate_settings_data",
-    "validate_theme_data",
-    "validate_language_data",
-    "load_yaml_file",
-    "dump_yaml_file",
-    "ConfigFile",
-    "ConfigGroup",
-    "ConfigRegistry",
-    "AppContext",
-    "get_app_context",
-    "initialize_app_context",
     "AppSettings",
     "AppThemes",
     "AppLanguages",
     "AppOthers",
+    "get_app_context",
+    "initialize_app_context",
+    "Attrs",
+    "to_attrs",
+    "apps_root",
 ]

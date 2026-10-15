@@ -18,11 +18,19 @@ from __future__ import annotations
 from collections.abc import Mapping
 from dataclasses import MISSING, dataclass, fields, is_dataclass
 from types import UnionType
-from typing import Any, Union, get_args, get_origin, get_type_hints
+from typing import Annotated, Any, Union, get_args, get_origin, get_type_hints
 
 from .mapping import Attrs, to_attrs
 
 _NONE_TYPE = type(None)
+
+# 字段级约束标记：``Annotated[int, _NON_NEGATIVE]`` 表示该整数必须非负。
+# 普通 ``int`` 不再隐含符号约束——历史上引擎对所有整数强制非负，属隐藏约束，
+# 会让将来新增的有符号字段（如 offset）莫名报错。
+_NON_NEGATIVE = "non_negative"
+
+#: 非负整数字段类型别名（尺寸 / 边距 / 字号等配置项使用）。
+NonNegativeInt = Annotated[int, _NON_NEGATIVE]
 
 
 # ---------------------------------------------------------------------------
@@ -39,10 +47,10 @@ def _missing_fields(cls, data: Mapping) -> list[str]:
     return missing
 
 
-def _coerce_int(value: Any, label: str) -> int:
+def _coerce_int(value: Any, label: str, *, non_negative: bool = False) -> int:
     if isinstance(value, bool) or not isinstance(value, int):
         raise ValueError(f"{label} 必须为整数")
-    if value < 0:
+    if non_negative and value < 0:
         raise ValueError(f"{label} 必须是非负整数")
     return value
 
@@ -78,6 +86,13 @@ def coerce_value(annotation: Any, value: Any, label: str) -> Any:
     """按类型注解将原始值转换为目标类型，失败抛 :class:`ValueError`。"""
     origin = get_origin(annotation)
     args = get_args(annotation)
+
+    # Annotated[X, ...]：解包约束元数据后按基础类型递归
+    if origin is Annotated:
+        base, *metadata = args
+        if base is int:
+            return _coerce_int(value, label, non_negative=_NON_NEGATIVE in metadata)
+        return coerce_value(base, value, label)
 
     # Optional[X] / X | None：空值直接放行，其余按非空分支递归
     if origin is Union or origin is UnionType:
@@ -126,6 +141,21 @@ def coerce_value(annotation: Any, value: Any, label: str) -> Any:
     raise ValueError(f"{label} 不支持的类型注解 {annotation!r}")
 
 
+def _warn_unknown_fields(cls, data: Mapping, label: str) -> None:
+    """对配置中未在模型声明的键发出告警。
+
+    防止 YAML 中的拼写错误（如 ``custom_bg_active_1``）被静默忽略，
+    导致颜色 / 参数悄悄丢失。Logger 延迟导入，本模块不产生导入期依赖。
+    """
+    known = {field.name for field in fields(cls)}
+    unknown = [str(key) for key in data if key not in known]
+    if not unknown:
+        return
+    from ..module.logger_module import Logger
+
+    Logger.warning(f"{label} 存在未声明的字段（已忽略）: {', '.join(unknown)}")
+
+
 def from_mapping(cls, data: Any, *, label: str) -> Any:
     """将原始映射转换为 ``cls`` 实例（含完整校验）。
 
@@ -137,12 +167,15 @@ def from_mapping(cls, data: Any, *, label: str) -> Any:
     if not isinstance(data, Mapping):
         raise ValueError(f"{label} 必须是字典结构")
 
+    _warn_unknown_fields(cls, data, label)
+
     missing = _missing_fields(cls, data)
     if missing:
         raise ValueError(f"{label} 缺少关键字段: {', '.join(missing)}")
 
-    # from __future__ import annotations 下 field.type 是字符串，需统一解析
-    type_hints = get_type_hints(cls)
+    # from __future__ import annotations 下 field.type 是字符串，需统一解析；
+    # include_extras=True 保留 Annotated 约束元数据（默认会被剥离）
+    type_hints = get_type_hints(cls, include_extras=True)
 
     kwargs: dict[str, Any] = {}
     for field in fields(cls):
@@ -163,8 +196,8 @@ def from_mapping(cls, data: Any, *, label: str) -> Any:
 class SizeRange:
     """尺寸区间（minimum/maximum）。"""
 
-    minimum: int
-    maximum: int
+    minimum: NonNegativeInt
+    maximum: NonNegativeInt
 
     def __post_init__(self):
         if self.minimum > self.maximum:
@@ -182,31 +215,31 @@ class AppSettingsModel:
     # ---- window.yaml ----
     startup_size: tuple[int, int]
     minimum_size: tuple[int, int]
-    icon_size: int
+    icon_size: NonNegativeInt
     custom_title_bar: bool
     hide_grips: bool
-    window_margin: int
-    window_space: int
-    window_border_size: int
-    window_border_radius: int
+    window_margin: NonNegativeInt
+    window_space: NonNegativeInt
+    window_border_size: NonNegativeInt
+    window_border_radius: NonNegativeInt
     window_shadow: bool
     lef_menu_size: SizeRange
-    left_menu_content_margins: int
+    left_menu_content_margins: NonNegativeInt
     left_column_size: SizeRange
     right_column_size: SizeRange
-    right_menu_content_margins: int
-    right_title_bar_height: int
-    right_content_space: int
-    right_credits_height: int
-    custom_padding: int
-    custom_border: int
-    tooltip_border_radius: int
-    tooltip_font: int
-    time_animation: int
+    right_menu_content_margins: NonNegativeInt
+    right_title_bar_height: NonNegativeInt
+    right_content_space: NonNegativeInt
+    right_credits_height: NonNegativeInt
+    custom_padding: NonNegativeInt
+    custom_border: NonNegativeInt
+    tooltip_border_radius: NonNegativeInt
+    tooltip_font: NonNegativeInt
+    time_animation: NonNegativeInt
     family: str
-    title_size: int
-    subtitle_size: int
-    text_size: int
+    title_size: NonNegativeInt
+    subtitle_size: NonNegativeInt
+    text_size: NonNegativeInt
     # ---- config.yaml ----
     language: str
     theme_name: str
@@ -302,8 +335,12 @@ def _require_keys(data: Any, required: list[str], label: str) -> Attrs:
     return to_attrs(data)
 
 
-def validate_language_data(language_data: Any, language_name: str = "unknown") -> None:
-    """校验语言包结构：custom_ui / PAGE / UI 三个分组及其关键键。"""
+def validate_language_data(language_data: Any, language_name: str = "unknown") -> Attrs:
+    """校验语言包结构：custom_ui / PAGE / UI 三个分组及其关键键。
+
+    与 :func:`validate_settings_data` / :func:`validate_theme_data` 保持一致，
+    返回校验通过的 :class:`Attrs`（调用方可直接使用）。
+    """
     label = f"语言 {language_name}"
     if not isinstance(language_data, Mapping):
         raise ValueError(f"{label} 必须是字典结构")
@@ -319,6 +356,7 @@ def validate_language_data(language_data: Any, language_name: str = "unknown") -
     if not isinstance(language_data["PAGE"], Mapping):
         raise ValueError(f"{label}.PAGE 必须是字典")
     _require_keys(language_data["UI"], ["ui_Settings", "ui_Show", "ui_Hide"], f"{label}.UI")
+    return to_attrs(language_data)
 
 
 __all__ = [
@@ -326,6 +364,7 @@ __all__ = [
     "SizeRange",
     "AppSettingsModel",
     "ThemeModel",
+    "NonNegativeInt",
     "coerce_value",
     "from_mapping",
     "validate_settings_data",

@@ -46,9 +46,6 @@ class ConfigFile:
 class ConfigGroup(Attrs):
     """一组配置文件（文件名 -> ConfigFile）。"""
 
-    def names(self) -> list[str]:
-        return list(self.keys())
-
 
 def _load_group(
     directory: str,
@@ -74,20 +71,37 @@ def _load_group(
                 ) from exc
         group[name] = ConfigFile(name=name, path=path, data=data)
 
-    Logger.debug(f"{log_label}: {group.names()}")
+    Logger.debug(f"{log_label}: {sorted(group.keys())}")
     return group
 
 
 class ConfigRegistry:
     """按目录加载并校验配置组。
 
-    目录常量可通过子类覆盖（测试中常用临时目录注入）。
+    目录常量既可被子类覆盖，也可通过构造函数注入（测试中常用临时目录）。
     """
 
     SETTINGS_DIR = "resource/customui/settings"
     THEMES_DIR = "resource/customui/themes"
     LANGUAGES_DIR = "resource/customui/languages"
     OTHERS_DIR = "resource/customui/others"
+
+    def __init__(
+        self,
+        *,
+        settings_dir: str | None = None,
+        themes_dir: str | None = None,
+        languages_dir: str | None = None,
+        others_dir: str | None = None,
+    ) -> None:
+        for name, value in (
+            ("SETTINGS_DIR", settings_dir),
+            ("THEMES_DIR", themes_dir),
+            ("LANGUAGES_DIR", languages_dir),
+            ("OTHERS_DIR", others_dir),
+        ):
+            if value is not None:
+                setattr(self, name, value)
 
     def load_settings(self) -> AppSettingsModel:
         """加载并合并 settings 目录下全部 YAML，返回强类型模型。"""

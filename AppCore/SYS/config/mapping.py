@@ -66,6 +66,7 @@ class Attrs(dict):
         return self
 
     def copy(self) -> "Attrs":
+        """浅拷贝，且保持 :class:`Attrs` 类型（覆盖 ``dict.copy`` 返回普通 dict 的行为）。"""
         return Attrs(self)
 
 
