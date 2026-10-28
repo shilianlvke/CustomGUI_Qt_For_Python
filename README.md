@@ -54,7 +54,7 @@ Demo 启动后可以直接看到完整窗口和内置组件/页面示例。
 适合把 CustomGUI 作为另一个应用的基座。
 
 ```powershell
-uv add "customgui @ git+https://gitee.com/shilianlvke/CustomGUI_Qt_For_Python.git@base-v0.2.0"
+uv add "customgui @ git+https://gitee.com/shilianlvke/CustomGUI_Qt_For_Python.git@base-v0.2.4"
 ```
 
 或固定到某个提交：
@@ -85,7 +85,7 @@ uv build --wheel
 产物：
 
 ```text
-dist/customgui-0.2.0-py3-none-any.whl
+dist/customgui-0.2.4-py3-none-any.whl
 ```
 
 wheel 包含：
