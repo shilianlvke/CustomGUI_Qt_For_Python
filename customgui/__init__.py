@@ -8,7 +8,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
-__version__ = "0.2.0"
+__version__ = "0.2.1"
 
 PACKAGE_ROOT = Path(__file__).resolve().parent
 RESOURCE_ROOT = PACKAGE_ROOT

@@ -12,12 +12,9 @@ from __future__ import annotations
 
 from PySide6.QtWidgets import QWidget
 
-from AppCore import Language, Logger
+from AppCore import LANGUAGE_OPTIONS, Language, Logger
 
 from .windows.main_window.functions import MainFunctions
-
-LANGUAGE_OPTIONS = ("zh_cn", "en_us")
-
 
 def current_language() -> str:
     """返回当前激活语言。"""

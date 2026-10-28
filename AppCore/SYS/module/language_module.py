@@ -26,7 +26,20 @@ from ..config.mapping import Attrs, to_attrs
 from .logger_module import Logger
 from .telemetry_module import record_event
 
-LANGUAGE_OPTIONS = ("zh_cn", "en_us")
+def _discover_language_options() -> tuple[str, ...]:
+    """Discover languages from the active base + overlay resource layers."""
+    try:
+        from ..config.paths import iter_files
+
+        names = tuple(sorted(path.stem for path in iter_files("resource/customui/languages", ".yaml")))
+        if names:
+            return names
+    except Exception:
+        pass
+    return ("zh_cn", "en_us")
+
+
+LANGUAGE_OPTIONS = _discover_language_options()
 
 
 @dataclass

@@ -12,6 +12,7 @@ from .config import (
 from .module import Logger
 from .other import PathFactory, PicFixFactory
 from .module import ColorPalette, Language
+from .module.language_module import LANGUAGE_OPTIONS
 from .module import ThemeManager, get_theme_manager
 from .module import DesignTokens, get_design_tokens
 from .module import AppError, DomainErrorBoundary, IOErrorBoundary, UIErrorBoundary, to_user_message
@@ -33,6 +34,7 @@ __all__ = [
     "get_app_context",
     "ColorPalette",
     "Language",
+    "LANGUAGE_OPTIONS",
     "ThemeManager",
     "get_theme_manager",
     "DesignTokens",
