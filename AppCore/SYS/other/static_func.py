@@ -4,7 +4,7 @@ from PySide6.QtCore import QRectF, Qt
 from PySide6.QtGui import QPainter, QPainterPath, QPixmap
 
 from AppCore.SYS import Logger
-from AppCore.SYS.config.paths import resolve_path
+from AppCore.SYS.config.paths import find_resource, resolve_path
 
 
 class PathFinder:
@@ -20,11 +20,14 @@ class PathFinder:
 
     @classmethod
     def __get_path(cls, folder, icon_name):
-        path = resolve_path(folder) / icon_name
-        if path.is_file():
+        candidate = Path(folder) / icon_name
+        path = find_resource(candidate)
+        if path is not None and path.is_file():
             return str(path)
-        Logger.error(f"路径文件不存在{path}")
-        fallback = resolve_path(Path(cls.images) / "icon_pic_not_found.svg")
+        Logger.error(f"路径文件不存在{candidate}")
+        fallback = find_resource(Path(cls.images) / "icon_pic_not_found.svg")
+        if fallback is None:
+            fallback = resolve_path(Path(cls.images) / "icon_pic_not_found.svg")
         return str(fallback)
 
     # 设置svg类型的icon
