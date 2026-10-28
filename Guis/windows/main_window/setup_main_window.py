@@ -1,3 +1,5 @@
+import os
+
 from PySide6.QtCore import Qt
 from PySide6.QtWidgets import QWidget
 from .functions import MainFunctions
@@ -47,6 +49,8 @@ BUILTIN_TITLE_MENU_PLUGINS = [
 
 
 def register_builtin_title_menus():
+    if os.getenv("CUSTOMGUI_BUILTIN_MENUS", "1").strip().lower() in {"0", "false", "no", "off"}:
+        return
     registry = get_plugin_registry()
     for plugin in BUILTIN_TITLE_MENU_PLUGINS:
         if plugin.plugin_id not in registry._menus:

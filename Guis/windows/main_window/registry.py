@@ -9,6 +9,8 @@
 
 from PySide6.QtWidgets import QWidget
 
+import os
+
 from AppCore import MenuPlugin, Logger, get_plugin_registry, record_event
 from Guis.app_loader import load_apps
 
@@ -34,6 +36,8 @@ def _default_title_by_button(button_id):
 
 
 def register_builtin_menus():
+    if os.getenv("CUSTOMGUI_BUILTIN_MENUS", "1").strip().lower() in {"0", "false", "no", "off"}:
+        return
     registry = get_plugin_registry()
     for plugin in BUILTIN_MENU_PLUGINS:
         if plugin.plugin_id not in registry._menus:
