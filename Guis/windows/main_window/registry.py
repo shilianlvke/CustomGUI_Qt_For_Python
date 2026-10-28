@@ -36,10 +36,11 @@ def _default_title_by_button(button_id):
 
 
 def register_builtin_menus():
-    if os.getenv("CUSTOMGUI_BUILTIN_MENUS", "1").strip().lower() in {"0", "false", "no", "off"}:
-        return
+    demo_menus = os.getenv("CUSTOMGUI_BUILTIN_MENUS", "1").strip().lower() not in {"0", "false", "no", "off"}
     registry = get_plugin_registry()
     for plugin in BUILTIN_MENU_PLUGINS:
+        if not demo_menus and plugin.plugin_id == "builtin.menu.left.info":
+            continue
         if plugin.plugin_id not in registry._menus:
             registry.register_menu(plugin)
 
