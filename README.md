@@ -209,6 +209,7 @@ customgui 包内置资源
 | `CUSTOMGUI_ROOT_DIR` | 兼容旧项目的根目录覆盖 | 基座包推导 |
 | `CUSTOMGUI_DATA_DIR` | 日志等可写数据根 | `%APPDATA%/CustomGUI` |
 | `CUSTOMGUI_DIAGNOSTICS_DIR` | 遥测 JSON 目录 | `DATA_DIR/logs/diagnostics` |
+| `CUSTOMGUI_BUILTIN_MENUS` | 是否启用 Demo 的信息/搜索菜单 | `1` |
 
 > 安装后的基座不会向 `site-packages` 写日志；所有可写数据都进入 `CUSTOMGUI_DATA_DIR`。
 
