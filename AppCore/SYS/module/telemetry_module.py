@@ -7,6 +7,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 from .logger_module import Logger
+from ..config.paths import data_root
 
 # 遥测写入使用进程内互斥锁，避免并发写文件时数据竞争。
 _LOCK = threading.Lock()
@@ -31,7 +32,7 @@ def _resolve_diagnostics_dir() -> Path:
     if custom_dir:
         path = Path(custom_dir)
     else:
-        path = Path(__file__).resolve().parents[3] / "logs" / "diagnostics"
+        path = data_root() / "logs" / "diagnostics"
     path.mkdir(parents=True, exist_ok=True)
     return path
 

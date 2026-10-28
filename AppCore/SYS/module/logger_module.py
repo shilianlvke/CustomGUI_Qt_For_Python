@@ -12,6 +12,8 @@ import os
 from logging.handlers import RotatingFileHandler
 from pathlib import Path
 
+from ..config.paths import data_root, find_resource
+
 try:
     from colorama import just_fix_windows_console
 except Exception:
@@ -70,8 +72,7 @@ class _Logger:
         if just_fix_windows_console:
             just_fix_windows_console()
 
-        root_dir = Path(__file__).resolve().parents[3]
-        log_dir = root_dir / "logs"
+        log_dir = data_root() / "logs"
         os.makedirs(log_dir, exist_ok=True)
 
         formatter = logging.Formatter(
@@ -105,8 +106,8 @@ class _Logger:
     @staticmethod
     def _read_console_config() -> dict:
         """读取 console.yaml（logger 引导期专用，独立于配置框架以避免循环依赖）。"""
-        config_path = Path(__file__).resolve().parents[3] / "resource" / "customui" / "settings" / "console.yaml"
-        if yaml is None or not config_path.exists():
+        config_path = find_resource("resource/customui/settings/console.yaml")
+        if yaml is None or config_path is None or not config_path.exists():
             return {}
 
         try:

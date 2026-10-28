@@ -1,4 +1,11 @@
+import os
 import sys
+from pathlib import Path
+
+# 源码 Demo 使用仓库自己的 Apps/ 与可写 logs/；wheel 使用者由宿主应用设置。
+_DEMO_ROOT = Path(__file__).resolve().parent
+os.environ.setdefault("CUSTOMGUI_APPS_DIR", str(_DEMO_ROOT / "Apps"))
+os.environ.setdefault("CUSTOMGUI_DATA_DIR", str(_DEMO_ROOT))
 
 from PySide6.QtGui import QIcon
 from PySide6.QtWidgets import QApplication, QMainWindow
