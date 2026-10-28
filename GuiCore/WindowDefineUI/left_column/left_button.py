@@ -61,7 +61,7 @@ class PyLeftButton(QPushButton):
     # ///////////////////////////////////////////////////////////////
     def set_active(self, is_active):
         self._is_active = is_active
-        self.repaint()
+        self.update()
 
     # RETURN IF IS ACTIVE MENU
     # ///////////////////////////////////////////////////////////////
@@ -100,16 +100,16 @@ class PyLeftButton(QPushButton):
     def change_style(self, event):
         if event == QEvent.Enter:
             self._state = "hover"
-            self.repaint()
+            self.update()
         elif event == QEvent.Leave:
             self._state = "normal"
-            self.repaint()
+            self.update()
         elif event == QEvent.MouseButtonPress:
             self._state = "pressed"
-            self.repaint()
+            self.update()
         elif event == QEvent.MouseButtonRelease:
             self._state = "hover"
-            self.repaint()
+            self.update()
 
     # MOUSE OVER
     # Event triggered when the mouse is over the BTN
@@ -164,7 +164,7 @@ class PyLeftButton(QPushButton):
     # ///////////////////////////////////////////////////////////////
     def set_icon(self, icon_path):
         self._set_icon_path = icon_path
-        self.repaint()
+        self.update()
 
     # 更新提示文本（语言切换时使用）
     def set_tooltip(self, text):

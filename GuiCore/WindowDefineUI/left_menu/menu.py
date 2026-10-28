@@ -132,29 +132,40 @@ class CLeftMenu(QWidget):
 
     # 左侧菜单发射信号
     def btn_clicked(self):
-        self.clicked.emit(self.menu)
+        sender = self.sender()
+        self.clicked.emit(sender if sender is not None else self.menu)
 
     def btn_released(self):
-        self.released.emit(self.menu)
+        sender = self.sender()
+        self.released.emit(sender if sender is not None else self.menu)
 
     # 展开/缩回左菜单
     def toggle_animation(self):
-        # CREATE ANIMATION
+        if self._parent is None:
+            return
+        if self._parent.width() <= self._minimum_width + 8:
+            self.expand()
+        else:
+            self.collapse()
+
+    def _animate_width(self, target: int, expanded: bool) -> None:
+        if self._parent is None:
+            return
         self.animation = QPropertyAnimation(self._parent, b"minimumWidth")
         self.animation.stop()
-        if self.width() <= self._minimum_width:  # 50
-            self.animation.setStartValue(self.width())
-            self.animation.setEndValue(self._maximum_width)  # 240
-            self.toggle_button.set_active_toggle(True)
-            self.toggle_button.set_icon(self._icon_path_close)
-        else:
-            self.animation.setStartValue(self.width())
-            self.animation.setEndValue(self._minimum_width)
-            self.toggle_button.set_active_toggle(False)
-            self.toggle_button.set_icon(self._icon_path)
+        self.animation.setStartValue(self._parent.width())
+        self.animation.setEndValue(target)
+        self.toggle_button.set_active_toggle(expanded)
+        self.toggle_button.set_icon(self._icon_path_close if expanded else self._icon_path)
         self.animation.setEasingCurve(QEasingCurve.InOutCubic)
         self.animation.setDuration(self._duration_time)
         self.animation.start()
+
+    def expand(self) -> None:
+        self._animate_width(self._maximum_width, True)
+
+    def collapse(self) -> None:
+        self._animate_width(self._minimum_width, False)
 
     # 仅选择一个BTN
     def select_only_one(self, widget: str):

@@ -35,6 +35,7 @@ class CLeftMenuButton(QPushButton):
         # APP PATH
         self._icon_path = PathFactory.resolve_svg(icon_path)
         self._icon_active_menu = PathFactory.set_svg_icon(icon_active_menu)
+        self._icon_cache: dict[str, QPixmap] = {}
         self._icon_enter = False
         # PROPERTIES
         self._margin = margin
@@ -145,7 +146,7 @@ class CLeftMenuButton(QPushButton):
         if not is_active:
             self._set_icon_color = ColorPalette.custom_icon_color
             self._set_bg_color = ColorPalette.custom_dark_one
-        self.repaint()
+        self.update()
 
     # 设置活跃的导航栏
     def set_active_tab(self, is_active):
@@ -153,7 +154,7 @@ class CLeftMenuButton(QPushButton):
         if not is_active:
             self._set_icon_color = ColorPalette.custom_icon_color
             self._set_bg_color = ColorPalette.custom_dark_one
-        self.repaint()
+        self.update()
 
     # 返回是否是活跃界面
     def is_active(self):
@@ -170,7 +171,7 @@ class CLeftMenuButton(QPushButton):
     # 设置图标
     def set_icon(self, icon_path):
         self._icon_path = icon_path
-        self.repaint()
+        self.update()
 
     # 更新提示文本（语言切换时使用）
     def set_tooltip(self, text):
@@ -179,8 +180,17 @@ class CLeftMenuButton(QPushButton):
         self.tooltip.adjustSize()
 
     # 用颜色绘制图标
+    def _base_icon(self, image) -> QPixmap:
+        if not isinstance(image, str):
+            return image
+        cached = self._icon_cache.get(image)
+        if cached is None:
+            cached = QPixmap(image)
+            self._icon_cache[image] = cached
+        return cached
+
     def icon_paint(self, qp, image, rect, color):
-        icon = QPixmap(image)
+        icon = QPixmap(self._base_icon(image))
         painter = QPainter(icon)
         painter.setCompositionMode(QPainter.CompositionMode_SourceIn)
         painter.fillRect(icon.rect(), color)
@@ -189,7 +199,7 @@ class CLeftMenuButton(QPushButton):
 
     # 绘制活动图标/右侧
     def icon_active(self, qp, image, width):
-        icon = QPixmap(image)
+        icon = QPixmap(self._base_icon(image))
         painter = QPainter(icon)
         painter.setCompositionMode(QPainter.CompositionMode_SourceIn)
         painter.fillRect(icon.rect(), ColorPalette.custom_bg_one)

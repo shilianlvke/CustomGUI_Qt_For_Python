@@ -1,9 +1,11 @@
 from PySide6.QtCore import QSize, Qt, Signal
 from PySide6.QtGui import QCursor
-from PySide6.QtWidgets import QFrame, QHBoxLayout, QLabel, QVBoxLayout, QWidget
 from PySide6.QtSvgWidgets import QSvgWidget
-from AppCore import ColorPalette, PathFactory, AppSettings, Language
+from PySide6.QtWidgets import QFrame, QHBoxLayout, QLabel, QVBoxLayout, QWidget
+
+from AppCore import AppSettings, ColorPalette, Language, PathFactory
 from GuiCore.CustomUI.div import CVDiv
+
 from .title_button import CTitleButton
 
 _is_maximized = False
@@ -166,10 +168,12 @@ class CTitleBar(QWidget):
 
     # 标题栏菜单发出信号
     def btn_clicked(self):
-        self.clicked.emit(self.menu)
+        sender = self.sender()
+        self.clicked.emit(sender if sender is not None else self.menu)
 
     def btn_released(self):
-        self.released.emit(self.menu)
+        sender = self.sender()
+        self.released.emit(sender if sender is not None else self.menu)
 
     # 设置标题栏文本
     # ///////////////////////////////////////////////////////////////

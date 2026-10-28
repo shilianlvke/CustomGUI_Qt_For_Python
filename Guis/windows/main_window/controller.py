@@ -1,9 +1,9 @@
 from PySide6.QtWidgets import QWidget
 
 from AppCore import (
-    MainWindowButtonUseCase,
     Language,
     Logger,
+    MainWindowButtonUseCase,
     PathFactory,
     get_plugin_registry,
     get_theme_manager,
@@ -12,7 +12,7 @@ from AppCore import (
 from GuiCore import Styles
 
 from .functions import MainFunctions
-from .registry import get_page_routes
+from .registry import ensure_registered_page, get_page_routes
 
 
 class PageRouterController:
@@ -37,6 +37,7 @@ class PageRouterController:
 
     def switch_page(self, btn_name: str, page_name: str, title: str):
         self._window.ui.left_menu.select_only_one(btn_name)
+        ensure_registered_page(self._window, page_name)
         self._main_functions.set_page(self._window, self._window.ui.load_pages.pages.findChild(QWidget, page_name))
         self._window.ui.title_bar.set_title(title)
         self._logger.debug(f"切换页面: {btn_name} -> {page_name} ({title})")
@@ -53,13 +54,13 @@ class ThemeController:
     def __init__(
         self,
         window,
-        theme_manager=get_theme_manager(),
+        theme_manager=None,
         style_factory=Styles,
         logger=Logger,
         event_recorder=record_event,
     ):
         self._window = window
-        self._theme_manager = theme_manager
+        self._theme_manager = theme_manager or get_theme_manager()
         self._style_factory = style_factory
         self._logger = logger
         self._record_event = event_recorder
@@ -67,6 +68,15 @@ class ThemeController:
         self._theme_manager.subscribe(self._apply_styles)
 
     def cycle_theme(self):
+        # Launcher applications may expose their own theme cycle (for example
+        # dark/light/system). Prefer it over the base theme sequence.
+        custom = getattr(self._window, "cycle_app_theme", None)
+        if callable(custom):
+            try:
+                custom()
+                return
+            except Exception as exc:
+                self._logger.warning(f"自定义主题切换失败，回退到基座主题循环: {exc}")
         self._theme_manager.cycle()
 
     def _apply_styles(self):

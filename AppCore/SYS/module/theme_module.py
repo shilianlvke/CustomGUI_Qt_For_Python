@@ -34,6 +34,27 @@ from .telemetry_module import record_event
 THEME_SEQUENCE = ("eye", "bright", "default")
 
 
+def _hex_to_rgb(value: str) -> tuple[int, int, int] | None:
+    text = (value or "").strip().lstrip("#")
+    if len(text) == 3:
+        text = "".join(ch * 2 for ch in text)
+    if len(text) != 6:
+        return None
+    try:
+        return int(text[0:2], 16), int(text[2:4], 16), int(text[4:6], 16)
+    except ValueError:
+        return None
+
+
+def _mix(value: str, target: int, amount: float) -> str:
+    rgb = _hex_to_rgb(value)
+    if rgb is None:
+        return value
+    amount = max(0.0, min(1.0, amount))
+    mixed = tuple(round(component + (target - component) * amount) for component in rgb)
+    return "#{:02x}{:02x}{:02x}".format(*mixed)
+
+
 @dataclass
 class ThemeManager:
     """主题切换协调器（单例，通过 :func:`get_theme_manager` 获取）。"""
@@ -41,6 +62,7 @@ class ThemeManager:
     _current: str | None = None
     _listeners: list = field(default_factory=list)
     _lock: threading.Lock = field(default_factory=threading.Lock, init=False, repr=False)
+    _accent: str = ""
 
     # ------------------------------------------------------------------
     def current(self) -> str:
@@ -52,19 +74,37 @@ class ThemeManager:
                 self._current = AppSettings.theme_name
             return self._current
 
-    def apply(self, name: str) -> str:
-        """应用指定主题：更新调色板 -> 通知订阅者 -> 记录日志与遥测。"""
+    def apply(self, name: str, accent: str | None = None) -> str:
+        """应用指定主题：更新调色板 -> 通知订阅者 -> 记录日志与遥测。
+
+        ``accent`` is an optional ``#rrggbb`` override applied on top of the
+        selected theme. It is remembered so ``cycle()`` keeps the user's accent.
+        """
         from ..config import AppThemes
 
         if name not in AppThemes:
             raise ValueError(f"未知主题: {name}（可用: {sorted(AppThemes.keys())}）")
+        if accent is not None:
+            if _hex_to_rgb(accent) is None:
+                raise ValueError(f"无效的强调色: {accent}")
+            self._accent = accent
 
         ColorPalette.update(AppThemes[name].data)
+        if self._accent:
+            base = self._accent
+            ColorPalette.custom_context_color = base
+            ColorPalette.custom_context_hover = _mix(base, 255, 0.16)
+            ColorPalette.custom_context_pressed = _mix(base, 0, 0.18)
+            ColorPalette.custom_icon_pressed = ColorPalette.custom_context_hover
         self._current = name
         self._notify()
         Logger.info(f"切换主题: {name}")
-        record_event("ui.theme_switch", category="ui", payload={"theme": name})
+        record_event("ui.theme_switch", category="ui", payload={"theme": name, "accent": self._accent})
         return name
+
+    @property
+    def accent(self) -> str:
+        return self._accent
 
     def cycle(self) -> str:
         """按循环顺序切换到下一个主题。"""
@@ -80,7 +120,9 @@ class ThemeManager:
         C++ 对象。普通函数/闭包使用强引用（需自行保证生命周期）。
         """
         with self._lock:
-            if hasattr(callback, "__self__"):
+            import types
+
+            if isinstance(callback, types.MethodType):
                 ref = weakref.WeakMethod(callback)
                 self._listeners.append(ref)
                 self._bind_destroyed_cleanup(callback.__self__, ref)

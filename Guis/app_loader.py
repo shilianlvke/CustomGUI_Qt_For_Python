@@ -131,7 +131,7 @@ def collect_app_languages(language: str, app_dirs: list[Path] | None = None) -> 
 
 def apply_apps_language(language: str, app_dirs: list[Path] | None = None) -> None:
     """把全部应用的语言文件注入 ``Language.app.<app_name>`` 命名空间。"""
-    setattr(Language, "app", collect_app_languages(language, app_dirs))
+    Language.app = collect_app_languages(language, app_dirs)
     Logger.debug(f"应用语言注入完成: {language}")
 
 
@@ -223,7 +223,7 @@ def register_app(app_dir: Path, registry=None) -> AppContext | None:
     # （语言切换时由 Language.apply -> _app_language_provider 整体重建）
     app_node = getattr(Language, "app", None) or Attrs()
     app_node[name] = to_attrs(_load_app_lang_data(app_dir, AppSettings.language))
-    setattr(Language, "app", app_node)
+    Language.app = app_node
 
     registry.register_menu(
         MenuPlugin(

@@ -7,6 +7,8 @@
 - 菜单项/页面路由/默认页的聚合查询。
 """
 
+from PySide6.QtWidgets import QWidget
+
 from AppCore import MenuPlugin, Logger, get_plugin_registry, record_event
 from Guis.app_loader import load_apps
 
@@ -54,14 +56,34 @@ def _as_legacy_registry():
     return result
 
 
-def load_registered_pages(window):
+def load_registered_pages(window, *, eager: bool = False):
+    """Load the default page (or every page when ``eager=True``).
+
+    Non-default pages are instantiated lazily on first navigation, so a
+    language change only rebuilds the page the user is looking at.
+    """
     load_apps()
     register_builtin_menus()
     registry = get_plugin_registry()
-    registry.load_page_plugins(window)
+    registry.load_page_plugins(window, eager=eager)
     page_count = len(registry.page_plugins())
-    Logger.debug(f"页面插件加载完成: {page_count} 个页面")
-    record_event("pages.loaded", category="ui", payload={"count": page_count})
+    Logger.debug(f"页面插件加载完成: {page_count} 个页面 (eager={eager})")
+    record_event("pages.loaded", category="ui", payload={"count": page_count, "eager": eager})
+
+
+def ensure_registered_page(window, page_object: str) -> bool:
+    """Instantiate a registered page if it is not in the stack yet."""
+    if not page_object:
+        return False
+    pages = getattr(getattr(window, "ui", None), "load_pages", None)
+    if pages is None:
+        return False
+    if pages.pages.findChild(QWidget, page_object) is not None:
+        return True
+    load_apps()
+    registry = get_plugin_registry()
+    plugin = registry.load_page_plugin(window, page_object)
+    return plugin is not None and pages.pages.findChild(QWidget, page_object) is not None
 
 
 def get_page_routes(language):
@@ -92,6 +114,7 @@ PAGE_REGISTRY = _as_legacy_registry()
 __all__ = [
     "PAGE_REGISTRY",
     "load_registered_pages",
+    "ensure_registered_page",
     "get_page_routes",
     "get_default_page_object",
     "get_menu_items",

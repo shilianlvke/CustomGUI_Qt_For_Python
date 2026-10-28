@@ -1,7 +1,13 @@
 from PySide6.QtCore import Qt
 from PySide6.QtWidgets import QWidget
 from .functions import MainFunctions
-from .registry import get_default_page_object, get_menu_items, load_registered_pages
+from .registry import (
+    ensure_registered_page,
+    get_default_page_object,
+    get_menu_items,
+    get_page_routes,
+    load_registered_pages,
+)
 from GuiCore import CGrips
 from AppCore import AppSettings, Language, Logger, MenuPlugin, get_plugin_registry
 from Guis.app_loader import load_apps
@@ -91,13 +97,22 @@ class SetupMainWindow:
             SetupMainWindow.resize_grips(self)
         # 加载按钮
         SetupMainWindow.menu_add_btn(self)
-        # PAGES
-        load_registered_pages(self)
+        # PAGES (default page only; others are built on first navigation)
+        load_registered_pages(self, eager=False)
         # 设置初始页面/设置左右列菜单（无任何应用时内容区留空）
         default_page = get_default_page_object()
+        if default_page:
+            ensure_registered_page(self, default_page)
         page = self.ui.load_pages.pages.findChild(QWidget, default_page) if default_page else None
         if page is not None:
             MainFunctions.set_page(self, page)
+            try:
+                routes = get_page_routes(Language)
+                active = next((route for route in routes.values() if route[0] == default_page), None)
+                if active:
+                    self.ui.title_bar.set_title(active[1])
+            except (AttributeError, KeyError, TypeError) as exc:
+                Logger.debug(f"无法设置初始页面标题: {exc}")
         # MainFunctions.set_left_column_menu(
         #     self,
         #     menu=self.ui.left_column.menus.menu_1,

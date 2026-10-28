@@ -43,7 +43,12 @@ def apply_language(language: str, window=None) -> str:
 
 def switch_language(window=None) -> str:
     """在可用语言间循环切换，返回新语言名。"""
-    target = "en_us" if current_language() == "zh_cn" else "zh_cn"
+    options = available_languages()
+    try:
+        index = options.index(current_language())
+    except ValueError:
+        index = -1
+    target = options[(index + 1) % len(options)]
     return apply_language(target, window=window)
 
 
@@ -65,6 +70,15 @@ def _rebuild_pages(window) -> None:
     left_menu = getattr(window.ui, "left_menu", None)
     current_btn = left_menu.active_button_id() if callable(getattr(left_menu, "active_button_id", None)) else None
 
+    # A combo/menu popup can survive its parent page briefly and emit
+    # currentIndexChanged after the C++ widget was deleted.  Close popups
+    # before tearing the page down.
+    from PySide6.QtWidgets import QApplication
+
+    popup = QApplication.activePopupWidget()
+    if popup is not None:
+        popup.close()
+
     # 移除全部已加载页面（setParent(None) 使其立即脱离对象树，避免 findChild 命中旧页面）
     while pages.count():
         widget = pages.widget(0)
@@ -73,16 +87,18 @@ def _rebuild_pages(window) -> None:
         widget.deleteLater()
 
     from .windows.main_window.registry import (
+        ensure_registered_page,
         get_default_page_object,
         get_page_routes,
         load_registered_pages,
     )
 
-    load_registered_pages(window)
+    load_registered_pages(window, eager=False)
 
     routes = get_page_routes(Language)
     target = routes.get(current_btn)
     page_object = target[0] if target else get_default_page_object()
+    ensure_registered_page(window, page_object)
 
     page = pages.findChild(QWidget, page_object)
     if page is None and pages.count():

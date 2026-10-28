@@ -121,8 +121,12 @@ class LanguageHandler:
 
     def cycle(self) -> str:
         """在可用语言间循环切换。"""
-        target = "en_us" if self.current() == "zh_cn" else "zh_cn"
-        return self.apply(target)
+        options = LANGUAGE_OPTIONS
+        try:
+            index = options.index(self.current())
+        except ValueError:
+            index = -1
+        return self.apply(options[(index + 1) % len(options)])
 
     def subscribe(self, callback: Callable[[], None]) -> None:
         """订阅语言变更通知。
@@ -132,7 +136,9 @@ class LanguageHandler:
         C++ 对象。普通函数/闭包使用强引用（需自行保证生命周期）。
         """
         with self._lock:
-            if hasattr(callback, "__self__"):
+            import types
+
+            if isinstance(callback, types.MethodType):
                 ref = weakref.WeakMethod(callback)
                 self._listeners.append(ref)
                 self._bind_destroyed_cleanup(callback.__self__, ref)

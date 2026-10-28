@@ -285,22 +285,56 @@ class PluginRegistry:
     def command_plugins(self):
         return [plugin for plugin in self._commands.values() if plugin.enabled]
 
-    def load_page_plugins(self, window, on_error: Callable[[PagePlugin, Exception], None] | None = None):
+    def _load_page_plugin(
+        self,
+        window,
+        plugin: PagePlugin,
+        on_error: Callable[[PagePlugin, Exception], None] | None = None,
+    ) -> None:
+        if not plugin.loader:
+            return
+        try:
+            plugin.loader(window)
+        except Exception as exc:
+            self._load_errors.append(f"{plugin.plugin_id}: {exc}")
+            Logger.error(f"页面插件加载失败: {plugin.plugin_id}: {exc}")
+            record_event(
+                "plugin.page_load_error",
+                category="plugin",
+                level="error",
+                payload={"plugin_id": plugin.plugin_id, "error": str(exc)},
+            )
+            if on_error:
+                on_error(plugin, exc)
+
+    def load_page_plugins(
+        self,
+        window,
+        on_error: Callable[[PagePlugin, Exception], None] | None = None,
+        *,
+        eager: bool = True,
+    ):
+        """Instantiate pages.
+
+        ``eager=False`` builds only the default page; remaining pages are
+        created on first navigation via :meth:`load_page_plugin`.  This keeps
+        launcher startup and language rebuilds responsive.
+        """
         for plugin in self.page_plugins():
-            if plugin.loader:
-                try:
-                    plugin.loader(window)
-                except Exception as exc:
-                    self._load_errors.append(f"{plugin.plugin_id}: {exc}")
-                    Logger.error(f"页面插件加载失败: {plugin.plugin_id}: {exc}")
-                    record_event(
-                        "plugin.page_load_error",
-                        category="plugin",
-                        level="error",
-                        payload={"plugin_id": plugin.plugin_id, "error": str(exc)},
-                    )
-                    if on_error:
-                        on_error(plugin, exc)
+            if eager or plugin.default:
+                self._load_page_plugin(window, plugin, on_error)
+
+    def load_page_plugin(
+        self,
+        window,
+        page_object: str,
+        on_error: Callable[[PagePlugin, Exception], None] | None = None,
+    ) -> PagePlugin | None:
+        for plugin in self.page_plugins():
+            if plugin.page_object == page_object:
+                self._load_page_plugin(window, plugin, on_error)
+                return plugin
+        return None
 
     def build_page_routes(self, language, title_fallback: Callable[[str], str]):
         routes = {}

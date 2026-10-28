@@ -50,7 +50,7 @@ class CTitleButton(QPushButton):
     # ///////////////////////////////////////////////////////////////
     def set_active(self, is_active):
         self._is_active = is_active
-        self.repaint()
+        self.update()
 
     # 更新提示文本（语言切换时使用）
     def set_tooltip(self, text):
@@ -166,7 +166,7 @@ class CTitleButton(QPushButton):
     # ///////////////////////////////////////////////////////////////
     def set_icon(self, icon_path):
         self._set_icon_path = icon_path
-        self.repaint()
+        self.update()
 
     # MOVE TOOLTIP
     # ///////////////////////////////////////////////////////////////
