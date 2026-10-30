@@ -16,7 +16,7 @@ YAML 文件只是「存储格式」，解析后的字典经过本模块转换为
 from __future__ import annotations
 
 from collections.abc import Mapping
-from dataclasses import MISSING, dataclass, fields, is_dataclass
+from dataclasses import MISSING, dataclass, field as dataclass_field, fields, is_dataclass
 from types import UnionType
 from typing import Annotated, Any, Union, get_args, get_origin, get_type_hints
 
@@ -205,6 +205,21 @@ class SizeRange:
 
 
 @dataclass(frozen=True)
+class PageTransitionSettings:
+    """栏目切换动画时间线（毫秒，按 擦除旧页 -> 旧按钮 -> 新按钮 -> 展开新页 串联）。
+
+    任一段为 0 表示跳过该阶段；四段全为 0 时切换退化为瞬切。
+    """
+
+    page_out: NonNegativeInt = 120
+    menu_out: NonNegativeInt = 90
+    menu_in: NonNegativeInt = 110
+    page_in: NonNegativeInt = 150
+    #: 各阶段缓动曲线（``QEasingCurve.Type`` 枚举名，如 OutCubic / InOutQuad）
+    easing: str = "InOutQuad"
+
+
+@dataclass(frozen=True)
 class AppSettingsModel:
     """系统设置模型：``settings`` 目录下所有 YAML 合并后的强类型视图。
 
@@ -251,6 +266,8 @@ class AppSettingsModel:
     display: list[str]
     logger_level: str
     logger_color: bool
+    # ---- window.yaml（栏目切换动画） ----
+    page_transition: PageTransitionSettings = dataclass_field(default_factory=PageTransitionSettings)
 
     @classmethod
     def from_mapping(cls, data: Mapping, label: str = "AppSettings") -> "AppSettingsModel":

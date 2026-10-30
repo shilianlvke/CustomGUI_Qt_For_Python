@@ -5,7 +5,7 @@ from Guis.windows.main_window.controller import MainWindowController, PageRouter
 
 class _StubMainFunctions:
     @staticmethod
-    def set_page(window, page):
+    def set_page(window, page, **_kwargs):
         window._selected_page = page
 
     @staticmethod

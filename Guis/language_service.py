@@ -101,7 +101,8 @@ def _rebuild_pages(window) -> None:
     if page is None and pages.count():
         page = pages.currentWidget()
     if page is not None:
-        MainFunctions.set_page(window, page)
+        # 页面刚整体重建，旧页已脱离对象树：不做切换过场，避免抓到空白遮罩
+        MainFunctions.set_page(window, page, animate=False)
     Logger.debug(f"页面重建完成: {pages.count()} 个页面（当前 {page_object}）")
 
 

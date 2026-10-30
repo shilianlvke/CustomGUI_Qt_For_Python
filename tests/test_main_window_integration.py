@@ -29,7 +29,7 @@ class _MainFunctionStub:
         self.top_button = _ToggleButton()
         self.left_settings_button = _ToggleButton()
 
-    def set_page(self, window, page):
+    def set_page(self, window, page, **_kwargs):
         window._selected_page = page
 
     def get_title_bar_btn(self, _window, object_name):

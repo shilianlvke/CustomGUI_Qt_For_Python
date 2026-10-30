@@ -46,6 +46,14 @@ tooltip_font: 300
 # ANIMATION
 time_animation: 500 # 动画时长
 
+# PAGE TRANSITION 栏目切换动画（毫秒，按下面四段串联；任一段为 0 则跳过，全 0 为瞬切）
+page_transition:
+  page_out: 120 # 原页面从右侧向左侧擦除
+  menu_out: 90 # 原栏目按钮高亮 1 -> 0
+  menu_in: 110 # 目标栏目按钮高亮 0 -> 1
+  page_in: 150 # 目标页面从左向右展开
+  easing: InOutQuad # 各阶段缓动（QEasingCurve 枚举名）
+
 # FONT
 family: 微软雅黑
 title_size: 18 # 标题大小

@@ -7,6 +7,7 @@ from .div import CHDiv as CHDiv, CVDiv as CVDiv
 from .line_edit import CLineEdit as CLineEdit
 from .scroll import CScrollArea as CScrollArea
 from .tooltip import CToolTip as CToolTip
+from .page_transition import CPageTransition as CPageTransition
 
 __all__ = [
     "CPushButton",
@@ -22,4 +23,5 @@ __all__ = [
     "CLineEdit",
     "CScrollArea",
     "CToolTip",
+    "CPageTransition",
 ]

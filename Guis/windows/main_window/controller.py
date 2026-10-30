@@ -36,9 +36,19 @@ class PageRouterController:
         return self._get_routes(self._language).get(btn_name)
 
     def switch_page(self, btn_name: str, page_name: str, title: str):
-        self._window.ui.left_menu.select_only_one(btn_name)
+        left_menu = self._window.ui.left_menu
+        # 先记录原栏目按钮，再过场里由时间线驱动两枚按钮的高亮接力
+        active_getter = getattr(left_menu, "active_button_id", None)
+        previous_btn = active_getter() if callable(active_getter) else None
+        left_menu.select_only_one(btn_name)
         ensure_registered_page(self._window, page_name)
-        self._main_functions.set_page(self._window, self._window.ui.load_pages.pages.findChild(QWidget, page_name))
+        self._main_functions.set_page(
+            self._window,
+            self._window.ui.load_pages.pages.findChild(QWidget, page_name),
+            menu=left_menu,
+            button_id=btn_name,
+            previous_button_id=previous_btn,
+        )
         self._window.ui.title_bar.set_title(title)
         self._logger.debug(f"切换页面: {btn_name} -> {page_name} ({title})")
         self._record_event(

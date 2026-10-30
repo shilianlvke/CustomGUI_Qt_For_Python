@@ -12,6 +12,7 @@ from .CustomUI import (
     CToolTip,
     CHDiv,
     CVDiv,
+    CPageTransition,
 )
 from .WindowDefineUI import CCredits, CGrips, CLeftColumn, CLeftMenu, CTitleBar, CWindow
 from .AppDefineUI import CDialog
@@ -31,6 +32,7 @@ __all__ = [
     "CToolTip",
     "CHDiv",
     "CVDiv",
+    "CPageTransition",
     "CCredits",
     "CGrips",
     "CLeftColumn",

@@ -4,14 +4,31 @@ from PySide6 import QtCore, QtGui
 from PySide6.QtCore import QEasingCurve, QParallelAnimationGroup, QPropertyAnimation
 from PySide6.QtWidgets import QFileDialog, QPushButton
 from AppCore import AppSettings
+from GuiCore import CPageTransition
 
 
 # FUNCTIONS
 class MainFunctions:
     # SET MAIN WINDOW PAGES
     # ///////////////////////////////////////////////////////////////
-    def set_page(self, page):
-        self.ui.load_pages.pages.setCurrentWidget(page)
+    def set_page(self, page, animate=True, *, menu=None, button_id=None, previous_button_id=None):
+        """切换内容区页面。
+
+        ``animate=False`` 时瞬时切换（如语言重建页面）；
+        ``menu`` / ``button_id`` / ``previous_button_id`` 让栏目按钮高亮跟随过场时序。
+        """
+        pages = self.ui.load_pages.pages
+        if not animate:
+            CPageTransition.cancel(pages)
+            pages.setCurrentWidget(page)
+            return
+        CPageTransition.switch(
+            pages,
+            page,
+            menu=menu,
+            button_id=button_id,
+            previous_button_id=previous_button_id,
+        )
 
     # SET LEFT COLUMN PAGES
     # ///////////////////////////////////////////////////////////////
