@@ -14,7 +14,7 @@ from .dropdown import CDropdownField
 from .input_style import RADIUS, colors, rounded_path
 from .input_text import CInputText
 from .overlay import COptionList, CTreeList
-from .paint_utils import draw_cross
+from ..paint_utils import draw_cross
 
 #: 标签高（md 下 26px）
 _CHIP_GAP = 4

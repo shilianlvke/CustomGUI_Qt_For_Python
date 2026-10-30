@@ -38,6 +38,17 @@ from .line_edit import (
     CToggleSwitch as CToggleSwitch,
     CTreeSelect as CTreeSelect,
 )
+from .display import (
+    CAvatar as CAvatar,
+    CBadge as CBadge,
+    CChip as CChip,
+    CDivider as CDivider,
+    CProgressBar as CProgressBar,
+    CSkeleton as CSkeleton,
+    CTag as CTag,
+)
+from .feedback import CMessage as CMessage
+from .feedback import CToast as CToast
 from .scroll import CScrollArea as CScrollArea
 from .tooltip import CToolTip as CToolTip
 from .page_transition import CPageTransition as CPageTransition
@@ -84,4 +95,13 @@ __all__ = [
     "CScrollArea",
     "CToolTip",
     "CPageTransition",
+    "CTag",
+    "CBadge",
+    "CChip",
+    "CAvatar",
+    "CSkeleton",
+    "CProgressBar",
+    "CDivider",
+    "CMessage",
+    "CToast",
 ]

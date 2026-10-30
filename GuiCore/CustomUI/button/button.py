@@ -18,7 +18,7 @@ from PySide6.QtWidgets import QPushButton, QSizePolicy
 
 from AppCore import AppSettings, PathFactory
 
-from .severity import Severity, Variant, colors_for
+from .severity import Severity, Variant, colors_for, normalize_severity
 
 
 @dataclass(frozen=True)
@@ -71,7 +71,7 @@ class CButton(QPushButton):
         self.setFocusPolicy(Qt.StrongFocus)
         self.setSizePolicy(QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Fixed)
 
-        self._severity = Severity(severity)
+        self._severity = normalize_severity(severity)
         self._variant = Variant(variant)
         self._plain = plain
         self._rounded = rounded
@@ -120,7 +120,7 @@ class CButton(QPushButton):
         self.update()
 
     def set_severity(self, severity: str | Severity) -> None:
-        self._severity = Severity(severity)
+        self._severity = normalize_severity(severity)
         self.update()
 
     def set_variant(self, variant: str | Variant) -> None:

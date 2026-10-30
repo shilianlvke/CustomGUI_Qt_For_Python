@@ -14,7 +14,7 @@ from PySide6.QtWidgets import QFrame, QVBoxLayout, QWidget
 from AppCore import AppSettings
 
 from .input_style import colors, rounded_path
-from .paint_utils import draw_check, draw_chevron
+from ..paint_utils import draw_check, draw_chevron
 
 #: 列表行高（Aura 菜单项约 2.25rem）
 ROW_HEIGHT = 34

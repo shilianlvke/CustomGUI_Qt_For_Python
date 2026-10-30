@@ -7,7 +7,7 @@ from PySide6.QtGui import QColor, QPainter
 from PySide6.QtWidgets import QSizePolicy, QWidget
 
 from .input_style import colors
-from .paint_utils import star_path
+from ..paint_utils import star_path
 
 STAR_SIZE = 24
 STAR_GAP = 6

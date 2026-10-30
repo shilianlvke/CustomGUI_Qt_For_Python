@@ -13,7 +13,7 @@ from PySide6.QtWidgets import QSizePolicy, QWidget
 
 from .input_style import RADIUS, colors, field_font, rounded_path, size_spec
 from .overlay import CPopover
-from .paint_utils import draw_chevron
+from ..paint_utils import draw_chevron
 
 #: 右侧留给箭头/图标的宽度
 AFFIX_WIDTH = 30

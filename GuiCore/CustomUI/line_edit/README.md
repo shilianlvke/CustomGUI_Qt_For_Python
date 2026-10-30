@@ -228,7 +228,7 @@ CInputText(
 GuiCore/CustomUI/line_edit/
 ├── __init__.py          # 统一导出 23 个输入组件
 ├── input_style.py       # 尺寸规格 + 颜色解析 + 圆角路径 + 字体
-├── paint_utils.py       # 勾 / 叉 / 箭头 / 日历 / 星形
+├── paint_utils.py       # 兼容层（实现已上移到 GuiCore/CustomUI/paint_utils.py）
 ├── input_text.py        # CInputText
 ├── textarea.py          # CTextarea
 ├── input_number.py      # CInputNumber

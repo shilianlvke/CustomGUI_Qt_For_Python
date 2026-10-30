@@ -1,0 +1,11 @@
+app_name: "feedback_preview"
+app_id: "app.menu.left.feedback_preview"
+button_id: "btn_feedback_preview"
+page_object: "feedbackPreviewPage"
+app_icon: "icon.app.feedback_preview.app_icon"
+app_text: "language.app.feedback_preview.app_text"
+app_tooltip: "language.app.feedback_preview.app_tooltip"
+app_target: "LeftMenu"
+show_top: true
+is_active: false
+is_default: false

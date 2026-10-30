@@ -9,7 +9,7 @@ from PySide6.QtWidgets import QHBoxLayout, QVBoxLayout, QWidget
 from ..button import CButton
 from .dropdown import CDropdownField
 from .input_style import colors, field_font
-from .paint_utils import draw_calendar, draw_chevron
+from ..paint_utils import draw_calendar, draw_chevron
 
 CELL = 36
 WEEKDAYS = ("Mo", "Tu", "We", "Th", "Fr", "Sa", "Su")

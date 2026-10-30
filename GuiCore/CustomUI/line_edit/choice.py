@@ -8,7 +8,7 @@ from PySide6.QtWidgets import QAbstractButton, QSizePolicy
 
 
 from .input_style import colors, field_font
-from .paint_utils import draw_check
+from ..paint_utils import draw_check
 
 BOX_SIZE = 20
 LABEL_GAP = 8

@@ -54,6 +54,15 @@ page_transition:
   page_in: 100 # 目标页面从左向右展开
   easing: InOutQuad # 各阶段缓动（QEasingCurve 枚举名）
 
+# FEEDBACK 消息通知与骨架屏（毫秒 / 像素）
+feedback:
+  toast_life: 3000 # 通知停留时长
+  toast_max: 4 # 同屏最多条数
+  toast_duration: 180 # 进出动画时长
+  toast_margin: 20 # 距窗口边缘距离
+  toast_spacing: 8 # 通知之间的间距
+  skeleton_duration: 1400 # 骨架微光扫过一圈的时长
+
 # FONT
 family: 微软雅黑
 title_size: 18 # 标题大小

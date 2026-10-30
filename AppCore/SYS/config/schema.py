@@ -220,6 +220,24 @@ class PageTransitionSettings:
 
 
 @dataclass(frozen=True)
+class FeedbackSettings:
+    """消息通知与骨架屏参数（毫秒 / 像素）。"""
+
+    #: Toast 停留时长
+    toast_life: NonNegativeInt = 3000
+    #: 同屏最多条数，超出时挤掉最旧的一条
+    toast_max: NonNegativeInt = 4
+    #: Toast 进出动画时长
+    toast_duration: NonNegativeInt = 180
+    #: Toast 距窗口边缘的距离
+    toast_margin: NonNegativeInt = 20
+    #: Toast 之间的间距
+    toast_spacing: NonNegativeInt = 8
+    #: 骨架屏微光扫过一圈的时长
+    skeleton_duration: NonNegativeInt = 1400
+
+
+@dataclass(frozen=True)
 class AppSettingsModel:
     """系统设置模型：``settings`` 目录下所有 YAML 合并后的强类型视图。
 
@@ -268,6 +286,7 @@ class AppSettingsModel:
     logger_color: bool
     # ---- window.yaml（栏目切换动画） ----
     page_transition: PageTransitionSettings = dataclass_field(default_factory=PageTransitionSettings)
+    feedback: FeedbackSettings = dataclass_field(default_factory=FeedbackSettings)
 
     @classmethod
     def from_mapping(cls, data: Mapping, label: str = "AppSettings") -> "AppSettingsModel":

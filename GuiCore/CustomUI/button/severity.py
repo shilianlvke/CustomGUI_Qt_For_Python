@@ -114,7 +114,7 @@ def colors_for(severity: str | Severity, variant: str | Variant, plain: bool = F
         variant: 变体，见 :class:`Variant`。
         plain: 中性按钮（Sakai 的 ``plain``），忽略 severity 走灰阶。
     """
-    severity = Severity(severity)
+    severity = normalize_severity(severity)
     variant = Variant(variant)
     dark = is_dark_theme()
 
@@ -145,9 +145,18 @@ def colors_for(severity: str | Severity, variant: str | Variant, plain: bool = F
         )
 
     # outlined / text / link：透明底 + 主色文字；hover/active 用主色低透明度叠加
-    hover_background = _with_alpha(base, 26 if dark else 20)
-    active_background = _with_alpha(base, 46 if dark else 36)
-    border = _outline_border(base, dark) if variant is Variant.OUTLINED else _TRANSPARENT
+    text_color = base
+    if severity is Severity.SECONDARY:
+        # secondary 的实心底本身是深/浅面，直接拿来当文字会与背景糊在一起
+        text_color = QColor("#d4d4d8") if dark else QColor("#475569")
+    hover_background = _with_alpha(text_color, 26 if dark else 20)
+    active_background = _with_alpha(text_color, 46 if dark else 36)
+    if variant is Variant.OUTLINED:
+        border = QColor("#52525b") if dark else QColor("#cbd5e1")
+        if severity is not Severity.SECONDARY:
+            border = _outline_border(base, dark)
+    else:
+        border = _TRANSPARENT
     hover_border = border.darker(115) if variant is Variant.OUTLINED else _TRANSPARENT
 
     if variant is Variant.LINK:
@@ -158,14 +167,52 @@ def colors_for(severity: str | Severity, variant: str | Variant, plain: bool = F
     return ButtonColors(
         background=_TRANSPARENT,
         border=border,
-        text=base,
+        text=text_color,
         hover_background=hover_background,
         hover_border=hover_border,
-        hover_text=base,
+        hover_text=text_color,
         active_background=active_background,
         active_border=hover_border,
-        active_text=base,
+        active_text=text_color,
     )
 
 
-__all__ = ["ButtonColors", "Severity", "Variant", "colors_for", "is_dark_theme"]
+#: PrimeVue 常用别名（Message / Toast 用 info/success/warn/error）
+_ALIASES = {
+    "error": Severity.DANGER,
+    "warning": Severity.WARN,
+}
+
+
+def normalize_severity(value: str | Severity) -> Severity:
+    """把 ``error`` / ``warning`` 等别名归一为 :class:`Severity`。"""
+    if isinstance(value, Severity):
+        return value
+    key = str(value).strip().lower()
+    return _ALIASES.get(key) or Severity(key)
+
+
+def severity_color(severity: str | Severity) -> QColor:
+    """语义色基色（实心标签/徽标底色）。"""
+    severity = normalize_severity(severity)
+    if severity is Severity.PRIMARY:
+        return QColor(ColorPalette.custom_context_color)
+    table = _DARK_SOLID if is_dark_theme() else _LIGHT_SOLID
+    return QColor(table[severity.value][0])
+
+
+def contrast_text(color: QColor) -> QColor:
+    """给定底色上可读的文字色（白或近黑）。"""
+    return _contrast_text(QColor(color))
+
+
+__all__ = [
+    "ButtonColors",
+    "Severity",
+    "Variant",
+    "colors_for",
+    "contrast_text",
+    "is_dark_theme",
+    "normalize_severity",
+    "severity_color",
+]
