@@ -17,7 +17,7 @@ os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
 
 import pytest
 from PySide6.QtGui import QColor, QPalette
-from PySide6.QtWidgets import QApplication
+from PySide6.QtWidgets import QApplication, QWidget
 
 from AppCore import ColorPalette, get_design_tokens, get_theme_manager
 from GuiCore import (
@@ -148,31 +148,54 @@ def test_grips_qsizegrip_child_rule_present(qapp):
     assert "#bottom_right_grip QSizeGrip" in sheet
 
 
-def test_scroll_area_background_follows_theme(qapp):
+def test_scroll_area_transparent_by_default(qapp):
+    """默认透明：viewport 与内容部件不自绘，透出上层容器的主题底色。
+
+    透明即 QStyleSheetStyle polish 的目标状态，不会被 repolish 重置。
+    """
     manager = get_theme_manager()
     manager.apply("default")
 
     area = CScrollArea(object_name="demo_scroller")
     # 不得使用 QSS：不带选择器的规则会级联到滚动区内所有子控件，破坏其自身样式
     assert area.styleSheet() == ""
-    assert _viewport_bg(area) == QColor(ColorPalette.custom_dark_three).name()
+    assert not area.viewport().autoFillBackground()
+    assert not area.autoFillBackground()
 
+    # 挂载内容部件后同样保持透明（对抗 QScrollArea 内部对内容部件的强制自绘）
+    content = QWidget()
+    area.setWidget(content)
+    assert not content.autoFillBackground()
+
+    # 透明态在主题切换下保持不变
     manager.apply("eye")
-    assert _viewport_bg(area) == QColor(ColorPalette.custom_dark_three).name()
-
+    assert not area.viewport().autoFillBackground()
+    assert not content.autoFillBackground()
     manager.apply("default")
-    assert _viewport_bg(area) == QColor(ColorPalette.custom_dark_three).name()
+    assert not area.viewport().autoFillBackground()
 
 
 def test_scroll_area_custom_background(qapp):
     area = CScrollArea(background="#123456")
-    assert _viewport_bg(area) == "#123456"
+    content = QWidget()
+    area.setWidget(content)
 
-    get_theme_manager().apply("eye")
-    assert _viewport_bg(area) == "#123456"  # 自定义背景不随主题变化
+    # 显式背景经属性选择器 QSS 着色内容部件（与 CCard 同机制，repolish 后由
+    # 样式表系统自动维持）；viewport 永不自绘
+    assert content.property(CScrollArea.BG_PROP) is True
+    assert f'QWidget[{CScrollArea.BG_PROP}="true"]' in area.styleSheet()
+    assert "background-color: #123456" in area.styleSheet()
+    assert not area.viewport().autoFillBackground()
+    assert not content.autoFillBackground()
+
+    get_theme_manager().apply("eye")  # 自定义背景不随主题变化
+    assert "background-color: #123456" in area.styleSheet()
 
     area.set_background(None)
-    assert _viewport_bg(area) == QColor(ColorPalette.custom_dark_three).name()  # 恢复跟随主题
+    assert area.styleSheet() == ""
+    assert content.property(CScrollArea.BG_PROP) is None
+    assert not content.autoFillBackground()  # 恢复默认透明
+    assert not area.viewport().autoFillBackground()
 
 
 def test_window_frame_override(qapp):
