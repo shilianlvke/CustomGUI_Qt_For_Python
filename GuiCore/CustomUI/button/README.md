@@ -5,7 +5,17 @@
 
 目标：在 `GuiCore/CustomUI/button/` 下用 PySide6 复刻出**一套统一按钮组件**，覆盖 Sakai 按钮页的全部 84 个按钮实例，并新增一张「按钮预览」页面替代现有基座页面。
 
-> 本文只做统计与设计定稿，代码实现按第 9 节的顺序推进。
+> **实现状态：已完成**（S1–S6）。落地文件：
+>
+> - `severity.py` —— Aura 深浅两套 severity 色板 + `colors_for()`；
+> - `button.py` —— `CButton`（severity × variant × plain/rounded/raised/icon/loading/size）；
+> - `button_group.py` / `split_button.py` —— `CButtonGroup` / `CSplitButton`；
+> - `Apps/button_preview/` —— 按钮预览页（14 个分组，语言包 + 图标齐全）；
+> - 旧页面已整体移到 `Apps_legacy/` 备查，基座只剩按钮预览应用；
+> - 新增 6 个单色图标：`customgui/resource/customui/images/svg_icons/`（`icon_check` / `icon_star_fill` / `icon_bookmark` / `icon_bell` / `icon_refresh` / `icon_trash`）。
+>
+> 与初版计划的差异：`CPushButton` 已收敛为 `CButton` 的兼容壳（固定尺寸语义保留），
+> `CStatusButton`（三态循环）与 `CMenuButton`（标题栏）暂时保留独立实现。
 
 ---
 
@@ -315,10 +325,18 @@ Templating 分组的 logo 按钮直接用现有图片资源（`PathFactory.set_s
 
 ---
 
-## 10. 待确认事项
+## 10. 已确认决策
 
-1. **现有按钮组件**：是否保留 `CPushButton` / `CStatusButton` / `CMenuButton`（本文推荐保留，避免影响其它业务），还是统一收敛到 `CButton`？
-2. **size 变体**：Sakai 页面未展示 sm/lg，是否一并实现（PrimeVue 支持）？
-3. **SplitButton / ButtonGroup**：属于按钮页内容，本文已列入；如果只想先做单按钮，可推迟到 S4。
-4. **图标**：接受新增 6 个单色 SVG，还是希望从 PrimeIcons 原始资源（MIT）转换一套？
-5. **旧页面处理**：`Apps/` 下 9 个应用是直接删除，还是先移到 `Apps_legacy/` 备查？
+1. **统一收敛**：`CPushButton` / `CStatusButton` / `CMenuButton` 向 `CButton` 体系收敛；基座处于内测阶段，
+   若影响下游项目，以下游跟随本基座为准。当前 `CPushButton` 已是 `CButton` 兼容壳，
+   `CStatusButton` / `CMenuButton` 因带独立状态机暂未合并。
+2. **size 变体**：已实现 `sm`(32) / `md`(40) / `lg`(48)，并提供 `set_size()` 运行时切换。
+3. **Group / SplitButton**：均已实现（`CButtonGroup` 合并外框，`CSplitButton` 复用 `CMenu`）。
+4. **美术资源**：新增图标统一放 `customgui/resource/customui/images/svg_icons/`，可随时按同名替换。
+5. **旧页面**：`Apps/` 下 9 个应用已移到 `Apps_legacy/` 备查（不参与装配）。
+
+## 11. 待补充
+
+- `CStatusButton` 的多态视觉是否也迁到 `CButton` 的 severity 体系；
+- 按钮 hover/pressed 的颜色过渡（Aura `transition: 0.2s`）目前是直接切换，后续可加 `QVariantAnimation`；
+- 高 DPI 下图标缓存未按 `devicePixelRatio` 生成，4K 屏可再优化。

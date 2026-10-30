@@ -1,10 +1,14 @@
-from PySide6.QtCore import QSize, Qt
-from PySide6.QtGui import QIcon, QPixmap
-from PySide6.QtWidgets import QPushButton
-from AppCore import PicFixFactory
+"""旧版通用按钮：保留构造签名，实现已收敛到 :class:`CButton`。"""
+
+from PySide6.QtCore import QSize
+from PySide6.QtGui import QIcon
+
+from .button import CButton
 
 
-class CPushButton(QPushButton):
+class CPushButton(CButton):
+    """兼容壳：``size`` 显式给出时按固定尺寸布局，其余行为与 ``CButton`` 一致。"""
+
     def __init__(
         self,
         size: QSize = QSize(64, 32),
@@ -12,20 +16,13 @@ class CPushButton(QPushButton):
         icon: QIcon | str | None = None,
         is_trans: bool = False,
     ):
-        super().__init__()
-        self.setObjectName("CPushButton_PushButton")
-        if text is not None:
-            self.setText(text)
-        if icon is not None:
-            if isinstance(icon, str):
-                pixmap = QPixmap(icon)
-                rounded_pixmap = PicFixFactory.create_rounded_pixmap(pixmap, pixmap.height() / 2)
-                icon = QIcon(rounded_pixmap)
-                icon_size = QSize(int(size.width() * 0.8), int(size.height() * 0.8))
-                self.setIconSize(icon_size)
-            self.setIcon(icon)
+        super().__init__(
+            text=text or "",
+            icon=icon,
+            variant="text" if is_trans else "solid",
+        )
         if size is not None:
             self.setFixedSize(size)
 
-        # 禁用虚线焦点框
-        self.setFocusPolicy(Qt.StrongFocus)
+
+__all__ = ["CPushButton"]

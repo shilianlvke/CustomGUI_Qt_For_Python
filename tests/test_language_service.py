@@ -17,19 +17,15 @@ def _restore_language():
 def test_apply_language_replaces_base_and_apps():
     apply_language("en_us")
 
-    # 欢迎页已迁移至 Apps/welcome，语言随应用语言包切换
-    assert Language.app.welcome.app_text == "Component Showcase"
-    # 应用语言注入（真实 Apps 目录）
-    assert Language.app.p2ptest_home.app_text == "P2PTester"
-    assert Language.app.example.app_tooltip == "this is a plugin's example...."
+    # 应用语言注入（真实 Apps 目录，当前仅有按钮预览应用）
+    assert Language.app.button_preview.app_text == "Buttons"
     assert current_language() == "en_us"
 
 
 def test_apply_language_zh_cn():
     apply_language("zh_cn")
 
-    assert Language.app.welcome.app_text == "组件展示"
-    assert Language.app.example.app_text == "示例插件"
+    assert Language.app.button_preview.app_text == "按钮预览"
     assert Language.UI.ui_SwitchLanguage == "切换语言"
     assert current_language() == "zh_cn"
 

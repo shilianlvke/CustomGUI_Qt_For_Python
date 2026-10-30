@@ -1,4 +1,7 @@
-"""example 应用范式验证：基座能力访问 + 自身能力使用（逐项断言）。"""
+"""example 应用范式验证（已随 Apps/example 迁移到 Apps_legacy 停用）。
+
+基座只剩按钮预览应用，本文件保留作为应用协议的历史参考，整文件跳过。
+"""
 
 import os
 from pathlib import Path
@@ -13,7 +16,9 @@ from AppCore.SYS.module.telemetry_module import read_recent_events
 from Guis.app_loader import register_app
 from Guis.language_service import apply_language
 
-EXAMPLE_DIR = Path(__file__).resolve().parents[1] / "Apps" / "example"
+pytestmark = pytest.mark.skip(reason="example 应用已迁移到 Apps_legacy，不参与基座装配")
+
+EXAMPLE_DIR = Path(__file__).resolve().parents[1] / "Apps_legacy" / "example"
 
 
 @pytest.fixture(scope="module")
