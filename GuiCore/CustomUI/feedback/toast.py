@@ -20,7 +20,8 @@ from AppCore import ColorPalette
 
 from ..button.severity import normalize_severity
 from ..display.palette import tokens
-from .message import _CloseButton, _MessageIcon
+from ..close_button import CCloseButton as _CloseButton
+from .message import _MessageIcon
 
 _WIDTH = 340
 _SHADOW = 5
@@ -74,7 +75,7 @@ class CToast(QFrame):
         layout.setContentsMargins(14 + _SHADOW, 12 + _SHADOW // 2, 10 + _SHADOW, 12 + _SHADOW)
         layout.setSpacing(10)
 
-        self._icon = _MessageIcon(self._severity, self)
+        self._icon = _MessageIcon(self._severity, parent=self)
         layout.addWidget(self._icon, 0, Qt.AlignTop)
 
         text_layout = QVBoxLayout()
@@ -100,7 +101,7 @@ class CToast(QFrame):
         layout.addLayout(text_layout, 1)
 
         palette = tokens()
-        self._close_button = _CloseButton(QColor(palette["muted"]), self)
+        self._close_button = _CloseButton(QColor(palette["muted"]), parent=self)
         self._close_button.clicked.connect(self.dismiss)
         layout.addWidget(self._close_button, 0, Qt.AlignTop)
 
@@ -123,6 +124,9 @@ class CToast(QFrame):
     # 外观
     # ------------------------------------------------------------------
     def _apply_colors(self) -> None:
+        # 构造期间 QFrame 会先收到 StyleChange/PaletteChange，此时标签还没建好
+        if not hasattr(self, "_title_label"):
+            return
         palette = tokens()
         dark = QColor(palette["surface"]).lightness() < 128
         self._title_label.setStyleSheet(f"color: {palette['text']}; background: transparent;")

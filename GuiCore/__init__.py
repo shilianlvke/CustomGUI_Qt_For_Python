@@ -1,5 +1,9 @@
 from .CustomUI import (
     CAutoComplete,
+    CConfirmDialog,
+    CDialog,
+    CDrawer,
+    COverlayPanel,
     CAvatar,
     CBadge,
     CChip,
@@ -51,7 +55,6 @@ from .CustomUI import (
     Variant,
 )
 from .WindowDefineUI import CCredits, CGrips, CLeftColumn, CLeftMenu, CTitleBar, CWindow
-from .AppDefineUI import CDialog
 from .styles import Styles
 
 __all__ = [
@@ -112,5 +115,8 @@ __all__ = [
     "CMessage",
     "CToast",
     "CDialog",
+    "CDrawer",
+    "CConfirmDialog",
+    "COverlayPanel",
     "Styles",
 ]

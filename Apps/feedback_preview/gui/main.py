@@ -8,7 +8,7 @@ from PySide6.QtCore import QMargins, Qt
 from PySide6.QtGui import QFont
 from PySide6.QtWidgets import QHBoxLayout, QLabel, QVBoxLayout, QWidget
 
-from AppCore import AppSettings, Language
+from AppCore import AppSettings, Language, PathFactory
 from GuiCore import (
     CAvatar,
     CBadge,
@@ -67,9 +67,10 @@ def _message_variants():
         severity="warn",
         closable=True,
     )
-    for widget in (outlined_success, outlined_danger, closable, long_text):
+    simple = CMessage("Simple message without background or border.", title="Simple", severity="success", simple=True)
+    for widget in (outlined_success, outlined_danger, closable, long_text, simple):
         widget.setFixedWidth(380)
-    return [outlined_success, outlined_danger, closable, long_text]
+    return [outlined_success, outlined_danger, closable, long_text, simple]
 
 
 def _toast_offset(window) -> int:
@@ -151,6 +152,7 @@ def _avatars():
         CAvatar(icon="icon_users"),
         CAvatar("AB", shape="square"),
         CAvatar("XL", size="xl"),
+        CAvatar(image=PathFactory.set_jpg_image("头像"), size="lg"),
     ]
 
 
@@ -182,7 +184,17 @@ def _progress():
     ]
     for bar in bars:
         bar.setFixedWidth(260)
-    return bars
+
+    vertical = QWidget()
+    layout = QHBoxLayout(vertical)
+    layout.setContentsMargins(0, 0, 0, 0)
+    layout.setSpacing(14)
+    for value, indeterminate in ((65, False), (0, True)):
+        bar = CProgressBar(value, orientation="vertical", indeterminate=indeterminate, height=10)
+        bar.setFixedHeight(110)
+        layout.addWidget(bar)
+    vertical.setFixedSize(90, 120)
+    return bars + [vertical]
 
 
 def _dividers():

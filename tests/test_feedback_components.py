@@ -175,3 +175,18 @@ def test_toast_clear(host):
     CToast.clear(host)
     QTest.qWait(50)
     assert CToast._stacks.get(id(host), []) == []
+
+
+def test_message_simple_variant(host):
+    message = CMessage("simple", title="Simple", severity="success", simple=True, parent=host)
+    assert message._simple
+    message.set_severity("info")
+    assert message.severity() == "info"
+
+
+def test_progress_vertical_orientation(host):
+    bar = CProgressBar(50, orientation="vertical", height=10, parent=host)
+    assert bar._vertical
+    assert bar.width() == 10
+    bar.setValue(100)
+    assert bar.value() == 100

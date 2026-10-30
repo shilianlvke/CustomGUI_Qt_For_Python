@@ -96,13 +96,13 @@ class CSkeleton(QWidget):
         palette = tokens()
         rect = QRectF(self.rect())
         path = self._path(rect)
-        painter.fillPath(path, QColor(palette["surface_strong"]))
+        painter.fillPath(path, QColor(palette["skeleton"]))
 
         if self._animation:
             band = max(48.0, rect.width() * 0.6)
             start = -band + (rect.width() + band) * self._phase
             gradient = QLinearGradient(start, 0, start + band, 0)
-            dark = QColor(palette["surface_strong"]).lightness() < 128
+            dark = QColor(palette["skeleton"]).lightness() < 128
             tone = QColor("#454e5f") if dark else QColor("#ffffff")
             highlight = QColor(tone)
             highlight.setAlpha(0)

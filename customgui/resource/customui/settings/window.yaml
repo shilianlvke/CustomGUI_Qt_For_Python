@@ -63,6 +63,11 @@ feedback:
   toast_spacing: 8 # 通知之间的间距
   skeleton_duration: 1400 # 骨架微光扫过一圈的时长
 
+# OVERLAY 对话框与抽屉（毫秒 / 0-255）
+overlay:
+  drawer_duration: 200 # 抽屉滑入滑出
+  mask_alpha: 120 # 遮罩压暗程度
+
 # FONT
 family: 微软雅黑
 title_size: 18 # 标题大小

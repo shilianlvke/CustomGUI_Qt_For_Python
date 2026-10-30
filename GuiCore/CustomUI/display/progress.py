@@ -24,6 +24,7 @@ class CProgressBar(QWidget):
         show_value: bool = False,
         indeterminate: bool = False,
         height: int = 6,
+        orientation: str = "horizontal",
         parent=None,
     ):
         super().__init__(parent)
@@ -31,10 +32,15 @@ class CProgressBar(QWidget):
         self._value = max(0, min(self._maximum, value))
         self._show_value = show_value
         self._indeterminate = indeterminate
+        self._vertical = orientation == "vertical"
         self._bar_height = 20 if show_value else max(3, height)
         self._phase = 0.0
-        self.setFixedHeight(self._bar_height)
-        self.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed)
+        if self._vertical:
+            self.setFixedWidth(self._bar_height)
+            self.setSizePolicy(QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Expanding)
+        else:
+            self.setFixedHeight(self._bar_height)
+            self.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed)
 
         self._timer = QTimer(self)
         self._timer.setInterval(_INTERVAL)
@@ -74,7 +80,7 @@ class CProgressBar(QWidget):
         return self._indeterminate
 
     def sizeHint(self) -> QSize:  # noqa: N802 - 覆写 Qt 命名
-        return QSize(220, self._bar_height)
+        return QSize(self._bar_height, 160) if self._vertical else QSize(220, self._bar_height)
 
     # ------------------------------------------------------------------
     # 动画与生命周期
@@ -96,8 +102,10 @@ class CProgressBar(QWidget):
     # 绘制
     # ------------------------------------------------------------------
     def _path(self, rect: QRectF) -> QPainterPath:
+        # 细长矩形（垂直进度条）必须按短边取半径，否则会被画成椭圆
+        radius = min(rect.width(), rect.height()) / 2
         path = QPainterPath()
-        path.addRoundedRect(rect, rect.height() / 2, rect.height() / 2)
+        path.addRoundedRect(rect, radius, radius)
         return path
 
     def paintEvent(self, event):  # noqa: N802 - 覆写 Qt 命名
@@ -109,7 +117,21 @@ class CProgressBar(QWidget):
 
         painter.fillPath(self._path(rect), QColor(palette["surface_strong"]))
 
-        if self._indeterminate:
+        if self._vertical:
+            if self._indeterminate:
+                segment_height = max(30.0, rect.height() * 0.3)
+                start = rect.bottom() - (rect.height() + segment_height) * self._phase
+                segment = QRectF(rect.left(), start, rect.width(), segment_height)
+                painter.save()
+                painter.setClipPath(self._path(rect))
+                painter.fillPath(self._path(segment), accent)
+                painter.restore()
+            elif self._value > 0:
+                ratio = self._value / self._maximum
+                height = max(rect.width(), rect.height() * ratio)
+                fill = QRectF(rect.left(), rect.bottom() - height, rect.width(), height)
+                painter.fillPath(self._path(fill), accent)
+        elif self._indeterminate:
             segment_width = max(40.0, rect.width() * 0.32)
             start = -segment_width + (rect.width() + segment_width) * self._phase
             segment = QRectF(start, rect.top(), segment_width, rect.height())
@@ -122,7 +144,7 @@ class CProgressBar(QWidget):
             fill = QRectF(rect.left(), rect.top(), max(rect.height(), rect.width() * ratio), rect.height())
             painter.fillPath(self._path(fill), accent)
 
-        if self._show_value and not self._indeterminate:
+        if self._show_value and not self._indeterminate and not self._vertical:
             ratio = self._value / self._maximum
             color = contrast_text(accent) if ratio > 0.55 else QColor(palette["text"])
             painter.setPen(color)

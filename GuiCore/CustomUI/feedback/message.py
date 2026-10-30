@@ -4,11 +4,12 @@ from __future__ import annotations
 
 from PySide6.QtCore import QEvent, QRectF, QSize, Qt, Signal
 from PySide6.QtGui import QColor, QFont, QPainter, QPainterPath, QPen
-from PySide6.QtWidgets import QAbstractButton, QFrame, QHBoxLayout, QLabel, QSizePolicy, QVBoxLayout, QWidget
+from PySide6.QtWidgets import QFrame, QHBoxLayout, QLabel, QSizePolicy, QVBoxLayout, QWidget
 
 from AppCore import ColorPalette
 
 from ..button.severity import Severity, contrast_text, normalize_severity, severity_color
+from ..close_button import CCloseButton as _CloseButton
 from ..display.palette import is_dark_theme
 from ..paint_utils import draw_check
 
@@ -66,10 +67,11 @@ def message_palette(severity) -> dict[str, QColor]:
 class _MessageIcon(QWidget):
     """圆形语义图标：i / ! / ✓ / × / ?。"""
 
-    def __init__(self, severity, parent=None):
+    def __init__(self, severity, size: int = _ICON_SIZE, parent=None):
         super().__init__(parent)
         self._severity = normalize_severity(severity)
-        self.setFixedSize(_ICON_SIZE, _ICON_SIZE)
+        self._size = max(12, int(size))
+        self.setFixedSize(self._size, self._size)
 
     def set_severity(self, severity) -> None:
         self._severity = normalize_severity(severity)
@@ -85,58 +87,23 @@ class _MessageIcon(QWidget):
         painter.drawEllipse(QRectF(self.rect()))
         painter.setPen(contrast_text(accent))
 
+        size = self._size
         if self._severity is Severity.SUCCESS:
-            draw_check(painter, QRectF(4, 4, 12, 12), contrast_text(accent), 1.8)
+            inset = size * 0.2
+            draw_check(painter, QRectF(inset, inset, size - inset * 2, size - inset * 2), contrast_text(accent), 1.8)
         elif self._severity is Severity.DANGER:
             pen = QPen(contrast_text(accent), 1.8, Qt.SolidLine, Qt.RoundCap)
             painter.setPen(pen)
-            painter.drawLine(6, 6, 14, 14)
-            painter.drawLine(14, 6, 6, 14)
+            painter.drawLine(size * 0.3, size * 0.3, size * 0.7, size * 0.7)
+            painter.drawLine(size * 0.7, size * 0.3, size * 0.3, size * 0.7)
         else:
             glyph = "!" if self._severity is Severity.WARN else ("?" if self._severity is Severity.HELP else "i")
             font = QFont(self.font())
-            font.setPixelSize(13)
+            font.setPixelSize(max(9, int(size * 0.65)))
             font.setWeight(QFont.Weight.Bold)
             painter.setFont(font)
             painter.drawText(self.rect(), Qt.AlignCenter, glyph)
         painter.end()
-
-
-class _CloseButton(QAbstractButton):
-    """消息右上角的关闭按钮。"""
-
-    def __init__(self, color: QColor, parent=None):
-        super().__init__(parent)
-        self._color = QColor(color)
-        self._hover = False
-        self.setFixedSize(20, 20)
-        self.setCursor(Qt.PointingHandCursor)
-
-    def set_color(self, color: QColor) -> None:
-        self._color = QColor(color)
-        self.update()
-
-    def paintEvent(self, event):  # noqa: N802 - 覆写 Qt 命名
-        painter = QPainter(self)
-        painter.setRenderHint(QPainter.Antialiasing)
-        if self._hover:
-            fill = QColor(self._color)
-            fill.setAlpha(38)
-            painter.setPen(Qt.NoPen)
-            painter.setBrush(fill)
-            painter.drawEllipse(QRectF(self.rect()).adjusted(1, 1, -1, -1))
-        painter.setPen(QPen(self._color, 1.5, Qt.SolidLine, Qt.RoundCap))
-        painter.drawLine(6, 6, 14, 14)
-        painter.drawLine(14, 6, 6, 14)
-        painter.end()
-
-    def enterEvent(self, event):  # noqa: N802 - 覆写 Qt 命名
-        self._hover = True
-        self.update()
-
-    def leaveEvent(self, event):  # noqa: N802 - 覆写 Qt 命名
-        self._hover = False
-        self.update()
 
 
 class CMessage(QFrame):
@@ -152,22 +119,27 @@ class CMessage(QFrame):
         closable: bool = False,
         show_icon: bool = True,
         outlined: bool = False,
+        simple: bool = False,
         close_on_click: bool = True,
         parent=None,
     ):
         super().__init__(parent)
         self._severity = normalize_severity(severity)
         self._outlined = outlined
+        self._simple = simple
         self._close_on_click = close_on_click
         self._applying = False
 
         self.setSizePolicy(QSizePolicy.Policy.Preferred, QSizePolicy.Policy.Minimum)
 
         layout = QHBoxLayout(self)
-        layout.setContentsMargins(14, 11, 12, 11)
+        if simple:
+            layout.setContentsMargins(4, 4, 4, 4)
+        else:
+            layout.setContentsMargins(14, 11, 12, 11)
         layout.setSpacing(10)
 
-        self._icon = _MessageIcon(self._severity, self) if show_icon else None
+        self._icon = _MessageIcon(self._severity, parent=self) if show_icon else None
         if self._icon is not None:
             layout.addWidget(self._icon, 0, Qt.AlignTop)
 
@@ -195,7 +167,7 @@ class CMessage(QFrame):
 
         layout.addLayout(text_layout, 1)
 
-        self._close_button = _CloseButton(QColor("#ffffff"), self) if closable else None
+        self._close_button = _CloseButton(QColor("#ffffff"), parent=self) if closable else None
         if self._close_button is not None:
             self._close_button.clicked.connect(self._on_close_clicked)
             layout.addWidget(self._close_button, 0, Qt.AlignTop)
@@ -234,7 +206,7 @@ class CMessage(QFrame):
 
     def set_closable(self, closable: bool) -> None:
         if closable and self._close_button is None:
-            self._close_button = _CloseButton(QColor("#ffffff"), self)
+            self._close_button = _CloseButton(QColor("#ffffff"), parent=self)
             self._close_button.clicked.connect(self._on_close_clicked)
             self.layout().addWidget(self._close_button, 0, Qt.AlignTop)
             self._apply_colors()
@@ -246,12 +218,16 @@ class CMessage(QFrame):
     # 外观
     # ------------------------------------------------------------------
     def _apply_colors(self) -> None:
-        if self._applying:
+        if self._applying or not hasattr(self, "_title_label"):
             return
         self._applying = True
         colors = message_palette(self._severity)
         base = colors["outlined"] if self._outlined else colors["text"]
         title = colors["outlined"] if self._outlined else colors["title"]
+        if self._simple:
+            accent = colors["accent"]
+            base = accent.lighter(135) if is_dark_theme() else accent.darker(150)
+            title = accent.lighter(155) if is_dark_theme() else accent.darker(170)
         self._text_label.setStyleSheet(f"color: {base.name()}; background: transparent;")
         self._title_label.setStyleSheet(f"color: {title.name()}; background: transparent;")
         if self._close_button is not None:
@@ -264,6 +240,8 @@ class CMessage(QFrame):
             self._apply_colors()
 
     def paintEvent(self, event):  # noqa: N802 - 覆写 Qt 命名
+        if self._simple:
+            return
         painter = QPainter(self)
         painter.setRenderHint(QPainter.Antialiasing)
         colors = message_palette(self._severity)

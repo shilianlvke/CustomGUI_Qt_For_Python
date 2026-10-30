@@ -9,14 +9,14 @@
 
 | 目录 | 组件 | 能力 |
 |------|------|------|
-| `GuiCore/CustomUI/feedback/` | `CMessage` | 内联消息：6 种语义色、标题+正文、图标、可关闭、outlined |
+| `GuiCore/CustomUI/feedback/` | `CMessage` | 内联消息：6 种语义色、标题+正文、图标、可关闭、outlined、simple |
 | | `CToast` | 浮出通知：右上角堆叠、滑入淡入、定时消失、悬停暂停、同屏上限 |
 | `GuiCore/CustomUI/display/` | `CTag` | 实心语义标签，支持图标与胶囊圆角 |
 | | `CBadge` | 数字/文字徽标、圆点、可叠加到任意控件右上角 |
 | | `CChip` | 胶囊标签片：图标 / 头像 / 可删除 |
 | | `CAvatar` | 圆形/方形头像：文字、图标、图片，4 档尺寸 |
 | | `CSkeleton` | 骨架屏：矩形 / 圆形 / 文本行，微光扫过 |
-| | `CProgressBar` | 确定进度 / 不确定扫描 / 内嵌百分比 |
+| | `CProgressBar` | 确定进度 / 不确定扫描 / 内嵌百分比 / 水平与垂直 |
 | | `CDivider` | 水平/垂直分割线，实线/虚线/点线，可带文字并左中右对齐 |
 
 新增 `paint_utils.py`（上移到 `GuiCore/CustomUI/`，`line_edit/paint_utils.py` 保留兼容层），
@@ -25,7 +25,7 @@
 ## 2. 关键 API
 
 ```python
-CMessage(text, title="", severity="info", closable=False, show_icon=True, outlined=False)
+CMessage(text, title="", severity="info", closable=False, show_icon=True, outlined=False, simple=False)
 #   属性: severity / text / title / is_closable；信号: closed
 
 CToast.show_message(parent, text, title="", severity="info", life=None, offset_top=0) -> CToast
@@ -39,7 +39,7 @@ CBadge.attach(target, text="", severity="danger", size="sm", dot=False)  # 叠�
 CChip(text, icon=None, image=None, removable=False)      # 信号: removed
 CAvatar(label="", icon=None, image=None, shape="circle", size="md")
 CSkeleton(width=120, height=16, shape="rect", animation=True)
-CProgressBar(value=0, maximum=100, show_value=False, indeterminate=False, height=6)
+CProgressBar(value=0, maximum=100, show_value=False, indeterminate=False, height=6, orientation="horizontal")
 CDivider(orientation="horizontal", style="solid", text="", align="center")
 ```
 
@@ -77,19 +77,20 @@ feedback:
 | 卡片 | 内容 |
 |------|------|
 | 内联消息 | info / success / warn / error / secondary / contrast |
-| 消息变体 | outlined ×2、可关闭、自动换行 |
+| 消息变体 | outlined ×2、可关闭、自动换行、simple（无底色） |
 | 浮出通知 | 四个按钮分别弹 success / info / warn / error + 清空 |
 | 标签 | 8 种语义色 + 圆角 + 图标 |
 | 徽标 | 数字、99+、圆点、lg、叠加在头像与按钮上 |
 | 标签片 | 基础 / 图标 / 可删除 |
-| 头像 | 文字、图标、方形、xl |
+| 头像 | 文字、图标、方形、xl、照片圆形裁切 |
 | 骨架屏 | 卡片占位组合 + 静态文本行 |
-| 进度条 | 25% / 60% / 80%（带数值）/ 不确定 |
+| 进度条 | 25% / 60% / 80%（带数值）/ 不确定 / 垂直 ×2 |
 | 分割线 | 实线、虚线、点线、带文字、垂直 |
 
 ## 6. 验收
 
-- `tests/test_feedback_components.py` 共 15 例：消息别名与关闭、标签宽度、徽标叠加坐标、
-  标签片删除点击、头像尺寸、骨架形状、进度截断与信号、分割线方向、通知堆叠/上限/自动消失/清空；
+- `tests/test_feedback_components.py` 共 17 例：消息别名与关闭、标签宽度、徽标叠加坐标、
+  标签片删除点击、头像尺寸、骨架形状、进度截断与信号、分割线方向、通知堆叠/上限/自动消失/清空、
+  simple 消息与垂直进度条；
 - 深/浅两套主题截图核对消息、标签、徽标、骨架、进度、分割线与通知；
 - `ruff check` / `ruff format --check` 通过，全量测试保持绿色。

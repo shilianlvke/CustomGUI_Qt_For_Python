@@ -48,6 +48,10 @@ from .display import (
     CTag as CTag,
 )
 from .feedback import CMessage as CMessage
+from .overlay import CConfirmDialog as CConfirmDialog
+from .overlay import CDialog as CDialog
+from .overlay import CDrawer as CDrawer
+from .overlay import COverlayPanel as COverlayPanel
 from .feedback import CToast as CToast
 from .scroll import CScrollArea as CScrollArea
 from .tooltip import CToolTip as CToolTip
@@ -104,4 +108,8 @@ __all__ = [
     "CDivider",
     "CMessage",
     "CToast",
+    "CDialog",
+    "CDrawer",
+    "CConfirmDialog",
+    "COverlayPanel",
 ]

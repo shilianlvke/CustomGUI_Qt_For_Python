@@ -238,6 +238,18 @@ class FeedbackSettings:
 
 
 @dataclass(frozen=True)
+class OverlaySettings:
+    """对话框/抽屉的动画与遮罩参数。"""
+
+    #: 对话框淡入淡出时长
+    dialog_duration: NonNegativeInt = 160
+    #: 抽屉滑入滑出时长
+    drawer_duration: NonNegativeInt = 200
+    #: 遮罩背后内容的压暗程度（0-255）
+    mask_alpha: NonNegativeInt = 120
+
+
+@dataclass(frozen=True)
 class AppSettingsModel:
     """系统设置模型：``settings`` 目录下所有 YAML 合并后的强类型视图。
 
@@ -287,6 +299,7 @@ class AppSettingsModel:
     # ---- window.yaml（栏目切换动画） ----
     page_transition: PageTransitionSettings = dataclass_field(default_factory=PageTransitionSettings)
     feedback: FeedbackSettings = dataclass_field(default_factory=FeedbackSettings)
+    overlay: OverlaySettings = dataclass_field(default_factory=OverlaySettings)
 
     @classmethod
     def from_mapping(cls, data: Mapping, label: str = "AppSettings") -> "AppSettingsModel":

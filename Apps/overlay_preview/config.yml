@@ -1,0 +1,11 @@
+app_name: "overlay_preview"
+app_id: "app.menu.left.overlay_preview"
+button_id: "btn_overlay_preview"
+page_object: "overlayPreviewPage"
+app_icon: "icon.app.overlay_preview.app_icon"
+app_text: "language.app.overlay_preview.app_text"
+app_tooltip: "language.app.overlay_preview.app_tooltip"
+app_target: "LeftMenu"
+show_top: true
+is_active: false
+is_default: false
