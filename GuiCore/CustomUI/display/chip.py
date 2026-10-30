@@ -112,7 +112,7 @@ class CChip(QWidget):
             painter.restore()
             left += 20 + ICON_GAP
         elif self._icon is not None:
-            pixmap = tinted_pixmap(self._icon, palette["muted"], ICON_SIZE)
+            pixmap = tinted_pixmap(self._icon, palette["muted"], ICON_SIZE, self.devicePixelRatioF())
             if pixmap is not None:
                 painter.drawPixmap(int(left), int((self.height() - ICON_SIZE) / 2), pixmap)
                 left += ICON_SIZE + ICON_GAP

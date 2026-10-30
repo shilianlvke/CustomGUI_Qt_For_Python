@@ -250,6 +250,28 @@ class OverlaySettings:
 
 
 @dataclass(frozen=True)
+class PanelSettings:
+    """面板 / 标签页 / 分割器的动画与几何参数。"""
+
+    #: 标签指示条滑动时长
+    tab_duration: NonNegativeInt = 180
+    #: 手风琴与面板的展开收起时长
+    collapse_duration: NonNegativeInt = 180
+    #: 分割条宽度
+    splitter_handle: NonNegativeInt = 8
+    #: 分割条握把长度
+    splitter_grip: NonNegativeInt = 28
+
+
+@dataclass(frozen=True)
+class ButtonSettings:
+    """按钮交互参数（毫秒）。"""
+
+    #: 悬停 / 按下时的颜色过渡时长（对齐 Aura 的 0.2s）
+    hover_duration: NonNegativeInt = 160
+
+
+@dataclass(frozen=True)
 class AppSettingsModel:
     """系统设置模型：``settings`` 目录下所有 YAML 合并后的强类型视图。
 
@@ -300,6 +322,8 @@ class AppSettingsModel:
     page_transition: PageTransitionSettings = dataclass_field(default_factory=PageTransitionSettings)
     feedback: FeedbackSettings = dataclass_field(default_factory=FeedbackSettings)
     overlay: OverlaySettings = dataclass_field(default_factory=OverlaySettings)
+    panels: PanelSettings = dataclass_field(default_factory=PanelSettings)
+    button: ButtonSettings = dataclass_field(default_factory=ButtonSettings)
 
     @classmethod
     def from_mapping(cls, data: Mapping, label: str = "AppSettings") -> "AppSettingsModel":

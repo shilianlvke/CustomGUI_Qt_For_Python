@@ -147,6 +147,9 @@ normal ──enter──> hover ──press──> pressed ──release──> 
 
 - 键盘：`Tab` 聚焦、`Space`/`Enter` 触发（复用 `QPushButton` 默认行为）；
 - 焦点环：Aura 为 `1px solid {primary}`、offset 2px（与 Sakai 一致，不做虚线框）；
+- 状态过渡：hover/pressed 切换时背景、边框、文字在起点与目标状态色之间线性插值，
+  时长 `button.hover_duration`（默认 160ms，Aura 为 0.2s；配置为 0 时瞬切），
+  图标随文字色一起渐变；
 - loading：文案与图标保持占位（避免按钮宽度跳动），右侧/左侧显示旋转指示器；
 - disabled：不接收 hover/pressed，透明度与色阶按 Aura 规则处理。
 

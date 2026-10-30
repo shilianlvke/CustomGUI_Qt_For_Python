@@ -65,8 +65,20 @@ feedback:
 
 # OVERLAY 对话框与抽屉（毫秒 / 0-255）
 overlay:
+  dialog_duration: 160 # 对话框淡入淡出
   drawer_duration: 200 # 抽屉滑入滑出
   mask_alpha: 120 # 遮罩压暗程度
+
+# PANELS 面板/标签/折叠（毫秒 / 像素）
+panels:
+  tab_duration: 180 # 标签指示条滑动
+  collapse_duration: 180 # 手风琴/面板展开收起
+  splitter_handle: 8 # 分隔条宽度
+  splitter_grip: 28 # 分隔条握把长度
+
+# BUTTON 按钮交互（毫秒）
+button:
+  hover_duration: 160 # 悬停/按下颜色过渡
 
 # FONT
 family: 微软雅黑

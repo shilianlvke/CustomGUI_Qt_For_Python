@@ -2,8 +2,8 @@
 
 from __future__ import annotations
 
-from PySide6.QtCore import QEasingCurve, QParallelAnimationGroup, QPropertyAnimation, QRect, Qt
-from PySide6.QtGui import QColor, QFont
+from PySide6.QtCore import QEasingCurve, QParallelAnimationGroup, QPropertyAnimation, QPoint, QRect, QSize, Qt
+from PySide6.QtGui import QColor, QFont, QPainter
 from PySide6.QtWidgets import QHBoxLayout, QLabel, QVBoxLayout, QWidget
 
 from ..close_button import CCloseButton
@@ -11,6 +11,64 @@ from ..display.palette import tokens
 from .base import _OverlayBase, overlay_settings
 
 _POSITIONS = ("left", "right", "top", "bottom")
+_GRIP_BAND = 6  # 边缘拖拽热区宽度（像素）
+_MIN_DRAWER = 200  # 与构造参数的最小尺寸一致
+_DRAWER_MARGIN = 80  # 拖宽后至少给窗口留出的空间
+
+
+class _EdgeGrip(QWidget):
+    """抽屉边缘的隐形拖拽条：悬停显示主色细线，拖动改变抽屉尺寸。"""
+
+    def __init__(self, drawer: CDrawer):
+        super().__init__(drawer.card())
+        self._drawer = drawer
+        self._press_global: QPoint | None = None
+        self._start_size = 0
+        self._vertical = drawer._position in ("left", "right")
+        self.setCursor(Qt.SizeHorCursor if self._vertical else Qt.SizeVerCursor)
+        self.setMouseTracking(True)
+
+    def paintEvent(self, event):  # noqa: N802 - 覆写 Qt 命名
+        if not self.underMouse():
+            return
+        painter = QPainter(self)
+        color = QColor(tokens()["accent"])
+        if self._vertical:
+            painter.fillRect(self.width() // 2 - 1, 0, 2, self.height(), color)
+        else:
+            painter.fillRect(0, self.height() // 2 - 1, self.width(), 2, color)
+        painter.end()
+
+    def enterEvent(self, event):  # noqa: N802 - 覆写 Qt 命名
+        self.update()
+        super().enterEvent(event)
+
+    def leaveEvent(self, event):  # noqa: N802 - 覆写 Qt 命名
+        self.update()
+        super().leaveEvent(event)
+
+    def mousePressEvent(self, event):  # noqa: N802 - 覆写 Qt 命名
+        if event.button() == Qt.LeftButton:
+            # 拖动优先：停掉进行中的滑入动画
+            slide = getattr(self._drawer, "_slide", None)
+            if slide is not None and slide.state() == QPropertyAnimation.State.Running:
+                slide.stop()
+            self._press_global = event.globalPosition().toPoint()
+            self._start_size = self._drawer._size
+            event.accept()
+            return
+        super().mousePressEvent(event)
+
+    def mouseMoveEvent(self, event):  # noqa: N802 - 覆写 Qt 命名
+        if self._press_global is None:
+            return
+        delta = event.globalPosition().toPoint() - self._press_global
+        self._drawer._resize_from_grip(self._start_size, delta)
+        event.accept()
+
+    def mouseReleaseEvent(self, event):  # noqa: N802 - 覆写 Qt 命名
+        self._press_global = None
+        event.accept()
 
 
 class CDrawer(_OverlayBase):
@@ -70,6 +128,8 @@ class CDrawer(_OverlayBase):
         layout.addWidget(body)
         layout.addStretch(1)
 
+        self._grip = _EdgeGrip(self)
+
     def set_title(self, title: str) -> None:
         if self.header is not None:
             self.title_label.setText(title)
@@ -91,7 +151,40 @@ class CDrawer(_OverlayBase):
             rect = QRect(0, height - self._size, width, self._size)
         self._target_rect = rect
         card.setGeometry(rect)
+        self._place_grip()
         return rect
+
+    def _place_grip(self) -> None:
+        """把拖拽条贴到抽屉的可拉伸边缘。"""
+        grip = getattr(self, "_grip", None)
+        if grip is None:
+            return
+        card = self.card()
+        if self._position == "left":
+            grip.setGeometry(card.width() - _GRIP_BAND, 0, _GRIP_BAND, card.height())
+        elif self._position == "right":
+            grip.setGeometry(0, 0, _GRIP_BAND, card.height())
+        elif self._position == "top":
+            grip.setGeometry(0, card.height() - _GRIP_BAND, card.width(), _GRIP_BAND)
+        else:
+            grip.setGeometry(0, 0, card.width(), _GRIP_BAND)
+        grip.setVisible(True)
+        grip.raise_()
+
+    def _resize_from_grip(self, start: int, delta: QPoint) -> None:
+        """拖拽边缘时更新抽屉主轴尺寸（left/top 增大、right/bottom 反向）。"""
+        if self._position == "left":
+            new_size = start + delta.x()
+        elif self._position == "right":
+            new_size = start - delta.x()
+        elif self._position == "top":
+            new_size = start + delta.y()
+        else:
+            new_size = start - delta.y()
+        axis = self.width() if self._position in ("left", "right") else self.height()
+        limit = max(_MIN_DRAWER, axis - _DRAWER_MARGIN)
+        self._size = max(_MIN_DRAWER, min(int(new_size), limit))
+        self._layout_card()
 
     def _offscreen_rect(self) -> QRect:
         target = self._target_rect
@@ -143,7 +236,6 @@ class CDrawer(_OverlayBase):
         self._slide = slide
 
     def sizeHint(self):  # noqa: N802 - 覆写 Qt 命名
-        from PySide6.QtCore import QSize
 
         return QSize(self._size, self._size)
 

@@ -53,6 +53,20 @@ from .overlay import CDialog as CDialog
 from .overlay import CDrawer as CDrawer
 from .overlay import COverlayPanel as COverlayPanel
 from .feedback import CToast as CToast
+from .panels import (
+    CAccordion as CAccordion,
+    CAccordionPanel as CAccordionPanel,
+    CBreadcrumb as CBreadcrumb,
+    CFieldset as CFieldset,
+    CFormField as CFormField,
+    CFormGrid as CFormGrid,
+    CPanel as CPanel,
+    CSplitter as CSplitter,
+    CSplitterHandle as CSplitterHandle,
+    CSteps as CSteps,
+    CTabs as CTabs,
+    CToolbar as CToolbar,
+)
 from .scroll import CScrollArea as CScrollArea
 from .tooltip import CToolTip as CToolTip
 from .page_transition import CPageTransition as CPageTransition
@@ -112,4 +126,16 @@ __all__ = [
     "CDrawer",
     "CConfirmDialog",
     "COverlayPanel",
+    "CTabs",
+    "CAccordion",
+    "CAccordionPanel",
+    "CPanel",
+    "CFieldset",
+    "CToolbar",
+    "CSplitter",
+    "CSplitterHandle",
+    "CFormGrid",
+    "CFormField",
+    "CBreadcrumb",
+    "CSteps",
 ]

@@ -54,7 +54,11 @@ COverlayPanel(target, width=300)
 - 对话框淡入淡出（`dialog_duration`），抽屉滑入滑出（`drawer_duration`）；
 - 卡片底色：深色主题 `custom_bg_one`，浅色主题白色；描边取 `display.palette.tokens()`；
 - 标题栏可拖动（限制在遮罩范围内），拖动时不会移出窗口；
-- 抽屉贴边无圆角，对话框圆角 10px，阴影由遮罩层在卡片下方绘制。
+- 抽屉贴边无圆角，对话框圆角 10px，阴影由遮罩层在卡片下方绘制；
+- 对话框正文包在透明滚动区里：不超高时按内容高度自适应，超高时封顶内滚（滚轮可滚），
+  正文不再被截断；
+- 抽屉可拉伸：贴边内侧有 6px 拖拽热区（left/right 拖宽、top/bottom 拖高），
+  悬停显示主色细线，拖动实时重排，尺寸限制在 200 ~ 窗口主轴-80。
 
 ## 4. 可调参数（`customgui/resource/customui/settings/window.yaml`）
 

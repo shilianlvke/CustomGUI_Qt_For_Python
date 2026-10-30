@@ -6,8 +6,7 @@ from PySide6.QtCore import QRectF, Qt
 from PySide6.QtGui import QColor, QPainter, QPen, QPixmap
 from PySide6.QtWidgets import QHBoxLayout, QWidget
 
-from AppCore import PathFactory
-
+from ..icon_utils import render_icon
 from .input_style import RADIUS, colors, rounded_path, size_spec
 
 
@@ -30,7 +29,6 @@ class CInputGroupAddon(QWidget):
         self._size = size
         self._corners = corners
         self._widget = widget
-        self._icon_cache: dict[tuple[str, str, int], QPixmap] = {}
 
         spec = size_spec(size)
         self.setFixedHeight(spec.height)
@@ -64,21 +62,7 @@ class CInputGroupAddon(QWidget):
         if not self._icon:
             return None
         spec = size_spec(self._size)
-        path = PathFactory.set_svg_icon(self._icon)
-        key = (path, color.name(), spec.icon_px)
-        cached = self._icon_cache.get(key)
-        if cached is not None:
-            return cached
-        source = QPixmap(path)
-        if source.isNull():
-            return None
-        pixmap = source.scaled(spec.icon_px, spec.icon_px, Qt.KeepAspectRatio, Qt.SmoothTransformation)
-        painter = QPainter(pixmap)
-        painter.setCompositionMode(QPainter.CompositionMode_SourceIn)
-        painter.fillRect(pixmap.rect(), color)
-        painter.end()
-        self._icon_cache[key] = pixmap
-        return pixmap
+        return render_icon(self._icon, color, spec.icon_px, self.devicePixelRatioF())
 
     def paintEvent(self, event):  # noqa: N802 - 覆写 Qt 命名
         palette = colors()

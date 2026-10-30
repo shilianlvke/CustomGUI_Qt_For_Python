@@ -98,11 +98,12 @@ class CAvatar(QWidget):
         painter.fillPath(path, QColor(palette["surface_strong"]))
         if self._icon is not None:
             icon_size = int(self._size * 0.45)
-            pixmap = tinted_pixmap(self._icon, palette["muted"], icon_size)
+            pixmap = tinted_pixmap(self._icon, palette["muted"], icon_size, self.devicePixelRatioF())
             if pixmap is not None:
+                logical = pixmap.deviceIndependentSize()
                 painter.drawPixmap(
-                    int((self.width() - pixmap.width()) / 2),
-                    int((self.height() - pixmap.height()) / 2),
+                    int((self.width() - logical.width()) / 2),
+                    int((self.height() - logical.height()) / 2),
                     pixmap,
                 )
         else:

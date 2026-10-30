@@ -91,7 +91,7 @@ class CTag(QWidget):
 
         left = PADDING_X
         if self._icon is not None:
-            pixmap = tinted_pixmap(self._icon, text_color, ICON_SIZE)
+            pixmap = tinted_pixmap(self._icon, text_color, ICON_SIZE, self.devicePixelRatioF())
             if pixmap is not None:
                 painter.drawPixmap(int(left), int((self.height() - ICON_SIZE) / 2), pixmap)
                 left += ICON_SIZE + ICON_GAP

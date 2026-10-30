@@ -9,9 +9,24 @@ from PySide6.QtWidgets import QHBoxLayout, QLabel, QSizePolicy, QVBoxLayout, QWi
 from ..button import CButton
 from ..close_button import CCloseButton
 from ..display.palette import tokens
+from ..scroll import CScrollArea
 from .base import _OverlayBase
 
 _SIZE_WIDTH = {"sm": 360, "md": 480, "lg": 640, "xl": 800}
+
+
+class _BodyScroll(CScrollArea):
+    """正文滚动区：不超高时按内容高度撑开，超高时由对话框封顶后内滚。"""
+
+    def __init__(self, parent=None):
+        super().__init__(parent, background="transparent")
+
+    def sizeHint(self) -> QSize:  # noqa: N802 - 覆写 Qt 命名
+        content = self.widget()
+        if content is None:
+            return super().sizeHint()
+        hint = content.sizeHint()
+        return QSize(hint.width() + 6, hint.height() + 6)
 
 
 class _DialogHeader(QWidget):
@@ -134,7 +149,11 @@ class CDialog(_OverlayBase):
         self.content_layout.setContentsMargins(20, 16, 20, 16)
         self.content_layout.setAlignment(Qt.AlignTop)
         self.content_layout.setSpacing(10)
-        layout.addWidget(body, 1)
+
+        scroller = _BodyScroll(card)
+        scroller.setWidget(body)
+        scroller.setWidgetResizable(True)
+        layout.addWidget(scroller, 1)
 
         if self._text:
             self._ensure_text_label().setText(self._text)

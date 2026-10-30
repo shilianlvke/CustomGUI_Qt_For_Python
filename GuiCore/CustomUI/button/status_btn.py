@@ -81,9 +81,7 @@ class CStatusButton(QPushButton):
     def _apply_geometry(self):
         """实例级几何：圆角与边框宽度（与主题无关，故不放进全局样式表）。"""
         self.setStyleSheet(
-            f"#CStatusButton_PushButton {{"
-            f" border-width: {self.border_size}px;"
-            f" border-radius: {self.radius}px; }}"
+            f"#CStatusButton_PushButton {{ border-width: {self.border_size}px; border-radius: {self.radius}px; }}"
         )
 
     def _sync_status_property(self):

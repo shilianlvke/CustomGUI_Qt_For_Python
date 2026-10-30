@@ -9,15 +9,15 @@ plain / rounded / raised / icon 左右 / 纯图标 / loading / disabled / 三种
 
 from __future__ import annotations
 
-import os
 from dataclasses import dataclass
 
-from PySide6.QtCore import QRectF, QSize, Qt, QTimer, Signal
+from PySide6.QtCore import QRectF, QSize, Qt, QTimer, QVariantAnimation, Signal
 from PySide6.QtGui import QColor, QFont, QFontMetrics, QIcon, QPainter, QPainterPath, QPen, QPixmap
 from PySide6.QtWidgets import QPushButton, QSizePolicy
 
-from AppCore import AppSettings, PathFactory
+from AppCore import AppSettings
 
+from ..icon_utils import render_icon
 from .severity import Severity, Variant, colors_for, normalize_severity
 
 
@@ -84,10 +84,13 @@ class CButton(QPushButton):
         self._corners = corners or (True, True, True, True)
         self._divider = False
         self._state = "normal"
+        self._display_state = "normal"
+        self._from_state = "normal"
+        self._progress = 1.0
+        self._transition: QVariantAnimation | None = None
 
         self._icon_source: str | None = None
         self._icon_object: QIcon | None = None
-        self._icon_cache: dict[tuple[str, str, int], QPixmap] = {}
         self._spinner_angle = 0
         self._spinner_timer: QTimer | None = None
 
@@ -154,7 +157,6 @@ class CButton(QPushButton):
     def set_icon(self, icon: str | QIcon | None) -> None:
         self._icon_source = icon if isinstance(icon, str) else None
         self._icon_object = icon if isinstance(icon, QIcon) else None
-        self._icon_cache.clear()
         self.updateGeometry()
         self.update()
 
@@ -165,48 +167,12 @@ class CButton(QPushButton):
     def _has_icon(self) -> bool:
         return self._icon_source is not None or self._icon_object is not None
 
-    def _icon_path(self) -> str | None:
-        if self._icon_source is None:
-            return None
-        if os.path.isabs(self._icon_source):
-            return self._icon_source
-        return PathFactory.set_svg_icon(self._icon_source)
-
     def _tinted_icon(self, color: QColor) -> QPixmap | None:
-        """按当前文字色给图标着色（SourceIn），按路径+颜色+尺寸缓存。"""
-        if self._icon_object is not None:
-            pixmap = self._icon_object.pixmap(self._spec.icon_px, self._spec.icon_px)
-            if pixmap.isNull():
-                return None
-            tinted = QPixmap(pixmap.size())
-            tinted.fill(Qt.transparent)
-            painter = QPainter(tinted)
-            painter.drawPixmap(0, 0, pixmap)
-            painter.setCompositionMode(QPainter.CompositionMode_SourceIn)
-            painter.fillRect(tinted.rect(), color)
-            painter.end()
-            return tinted
-
-        path = self._icon_path()
-        if not path:
+        """按当前文字色给图标着色；render_icon 按 dpr 栅格化并统一缓存。"""
+        if not self._has_icon():
             return None
-        key = (path, color.name(), self._spec.icon_px)
-        cached = self._icon_cache.get(key)
-        if cached is not None:
-            return cached
-
-        source = QPixmap(path)
-        if source.isNull():
-            return None
-        ratio = 1.0
-        target = max(1, round(self._spec.icon_px * ratio))
-        pixmap = source.scaled(target, target, Qt.KeepAspectRatio, Qt.SmoothTransformation)
-        painter = QPainter(pixmap)
-        painter.setCompositionMode(QPainter.CompositionMode_SourceIn)
-        painter.fillRect(pixmap.rect(), color)
-        painter.end()
-        self._icon_cache[key] = pixmap
-        return pixmap
+        source = self._icon_object if self._icon_object is not None else self._icon_source
+        return render_icon(source, color, self._spec.icon_px, self.devicePixelRatioF())
 
     # ------------------------------------------------------------------
     # 尺寸建议
@@ -303,7 +269,15 @@ class CButton(QPushButton):
         colors = self._colors()
         state = self._visual_state()
 
-        if state == "pressed":
+        if self._transition is not None and self._progress < 1.0:
+            # 悬停/按下颜色过渡：在起点与目标状态色之间线性插值
+            start_bg, start_border, start_text = self._state_colors(self._from_state)
+            end_bg, end_border, end_text = self._state_colors(self._state)
+            t = self._progress
+            background = self._lerp_color(start_bg, end_bg, t)
+            border = self._lerp_color(start_border, end_border, t)
+            text = self._lerp_color(start_text, end_text, t)
+        elif state == "pressed":
             background, border, text = colors.active_background, colors.active_border, colors.active_text
         elif state == "hover":
             background, border, text = colors.hover_background, colors.hover_border, colors.hover_text
@@ -393,35 +367,96 @@ class CButton(QPushButton):
     # ------------------------------------------------------------------
     # 交互状态
     # ------------------------------------------------------------------
+    def _state_colors(self, state: str) -> tuple[QColor, QColor, QColor]:
+        colors = self._colors()
+        if state == "pressed":
+            return colors.active_background, colors.active_border, colors.active_text
+        if state == "hover":
+            return colors.hover_background, colors.hover_border, colors.hover_text
+        return colors.background, colors.border, colors.text
+
+    def _hover_duration(self) -> int:
+        try:
+            return int(AppSettings.button.hover_duration)
+        except Exception:  # 配置上下文未就绪时的兜底值
+            return 160
+
+    def _lerp_color(self, start: QColor, end: QColor, t: float) -> QColor:
+        return QColor(
+            round(start.red() + (end.red() - start.red()) * t),
+            round(start.green() + (end.green() - start.green()) * t),
+            round(start.blue() + (end.blue() - start.blue()) * t),
+            round(start.alpha() + (end.alpha() - start.alpha()) * t),
+        )
+
+    def _set_state(self, state: str) -> None:
+        """切换视觉状态；悬停/按下按配置时长做颜色过渡。"""
+        if state == self._state:
+            return
+        self._stop_transition()
+        self._from_state = self._display_state
+        self._state = state
+        duration = self._hover_duration()
+        if duration <= 0 or not self.isVisible():
+            self._display_state = state
+            self._progress = 1.0
+            self.update()
+            return
+        animation = QVariantAnimation(self)
+        animation.setStartValue(0.0)
+        animation.setEndValue(1.0)
+        animation.setDuration(duration)
+        animation.valueChanged.connect(self._on_transition_tick)
+        animation.finished.connect(lambda: self._finish_transition(state))
+        self._progress = 0.0
+        animation.start()
+        self._transition = animation
+
+    def _on_transition_tick(self, value: float) -> None:
+        self._progress = float(value)
+        self.update()
+
+    def _finish_transition(self, state: str) -> None:
+        self._stop_transition()
+        self._display_state = state
+        self._progress = 1.0
+        self.update()
+
+    def _stop_transition(self) -> None:
+        if self._transition is not None:
+            self._transition.stop()
+            self._transition.deleteLater()
+            self._transition = None
+
     def enterEvent(self, event):  # noqa: N802 - 覆写 Qt 命名
         if self.isEnabled() and not self._loading:
-            self._state = "hover"
-            self.update()
+            self._set_state("hover")
         super().enterEvent(event)
 
     def leaveEvent(self, event):  # noqa: N802 - 覆写 Qt 命名
-        self._state = "normal"
-        self.update()
+        self._set_state("normal")
         super().leaveEvent(event)
 
     def mousePressEvent(self, event):  # noqa: N802 - 覆写 Qt 命名
         if self._loading or not self.isEnabled():
             return
-        self._state = "pressed"
-        self.update()
+        self._set_state("pressed")
         super().mousePressEvent(event)
 
     def mouseReleaseEvent(self, event):  # noqa: N802 - 覆写 Qt 命名
         if self._loading or not self.isEnabled():
             return
-        self._state = "hover" if self.underMouse() else "normal"
-        self.update()
+        self._set_state("hover" if self.underMouse() else "normal")
         super().mouseReleaseEvent(event)
 
     def changeEvent(self, event):  # noqa: N802 - 覆写 Qt 命名
         super().changeEvent(event)
         if event.type() in (event.Type.EnabledChange, event.Type.StyleChange):
+            self._stop_transition()
             self._state = "normal"
+            self._display_state = "normal"
+            self._from_state = "normal"
+            self._progress = 1.0
             self.update()
 
 

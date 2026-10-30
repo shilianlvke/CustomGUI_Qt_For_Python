@@ -10,7 +10,6 @@
 import logging
 import os
 from logging.handlers import RotatingFileHandler
-from pathlib import Path
 
 from ..config.paths import data_root, find_resource
 
