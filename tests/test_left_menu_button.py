@@ -1,8 +1,8 @@
-"""左侧菜单按钮的选中态过渡。
+"""左侧菜单按钮的选中态过渡与主题跟随。
 
 契约：页面选中与导航 tab 共用一条 0→1 的进度属性，``paintEvent`` 按进度插值
 高亮块、文字与图标；按钮批量取消选中（``select_only_one`` 会遍历所有按钮）时，
-仍处于 tab 态的按钮必须保持高亮。
+仍处于 tab 态的按钮必须保持高亮；颜色不缓存，切换主题后重绘即生效。
 """
 
 import os
@@ -13,6 +13,7 @@ import pytest
 from PySide6.QtTest import QTest
 from PySide6.QtWidgets import QApplication, QVBoxLayout, QWidget
 
+from AppCore import ColorPalette, get_theme_manager
 from GuiCore.WindowDefineUI.left_menu.menu_button import CLeftMenuButton, _mix_color
 
 _FONT = "微软雅黑"
@@ -22,6 +23,12 @@ _FONT = "微软雅黑"
 def qapp():
     app = QApplication.instance() or QApplication([])
     yield app
+
+
+@pytest.fixture(autouse=True)
+def _restore_theme():
+    yield
+    get_theme_manager().apply("default")
 
 
 @pytest.fixture
@@ -99,10 +106,25 @@ def test_tab_keeps_highlight_when_bulk_deselect(host):
 
 
 def test_mix_color_endpoints():
-    from AppCore import ColorPalette
-
     start = ColorPalette.custom_icon_color
     end = ColorPalette.custom_context_color
 
     assert _mix_color(start, end, 0).name().lower() == start.lower()
     assert _mix_color(start, end, 1).name().lower() == end.lower()
+
+
+def test_button_colors_follow_theme(host):
+    """颜色不能被缓存在按钮里，否则切换主题后仍是旧配色。"""
+    widget, layout = host
+    button = _button(widget, layout, "theme")
+    widget.show()
+    QTest.qWait(30)
+    before_bg = button._normal_bg_color()
+    before_icon = button._normal_icon_color()
+
+    get_theme_manager().apply("bright")
+    button.update()
+    QTest.qWait(30)
+
+    assert button._normal_bg_color() != before_bg
+    assert button._normal_icon_color() != before_icon

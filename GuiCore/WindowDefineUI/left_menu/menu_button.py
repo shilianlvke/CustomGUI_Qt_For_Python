@@ -64,11 +64,9 @@ class CLeftMenuButton(QPushButton):
         self._icon_path = PathFactory.resolve_svg(icon_path)
         self._icon_active_menu = PathFactory.set_svg_icon(icon_active_menu)
         self._icon_cache: dict[str, QPixmap] = {}
-        self._icon_enter = False
-        # PROPERTIES
+        # PROPERTIES（只存状态名，颜色在绘制时实时读调色板，主题切换自动生效）
         self._margin = margin
-        self._set_icon_color = ColorPalette.custom_icon_color  # Set icon color
-        self._set_bg_color = ColorPalette.custom_dark_one  # Set BG color
+        self._state = "normal"  # normal / hover / pressed
         self._parent = app_parent
         self._is_active = is_active
         self._is_active_tab = is_active_tab
@@ -114,7 +112,7 @@ class CLeftMenuButton(QPushButton):
         is_tab = self._active_kind == "tab"
 
         # NORMAL BG：先铺普通底，选中块画在其上（两者同色系，边角不会露出色差）
-        p.setBrush(QColor(ColorPalette.custom_dark_three if self._is_toggle_active else self._set_bg_color))
+        p.setBrush(QColor(self._normal_bg_color()))
         p.drawRoundedRect(rect_inside, 8, 8)
 
         # ACTIVE BG：用剪裁从左向右展开，比透明度叠色更干净
@@ -136,7 +134,7 @@ class CLeftMenuButton(QPushButton):
             icon_color = ColorPalette.custom_context_color
         else:
             target = ColorPalette.custom_icon_active if is_tab else ColorPalette.custom_context_color
-            icon_color = _mix_color(self._set_icon_color, target, progress)
+            icon_color = _mix_color(self._normal_icon_color(), target, progress)
         self.icon_paint(p, self._icon_path, rect_icon, icon_color)
 
         # DRAW ACTIVE MARK：右侧活动标记随进度淡入
@@ -151,17 +149,33 @@ class CLeftMenuButton(QPushButton):
     # 设置活跃的界面
     def set_active(self, is_active):
         self._is_active = is_active
-        # 底色归位为侧栏色，避免悬停色在选中块左侧露出细边
-        self._set_icon_color = ColorPalette.custom_icon_color
-        self._set_bg_color = ColorPalette.custom_dark_one
+        if not is_active and not self._is_active_tab:
+            # 退出选中时归位为普通态，避免残留悬停/按下的底色
+            self._state = "normal"
         self._sync_active_progress()
 
     # 设置活跃的导航栏
     def set_active_tab(self, is_active):
         self._is_active_tab = is_active
-        self._set_icon_color = ColorPalette.custom_icon_color
-        self._set_bg_color = ColorPalette.custom_dark_one
+        if not is_active and not self._is_active:
+            self._state = "normal"
         self._sync_active_progress()
+
+    # 普通态底色（按下/悬停各有对应层级，颜色实时取，主题切换后重绘即更新）
+    def _normal_bg_color(self):
+        if self._is_toggle_active or self._state == "hover":
+            return ColorPalette.custom_dark_three
+        if self._state == "pressed":
+            return ColorPalette.custom_dark_four
+        return ColorPalette.custom_dark_one
+
+    # 普通态图标色
+    def _normal_icon_color(self):
+        if self._state == "hover":
+            return ColorPalette.custom_icon_hover
+        if self._state == "pressed":
+            return ColorPalette.custom_context_color
+        return ColorPalette.custom_icon_color
 
     # 归一化选中进度：页面选中与导航 tab 共用同一套过渡
     def _sync_active_progress(self):
@@ -253,27 +267,21 @@ class CLeftMenuButton(QPushButton):
     # 更改样式
     # 具有自定义样式的函数
     def change_style(self, event):
+        if self._is_active:
+            return
         if event == QEvent.Enter:
-            if not self._is_active:
-                self._set_icon_color = ColorPalette.custom_icon_hover
-                self._set_bg_color = ColorPalette.custom_dark_three
+            self._state = "hover"
         elif event == QEvent.Leave:
-            if not self._is_active:
-                self._set_icon_color = ColorPalette.custom_icon_color
-                self._set_bg_color = ColorPalette.custom_dark_one
+            self._state = "normal"
         elif event == QEvent.MouseButtonPress:
-            if not self._is_active:
-                self._set_icon_color = ColorPalette.custom_context_color
-                self._set_bg_color = ColorPalette.custom_dark_four
+            self._state = "pressed"
         elif event == QEvent.MouseButtonRelease:
-            if not self._is_active:
-                self._set_icon_color = ColorPalette.custom_icon_hover
-                self._set_bg_color = ColorPalette.custom_dark_three
+            self._state = "hover"
+        self.update()
 
     # 鼠标悬停
     # 当鼠标位于BTN上时触发的事件
     def enterEvent(self, event):
-        self._icon_enter = True
         self.change_style(QEvent.Enter)
         if self.width() in range(self._minimum_width - 5, self._minimum_width + 5) and self._tooltip_text:
             self.move_tooltip()
@@ -282,7 +290,6 @@ class CLeftMenuButton(QPushButton):
     # 鼠标离开
     # 鼠标离开BTN时触发的事件
     def leaveEvent(self, event):
-        self._icon_enter = False
         self.change_style(QEvent.Leave)
         self.tooltip.hide()
 
