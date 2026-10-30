@@ -64,8 +64,9 @@ class _WipeLayer(QWidget):
         painter.fillRect(self.rect(), self._backdrop)
         if self._in_progress > 0 and not self._new_pixmap.isNull():
             self._draw_reveal(painter, self._new_pixmap, self._in_progress)
-        elif self._out_progress > 0 and not self._old_pixmap.isNull():
-            # 擦除：可见比例 = 1 - 进度，右边缘向左收缩
+        elif not self._old_pixmap.isNull():
+            # 未进入展开阶段时始终显示旧页：进度为 0 就是完整旧页，
+            # 否则遮罩第一帧会只剩底色，看起来像原页面闪了一下才消失。
             self._draw_reveal(painter, self._old_pixmap, 1.0 - self._out_progress)
 
     def _draw_reveal(self, painter: QPainter, pixmap: QPixmap, ratio: float) -> None:
@@ -135,11 +136,12 @@ class CPageTransition:
         cls._set_button_progress(old_button, 1.0)
         cls._set_button_progress(new_button, 0.0)
 
-        layer = _WipeLayer(stack, backdrop)
+        layer = cls._build_layer(stack, backdrop)
         layer.set_old_pixmap(snapshot)
-        layer.setGeometry(stack.rect())
         layer.show()
         layer.raise_()
+        # 先把旧页画面同步画到屏幕上，再切底层页面，避免切换瞬间透出底色
+        layer.repaint()
 
         # 切换后新页已在布局中，再抓一张用于最后一段展开
         stack.setCurrentWidget(page)
@@ -224,6 +226,19 @@ class CPageTransition:
 
     # 配置与外部对象
     # ///////////////////////////////////////////////////////////////
+    @staticmethod
+    def _build_layer(stack, backdrop: QColor) -> _WipeLayer:
+        """遮罩挂在内容容器的上一层。
+
+        ``QStackedWidget`` 切换 current 时会把新页 ``raise()``；遮罩若挂在它内部
+        会被压到新页下面，同步刷新时就透出一帧新页面。挂到父级后两者不再争 z-order。
+        内容容器没有父级时（独立使用）退回挂在堆叠控件上。
+        """
+        host = stack.parentWidget() or stack
+        layer = _WipeLayer(host, backdrop)
+        layer.setGeometry(stack.rect() if host is stack else stack.geometry())
+        return layer
+
     @classmethod
     def _timing(cls) -> tuple[int, int, int, int, QEasingCurve]:
         try:

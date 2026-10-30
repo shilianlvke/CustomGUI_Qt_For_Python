@@ -150,6 +150,23 @@ def test_switch_plays_wipe_then_cleans_up(stack, fast_timing):
     stack.hide()
 
 
+def test_layer_starts_with_full_old_page(stack, fast_timing):
+    """遮罩首帧必须是完整旧页：否则点击后原页面会先闪成底色再开始擦除。"""
+    stack.show()
+    QTest.qWait(30)
+    target = stack.widget(1)
+
+    CPageTransition.switch(stack, target)
+    layer = _layer(stack)
+    image = layer.grab().toImage()
+    center = image.pixelColor(layer.width() // 2, layer.height() // 2)
+    # 旧页是 #101010；若首帧只剩底色会得到 custom_bg_one(#2b303b)
+    assert center.name().lower() == "#101010"
+
+    QTest.qWait(fast_timing + 300)
+    stack.hide()
+
+
 def test_new_switch_replaces_previous_layer(stack, fast_timing):
     stack.show()
     QTest.qWait(30)
