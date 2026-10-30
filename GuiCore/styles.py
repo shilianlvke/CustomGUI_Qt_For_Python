@@ -1,5 +1,5 @@
 # 这里决定整个window的总体样式
-from AppCore import Logger, PathFactory, get_design_tokens
+from AppCore import ColorPalette, Logger, PathFactory, get_design_tokens
 
 
 class Styles(object):
@@ -127,8 +127,29 @@ class Styles(object):
         """
 
     def update_lineedit_style(self):
-        """CLineEdit：颜色与状态（固定高度由组件本地覆盖）。"""
+        """输入框族：颜色与状态（高度/圆角/内边距/字号由组件本地覆盖）。"""
         self.style += f"""
+            #CInputText_LineEdit, #CTextarea_PlainTextEdit {{
+                background-color: {self.tokens.colors.surface_sidebar};
+                border: 1px solid {self.tokens.colors.surface_interactive_pressed};
+                color: {self.tokens.colors.text_primary};
+                placeholder-text-color: {self.tokens.colors.text_muted};
+                selection-color: {self.tokens.colors.text_primary};
+                selection-background-color: {self.tokens.colors.surface_interactive_hover};
+            }}
+            #CInputText_LineEdit:hover, #CTextarea_PlainTextEdit:hover {{
+                border-color: {self.tokens.colors.surface_interactive_hover};
+            }}
+            #CInputText_LineEdit:focus, #CTextarea_PlainTextEdit:focus {{
+                border-color: {self.tokens.colors.border_context};
+            }}
+            #CInputText_LineEdit[invalid="true"], #CTextarea_PlainTextEdit[invalid="true"] {{
+                border-color: {ColorPalette.custom_red};
+            }}
+            #CInputText_LineEdit:disabled, #CTextarea_PlainTextEdit:disabled {{
+                background-color: {self.tokens.colors.surface_app};
+                color: {self.tokens.colors.text_muted};
+            }}
             #CLineEdit_LineEdit {{
                 background-color: {self.tokens.colors.surface_interactive};
                 border-radius: {self.tokens.radius.window}px;
@@ -138,14 +159,6 @@ class Styles(object):
                 selection-color: {self.tokens.colors.surface_interactive_pressed};
                 selection-background-color: {self.tokens.colors.surface_interactive_hover};
                 color: {self.tokens.colors.text_primary};
-            }}
-            #CLineEdit_LineEdit:focus {{
-                border: {self.tokens.border.width}px solid {self.tokens.colors.surface_interactive_hover};
-                background-color: {self.tokens.colors.surface_interactive_pressed};
-            }}
-            #CLineEdit_LineEdit:hover {{
-                border: {self.tokens.border.width}px solid {self.tokens.colors.surface_interactive_hover};
-                background-color: {self.tokens.colors.surface_interactive_pressed};
             }}
         """
 

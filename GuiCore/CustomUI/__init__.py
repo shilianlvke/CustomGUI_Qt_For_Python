@@ -13,7 +13,15 @@ from .menu import CMenu as CMenu
 from .card import CCard as CCard, CShowCard as CShowCard
 from .picture import CPixmap as CPixmap
 from .div import CHDiv as CHDiv, CVDiv as CVDiv
-from .line_edit import CLineEdit as CLineEdit
+from .line_edit import (
+    CFloatLabel as CFloatLabel,
+    CInputGroup as CInputGroup,
+    CInputGroupAddon as CInputGroupAddon,
+    CInputNumber as CInputNumber,
+    CInputText as CInputText,
+    CLineEdit as CLineEdit,
+    CTextarea as CTextarea,
+)
 from .scroll import CScrollArea as CScrollArea
 from .tooltip import CToolTip as CToolTip
 from .page_transition import CPageTransition as CPageTransition
@@ -34,6 +42,12 @@ __all__ = [
     "CPixmap",
     "CHDiv",
     "CVDiv",
+    "CInputText",
+    "CTextarea",
+    "CInputNumber",
+    "CInputGroup",
+    "CInputGroupAddon",
+    "CFloatLabel",
     "CLineEdit",
     "CScrollArea",
     "CToolTip",

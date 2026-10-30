@@ -1,0 +1,11 @@
+app_name: "input_preview"
+app_id: "app.menu.left.input_preview"
+button_id: "btn_input_preview"
+page_object: "inputPreviewPage"
+app_icon: "icon.app.input_preview.app_icon"
+app_text: "language.app.input_preview.app_text"
+app_tooltip: "language.app.input_preview.app_tooltip"
+app_target: "LeftMenu"
+show_top: true
+is_active: false
+is_default: false
