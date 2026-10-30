@@ -38,7 +38,9 @@ class CInputText(QLineEdit):
         self._icon_action = None
         self._corners = corners
 
-        self.setSizePolicy(QSizePolicy.Policy.Expanding if fluid else QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Fixed)
+        self.setSizePolicy(
+            QSizePolicy.Policy.Expanding if fluid else QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Fixed
+        )
         self._apply_geometry()
 
         if text:

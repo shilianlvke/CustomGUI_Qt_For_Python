@@ -5,9 +5,9 @@ from __future__ import annotations
 from dataclasses import dataclass
 
 from PySide6.QtCore import QRectF
-from PySide6.QtGui import QColor, QPainterPath
+from PySide6.QtGui import QColor, QFont, QPainterPath
 
-from AppCore import ColorPalette
+from AppCore import AppSettings, ColorPalette
 
 
 @dataclass(frozen=True)
@@ -54,6 +54,7 @@ def colors() -> dict[str, str]:
             "placeholder": ColorPalette.custom_text_description,
             "addon_background": ColorPalette.custom_dark_three,
             "icon": ColorPalette.custom_icon_color,
+            "control_border": "#3f3f46",
         }
     return {
         "background": "#ffffff",
@@ -66,11 +67,19 @@ def colors() -> dict[str, str]:
         "placeholder": "#64748b",
         "addon_background": "#f8fafc",
         "icon": "#64748b",
+        "control_border": "#94a3b8",
     }
 
 
 def size_spec(size: str) -> InputSize:
     return SIZES.get(size, SIZES["md"])
+
+
+def field_font(size: str = "md") -> QFont:
+    """自绘字段统一字体（与 ``CButton`` 的取法一致）。"""
+    font = QFont(AppSettings.family)
+    font.setPixelSize(size_spec(size).font_px)
+    return font
 
 
 def corner_css(radius: int, corners: tuple[bool, bool, bool, bool] | None = None) -> str:
@@ -115,6 +124,7 @@ __all__ = [
     "ICON_GAP",
     "colors",
     "corner_css",
+    "field_font",
     "is_dark_theme",
     "rounded_path",
     "size_spec",

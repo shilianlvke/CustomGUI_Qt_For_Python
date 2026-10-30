@@ -14,17 +14,31 @@ from .input_style import RADIUS, colors, rounded_path, size_spec
 class CInputGroupAddon(QWidget):
     """输入框组的前缀/后缀块：图标或文字，自绘背景与分隔线。"""
 
-    def __init__(self, text: str | None = None, icon: str | None = None, size: str = "md", corners=None, parent=None):
+    def __init__(
+        self,
+        text: str | None = None,
+        icon: str | None = None,
+        size: str = "md",
+        corners=None,
+        widget: QWidget | None = None,
+        parent=None,
+    ):
         super().__init__(parent)
         self.setObjectName("CInputGroupAddon_Widget")
         self._text = text or ""
         self._icon = icon
         self._size = size
         self._corners = corners
+        self._widget = widget
         self._icon_cache: dict[tuple[str, str, int], QPixmap] = {}
 
         spec = size_spec(size)
         self.setFixedHeight(spec.height)
+        if widget is not None:
+            layout = QHBoxLayout(self)
+            layout.setContentsMargins(spec.padding_x, 0, spec.padding_x, 0)
+            layout.setSpacing(0)
+            layout.addWidget(widget, 0, Qt.AlignCenter)
         content = self._content_width()
         self.setFixedWidth(content + spec.padding_x * 2)
 
@@ -40,6 +54,8 @@ class CInputGroupAddon(QWidget):
 
     def _content_width(self) -> int:
         spec = size_spec(self._size)
+        if self._widget is not None:
+            return self._widget.sizeHint().width()
         if self._text:
             return self.fontMetrics().horizontalAdvance(self._text)
         return spec.icon_px if self._icon else 0

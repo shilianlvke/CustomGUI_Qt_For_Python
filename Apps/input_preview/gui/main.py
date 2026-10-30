@@ -1,31 +1,63 @@
-"""输入预览页：按 Sakai 输入页（批次 1）展示输入组件。
+"""输入预览页：按 Sakai 输入页展示全部表单控件。
 
-分组对应 https://sakai.primevue.org/uikit/input 的文本输入部分：
-InputText / Sizes / Icons / Float Label / Textarea / InputNumber / InputGroup。
-批次 2–4（开关、选择器、数值可视化）见 line_edit/README.md。
+分组对应 https://sakai.primevue.org/uikit/input 的 21 个区块：
+InputText / Sizes / Icons / Float Label / Textarea / AutoComplete / DatePicker /
+InputNumber / Slider / Rating / ColorPicker / Knob / RadioButton / Checkbox /
+ToggleSwitch / Listbox / Select / MultiSelect / TreeSelect / ToggleButton /
+SelectButton / InputGroup。
 
 页面协议（``PAGE``）由基座以 ``load_page(window)`` 调用，因此 ``self`` 是主窗口，
 全部构建逻辑放在模块级函数里。
 """
 
-from PySide6.QtCore import QMargins, Qt
+from PySide6.QtCore import QDate, QMargins, Qt
 from PySide6.QtGui import QFont
 from PySide6.QtWidgets import QHBoxLayout, QLabel, QVBoxLayout, QWidget
 
 from AppCore import AppSettings, Language, Logger
 from GuiCore import (
+    CAutoComplete,
     CButton,
     CCard,
+    CCheckbox,
+    CColorPicker,
+    CDatePicker,
     CFloatLabel,
     CInputGroup,
     CInputGroupAddon,
     CInputNumber,
     CInputText,
+    CKnob,
+    CListbox,
+    CMultiSelect,
+    CRadioButton,
+    CRating,
     CScrollArea,
+    CSelect,
+    CSelectButton,
+    CSlider,
     CTextarea,
+    CToggleButton,
+    CToggleSwitch,
+    CTreeSelect,
 )
 
 _LANG = "app.input_preview"
+
+_CITIES = ("Chicago", "Los Angeles", "New York")
+_OPTIONS = ("Rome", "London", "Paris", "Berlin", "Madrid")
+_FRAMEWORKS = ("React", "Vue", "Angular", "Svelte", "Solid")
+_TREE = (
+    {
+        "label": "Documents",
+        "children": (
+            {"label": "Work", "children": ({"label": "Expenses.doc"}, {"label": "Resume.doc"})},
+            {"label": "Home", "children": ({"label": "Invoices.txt"},)},
+        ),
+    },
+    {"label": "Pictures", "children": ({"label": "barcelona.jpg"}, {"label": "logo.png"})},
+    {"label": "Movies"},
+)
 
 
 def _t(key: str) -> str:
@@ -81,7 +113,87 @@ def _textareas():
 
 
 def _input_numbers():
-    return [_fixed(CInputNumber(value=42, minimum=0, maximum=999, step=5, placeholder="Price"), 200)]
+    return [
+        _fixed(CInputNumber(value=42, minimum=0, maximum=999, step=5, placeholder="Price"), 190),
+        _fixed(CInputNumber(value=8.5, minimum=0, maximum=100, step=0.5, decimals=1, placeholder="Quantity"), 190),
+    ]
+
+
+def _autocompletes():
+    return [
+        _fixed(
+            CAutoComplete(_FRAMEWORKS, ["React"], placeholder="Search"),
+            240,
+        )
+    ]
+
+
+def _date_pickers():
+    return [_fixed(CDatePicker(QDate.currentDate()), 240)]
+
+
+def _sliders():
+    field = _fixed(CInputText(text="50"), 90)
+    slider = _fixed(CSlider(50), 240)
+    slider.valueChanged.connect(lambda value: field.setText(str(value)))
+    field.textChanged.connect(lambda text: slider.setValue(int(text)) if text.strip().isdigit() else None)
+    return [field, slider]
+
+
+def _ratings():
+    return [CRating(3)]
+
+
+def _color_pickers():
+    return [CColorPicker("#22c55e")]
+
+
+def _knobs():
+    return [CKnob(20, -50, 50, 10)]
+
+
+def _radio_buttons():
+    buttons = [CRadioButton(city, checked=index == 0) for index, city in enumerate(_CITIES)]
+    for button in buttons:
+        button.toggled.connect(lambda checked, name=button.text(): checked and Logger.info(f"单选: {name}"))
+    return buttons
+
+
+def _checkboxes():
+    return [CCheckbox(city, checked=index == 0) for index, city in enumerate(_CITIES)]
+
+
+def _toggle_switches():
+    return [CToggleSwitch("Wifi", checked=True)]
+
+
+def _listboxes():
+    return [_fixed(CListbox(_OPTIONS, "Rome", height=232), 420)]
+
+
+def _selects():
+    return [_fixed(CSelect(_OPTIONS, "Rome", placeholder="Select", filter=True), 240)]
+
+
+def _multi_selects():
+    return [
+        _fixed(
+            CMultiSelect(_FRAMEWORKS, ["React", "Vue"], placeholder="Select", filter=True),
+            260,
+        )
+    ]
+
+
+def _tree_selects():
+    return [_fixed(CTreeSelect(_TREE, placeholder="Select Item"), 240)]
+
+
+def _toggle_buttons():
+    return [CToggleButton("Yes", "No", checked=False)]
+
+
+def _select_buttons():
+    return [CSelectButton(["Off", "On"], 0)]
 
 
 def _input_groups():
@@ -99,6 +211,7 @@ def _input_groups():
             420,
         ),
         _fixed(CInputGroup([CButton(text="Search"), CInputText(placeholder="Keyword")]), 420),
+        _fixed(CInputGroup([CInputGroupAddon(widget=CCheckbox()), CInputText(placeholder="Confirm")]), 420),
     ]
 
 
@@ -109,7 +222,22 @@ def _sections():
         (_t("group_icons"), _icon_inputs(), 2),
         (_t("group_floatlabel"), _float_labels(), 2),
         (_t("group_textarea"), _textareas(), 1),
+        (_t("group_autocomplete"), _autocompletes(), 2),
+        (_t("group_datepicker"), _date_pickers(), 2),
         (_t("group_inputnumber"), _input_numbers(), 2),
+        (_t("group_slider"), _sliders(), 2),
+        (_t("group_rating"), _ratings(), 1),
+        (_t("group_colorpicker"), _color_pickers(), 1),
+        (_t("group_knob"), _knobs(), 1),
+        (_t("group_radio"), _radio_buttons(), 3),
+        (_t("group_checkbox"), _checkboxes(), 3),
+        (_t("group_toggleswitch"), _toggle_switches(), 1),
+        (_t("group_listbox"), _listboxes(), 1),
+        (_t("group_select"), _selects(), 2),
+        (_t("group_multiselect"), _multi_selects(), 2),
+        (_t("group_treeselect"), _tree_selects(), 2),
+        (_t("group_togglebutton"), _toggle_buttons(), 1),
+        (_t("group_selectbutton"), _select_buttons(), 1),
         (_t("group_inputgroup"), _input_groups(), 1),
     ]
 
