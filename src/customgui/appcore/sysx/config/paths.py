@@ -49,22 +49,72 @@ def resource_root() -> Path:
     return _package_resource_root().resolve()
 
 
-def resource_roots() -> list[Path]:
-    """按优先级返回资源根目录（统一到"其下有 ``customui/``"这一层）。
+def _app_overlay_roots() -> list[Path]:
+    """各应用自带的品牌覆盖层（``<app>/brand``，其下直接是 ``customui/``）。
 
-    两种布局都接受，调用方只写 ``customui/themes`` 这类**相对资源根**的路径：
+    为什么要有这一层
+    ----------------
+    应用不该把自己的主题/语言/图标塞进**项目根**的 ``resource/``——那会让
+    应用仓库根目录被基座资源污染，且必须先于基座导入配好环境变量。改成
+    「资产跟着插件走」：``apps/<app>/brand/customui/...``，基座扫描
+    ``apps_dir`` 时自动纳入解析链，应用侧零配置。
 
-    - 基座包内：``customgui/_resources/customui/...``
-    - 应用覆盖：``<root>/resource/customui/...``（PyCL2 等把 ``resource/`` 放在工程根）
-
-    因此覆盖目录��有 ``<root>/resource`` 时自动下沉一级，让两种根的语义对齐。
+    只做**文件判断**，不 import 任何应用代码，因此不会产生循环依赖；
+    只有真的存在 ``brand/customui/`` 的目录才会被当作资源根——这一点很
+    重要：``<app>/customui`` 直接当根会让 ``customui/themes`` 拼成
+    ``customui/customui/themes``（多一层），只有 ``<app>/brand`` 这一层
+    才是「其下直接是 ``customui/``」的正确语义。
     """
+    try:
+        base = apps_root()
+    except Exception:
+        return []
+    if not base.is_dir():
+        return []
+    overlays: list[Path] = []
+    try:
+        children = sorted(base.iterdir())
+    except OSError:
+        return []
+    for child in children:
+        if not child.is_dir():
+            continue
+        brand = child / "brand"
+        if (brand / "customui").is_dir():
+            overlays.append(brand)
+    return overlays
+
+
+def _configured_roots() -> list[Path]:
+    """显式配置 + 环境变量给出的资源根（未追加品牌层与基座包内）。"""
     roots: list[Path] = []
     for candidate in (*_cfg().resolved_resource_dirs(), _env_path(_RESOURCE_ENV), _env_path(_ROOT_ENV)):
         if candidate is None:
             continue
         nested = candidate / "resource"
         resolved = nested if nested.is_dir() else candidate
+        if resolved not in roots:
+            roots.append(resolved)
+    return roots
+
+
+def resource_roots() -> list[Path]:
+    """按优先级返回资源根目录（统一到"其下有 ``customui/``"这一层）。
+
+    三种布局都接受，调用方只写 ``customui/themes`` 这类**相对资源根**的路径：
+
+    - 基座包内：``customgui/_resources/customui/...``
+    - 应用覆盖：``<root>/resource/customui/...``（历史布局，仍兼容）
+    - 应用品牌层：``<apps_dir>/<app>/brand/customui/...``（推荐）
+
+    覆盖目录里若有 ``<root>/resource`` 时自动下沉一级，让几种根的语义对齐。
+
+    解析顺序：显式 ``configure()`` / 环境变量 → 各应用品牌层 → 基座包内。
+    品牌层排在基座之前，才能覆盖基座默认的主题与图标。
+    """
+    roots: list[Path] = list(_configured_roots())
+    for overlay in _app_overlay_roots():
+        resolved = overlay.resolve()
         if resolved not in roots:
             roots.append(resolved)
     roots.append(resource_root())

@@ -158,6 +158,15 @@ def configure(
 
         _registry.reset_context()
 
+    # 配置变更后资源根会变：让语言选项这类按资源根缓存派生值失效，
+    # 否则后叠加上来的语言永远发现不了。
+    try:
+        from .appcore.sysx.modules.language_module import LANGUAGE_OPTIONS
+
+        LANGUAGE_OPTIONS.invalidate()
+    except Exception:
+        pass
+
     return _ACTIVE
 
 

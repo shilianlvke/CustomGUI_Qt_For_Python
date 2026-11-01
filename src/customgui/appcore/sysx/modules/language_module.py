@@ -28,6 +28,14 @@ from .logger_module import Logger
 from .telemetry_module import record_event
 
 
+def _fingerprint(data: dict) -> int:
+    """给语言包数据算一个稳定的浅指纹（用于判断是否需要重新装载）。"""
+    try:
+        return hash(tuple(sorted(data.keys())))
+    except Exception:
+        return id(data)
+
+
 def _discover_language_options() -> tuple[str, ...]:
     """Discover languages from the active base + overlay resource layers."""
     try:
@@ -41,7 +49,82 @@ def _discover_language_options() -> tuple[str, ...]:
     return ("zh_cn", "en_us")
 
 
-LANGUAGE_OPTIONS = _discover_language_options()
+class LanguageOptions:
+    """惰性、可缓存的可用语言序列。
+
+    为什么必须是惰性的
+    ------------------
+    历史上这里是模块级一次性求值 ``LANGUAGE_OPTIONS = _discover()``，而
+    模块导入发生在 ``customgui.configure()`` **之前**：那一刻资源根还没被
+    配置，扫描只看到基座包内的语言文件。结果就是应用后来叠加上来的语言
+    （PyCL2 的日语、繁体中文等）永远发现不了，应用只能把资源塞进项目根的
+    ``resource/`` 里靠环境变量抢跑——这正是「应用根目录被迫保留 ``resource/``」
+    的唯一技术原因。
+
+    改为惰性视图后，每次读取都按**当前**资源根解析，调用方语义完全不变
+    （``in`` / 迭代 / ``len`` / ``index`` / 下标都能用）。解析结果按资源根
+    元组缓存，资源根不变就不会重复扫盘。
+    """
+
+    __slots__ = ("_cache_key", "_cache")
+
+    def __init__(self) -> None:
+        self._cache_key: tuple[str, ...] | None = None
+        self._cache: tuple[str, ...] = ()
+
+    # -- 解析与缓存 ----------------------------------------------------
+    def _resolve(self) -> tuple[str, ...]:
+        try:
+            from ..config.paths import resource_roots
+
+            key = tuple(str(path) for path in resource_roots())
+        except Exception:
+            return _discover_language_options()
+        if key != self._cache_key:
+            self._cache = _discover_language_options()
+            self._cache_key = key
+        return self._cache
+
+    def invalidate(self) -> None:
+        """丢弃缓存，下次读取重新扫描（``configure`` 后可由调用方触发）。"""
+        self._cache_key = None
+        self._cache = ()
+
+    # -- 序列协议 ------------------------------------------------------
+    def __iter__(self):
+        return iter(self._resolve())
+
+    def __contains__(self, item: object) -> bool:
+        return item in self._resolve()
+
+    def __len__(self) -> int:
+        return len(self._resolve())
+
+    def __getitem__(self, index):
+        return self._resolve()[index]
+
+    def index(self, value: str, *args) -> int:
+        """``list.index`` 兼容——``LanguageHandler.cycle()`` 依赖它。"""
+        return self._resolve().index(value, *args)
+
+    def count(self, value: str) -> int:
+        return self._resolve().count(value)
+
+    def __repr__(self) -> str:
+        return repr(self._resolve())
+
+    def __eq__(self, other: object) -> bool:
+        if isinstance(other, LanguageOptions):
+            return self._resolve() == other._resolve()
+        if isinstance(other, (tuple, list)):
+            return list(self._resolve()) == list(other)
+        return NotImplemented
+
+    def __hash__(self) -> int:
+        return hash(self._resolve())
+
+
+LANGUAGE_OPTIONS = LanguageOptions()
 
 
 @dataclass
@@ -58,6 +141,7 @@ class LanguageHandler:
     _current: str | None = None
     _listeners: list = field(default_factory=list)
     _app_provider: Callable[[str], dict] | None = None
+    _signature: tuple | None = None
     _lock: threading.Lock = field(default_factory=threading.Lock, init=False, repr=False)
 
     # ------------------------------------------------------------------
@@ -114,20 +198,25 @@ class LanguageHandler:
     def apply(self, language: str) -> str:
         """整体切换语言并通知订阅者，返回新语言名。
 
-        相同语言重复调用直接返回（幂等，避免重复刷新与日志）。
+        幂等性按**内容签名**判断而不是仅比较语言名：语言文件在运行期被
+        追加/修改（例如换主题时顺带补翻译）也能重新装载，避免"同名语言
+        永远读的是首次加载的内容"。
         """
         if language not in LANGUAGE_OPTIONS:
             raise ValueError(f"不支持的语言: {language}（可选: {LANGUAGE_OPTIONS}）")
 
-        if self._current == language:
-            return language
-
         from ..config import AppLanguages
 
-        self.replace(AppLanguages[language].data)
+        data = AppLanguages[language].data
+        signature = (language, len(data), _fingerprint(data))
+        if self._current == language and self._signature == signature:
+            return language
+
+        self.replace(data)
         if self._app_provider is not None:
             self.app = to_attrs(self._app_provider(language) or {})
         self._current = language
+        self._signature = signature
         self._notify()
 
         Logger.info(f"语言切换为 {language}")
@@ -211,4 +300,4 @@ class LanguageHandler:
 Language = LanguageHandler()
 
 
-__all__ = ["Language", "LanguageHandler", "LANGUAGE_OPTIONS"]
+__all__ = ["Language", "LanguageHandler", "LanguageOptions", "LANGUAGE_OPTIONS"]
