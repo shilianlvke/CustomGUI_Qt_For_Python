@@ -157,15 +157,14 @@ def configure(
         from .appcore.sysx.config import registry as _registry
 
         _registry.reset_context()
+        # 只有真正重建配置（资源根可能变化）时才让语言缓存失效；
+        # 普通 configure() 不动缓存，避免无谓的重扫与测试间相互干扰。
+        try:
+            from .appcore.sysx.modules.language_module import LANGUAGE_OPTIONS
 
-    # 配置变更后资源根会变：让语言选项这类按资源根缓存派生值失效，
-    # 否则后叠加上来的语言永远发现不了。
-    try:
-        from .appcore.sysx.modules.language_module import LANGUAGE_OPTIONS
-
-        LANGUAGE_OPTIONS.invalidate()
-    except Exception:
-        pass
+            LANGUAGE_OPTIONS.invalidate()
+        except Exception:
+            pass
 
     return _ACTIVE
 

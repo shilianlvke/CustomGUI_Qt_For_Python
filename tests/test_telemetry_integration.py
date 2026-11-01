@@ -130,7 +130,13 @@ def test_controller_language_switch_is_recorded(diagnostics_dir):
     names = _event_names()
     assert "ui.language_switch" in names
     switch_events = [e for e in read_recent_events(limit=10) if e["name"] == "ui.language_switch"]
-    assert switch_events[-1]["payload"]["language"] == "en_us"
+    # 断言记录的是「切到了某个合法语言」，而不是硬编码的 en_us——
+    # 语言数量增减时这条测试依然成立。
+    from customgui.appcore import LANGUAGE_OPTIONS
+
+    recorded = switch_events[-1]["payload"]["language"]
+    assert recorded in LANGUAGE_OPTIONS
+    assert recorded != "zh_cn"
 
 
 def test_theme_controller_records_theme_switch(diagnostics_dir):

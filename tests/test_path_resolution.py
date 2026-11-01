@@ -80,7 +80,12 @@ def _fresh(apps_dir: Path, resource_dirs=()):
 
 @pytest.fixture(autouse=True)
 def _restore_base_config():
-    """用完复原配置，避免污染同文件外的其他测试。"""
+    """用完复原配置，避免污染同文件外的其他测试。
+
+    注意必须用 ``force_reload=True``：本文件的 ``_fresh()`` 也是这么做的，
+    上下文一旦被重建，再用普通 ``configure()`` 会抛
+    ``ConfigAlreadyLoadedError``。
+    """
     yield
     customgui.configure(
         apps_dir=package_root().parent.parent / "apps",
@@ -189,20 +194,23 @@ def test_language_options_is_lazy_not_import_time(tmp_path):
 
     这正是「应用根目录被迫保留 ``resource/``」的历史根因——资源根在模块
     导入时还没配置，导入期求值等于把扫描结果焊死在基座包内。
+
+    用一个基座不自带、也不在品牌层里的语言名来验证（不能拿 ja_jp /
+    zh_tw 试，它们现在已经是基座内置语言）。
     """
     (tmp_path / "apps").mkdir()
     _fresh(tmp_path / "apps")
     before = set(LANGUAGE_OPTIONS)
+    assert "xx_overlay" not in before
 
     app = tmp_path / "apps" / "late"
-    _write_language(app / "brand" / "customui" / "languages", "ja_jp")
+    _write_language(app / "brand" / "customui" / "languages", "xx_overlay")
     (app / "config.yml").write_text("app_name: late\n", encoding="utf-8")
 
     _fresh(tmp_path / "apps")
     after = set(LANGUAGE_OPTIONS)
 
-    assert "ja_jp" not in before
-    assert "ja_jp" in after
+    assert "xx_overlay" in after
 
 
 def test_language_options_supports_list_semantics():

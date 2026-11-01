@@ -31,12 +31,26 @@ def test_apply_language_zh_cn():
 
 
 def test_switch_language_cycles():
-    apply_language("zh_cn")
+    """``switch_language()`` 在**全部**可用语言间循环，而不是在两种之间来回。
 
-    assert switch_language() == "en_us"
-    assert Language.UI.ui_SwitchLanguage == "Switch Language"
-    assert switch_language() == "zh_cn"
-    assert Language.UI.ui_SwitchLanguage == "切换语言"
+    基座自带四种语言（zh_cn / en_us / zh_tw / ja_jp）后，循环顺序由
+    ``LANGUAGE_OPTIONS`` 决定，不该在测试里硬编码某一种排序结果——
+    这条测试断言的是「按当前顺序走到下一个」，语言增减都仍然成立。
+    """
+    from customgui.appcore import LANGUAGE_OPTIONS
+
+    apply_language("zh_cn")
+    options = list(LANGUAGE_OPTIONS)
+    start = options.index("zh_cn")
+    expected = options[(start + 1) % len(options)]
+
+    assert switch_language() == expected
+    assert current_language() == expected
+
+    # 绕一整圈回到起点
+    for _ in range(len(options) - 1):
+        switch_language()
+    assert current_language() == "zh_cn"
 
 
 def test_apply_language_rejects_unknown():
