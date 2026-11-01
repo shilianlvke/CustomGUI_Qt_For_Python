@@ -1,3 +1,7 @@
+from .callbacks import is_deleted_qt_error as is_deleted_qt_error
+from .callbacks import safe_callback as safe_callback
+from .callbacks import single_shot as single_shot
+from .callbacks import ui_callback as ui_callback
 from .custom_ui import (
     CAccordion,
     CAccordionPanel,
@@ -69,6 +73,11 @@ from .custom_ui import (
 from .fonts import install_fonts as install_fonts
 from .fonts import install_system_fonts as install_system_fonts
 from .styles import Styles
+from .task import ProgressUpdate as ProgressUpdate
+from .task import TaskWorker as TaskWorker
+from .task import WorkerSignals as WorkerSignals
+from .task import active_tasks as active_tasks
+from .task import run_task as run_task
 from .window import CCredits, CGrips, CLeftColumn, CLeftMenu, CTitleBar, CWindow
 
 __all__ = [
@@ -147,4 +156,13 @@ __all__ = [
     "Styles",
     "install_fonts",
     "install_system_fonts",
+    "is_deleted_qt_error",
+    "safe_callback",
+    "single_shot",
+    "ui_callback",
+    "ProgressUpdate",
+    "TaskWorker",
+    "WorkerSignals",
+    "active_tasks",
+    "run_task",
 ]
