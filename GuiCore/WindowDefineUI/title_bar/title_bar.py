@@ -12,6 +12,25 @@ _is_maximized = False
 _old_size = QSize()
 
 
+def fit_logo_size(svg: QSvgWidget, limit: int) -> QSize:
+    """把 SVG 控件固定为 ``limit`` 范围内的等比尺寸。
+
+    ``QSvgWidget`` 会把图稿直接拉伸填满控件矩形，不做等比缩放；而标题栏的
+    logo 容器宽度固定为 ``icon_size``、高度跟随标题栏，两者不相等时方形图标
+    就会被横向压扁。这里按 SVG 自身的宽高比算出目标尺寸并固定，非方形图标
+    （如 2:1 的横幅）同样不会被拉变形。
+    """
+    limit = max(1, int(limit))
+    renderer = svg.renderer()
+    natural = renderer.defaultSize() if renderer is not None else QSize()
+    if natural.isValid() and natural.width() > 0 and natural.height() > 0:
+        size = natural.scaled(limit, limit, Qt.KeepAspectRatio)
+    else:
+        size = QSize(limit, limit)
+    svg.setFixedSize(size)
+    return size
+
+
 class CTitleBar(QWidget):
     # SIGNALS
     clicked = Signal(object)
@@ -237,6 +256,7 @@ class CTitleBar(QWidget):
         self.top_logo_layout.setContentsMargins(0, 0, 0, 0)
         self.logo_svg = QSvgWidget()
         self.logo_svg.load(PathFactory.set_svg_image(self._logo_image))
+        fit_logo_size(self.logo_svg, AppSettings.icon_size)
         self.top_logo_layout.addWidget(self.logo_svg, Qt.AlignCenter, Qt.AlignCenter)
 
         # TITLE LABEL（字号/字体由 GuiCore/styles.py 的 #CTitleBar_Title_Label 提供）
