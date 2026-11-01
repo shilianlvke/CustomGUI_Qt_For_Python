@@ -3,6 +3,58 @@
 本项目遵循 [语义化版本](https://semver.org/lang/zh-CN/)。`0.x` 阶段 minor 版本可能含
 破坏性变更，均在下方显式列出。
 
+## 0.4.0
+
+本轮围绕「应用资产跟着插件走 + 反哺 PyCL2」：根 `resource/` 不再必要、插件协议
+收敛到 v2、下拉框重写、四语言补齐。
+
+### 破坏性变更
+
+| 变更 | 之前 | 现在 |
+| --- | --- | --- |
+| `CComboBox` 基类 | `QComboBox` | `QWidget`（自绘，`isinstance(x, QComboBox)` 变 `False`） |
+| `AppContext.icon_path` | `Path`（缺失时为空 `Path`） | `Path \| None`（缺失为 `None`） |
+| `AppContext.language` | 普通字段（构造时快照） | property（每次读最新值） |
+| 清单校验 | 无 | `app_name` 必须等于目录名、`protocol` 只能 `1`/`2`，违规抛 `AppPluginError` |
+| `register_app_provider` | 单槽（后注册覆盖先注册） | 列表 + 深度合并（后注册覆盖同名键） |
+
+### 新增
+
+- **插件协议 v2**（`customgui.appcore.AppPlugin` / `AppPage`）：声明式页面
+  `build(ctx, window)`，**基座负责** `setObjectName` 与 `addWidget`，应用不再手工
+  入栈。清单 `protocol: 2` 启用；`on_load(ctx)` 钩子在页面构建前调用。
+  入口识别三种写法：`PLUGIN` 实例 / `PLUGIN` 类 / 模块内唯一子类（多个时须显式指定）。
+- **应用品牌覆盖层 `<app>/brand`**：`resource_roots()` 自动扫描每个应用的
+  `brand/customui/`，应用自带主题/语言/图标**零配置**纳入解析链。根 `resource/` 不再必要。
+- **`LANGUAGE_OPTIONS` 惰性化**：按当前资源根解析并缓存，`configure()` 后自动失效；
+  应用后叠加的语言（如日语/繁体）无需环境变量抢跑也能被发现。
+- **四语言 87 键**：补齐 `zh_tw` / `ja_jp`，与 `zh_cn` / `en_us` 逐键对齐。
+- **`appcore.tool.storage`**：原子化 JSON/文本读写（`read_json` / `write_json` /
+  `read_text` / `write_text`，`fsync` + `os.replace` + `.bak` 回退）。
+- **`guicore.fonts`**：`install_fonts` / `install_system_fonts`，解决 offscreen /
+  远程会话下 CJK 字体豆腐块。
+- **`guicore.callbacks`**：`is_deleted_qt_error` / `safe_callback` / `ui_callback` /
+  `single_shot`，页面销毁后仍被信号回调不再刷屏。
+- **`guicore.task`**：`ProgressUpdate` / `TaskWorker` / `WorkerSignals` / `run_task` /
+  `active_tasks`，带取消协议与宿主生命周期管理。
+- **`AppContext` 升级**：`core_dir`（清单 `core`）、`module_name`、`import_module()`、
+  `brand()`；`AppHandle.plugin` 暴露 v2 插件实例。
+
+### 修复
+
+- **`CComboBox` 原生弹出层黑角**：弹出层改为顶层窗口的透明子控件 + `QPainter` 自绘
+  圆角底板，深色主题不再露角、不被 `QScrollArea` 裁剪；`wheelEvent` 一律 `ignore()`，
+  滚动页面不再误改选中项；尺寸改为 `Expanding/Fixed` 可伸展，显示条数可配。
+- **`_NAMESPACE_ROOTS` key 不一致**：原来用目录名登记、用 `app_name` 建模块名，两者
+  不一致时应用内跨目录导入静默失效；统一按模块名，清单校验兜底。
+- **语言切换幂等判断**：由「比较语言名」改为「比较内容签名」，运行期追加/修改语言
+  文件也能重新装载。
+
+### 测试
+
+`270 passed, 5 skipped` → **`376 passed, 5 skipped`**（净增 106 条，覆盖下拉框行为、
+资源布局解析、语言覆盖、协议 v2、命名空间 Finder、存储、回调守卫、后台任务）。
+
 ## 0.3.0
 
 这次是**结构性重构**：目录、包名、导入路径全变。老代码需要按下面「迁移指南」调整。

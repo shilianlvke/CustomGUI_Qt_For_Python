@@ -84,7 +84,7 @@ uv run ruff check src tests
 - 一次提交做一件事。重构与功能分开，格式化与逻辑分开。
 - 提交信息说明**为什么**，不只是**改了什么**。
 - 破坏性变更必须同步更新 `CHANGELOG.md` 的「迁移指南」。
-- 版本号只在 `src/customgui/_version.py` 一处改，git tag 与之保持一致（`v0.3.0` / `base-v0.3.0`）。
+- 版本号只在 `src/customgui/_version.py` 一处改，git tag 与之保持一致（`v0.4.0` / `base-v0.4.0`）。
 
 ---
 
@@ -92,7 +92,7 @@ uv run ruff check src tests
 
 ```powershell
 # 1. 改版本号（唯一一处）
-#    src/customgui/_version.py  ->  __version__ = "0.3.0"
+#    src/customgui/_version.py  ->  __version__ = "0.4.0"
 
 # 2. 构建与校验
 uv run python -m build --wheel
@@ -100,11 +100,11 @@ uv run twine check dist/*.whl
 
 # 3. 干净环境冒烟（务必做，别只看本机）
 uv venv /tmp/smoke --python 3.12
-uv pip install --python /tmp/smoke/bin/python dist/customgui-0.3.0-py3-none-any.whl
+uv pip install --python /tmp/smoke/bin/python dist/customgui-0.4.0-py3-none-any.whl
 /tmp/smoke/bin/customgui doctor
 
 # 4. 打 tag 并推送
-git tag base-v0.3.0
+git tag base-v0.4.0
 git push origin main --tags
 ```
 
