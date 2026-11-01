@@ -483,7 +483,9 @@ def _register_v2_pages(
     name = context.name
     for page in pages:
         text_key = page.title_key or f"language.app.{name}.{page.button_id}"
-        if page.show_top and page.button_id != manifest_button:
+        # ``show_top`` 只决定按钮放顶部还是底部（False 放 bottom_layout），
+        # 不决定是否注册菜单——底部按钮（如 settings）同样需要入口。
+        if page.button_id != manifest_button:
             registry.register_menu(
                 MenuPlugin(
                     plugin_id=f"app.menu.{name}.{page.button_id}",

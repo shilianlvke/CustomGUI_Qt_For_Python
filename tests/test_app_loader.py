@@ -349,8 +349,9 @@ def test_v2_plugin_registers_declared_pages(apps_root):
     menus = [plugin_id for plugin_id in registry._menus]
     assert "app.menu.demo.btn_alpha" in menus
     assert "app.menu.demo.btn_beta" in menus
-    # show_top=False 的页面不该出现在菜单里
-    assert "app.menu.demo.btn_gamma" not in menus
+    # show_top=False 的页面同样注册菜单，只是放底部（不是「不注册」）
+    assert "app.menu.demo.btn_gamma" in menus
+    assert registry._menus["app.menu.demo.btn_gamma"].item["show_top"] is False
 
     assert handle.plugin is not None
     assert handle.plugin.loaded_ctx is handle.context
