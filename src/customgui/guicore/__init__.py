@@ -66,6 +66,8 @@ from .custom_ui import (
     Severity,
     Variant,
 )
+from .fonts import install_fonts as install_fonts
+from .fonts import install_system_fonts as install_system_fonts
 from .styles import Styles
 from .window import CCredits, CGrips, CLeftColumn, CLeftMenu, CTitleBar, CWindow
 
@@ -143,4 +145,6 @@ __all__ = [
     "CConfirmDialog",
     "COverlayPanel",
     "Styles",
+    "install_fonts",
+    "install_system_fonts",
 ]

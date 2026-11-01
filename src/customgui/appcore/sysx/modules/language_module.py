@@ -140,7 +140,7 @@ class LanguageHandler:
 
     _current: str | None = None
     _listeners: list = field(default_factory=list)
-    _app_provider: Callable[[str], dict] | None = None
+    _app_providers: list = field(default_factory=list)
     _signature: tuple | None = None
     _lock: threading.Lock = field(default_factory=threading.Lock, init=False, repr=False)
 
@@ -183,8 +183,30 @@ class LanguageHandler:
     # 切换协调
     # ------------------------------------------------------------------
     def register_app_provider(self, provider: Callable[[str], dict]) -> None:
-        """注册 App 语言提供者：``fn(lang) -> {app_name: {key: text}}``。"""
-        self._app_provider = provider
+        """注册 App 语言提供者：``fn(lang) -> {app_name: {key: text}}``。
+
+        支持注册多个提供者；切换语言时按注册顺序逐个调用并**深度合并**，
+        后注册的提供者覆盖同名应用的键（历史单槽实现会直接覆盖先注册的
+        提供者，导致多来源注入时丢数据）。
+        """
+        with self._lock:
+            if provider not in self._app_providers:
+                self._app_providers.append(provider)
+
+    def _collect_app_languages(self, language: str) -> dict:
+        """合并全部 App 语言提供者的结果（后注册者覆盖同名键）。"""
+        merged: dict = {}
+        for provider in list(self._app_providers):
+            try:
+                chunk = provider(language) or {}
+            except Exception as exc:  # noqa: BLE001 - 单个提供者失败不影响其余
+                Logger.warning(f"App 语言提供者执行失败: {exc}")
+                continue
+            if not isinstance(chunk, dict):
+                Logger.warning(f"App 语言提供者返回非 dict，已忽略: {type(chunk).__name__}")
+                continue
+            merged.update(chunk)
+        return merged
 
     def current(self) -> str:
         """当前语言（首次访问时取 AppSettings.language）。"""
@@ -213,8 +235,8 @@ class LanguageHandler:
             return language
 
         self.replace(data)
-        if self._app_provider is not None:
-            self.app = to_attrs(self._app_provider(language) or {})
+        if self._app_providers:
+            self.app = to_attrs(self._collect_app_languages(language))
         self._current = language
         self._signature = signature
         self._notify()
