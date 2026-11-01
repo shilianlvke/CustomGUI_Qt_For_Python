@@ -109,7 +109,8 @@ class AppContext:
     icon_path: Path | None = None
     #: 当前语言名，``None`` 表示跟随全局（每次读取都取最新值）
     _language: str | None = None
-    #: 应用主模块名（``_customgui_apps.<name>.gui.main``），用于内部导入
+    #: 应用入口模块名（``_customgui_apps.<name>.app`` 或
+    #: ``_customgui_apps.<name>.gui.main``），用于内部导入与句柄定位
     module_name: str | None = None
     #: 逻辑层目录名（清单 ``core`` 字段），如 ``launchercore``
     core_name: str | None = None
@@ -176,11 +177,12 @@ class AppContext:
         ``ctx.import_module("pages.home")`` 等价于
         ``import _customgui_apps.<name>.pages.home``，但不需要调用方知道
         那个私有命名空间的存在。
+
+        用 ``self.name`` 拼模块名而不是从 ``module_name`` 反推：入口可能是
+        ``gui/main.py`` 或 ``app.py``，两种布局下应用包名都是
+        ``_customgui_apps.<name>``，与入口文件位置无关。
         """
-        if not self.module_name:
-            raise ImportError(f"应用 {self.name} 没有可用的主模块，无法内部导入")
-        package = self.module_name.rsplit(".", 2)[0]  # 去掉 gui.main
-        return importlib.import_module(f"{package}.{relative}")
+        return importlib.import_module(f"{_APP_NAMESPACE}.{self.name}.{relative}")
 
 
 @dataclass
@@ -195,7 +197,7 @@ class AppHandle:
         handles = {handle.name: handle for handle in load_apps()}
         hub = handles["pycl2"].module.hub.LauncherHub.instance()
 
-    ``module`` 在应用没有 ``gui/main.py`` 时为 ``None``。
+    ``module`` 在应用没有 ``app.py`` 也没有 ``gui/main.py`` 时为 ``None``。
     """
 
     name: str
@@ -373,6 +375,24 @@ def _manifest_protocol(config: Attrs) -> str:
     return version
 
 
+def _resolve_entry(protocol: str, app_dir: Path, name: str) -> tuple[Path | None, str]:
+    """解析应用的入口文件与对应模块名。
+
+    返回 ``(file_path, module_name)``；找不到入口时返回 ``(None, "")``。
+
+    - **v2**：优先 ``app.py``（应用根，插件入口），回退 ``gui/main.py``；
+    - **v1**：``gui/main.py``（历史布局，保持兼容）。
+    """
+    candidates: list[tuple[Path, str]] = []
+    if protocol == PROTOCOL_VERSION:
+        candidates.append((app_dir / "app.py", f"{_APP_NAMESPACE}.{name}.app"))
+    candidates.append((app_dir / "gui" / "main.py", f"{_APP_NAMESPACE}.{name}.gui.main"))
+    for file_path, module_name in candidates:
+        if file_path.is_file():
+            return file_path, module_name
+    return None, ""
+
+
 def _check_core(config: Attrs, app_dir: Path) -> str | None:
     """校验清单 ``core`` 声明的逻辑层目录存在，返回目录名。"""
     raw = config.get("core")
@@ -405,7 +425,7 @@ def _check_name(config: Attrs, app_dir: Path) -> str:
 
 
 def _instantiate_plugin(module: ModuleType, config: Attrs) -> AppPlugin | None:
-    """从 ``gui/main.py`` 里找出 v2 插件实例。
+    """从应用入口模块（``app.py`` 或 ``gui/main.py``）里找出 v2 插件实例。
 
     支持三种写法，优先级从高到低：
 
@@ -555,14 +575,13 @@ def register_app(app_dir: Path, registry=None, *, with_handle: bool = False) -> 
         core_name=core_name,
     )
 
-    main_py = app_dir / "gui" / "main.py"
-    if not main_py.is_file():
-        Logger.warning(f"应用缺少页面实现: {name} (gui/main.py)")
+    entry_file, entry_module_name = _resolve_entry(protocol, app_dir, name)
+    if entry_file is None:
+        Logger.warning(f"应用缺少页面实现: {name} (app.py 或 gui/main.py)")
         return AppHandle(name=name, module=None, context=context) if with_handle else context
 
-    module_name = f"{_APP_NAMESPACE}.{name}.gui.main"
-    module = _import_app_module(module_name, app_dir, main_py)
-    context.module_name = module_name
+    module = _import_app_module(entry_module_name, app_dir, entry_file)
+    context.module_name = entry_module_name
     handle = AppHandle(name=name, module=module, context=context)
     finish = (lambda: handle) if with_handle else (lambda: context)
 
@@ -574,7 +593,7 @@ def register_app(app_dir: Path, registry=None, *, with_handle: bool = False) -> 
         if plugin is None:
             raise AppPluginError(
                 "APP_PLUGIN_MISSING",
-                f"清单 protocol=2，但 {main_py} 没有导出 AppPlugin 子类"
+                f"清单 protocol=2，但 {entry_file} 没有导出 AppPlugin 子类"
                 "（可写 PLUGIN = MyApp() 或定义一个 AppPlugin 子类）",
             )
         plugin._bind(context)  # noqa: SLF001 - 加载器与协议的内部契约

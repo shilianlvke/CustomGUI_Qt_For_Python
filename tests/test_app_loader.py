@@ -598,3 +598,34 @@ def test_unknown_app_module_returns_none(apps_root):
 
     finder = _NamespacePackageFinder()
     assert finder.find_spec(f"{_APP_NAMESPACE}.never_registered.something") is None
+
+
+def test_v2_entry_can_live_in_app_py(apps_root):
+    """v2 协议下，``app.py`` 是插件入口，``gui/main.py`` 可以不存在。"""
+    app_dir = apps_root / "demo"
+    _write_app(app_dir, None, "protocol: 2\n")
+    # 覆盖 _write_app 的默认 gui/main.py 不存在；把插件写进 app.py
+    (app_dir / "app.py").write_text(V2_PLUGIN_CODE, encoding="utf-8")
+
+    registry = PluginRegistry()
+    handle = register_app(app_dir, registry=registry, with_handle=True)
+
+    assert handle.module is not None
+    assert handle.module.__name__.endswith(".app")
+    assert handle.plugin is not None
+    assert [p.page_object for p in registry.page_plugins()] == ["pageAlpha", "pageBeta", "pageGamma"]
+
+
+def test_v2_app_py_takes_priority_over_gui_main(apps_root):
+    """v2 协议下 ``app.py`` 存在时优先于 ``gui/main.py``。"""
+    app_dir = apps_root / "demo"
+    _write_app(app_dir, V2_PLUGIN_CODE, "protocol: 2\n")
+    # 同时写一个 app.py，内容用「唯一子类」写法以区分模块来源
+    (app_dir / "app.py").write_text(V2_CLASS_ONLY_CODE, encoding="utf-8")
+
+    registry = PluginRegistry()
+    handle = register_app(app_dir, registry=registry, with_handle=True)
+
+    assert handle.module.__name__.endswith(".app")
+    # app.py 里是 SoloPlugin，只有一个页面
+    assert [p.page_object for p in registry.page_plugins()] == ["pageSolo"]
