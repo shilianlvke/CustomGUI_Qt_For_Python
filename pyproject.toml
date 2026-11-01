@@ -4,8 +4,8 @@ build-backend = "hatchling.build"
 
 [project]
 name = "customgui"
-version = "0.2.4"
-description = "CustomUI 是一个开源的UI库，用于快速开发UI界面。"
+dynamic = ["version"]
+description = "基于 PySide6 的开源 UI 基座：窗口框架、组件库、主题、语言与插件加载。"
 readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
@@ -30,9 +30,16 @@ dev = [
 url = "https://pypi.tuna.tsinghua.edu.cn/simple"
 default = true
 
+[tool.hatch.version]
+path = "customgui/_version.py"
+
 [tool.ruff]
 line-length = 120
-target-version = "py313"
+target-version = "py312"
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "UP", "B", "TID252"]
+ignore = ["E501"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

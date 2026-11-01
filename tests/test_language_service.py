@@ -62,7 +62,7 @@ def test_refresh_window_updates_menu_title_and_window_title():
 
     apply_language("en_us", window)
 
-    assert calls["win_title"] == "P2PTester"
+    assert calls["win_title"] == "CustomGUI"
 
 
 def test_refresh_window_missing_ui_is_safe():

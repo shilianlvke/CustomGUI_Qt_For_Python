@@ -8,8 +8,8 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 
 # 仅扫描源码；排除打包产物 / 虚拟环境 / 缓存
-SRC_DIRS = ["AppCore", "Apps", "GuiCore", "Guis", "scripts", "tests"]
-SRC_FILES = ["main.py"]
+SRC_DIRS = ["src/customgui", "apps", "scripts", "tests"]
+SRC_FILES = ["examples/hello_world/main.py"]
 
 # 即使被某些间接依赖引用，纯 QWidget 应用也“可以安全移除”的 Qt 模块家族。
 # 注意：本脚本只自动排除那些【源码中完全没用到】的家族；一旦源码用到，就自动保留。
@@ -214,10 +214,10 @@ def _render_spec(plan: dict) -> str:
         .replace("__KEEP_QT6__", repr(set(plan["keep_dlls"])))
         .replace("__EXCLUDE_QT_SUBSTR__", repr(tuple(plan["exclude_substr"])))
         .replace("__EXCLUDES__", repr(list(plan["exclude_modules"])))
-        .replace("__MAIN__", (ROOT / "main.py").as_posix())
+        .replace("__MAIN__", (ROOT / "examples" / "hello_world" / "main.py").as_posix())
         .replace("__PATH__", ROOT.as_posix())
-        .replace("__RES__", (ROOT / "resource").as_posix())
-        .replace("__APPS__", (ROOT / "Apps").as_posix())
+        .replace("__RES__", (ROOT / "src" / "customgui" / "_resources").as_posix())
+        .replace("__APPS__", (ROOT / "apps").as_posix())
     )
 
 

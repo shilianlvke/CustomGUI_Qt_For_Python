@@ -1,13 +1,13 @@
 # 系统信息
 custom_ui:
-  sys_name: P2PTester
-  sys_version: T1.0.0
-  sys_author: YS
+  sys_name: CustomGUI
+  sys_version: 0.3.0
+  sys_author: shilianlvke
   sys_author_email: 1352161062@qq.com
-  sys_copyright: P2PTester 开源测试管理工具 # 假数据，仅用于测试
-  sys_description: P2PTester 是一个开源的系统测试管理工具，用于系统测试的管理。
-  sys_license: MIT
-  sys_github: https://gitee.com/shilianlvke/CustomGUI
+  sys_copyright: CustomGUI · 基于 PySide6 的开源 UI 基座
+  sys_description: CustomGUI 是一个基于 PySide6 的通用 UI 基座，提供窗口框架、组件库、主题、语言与插件加载。
+  sys_license: MulanPSL-2.0
+  sys_github: https://gitee.com/shilianlvke/CustomGUI_Qt_For_Python
 PAGE: {}
 UI:
   # 窗口
@@ -131,8 +131,8 @@ UI:
   ui_SoftwareInfo: 软件信息
 
 TEXT:
-  home_page_welcome: 你好！我是P2PTester~
-  login: 登录到P2PTester
+  home_page_welcome: 你好！我是 CustomGUI ~
+  login: 登录到 CustomGUI
 
 Log:
   pyserial_not_install: "pyserial 未安装，无法获取 COM 设备列表"

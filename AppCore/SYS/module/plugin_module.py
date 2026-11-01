@@ -194,8 +194,14 @@ class PluginRegistry:
 
     @staticmethod
     def _default_manifest_path() -> str:
-        root = Path(__file__).resolve().parents[4]
-        return str(root / "resource" / "customui" / "settings" / "plugins.yml")
+        # 走基座资源解析器：源码运行与 wheel 安装都能定位到 plugins.yml，
+        # 不依赖 __file__ 的目录层级（安装后层级会变化）。
+        from ..config.paths import find_resource
+
+        found = find_resource("resource/customui/settings/plugins.yml")
+        if found is not None:
+            return str(found)
+        return str(Path("resource") / "customui" / "settings" / "plugins.yml")
 
     @staticmethod
     def _normalize_manifest_modules(raw_data) -> list[str]:

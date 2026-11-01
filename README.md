@@ -1,7 +1,7 @@
 # CustomGUI · PySide6
 
 <p align="center">
-  <img src="ReadMeRes/概览.png" alt="CustomGUI 概览" width="900">
+  <img src="docs/assets/概览.png" alt="CustomGUI 概览" width="900">
 </p>
 
 <p align="center">
@@ -11,8 +11,8 @@
 <p align="center">
   <a href="https://gitee.com/shilianlvke/CustomGUI_Qt_For_Python">Gitee</a> ·
   <a href="https://github.com/shilianlvke/CustomGUI_Qt_For_Python">GitHub</a> ·
-  <a href="Docs/README.md">组件文档</a> ·
-  <a href="Docs/ARCHITECTURE.md">架构说明</a>
+  <a href="docs/README.md">组件文档</a> ·
+  <a href="docs/ARCHITECTURE.md">架构说明</a>
 </p>
 
 ---
@@ -164,7 +164,7 @@ CustomGUI_Qt_For_Python/
 │       ├── settings/
 │       └── themes/
 ├── Apps/                       # Demo 插件（不进入 wheel）
-├── Docs/                       # API / 架构 / 兼容性文档
+├── docs/                       # API / 架构 / 兼容性文档
 ├── tests/                      # 165+ 基座测试
 ├── main.py                     # Demo 入口
 └── pyproject.toml
@@ -263,7 +263,7 @@ UI: {}
 ```
 
 > 基座默认只带 `zh_cn` / `en_us`。语言列表由应用实际提供的文件决定更稳妥，详见
-> [Docs/PYCL2_BASE_SYNC.md](Docs/PYCL2_BASE_SYNC.md)。
+> [docs/PYCL2_BASE_SYNC.md](docs/PYCL2_BASE_SYNC.md)。
 
 ---
 
@@ -341,7 +341,7 @@ def build_page(app):
 
 **下拉框不使用原生 `QComboBox`**：`CComboBox` 使用自绘圆角弹层，避免 Windows 原生弹层黑角。
 
-完整 API 见 [Docs/API.md](Docs/API.md)。
+完整 API 见 [docs/API.md](docs/API.md)。
 
 ---
 

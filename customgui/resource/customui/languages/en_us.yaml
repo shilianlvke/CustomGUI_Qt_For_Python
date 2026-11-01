@@ -1,13 +1,13 @@
 # System Information
 custom_ui:
-  sys_name: P2PTester
-  sys_version: T1.0.0
-  sys_author: YS
+  sys_name: CustomGUI
+  sys_version: 0.3.0
+  sys_author: shilianlvke
   sys_author_email: 1352161062@qq.com
-  sys_copyright: P2PTester Open-source Test Management Tool # Mock data for testing only
-  sys_description: P2PTester is an open-source system test management tool for managing system testing.
-  sys_license: MIT
-  sys_github: https://gitee.com/shilianlvke/CustomGUI
+  sys_copyright: CustomGUI · An open-source PySide6 UI foundation
+  sys_description: CustomGUI is a general-purpose PySide6 UI foundation with a window shell, widget library, themes, i18n and plugin loading.
+  sys_license: MulanPSL-2.0
+  sys_github: https://gitee.com/shilianlvke/CustomGUI_Qt_For_Python
 PAGE: {}
 UI:
   # Window
@@ -131,8 +131,8 @@ UI:
   ui_SoftwareInfo: Software Info
 
 TEXT:
-  home_page_welcome: Hello! I am P2PTester~
-  login: Log in to P2PTester
+  home_page_welcome: Hello! I am CustomGUI ~
+  login: Log in to CustomGUI
 
 Log:
   pyserial_not_install: "pyserial not install, can't get COM device list"
