@@ -3,21 +3,41 @@
 应用模组协议（每个 ``Apps/<app_name>/`` 是一个自包含模组）::
 
     Apps/<app_name>/
-    ├── config.yml               # 应用清单（app_name/app_id/button_id/...）
-    ├── resource/
-    │   ├── icon/app_icon.svg    # 应用图标
-    │   └── lang/{zh_cn,en_us}.yml  # 应用语言文件
+    ├── config.yml               # 应用清单（app_name/protocol/core/button_id/...）
+    ├── app.py                   # 可选：v2 插件入口（导出 AppPlugin 子类）
+    ├── resource/                # 应用私有资产（图标、应用菜单文案）
+    │   ├── icon/app_icon.svg
+    │   └── lang/{zh_cn,en_us}.yml
+    ├── brand/customui/          # 可选：品牌覆盖层（主题/语言/图标）
+    ├── <core>/                  # 可选：逻辑层目录（清单 core 声明，零 Qt 依赖）
     └── gui/
         ├── main.py              # 页面实现（协议见下）
         └── style.py             # 可选：应用私有样式
 
-``gui/main.py`` 页面协议（按优先级识别其一）：
+**协议 v2（推荐）**——``protocol: 2``，入口导出 :class:`AppPlugin` 子类::
+
+    class MyApp(AppPlugin):
+        def on_load(self, ctx): ...
+        def pages(self) -> list[AppPage]: ...
+
+页面声明式给出，**入栈由基座负责**，``build(ctx, window)`` 两个参数永远都在。
+
+**协议 v1（历史，保持兼容）**——``gui/main.py`` 按优先级识别其一：
 
 1. ``register_plugins(registry, app)`` —— 完全自由注册（多页面应用）；
-2. ``PAGE`` —— 含 ``load_page(window)`` 方法的类或实例（与基座历史页面风格一致）；
+2. ``PAGE`` —— 含 ``load_page(window)`` 方法的类或实例；
 3. ``build_page(app) -> QWidget`` —— 最简形态，返回页面控件。
 
 ``app`` 是 :class:`AppContext`（清单、目录、图标、语言访问）。
+
+清单可选的校验字段：
+
+- ``protocol``：``1``（缺省）或 ``2``；其他值报 ``APP_PROTOCOL_UNSUPPORTED``；
+- ``core``：逻辑层目录名，必须存在，否则报 ``APP_CORE_MISSING``；
+- ``plugin``：v2 入口符号名（入口里有多个 ``AppPlugin`` 子类时用来消歧）。
+
+``app_name`` 必须与目录名一致，否则报 ``APP_NAME_MISMATCH``——不一致会让
+应用内部的跨目录导入静默失效。
 
 语言文件内容整体挂在 ``Language.app.<app_name>`` 命名空间下，
 菜单文本通过 ``language.app.<app_name>.<key>`` 资源键引用。
@@ -25,6 +45,7 @@
 
 from __future__ import annotations
 
+import importlib
 import importlib.util
 import sys
 import types
@@ -34,6 +55,11 @@ from types import ModuleType
 from typing import Any
 
 from customgui.appcore import (
+    PROTOCOL_VERSION,
+    SUPPORTED_PROTOCOL_VERSIONS,
+    AppPage,
+    AppPlugin,
+    AppPluginError,
     AppSettings,
     Attrs,
     Language,
@@ -69,14 +95,35 @@ class AppContext:
     - 资源：``resource(*parts)`` / ``icon(name)`` / ``image(name)`` /
       ``voice(name)`` / ``lang_file(lang)`` —— 全部解析到应用内
       ``resource/`` 目录，插件自包含、与基座资源互不干扰；
-    - 目录：``app_dir``（应用根目录）、``icon_path``（默认图标）。
+    - 品牌覆盖层：``brand()`` —— 应用自带主题/语言/图标的根目录
+      （其下直接是 ``customui/``），基座会自动纳入资源解析链；
+    - 目录：``app_dir``（应用根目录）、``core_dir``（逻辑层目录）、
+      ``icon_path``（默认图标，没有则为 ``None``）；
+    - 模块：``import_module("pages.home")`` —— 在应用命名空间内导入，
+      不需要调用方拼 ``_customgui_apps.<name>.`` 前缀。
     """
 
     name: str
     app_dir: Path
     config: Attrs
-    icon_path: Path
-    language: str
+    icon_path: Path | None = None
+    #: 当前语言名，``None`` 表示跟随全局（每次读取都取最新值）
+    _language: str | None = None
+    #: 应用主模块名（``_customgui_apps.<name>.gui.main``），用于内部导入
+    module_name: str | None = None
+    #: 逻辑层目录名（清单 ``core`` 字段），如 ``launchercore``
+    core_name: str | None = None
+
+    @property
+    def language(self) -> str:
+        """当前语言。**每次读取都取最新值**，不要缓存到应用侧。"""
+        if self._language:
+            return self._language
+        return AppSettings.language
+
+    @language.setter
+    def language(self, value: str) -> None:
+        self._language = value
 
     # ------------------------------------------------------------------
     # 语言
@@ -92,6 +139,14 @@ class AppContext:
         """应用内资源路径：``resource("images", "a.png")`` -> ``<app>/resource/images/a.png``。"""
         return self.app_dir.joinpath("resource", *parts)
 
+    def brand(self, *parts: str) -> Path:
+        """品牌覆盖层路径：``brand("customui", "themes")``。
+
+        其下直接是 ``customui/``，基座会自动把它纳入资源解析链（见
+        ``appcore.sysx.config.paths._app_overlay_roots``）。
+        """
+        return self.app_dir.joinpath("brand", *parts)
+
     def icon(self, name: str) -> Path:
         return self.resource("icon", name)
 
@@ -103,6 +158,29 @@ class AppContext:
 
     def lang_file(self, language: str | None = None) -> Path:
         return self.resource("lang", f"{language or self.language}.yml")
+
+    # ------------------------------------------------------------------
+    # 逻辑层
+    # ------------------------------------------------------------------
+    @property
+    def core_dir(self) -> Path | None:
+        """逻辑层目录（清单 ``core`` 声明），未声明或不存在时为 ``None``。"""
+        if not self.core_name:
+            return None
+        candidate = self.app_dir / self.core_name
+        return candidate if candidate.is_dir() else None
+
+    def import_module(self, relative: str) -> ModuleType:
+        """在**本应用命名空间内**导入模块。
+
+        ``ctx.import_module("pages.home")`` 等价于
+        ``import _customgui_apps.<name>.pages.home``，但不需要调用方知道
+        那个私有命名空间的存在。
+        """
+        if not self.module_name:
+            raise ImportError(f"应用 {self.name} 没有可用的主模块，无法内部导入")
+        package = self.module_name.rsplit(".", 2)[0]  # 去掉 gui.main
+        return importlib.import_module(f"{package}.{relative}")
 
 
 @dataclass
@@ -124,6 +202,8 @@ class AppHandle:
     module: ModuleType | None
     context: AppContext
     source: str = "path"
+    #: v2 协议下应用暴露的 ``AppPlugin`` 实例（v1 应用为 ``None``）
+    plugin: AppPlugin | None = None
 
 
 def discover_app_dirs(root: str | Path | None = None) -> list[Path]:
@@ -199,7 +279,10 @@ def _ensure_parent_packages(module_name: str, app_dir: Path) -> None:
     ``from ..calc import add``）则需要 Finder 才能定位到 ``<app>/calc.py``。
     """
     parts = module_name.split(".")
-    app_name = app_dir.name
+    app_name = parts[1]
+    # key 必须与模块名一致（只用 app_name），否则 Finder 查不到根目录、
+    # 应用内部的跨目录相对导入会静默失效。清单校验保证 app_name == 目录名，
+    # 这里再按模块名兜一次底。
     _NAMESPACE_ROOTS[app_name] = str(app_dir)
     _install_namespace_finder()
 
@@ -278,14 +361,163 @@ def _import_app_module(module_name: str, app_dir: Path, file_path: Path) -> Modu
     return module
 
 
+def _manifest_protocol(config: Attrs) -> str:
+    """读清单声明的协议版本，缺省视为 v1（历史应用无此字段）。"""
+    raw = config.get("protocol")
+    version = str(raw).strip() if raw is not None else "1"
+    if version not in SUPPORTED_PROTOCOL_VERSIONS:
+        raise AppPluginError(
+            "APP_PROTOCOL_UNSUPPORTED",
+            f"清单 protocol={version!r} 不受支持（可用: {sorted(SUPPORTED_PROTOCOL_VERSIONS)}）",
+        )
+    return version
+
+
+def _check_core(config: Attrs, app_dir: Path) -> str | None:
+    """校验清单 ``core`` 声明的逻辑层目录存在，返回目录名。"""
+    raw = config.get("core")
+    if raw is None:
+        return None
+    core_name = str(raw).strip()
+    if not core_name:
+        return None
+    if not (app_dir / core_name).is_dir():
+        raise AppPluginError(
+            "APP_CORE_MISSING",
+            f"清单声明 core={core_name!r}，但目录不存在: {app_dir / core_name}",
+        )
+    return core_name
+
+
+def _check_name(config: Attrs, app_dir: Path) -> str:
+    """清单 ``app_name`` 必须与目录名一致。
+
+    不一致时命名空间 Finder 会用目录名登记、而模块名用 ``app_name``，
+    导致应用内部 ``import`` 静默失效——宁可这里显式报错。
+    """
+    name = str(config.get("app_name") or app_dir.name).strip()
+    if name != app_dir.name:
+        raise AppPluginError(
+            "APP_NAME_MISMATCH",
+            f"清单 app_name={name!r} 与目录名 {app_dir.name!r} 不一致（会让应用内导入失效）",
+        )
+    return name
+
+
+def _instantiate_plugin(module: ModuleType, config: Attrs) -> AppPlugin | None:
+    """从 ``gui/main.py`` 里找出 v2 插件实例。
+
+    支持三种写法，优先级从高到低：
+
+    1. 模块级 ``PLUGIN = MyApp()`` —— 显式实例
+    2. 模块级 ``PLUGIN = MyApp``   —— 类，加载器负责实例化
+    3. 模块内唯一的 ``AppPlugin`` 子类 —— 约定优于配置
+    """
+    candidate = getattr(module, "PLUGIN", None)
+    if candidate is not None:
+        if isinstance(candidate, AppPlugin):
+            return candidate
+        if isinstance(candidate, type) and issubclass(candidate, AppPlugin):
+            return candidate()
+        raise AppPluginError(
+            "APP_PLUGIN_INVALID",
+            f"PLUGIN 必须是 AppPlugin 实例或子类，得到 {type(candidate).__name__}",
+        )
+
+    declared = str(config.get("plugin") or "").strip()
+    if declared:
+        target = getattr(module, declared, None)
+        if target is None:
+            raise AppPluginError("APP_PLUGIN_MISSING", f"清单 plugin={declared!r} 在入口模块中不存在")
+        return target() if isinstance(target, type) else target
+
+    subclasses = [
+        value
+        for value in vars(module).values()
+        if isinstance(value, type) and issubclass(value, AppPlugin) and value is not AppPlugin
+    ]
+    if len(subclasses) == 1:
+        return subclasses[0]()
+    if len(subclasses) > 1:
+        names = ", ".join(sorted(cls.__name__ for cls in subclasses))
+        raise AppPluginError(
+            "APP_PLUGIN_AMBIGUOUS",
+            f"入口模块里发现多个 AppPlugin 子类（{names}），请用 PLUGIN = ... 显式指定",
+        )
+    return None
+
+
+def _register_v2_pages(
+    plugin: AppPlugin,
+    pages: list[AppPage],
+    registry,
+    context: AppContext,
+    config: Attrs,
+) -> None:
+    """把 ``AppPage`` 声明翻译成基座的菜单 + 页面插件。
+
+    清单里已经声明了主按钮（``button_id``）时，与之同名的页面不再重复
+    注册菜单——否则左侧会出现两个入口。
+    """
+    manifest_button = str(config.get("button_id") or "")
+    name = context.name
+    for page in pages:
+        text_key = page.title_key or f"language.app.{name}.{page.button_id}"
+        if page.show_top and page.button_id != manifest_button:
+            registry.register_menu(
+                MenuPlugin(
+                    plugin_id=f"app.menu.{name}.{page.button_id}",
+                    target=str(config.get("app_target") or "LeftMenu"),
+                    item={
+                        "btn_icon": page.icon or str(config.get("app_icon") or ""),
+                        "btn_id": page.button_id,
+                        "btn_text": text_key,
+                        "btn_tooltip": text_key,
+                        "show_top": page.show_top,
+                        "is_active": page.is_active,
+                    },
+                )
+            )
+
+        def _loader(window, _page: AppPage = page) -> None:
+            widget = _page.build(context, window)
+            if widget is None:
+                raise AppPluginError(
+                    "APP_PAGE_EMPTY",
+                    f"应用 {name} 的页面 {_page.page_object} build() 返回了 None",
+                )
+            widget.setObjectName(_page.page_object)
+            window.ui.load_pages.pages.addWidget(widget)
+
+        registry.register_page(
+            PagePlugin(
+                plugin_id=f"app.page.{name}.{page.page_object}",
+                button_id=page.button_id,
+                page_object=page.page_object,
+                title_getter=lambda language, _page=page, _key=text_key: _page.resolve_title(
+                    language, fallback=_key
+                ),
+                loader=_loader,
+                default=page.default,
+            )
+        )
+
+
 def register_app(app_dir: Path, registry=None, *, with_handle: bool = False) -> AppContext | AppHandle | None:
-    """注册单个应用：解析清单 -> 注册菜单插件 -> 装载页面协议 -> 注册页面插件。
+    """注册单个应用：解析清单 -> 校验 -> 注册菜单插件 -> 装载页面协议 -> 注册页面插件。
+
+    支持两种协议（由清单 ``protocol`` 字段选择，缺省 ``1``）：
+
+    - **v2**：入口模块导出 ``AppPlugin`` 子类（见 :mod:`app_protocol`）；
+    - **v1**：``register_plugins`` / ``PAGE`` / ``build_page`` 三选一（保持原样）。
 
     返回 AppContext（应用无页面入口时仍注册菜单并返回上下文）。
     """
     registry = registry or get_plugin_registry()
     config = load_app_manifest(app_dir)
-    name = config.get("app_name") or app_dir.name
+    protocol = _manifest_protocol(config)
+    name = _check_name(config, app_dir)
+    core_name = _check_core(config, app_dir)
     button_id = config.get("button_id") or f"app_{name}"
     page_object = config.get("page_object") or f"{name}Page"
     target = config.get("app_target") or "LeftMenu"
@@ -319,8 +551,8 @@ def register_app(app_dir: Path, registry=None, *, with_handle: bool = False) -> 
         name=name,
         app_dir=app_dir,
         config=config,
-        icon_path=Path(icon_path) if Path(icon_path).is_file() else Path(),
-        language=AppSettings.language,
+        icon_path=Path(icon_path) if Path(icon_path).is_file() else None,
+        core_name=core_name,
     )
 
     main_py = app_dir / "gui" / "main.py"
@@ -328,17 +560,41 @@ def register_app(app_dir: Path, registry=None, *, with_handle: bool = False) -> 
         Logger.warning(f"应用缺少页面实现: {name} (gui/main.py)")
         return AppHandle(name=name, module=None, context=context) if with_handle else context
 
-    module = _import_app_module(f"{_APP_NAMESPACE}.{name}.gui.main", app_dir, main_py)
+    module_name = f"{_APP_NAMESPACE}.{name}.gui.main"
+    module = _import_app_module(module_name, app_dir, main_py)
+    context.module_name = module_name
     handle = AppHandle(name=name, module=module, context=context)
     finish = (lambda: handle) if with_handle else (lambda: context)
 
-    # 协议 1：register_plugins(registry, app) —— 完全自由
+    # --------------------------------------------------------------
+    # 协议 v2：AppPlugin 类入口
+    # --------------------------------------------------------------
+    if protocol == PROTOCOL_VERSION:
+        plugin = _instantiate_plugin(module, config)
+        if plugin is None:
+            raise AppPluginError(
+                "APP_PLUGIN_MISSING",
+                f"清单 protocol=2，但 {main_py} 没有导出 AppPlugin 子类"
+                "（可写 PLUGIN = MyApp() 或定义一个 AppPlugin 子类）",
+            )
+        plugin._bind(context)  # noqa: SLF001 - 加载器与协议的内部契约
+        plugin.on_load(context)
+        pages = list(plugin.pages() or [])
+        if not pages:
+            Logger.warning(f"应用 {name} 声明了 protocol=2，但没有返回任何页面")
+        _register_v2_pages(plugin, pages, registry, context, config)
+        handle.plugin = plugin
+        Logger.info(f"应用注册完成: {name} (v2, {len(pages)} 页)")
+        return finish()
+
+    # --------------------------------------------------------------
+    # 协议 v1（历史）：register_plugins > PAGE > build_page
+    # --------------------------------------------------------------
     if callable(getattr(module, "register_plugins", None)):
         module.register_plugins(registry, context)
         Logger.info(f"应用注册完成: {name} (register_plugins)")
         return finish()
 
-    # 协议 2：PAGE（含 load_page(window) 方法）
     page_obj = getattr(module, "PAGE", None)
     if page_obj is not None and callable(getattr(page_obj, "load_page", None)):
         loader = page_obj.load_page
@@ -355,7 +611,6 @@ def register_app(app_dir: Path, registry=None, *, with_handle: bool = False) -> 
         )
         return finish()
 
-    # 协议 3：build_page(app) -> QWidget
     if callable(getattr(module, "build_page", None)):
 
         def _loader(window):

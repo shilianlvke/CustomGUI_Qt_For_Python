@@ -253,3 +253,276 @@ def build_page(app):
 
     pages[0].loader(_Window())
     assert context is not None
+
+
+# ==========================================================================
+# 插件协议 v2：AppPlugin / AppPage
+# ==========================================================================
+V2_PLUGIN_CODE = """
+from customgui.appcore import AppPage, AppPlugin
+
+
+class DemoPlugin(AppPlugin):
+    def on_load(self, ctx):
+        self.loaded_ctx = ctx
+        self.hooks = ["load"]
+
+    def pages(self):
+        return [
+            AppPage(
+                button_id="btn_alpha",
+                page_object="pageAlpha",
+                build=lambda ctx, window: _page("pageAlpha", ctx),
+                title_key="language.app.demo.alpha",
+                default=True,
+            ),
+            AppPage(
+                button_id="btn_beta",
+                page_object="pageBeta",
+                build=lambda ctx, window: _page("pageBeta", ctx),
+                title_key="language.app.demo.beta",
+                show_top=True,
+            ),
+            AppPage(
+                button_id="btn_gamma",
+                page_object="pageGamma",
+                build=lambda ctx, window: _page("pageGamma", ctx),
+                title_key="language.app.demo.gamma",
+                show_top=False,
+            ),
+        ]
+
+
+def _page(name, ctx):
+    from PySide6.QtWidgets import QWidget
+
+    page = QWidget()
+    page.seen_ctx = ctx
+    return page
+
+
+PLUGIN = DemoPlugin()
+"""
+
+V2_CLASS_ONLY_CODE = """
+from customgui.appcore import AppPage, AppPlugin
+
+
+class SoloPlugin(AppPlugin):
+    def pages(self):
+        from PySide6.QtWidgets import QWidget
+
+        return [AppPage("btn_solo", "pageSolo", lambda ctx, window: QWidget())]
+"""
+
+
+def _window_stub():
+    added = []
+
+    class _Pages:
+        def addWidget(self, widget):
+            added.append(widget)
+
+    class _Ui:
+        load_pages = type("Pages", (), {"pages": _Pages()})()
+
+    class _Window:
+        ui = _Ui()
+
+    return _Window(), added
+
+
+def test_v2_plugin_registers_declared_pages(apps_root):
+    """v2 应用按下单顺序注册页面，show_top=False 的页面不注册菜单。"""
+    app_dir = apps_root / "demo"
+    _write_app(app_dir, V2_PLUGIN_CODE, 'protocol: 2\n')
+
+    registry = PluginRegistry()
+    handle = register_app(app_dir, registry=registry, with_handle=True)
+
+    pages = registry.page_plugins()
+    assert [page.page_object for page in pages] == ["pageAlpha", "pageBeta", "pageGamma"]
+    assert [page.button_id for page in pages] == ["btn_alpha", "btn_beta", "btn_gamma"]
+    assert pages[0].default is True
+    assert pages[1].default is False
+
+    menus = [plugin_id for plugin_id in registry._menus]
+    assert "app.menu.demo.btn_alpha" in menus
+    assert "app.menu.demo.btn_beta" in menus
+    # show_top=False 的页面不该出现在菜单里
+    assert "app.menu.demo.btn_gamma" not in menus
+
+    assert handle.plugin is not None
+    assert handle.plugin.loaded_ctx is handle.context
+
+
+def test_v2_on_load_receives_context_before_pages(apps_root):
+    """``on_load`` 在页面构建之前调用，且拿到同一个 ctx。"""
+    app_dir = apps_root / "demo"
+    _write_app(app_dir, V2_PLUGIN_CODE, 'protocol: 2\n')
+
+    handle = register_app(app_dir, registry=PluginRegistry(), with_handle=True)
+
+    assert handle.plugin.hooks == ["load"]
+    assert handle.plugin.ctx is handle.context
+    assert handle.plugin.name == "demo"
+
+
+def test_v2_loader_stacks_page_and_sets_object_name(apps_root):
+    """**基座负责** setObjectName 与 addWidget，应用只管 build。"""
+    app_dir = apps_root / "demo"
+    _write_app(app_dir, V2_PLUGIN_CODE, 'protocol: 2\n')
+
+    registry = PluginRegistry()
+    register_app(app_dir, registry=registry)
+    page_plugin = registry.page_plugins()[1]  # pageBeta
+
+    window, added = _window_stub()
+    page_plugin.loader(window)
+
+    assert len(added) == 1
+    assert added[0].objectName() == "pageBeta"
+    assert added[0].seen_ctx is not None
+
+
+def test_v2_page_title_resolution(apps_root):
+    """``title_key`` 走语言解析；缺失时回落为键名本身。"""
+    app_dir = apps_root / "demo"
+    _write_app(app_dir, V2_PLUGIN_CODE, 'protocol: 2\n')
+
+    registry = PluginRegistry()
+    register_app(app_dir, registry=registry)
+    page_plugin = registry.page_plugins()[0]
+
+    title = page_plugin.title_getter(Language)
+    assert isinstance(title, str)
+    assert title  # 无论命中与否都要有可显示文本
+
+
+def test_v2_class_only_entry_is_instantiated(apps_root):
+    """模块里只有一个 AppPlugin 子类时自动实例化（约定优于配置）。"""
+    app_dir = apps_root / "demo"
+    _write_app(app_dir, V2_CLASS_ONLY_CODE, 'protocol: 2\n')
+
+    registry = PluginRegistry()
+    handle = register_app(app_dir, registry=registry, with_handle=True)
+
+    assert handle.plugin is not None
+    assert handle.plugin.__class__.__name__ == "SoloPlugin"
+    assert len(registry.page_plugins()) == 1
+
+
+def test_v2_manifest_can_name_the_plugin_symbol(apps_root):
+    """清单 ``plugin`` 字段可显式指定入口符号。"""
+    app_dir = apps_root / "demo"
+    _write_app(app_dir, V2_CLASS_ONLY_CODE, 'protocol: 2\nplugin: SoloPlugin\n')
+
+    handle = register_app(app_dir, registry=PluginRegistry(), with_handle=True)
+    assert handle.plugin.__class__.__name__ == "SoloPlugin"
+
+
+def test_v2_without_plugin_class_raises(apps_root):
+    """protocol=2 但入口没有 AppPlugin 时必须报错，而不是静默不显示页面。"""
+    from customgui.appcore import AppPluginError
+
+    app_dir = apps_root / "demo"
+    _write_app(app_dir, PAGE_CODE, 'protocol: 2\n')
+
+    with pytest.raises(AppPluginError) as excinfo:
+        register_app(app_dir, registry=PluginRegistry())
+    assert excinfo.value.code == "APP_PLUGIN_MISSING"
+
+
+def test_unsupported_protocol_version_raises(apps_root):
+    from customgui.appcore import AppPluginError
+
+    app_dir = apps_root / "demo"
+    _write_app(app_dir, PAGE_CODE, 'protocol: "9"\n')
+
+    with pytest.raises(AppPluginError) as excinfo:
+        register_app(app_dir, registry=PluginRegistry())
+    assert excinfo.value.code == "APP_PROTOCOL_UNSUPPORTED"
+
+
+def test_core_dir_missing_raises(apps_root):
+    from customgui.appcore import AppPluginError
+
+    app_dir = apps_root / "demo"
+    _write_app(app_dir, V2_PLUGIN_CODE, 'protocol: 2\ncore: launchercore\n')
+
+    with pytest.raises(AppPluginError) as excinfo:
+        register_app(app_dir, registry=PluginRegistry())
+    assert excinfo.value.code == "APP_CORE_MISSING"
+
+
+def test_core_dir_exposed_on_context(apps_root):
+    """声明并创建 core 目录后，``ctx.core_dir`` 指向它。"""
+    app_dir = apps_root / "demo"
+    _write_app(app_dir, V2_PLUGIN_CODE, 'protocol: 2\ncore: launchercore\n')
+    core = app_dir / "launchercore"
+    core.mkdir()
+    (core / "__init__.py").write_text("VALUE = 42\n", encoding="utf-8")
+
+    context = register_app(app_dir, registry=PluginRegistry())
+
+    assert context.core_name == "launchercore"
+    assert context.core_dir == core
+    module = context.import_module("launchercore")
+    assert module.VALUE == 42
+
+
+def test_app_name_mismatch_raises(apps_root):
+    """目录名与 app_name 不一致必须显式报错（否则应用内导入会静默失效）。"""
+    from customgui.appcore import AppPluginError
+
+    app_dir = apps_root / "demo"
+    _write_app(app_dir, V2_PLUGIN_CODE, 'protocol: 2\n')
+    (app_dir / "config.yml").write_text(
+        (app_dir / "config.yml").read_text(encoding="utf-8").replace(
+            'app_name: "demo"', 'app_name: "other"'
+        ),
+        encoding="utf-8",
+    )
+
+    with pytest.raises(AppPluginError) as excinfo:
+        register_app(app_dir, registry=PluginRegistry())
+    assert excinfo.value.code == "APP_NAME_MISMATCH"
+
+
+def test_context_import_module_uses_app_namespace(apps_root):
+    """``ctx.import_module`` 让调用方不必知道私有命名空间的存在。"""
+    app_dir = apps_root / "demo"
+    _write_app(app_dir, V2_PLUGIN_CODE, 'protocol: 2\n')
+    (app_dir / "helper").mkdir()
+    (app_dir / "helper" / "__init__.py").write_text("GREETING = 'hi'\n", encoding="utf-8")
+
+    context = register_app(app_dir, registry=PluginRegistry())
+
+    assert context.module_name is not None
+    module = context.import_module("helper")
+    assert module.GREETING == "hi"
+
+
+def test_v1_apps_still_work_without_protocol_field(apps_root):
+    """v1 应用清单没有 ``protocol`` 字段，必须照旧工作（回归门禁）。"""
+    app_dir = apps_root / "demo"
+    _write_app(app_dir, PAGE_CODE)  # 不传 config_extra
+
+    registry = PluginRegistry()
+    context = register_app(app_dir, registry=registry)
+
+    assert context.icon_path is not None
+    assert context.icon_path.is_file()
+    assert len(registry.page_plugins()) == 1
+    assert registry.page_plugins()[0].plugin_id == "app.page.demo"
+
+
+def test_context_icon_path_is_none_when_missing(apps_root):
+    """没有图标文件时 ``icon_path`` 为 ``None``，而不是空 ``Path``。"""
+    app_dir = apps_root / "demo"
+    _write_app(app_dir, BUILD_PAGE_CODE, 'protocol: 1\n')
+    (app_dir / "resource" / "icon" / "app_icon.svg").unlink()
+
+    context = register_app(app_dir, registry=PluginRegistry())
+
+    assert context.icon_path is None

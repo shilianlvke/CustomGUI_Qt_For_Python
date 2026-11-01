@@ -11,7 +11,12 @@ from .config import (
 )
 from .handlers import YamlHandler
 from .modules import (
+    PROTOCOL_VERSION,
+    SUPPORTED_PROTOCOL_VERSIONS,
     AppError,
+    AppPage,
+    AppPlugin,
+    AppPluginError,
     ColorPalette,
     CommandPlugin,
     DesignTokens,
@@ -61,6 +66,11 @@ __all__ = [
     "to_user_message",
     "CommandPlugin",
     "MenuPlugin",
+    "PROTOCOL_VERSION",
+    "SUPPORTED_PROTOCOL_VERSIONS",
+    "AppPlugin",
+    "AppPage",
+    "AppPluginError",
     "PagePlugin",
     "PluginRegistry",
     "get_plugin_registry",

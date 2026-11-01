@@ -1,3 +1,18 @@
+from .app_protocol import (
+    PROTOCOL_VERSION as PROTOCOL_VERSION,
+)
+from .app_protocol import (
+    SUPPORTED_PROTOCOL_VERSIONS as SUPPORTED_PROTOCOL_VERSIONS,
+)
+from .app_protocol import (
+    AppPage as AppPage,
+)
+from .app_protocol import (
+    AppPlugin as AppPlugin,
+)
+from .app_protocol import (
+    AppPluginError as AppPluginError,
+)
 from .color_module import ColorPalette as ColorPalette
 from .error_module import (
     AppError as AppError,
@@ -63,6 +78,11 @@ __all__ = [
     "PagePlugin",
     "PluginRegistry",
     "get_plugin_registry",
+    "PROTOCOL_VERSION",
+    "SUPPORTED_PROTOCOL_VERSIONS",
+    "AppPlugin",
+    "AppPage",
+    "AppPluginError",
     "read_recent_events",
     "record_event",
     "track_timing",
