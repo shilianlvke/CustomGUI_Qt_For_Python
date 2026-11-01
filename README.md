@@ -12,129 +12,282 @@
   <a href="https://gitee.com/shilianlvke/CustomGUI_Qt_For_Python">Gitee</a> ·
   <a href="https://github.com/shilianlvke/CustomGUI_Qt_For_Python">GitHub</a> ·
   <a href="docs/README.md">组件文档</a> ·
-  <a href="docs/ARCHITECTURE.md">架构说明</a>
+  <a href="docs/ARCHITECTURE.md">架构说明</a> ·
+  <a href="CHANGELOG.md">更新日志</a>
 </p>
 
 ---
 
-## 简介
+## 这是什么
 
-**CustomGUI** 是一个可直接运行、也可作为依赖安装的 PySide6 UI 基座。
+**CustomGUI** 是一个基于 PySide6 的 UI 基座。它替你写好了一个桌面应用开局就要面对的
+那堆脏活：
 
-它提供：
+- 无边框圆角窗口、自绘标题栏、可折叠左列/左菜单、底部版权栏、拖拽缩放；
+- 一套设计令牌（颜色/字体/间距/圆角/尺寸）驱动的统一样式，切换主题自动生效；
+- 70 个组件：按钮、输入框、下拉、日期、卡片、徽章、抽屉、Toast、气泡确认……
+- YAML 配置系统：主题、语言、窗口设置、日志；
+- **目录即插件**：把页面放进 `apps/<name>/`，启动时自动发现、注册菜单、懒加载；
+- 语言切换重建页面、遥测与诊断、错误边界。
 
-- 无边框圆角窗口、自绘标题栏、左侧菜单、左右列与底部版权栏；
-- 统一设计令牌的颜色、字体、间距、圆角和尺寸；
-- 完整组件库：按钮、输入框、下拉框、卡片、菜单、滚动区、提示框等；
-- YAML 配置系统：主题、语言、窗口设置、控制台设置；
-- 应用模组协议：把页面作为 `Apps/<name>/` 插件加载；
-- 页面懒加载、语言切换重建、主题切换、遥测和诊断；
-- 可安装的 `customgui` wheel，基座资源随包分发。
-
-Demo 启动后可以直接看到完整窗口和内置组件/页面示例。
-
----
-
-## 环境要求
-
-| 项目 | 要求 |
-| --- | --- |
-| 操作系统 | Windows 10/11（主要支持），Linux/macOS 理论可用 |
-| Python | **3.12+** |
-| GUI | PySide6 **6.10+** |
-| 配置 | PyYAML |
-| 依赖管理 | [uv](https://docs.astral.sh/uv/) |
+它不是脚手架，也不是组件库 demo——是一个**能装进别的项目当依赖**的基座。
 
 ---
 
 ## 安装
 
-### 方式一：作为依赖安装
-
-适合把 CustomGUI 作为另一个应用的基座。
+### 当作依赖装进你自己的项目
 
 ```powershell
-uv add "customgui @ git+https://gitee.com/shilianlvke/CustomGUI_Qt_For_Python.git@base-v0.2.4"
+uv add "customgui @ git+https://gitee.com/shilianlvke/CustomGUI_Qt_For_Python.git@base-v0.3.0"
 ```
 
-或固定到某个提交：
+固定到具体 tag 而不是分支，避免上游改动把你的构建搞红。
 
-```toml
-[tool.uv.sources]
-customgui = {
-    git = "https://gitee.com/shilianlvke/CustomGUI_Qt_For_Python.git",
-    rev = "548d992",
-}
-```
-
-### 方式二：从源码运行 Demo
+### 从源码跑（想改基座本身）
 
 ```powershell
 git clone https://gitee.com/shilianlvke/CustomGUI_Qt_For_Python.git
 cd CustomGUI_Qt_For_Python
 uv sync --extra dev
-uv run python main.py
+uv run customgui run
 ```
 
-### 方式三：构建 wheel
+### 构建 wheel
 
 ```powershell
 uv build --wheel
+uv run twine check dist/*.whl
 ```
 
-产物：
+产物 `dist/customgui-0.3.0-py3-none-any.whl`（约 257 个包内文件），包含：
 
 ```text
-dist/customgui-0.2.4-py3-none-any.whl
-```
-
-wheel 包含：
-
-```text
-AppCore/
-GuiCore/
-Guis/
 customgui/
-  resource/
+├── appcore/          # 逻辑层：配置、主题、语言、令牌、插件协议、错误边界、工具
+├── guicore/          # 组件层：custom_ui（组件库）+ window（窗口部件）+ app_ui
+├── guis/             # 装配层：主窗口、页面栈、插件加载、语言服务
+├── _resources/       # 只读默认资源：主题/语言/图标/设置四套 YAML
+├── apps/             # 5 个内置示例应用（供 customgui install-demo 使用）
+├── examples/         # 最小可运行工程（供 customgui examples --copy 使用）
+├── cli.py            # 命令行入口
+├── window.py         # 窗口装配门面（宿主应用只认这个）
+├── config.py         # configure() 显式配置
+└── py.typed          # PEP 561 类型标记
 ```
-
-不包含 Demo 的 `Apps/`、测试和文档截图。
 
 ---
 
-## 快速开始
+## 30 秒上手
 
-### 作为宿主应用使用
-
-```python
-import os
-from pathlib import Path
-
-# 可选：指定业务插件、应用覆盖资源和可写数据目录
-os.environ.setdefault("CUSTOMGUI_APPS_DIR", str(Path(__file__).parent / "Apps"))
-os.environ.setdefault("CUSTOMGUI_RESOURCE_DIR", str(Path(__file__).parent))
-os.environ.setdefault("CUSTOMGUI_DATA_DIR", str(Path.home() / ".my-app"))
-
-from PySide6.QtWidgets import QApplication
-from AppCore import AppSettings, ColorPalette, Language, AppThemes, AppLanguages, get_app_context
-from Guis import SetupMainWindow, UiMainWindow
-from Guis.windows.main_window.controller import MainWindowController
-
-get_app_context()
-ColorPalette.update(AppThemes[AppSettings.theme_name].data)
-Language.update(AppLanguages[AppSettings.language].data)
-```
-
-窗口装配涉及 grips、标题栏、控制器和首屏页面，完整可运行示例请直接参考
-[`main.py`](main.py)；上例只展示资源与配置初始化顺序。
-
-### 运行 Demo
+装完之后不需要读文档，两条命令就能看到东西：
 
 ```powershell
-uv run python main.py
+customgui install-demo     # 把 5 个示例应用拷到数据目录
+customgui run              # 起窗口
 ```
 
-Demo 会从仓库的 `Apps/` 加载 9 个示例应用，并只创建默认页面；其他页面首次导航时加载。
+如果窗口是空的，或者想确认环境对不对：
+
+```powershell
+customgui doctor
+```
+
+```text
+CustomGUI doctor
+========================================================
+✓ 版本          : 0.3.0
+✓ 包目录        : .../site-packages/customgui
+✓ 资源根 #0     : .../site-packages/customgui/_resources
+✓ 数据根        : ~/.customgui
+✓ 应用目录      : ~/.customgui/apps
+--------------------------------------------------------
+发现应用      : 5 个
+  - button_preview
+  - feedback_preview
+  - input_preview
+  - overlay_preview
+  - panel_preview
+成功加载      : 5 个
+  + button_preview  ->  _customgui_apps.button_preview.gui.main
+  ...
+--------------------------------------------------------
+✓ 当前主题      : default（共 4 套）
+✓ 当前语言      : zh_cn（共 2 种）
+```
+
+把这段输出贴给维护者，比描述「我的窗口是黑的」有用一百倍。
+
+### 命令行一览
+
+| 子命令 | 作用 |
+| --- | --- |
+| `customgui run [--apps-dir DIR] [--data-dir DIR]` | 启动主窗口 |
+| `customgui install-demo [--dest DIR] [--force]` | 安装内置示例应用到 `<data_root>/apps` |
+| `customgui examples [--copy DIR]` | 导出最小可运行工程骨架 |
+| `customgui doctor [--apps-dir DIR]` | 打印全部路径与发现结果 |
+
+---
+
+## 写一个自己的应用
+
+```powershell
+customgui examples --copy ./myapp
+cd myapp
+python main.py
+```
+
+导出的 `main.py` 就是下面这个样子——这就是一个完整可运行的 CustomGUI 应用：
+
+```python
+"""myapp/main.py —— 最小可运行的 CustomGUI 应用。"""
+import sys
+from pathlib import Path
+
+import customgui
+from PySide6.QtGui import QIcon
+from PySide6.QtWidgets import QApplication, QMainWindow
+
+from customgui.appcore import AppLanguages, AppSettings, AppThemes, ColorPalette, Language, PathFactory, get_app_context
+from customgui.window import MainWindowController, SetupMainWindow, UiMainWindow, load_apps
+
+ROOT = Path(__file__).resolve().parent
+
+# 一行取代 5 个环境变量；顺序也不再重要（不必卡在 import 之前）
+customgui.configure(
+    apps_dir=ROOT / "apps",          # 业务插件目录
+    data_dir=ROOT / ".data",         # 可写数据（日志、遥测）
+    builtin_menus=False,             # 不需要基座自带的「软件信息」菜单
+)
+
+
+def main() -> int:
+    get_app_context()                                     # 配置上下文（惰性，也可省略）
+    ColorPalette.update(AppThemes[AppSettings.theme_name].data)
+    Language.update(AppLanguages[AppSettings.language].data)
+
+    app = QApplication(sys.argv)
+    app.setStyle("Fusion")
+    icon = PathFactory.set_ico(AppSettings.logo)
+    if icon and Path(icon).is_file():
+        app.setWindowIcon(QIcon(icon))
+
+    load_apps()                                           # 发现并注册 apps/ 下全部应用
+
+    class MainWindow(QMainWindow):
+        def __init__(self) -> None:
+            super().__init__()
+            self.setObjectName("CustomUI")
+            self.setMouseTracking(True)
+            self.resize(*AppSettings.startup_size)
+            self.setMinimumSize(*AppSettings.minimum_size)
+            self.ui = UiMainWindow()
+            self.ui.setup_ui(self)
+            SetupMainWindow.setup_gui(self)
+            self.controller = MainWindowController(self)
+            self.show()
+
+        def btn_clicked(self):
+            btn = SetupMainWindow.setup_btns(self)
+            if btn is not None:
+                self.controller.handle_button(btn)
+
+        def btn_released(self):
+            SetupMainWindow.setup_btns(self)
+
+        def resizeEvent(self, event):
+            SetupMainWindow.resize_grips(self)
+
+        def mousePressEvent(self, event):
+            self.dragPos = event.globalPosition().toPoint()
+            self.focusNextChild()
+
+    window = MainWindow()   # noqa: F841 - 需要保持引用
+    return int(app.exec())
+
+
+if __name__ == "__main__":
+    sys.exit(main())
+```
+
+---
+
+## 应用插件协议
+
+应用就是 `apps/` 下的一个目录，**自包含**、不用改基座代码：
+
+```text
+apps/<app_name>/
+├── config.yml                     # 清单：app_name / button_id / page_object / app_icon / is_default ...
+├── resource/
+│   ├── icon/app_icon.svg          # 菜单图标
+│   └── lang/{zh_cn,en_us}.yml     # 本应用语言文本
+└── gui/
+    ├── main.py                    # 页面实现（三选一协议）
+    └── style.py                   # 可选：应用私有样式
+```
+
+`gui/main.py` 里实现以下三种之一即可（按优先级识别）：
+
+| 协议 | 写法 | 适用 |
+| --- | --- | --- |
+| **1. register_plugins** | `def register_plugins(registry, app)` | 多页面应用，完全自由 |
+| **2. PAGE** | `PAGE = MyPage()`（含 `load_page(window)`） | 与基座历史页面风格一致 |
+| **3. build_page** | `def build_page(app) -> QWidget` | 最简，一个页面一个函数 |
+
+```python
+# apps/hello/gui/main.py —— 协议 3，最简单的一种
+from PySide6.QtWidgets import QLabel, QWidget
+
+
+def build_page(app):
+    page = QWidget()
+    page.setObjectName(app.config.get("page_object") or "helloPage")
+    label = QLabel(app.lang_text("app_text", "你好"))
+    label.setParent(page)
+    return page
+```
+
+`app` 是 `AppContext`，提供：`config`（清单字段）、`app_dir`、`icon_path`、
+`lang_text(key)`、`resource(*parts)` / `icon()` / `image()` / `lang_file()`。
+
+> 应用内部的相对导入是支持的：`gui/main.py` 里 `from ..lib import helper` 会
+> 落到 `<app>/lib/`，`<app>/` 下任意子目录都能这样互相引用。
+
+---
+
+## 配置：`configure()` 与环境变量
+
+**推荐显式调用**：
+
+```python
+import customgui
+
+customgui.configure(
+    apps_dir="./apps",                    # 应用插件目录
+    resource_dirs=["./brand"],            # 覆盖资源（其下有 customui/ 或 resource/customui/）
+    data_dir="~/.myapp",                  # 可写数据根
+    diagnostics_dir="~/.myapp/diagnostics",
+    builtin_menus=False,                  # 是否注入基座自带菜单
+)
+```
+
+优先级：**显式参数 > `CUSTOMGUI_*` 环境变量 > 内置默认值**。
+
+环境变量仍然可用（旧项目不用改），但**顺序不再是硬性要求**——不再需要
+「必须在 import customgui 之前设好」。
+
+| 环境变量 | 作用 | 默认 |
+| --- | --- | --- |
+| `CUSTOMGUI_APPS_DIR` | 应用插件目录 | 自动探测 `data_root/apps` → 仓库根 `apps/` |
+| `CUSTOMGUI_RESOURCE_DIR` | 覆盖资源根（其下有 `resource/` 或 `customui/`） | 无 |
+| `CUSTOMGUI_ROOT_DIR` | 旧版覆盖根（兼容保留） | 无 |
+| `CUSTOMGUI_DATA_DIR` | 可写数据根（日志、遥测） | `%APPDATA%/CustomGUI` 或 `~/.customgui` |
+| `CUSTOMGUI_DIAGNOSTICS_DIR` | 诊断事件目录 | `<data>/logs/diagnostics` |
+| `CUSTOMGUI_BUILTIN_MENUS` | `0` 关闭基座自带菜单 | 开 |
+
+配置上下文已加载后再调 `configure()` 会**直接抛 `ConfigAlreadyLoadedError`**，
+而不是静默失效——要么在 `get_app_context()` 之前调用，要么传 `force_reload=True`。
 
 ---
 
@@ -142,271 +295,97 @@ Demo 会从仓库的 `Apps/` 加载 9 个示例应用，并只创建默认页面
 
 ```text
 CustomGUI_Qt_For_Python/
-├── AppCore/                    # 配置、语言、主题、插件、日志、遥测
-│   ├── APP/
-│   ├── SYS/
-│   └── Tool/
-├── GuiCore/                    # 窗口与组件实现
-│   ├── AppDefineUI/
-│   ├── CustomUI/
-│   ├── WindowDefineUI/
-│   └── styles.py
-├── Guis/                       # 窗口装配、插件加载、页面路由
-│   ├── app_loader.py
-│   ├── language_service.py
-│   ├── columns/
-│   └── windows/
-├── customgui/                  # 可安装资源包
-│   ├── __init__.py
-│   └── resource/customui/
-│       ├── images/
-│       ├── languages/
-│       ├── settings/
-│       └── themes/
-├── Apps/                       # Demo 插件（不进入 wheel）
-├── docs/                       # API / 架构 / 兼容性文档
-├── tests/                      # 165+ 基座测试
-├── main.py                     # Demo 入口
+├── src/customgui/                    # ← 唯一的 Python 包（src layout）
+│   ├── appcore/                      # 逻辑层（不依赖任何 UI）
+│   │   ├── sysx/
+│   │   │   ├── config/               # 配置注册表、YAML IO、路径解析、schema 校验
+│   │   │   ├── modules/              # 主题、语言、插件协议、日志、遥测、错误边界
+│   │   │   ├── handlers/             # YAML 读写
+│   │   │   └── common/               # 路径/图标工厂
+│   │   ├── app/                      # 主窗口用例（与 Qt 解耦的业务编排）
+│   │   └── tool/                     # 设备等杂项工具
+│   ├── guicore/                      # 组件层
+│   │   ├── custom_ui/                # 40+ 组件（按钮/输入/卡片/浮层/反馈/展示…）
+│   │   ├── window/                   # 标题栏、左菜单、左列、右列、grips、版权栏
+│   │   ├── app_ui/                   # 对话框等应用级 UI
+│   │   └── styles.py                 # 设计令牌 → QSS 生成
+│   ├── guis/                         # 装配层
+│   │   ├── windows/                  # 主窗口 / 登录窗 / 加载窗
+│   │   ├── pages/                    # 页面栈容器
+│   │   ├── app_loader.py             # 应用插件发现与装载
+│   │   └── language_service.py       # 语言整体切换 + 页面重建
+│   ├── _resources/customui/          # 只读默认资源（随 wheel 分发）
+│   │   ├── themes/  languages/  settings/  images/  others/
+│   ├── window.py                     # ★ 宿主门面
+│   ├── config.py                     # ★ configure()
+│   ├── cli.py                        # ★ customgui 命令
+│   └── py.typed
+├── apps/                             # 内置示例应用（同时打进 wheel）
+├── examples/hello_world/             # 最小可运行工程
+├── tests/                            # 270 个测试
+├── docs/                             # 组件文档、架构说明、截图
 └── pyproject.toml
 ```
 
----
+**分层规则**（有测试守着，不是口号）：
 
-## 资源与环境变量
-
-基座默认资源位于：
-
-```text
-customgui/resource/customui/
-```
-
-宿主应用可以增加一层覆盖资源，只要目录内同样包含 `resource/customui/`：
-
-```text
-MyApp/
-└── resource/
-    └── customui/
-        ├── images/
-        ├── languages/
-        ├── settings/
-        └── themes/
-```
-
-查找优先级：
-
-```text
-CUSTOMGUI_RESOURCE_DIR 资源
-CUSTOMGUI_ROOT_DIR     资源
-customgui 包内置资源
-```
-
-支持的环境变量：
-
-| 变量 | 用途 | 默认值 |
-| --- | --- | --- |
-| `CUSTOMGUI_APPS_DIR` | 应用模组目录 | 项目根目录 `Apps/` |
-| `CUSTOMGUI_RESOURCE_DIR` | 覆盖资源根目录 | 无 |
-| `CUSTOMGUI_ROOT_DIR` | 兼容旧项目的根目录覆盖 | 基座包推导 |
-| `CUSTOMGUI_DATA_DIR` | 日志等可写数据根 | `%APPDATA%/CustomGUI` |
-| `CUSTOMGUI_DIAGNOSTICS_DIR` | 遥测 JSON 目录 | `DATA_DIR/logs/diagnostics` |
-| `CUSTOMGUI_BUILTIN_MENUS` | 是否启用 Demo 的信息/搜索菜单 | `1` |
-
-> 安装后的基座不会向 `site-packages` 写日志；所有可写数据都进入 `CUSTOMGUI_DATA_DIR`。
-
----
-
-## 配置系统
-
-配置位于 `customgui/resource/customui/` 或宿主的覆盖资源目录，采用 YAML + 类型化 Schema。
-
-| 目录 | 加载方式 | 入口 |
-| --- | --- | --- |
-| `settings/` | 目录内所有 YAML 深度合并 → 强类型校验 | `AppSettings` |
-| `themes/` | 每个文件独立加载并校验 | `AppThemes` |
-| `languages/` | 每个文件独立加载并校验 | `AppLanguages` |
-| `others/` | 每个文件独立加载 | `AppOthers` |
-
-```python
-from AppCore import AppSettings, AppThemes, AppLanguages, get_app_context
-
-get_app_context()
-
-AppSettings.theme_name
-AppSettings.startup_size
-AppSettings.lef_menu_size.minimum
-AppThemes[AppSettings.theme_name].data
-AppLanguages[AppSettings.language].data
-```
-
-### 新增主题
-
-在覆盖资源目录放一个 YAML：
-
-```text
-resource/customui/themes/my_theme.yaml
-```
-
-文件名即主题名，加载时自动校验颜色字段。
-
-### 新增语言
-
-```text
-resource/customui/languages/ja_jp.yaml
-```
-
-至少包含：
-
-```yaml
-custom_ui: {}
-PAGE: {}
-UI: {}
-```
-
-> 基座默认只带 `zh_cn` / `en_us`。语言列表由应用实际提供的文件决定更稳妥，详见
-> [docs/PYCL2_BASE_SYNC.md](docs/PYCL2_BASE_SYNC.md)。
-
----
-
-## 应用模组
-
-基座本身不强制包含业务页面。页面由 `Apps/` 下的应用模组提供：
-
-```text
-Apps/<app_name>/
-├── config.yml
-├── resource/
-│   ├── icon/app_icon.svg
-│   └── lang/{zh_cn,en_us}.yml
-└── gui/
-    ├── main.py
-    └── style.py
-```
-
-三种页面协议（按优先级）：
-
-```python
-# 1. 自由注册多个页面
-def register_plugins(registry, app):
-    ...
-
-# 2. PAGE 对象
-class MyPage:
-    def load_page(self):
-        ...
-
-PAGE = MyPage
-
-# 3. 最简 build_page
-def build_page(app):
-    ...
-    return widget
-```
-
-`config.yml` 常用字段：
-
-| 字段 | 说明 |
+| 规则 | 断言 |
 | --- | --- |
-| `app_name` / `app_id` | 应用名与插件 ID |
-| `button_id` / `page_object` | 导航键与页面对象名 |
-| `app_target` | `LeftMenu` 或 `TitleMenu` |
-| `is_default` | 是否默认页 |
-| `show_top` / `is_active` | 菜单位置与默认激活 |
-
-应用可以通过 `app.config`、`app.icon`、`app.image`、`app.lang_text()` 访问自己的清单和资源；应用目录内部的相对导入也由加载器自动建立包结构。
-
-### 页面懒加载
-
-- 启动时只创建默认页；
-- 导航到新页面时才调用页面 loader；
-- 语言切换只重建当前页；
-- 页面注册/查找通过 `Guis.windows.main_window.registry` 完成。
-
-这避免了“启动时实例化全部隐藏页面”和“切换语言重建所有页面”的开销。
+| `appcore` 不得 import `guicore` / `guis` | `test_architecture_boundaries.py` |
+| `guicore` 不得 import `guis`（不准倒挂） | 同上 |
+| `guis` / `guicore` 只能 `from customgui.appcore import <公开名>` | 同上 |
+| 应用插件命名空间必须私有（`_customgui_apps`） | 同上 |
+| 禁止 `Path(__file__).parents[N]`（N≥2） | 同上 |
+| 运行时代码不得依赖 `os.getcwd()` | `test_no_cwd_runtime_dependency.py` |
 
 ---
 
-## 组件
+## 组件库
 
-组件位于 `GuiCore/CustomUI/` 与 `GuiCore/WindowDefineUI/`，包括：
+`customgui.guicore` 导出 **73 个**公开名（70 个组件 + 3 个样式常量），全部由设计令牌驱动，主题切换即时生效：
 
-- `CPushButton`、`CStatusButton`
-- `CLineEdit`、`CComboBox`
-- `CCard`、`CShowCard`
-- `CMenu`、`CMenuButton`
-- `CScrollArea`
-- `CLeftMenu`、`CLeftColumn`
-- `CTitleBar`、`CWindow`
-- `CToolTip`
-- `CDialog`
+| 分类 | 组件 |
+| --- | --- |
+| 按钮 | `CButton` `CPushButton` `CButtonGroup` `CSplitButton` `CStatusButton` `CMenuButton` `CToggleButton` |
+| 输入 | `CLineEdit` `CInputText` `CTextarea` `CInputNumber` `CInputGroup` `CInputGroupAddon` `CFloatLabel` `CSelect` `CComboBox` `CListbox` `CMultiSelect` `CTreeSelect` `CAutoComplete` `CDatePicker` `CCalendarPanel` `CColorPicker` `CSlider` `CKnob` `CRating` |
+| 选择 | `CCheckbox` `CRadioButton` `CSelectButton` `CToggleButton` `CToggleSwitch` |
+| 展示 | `CCard` `CShowCard` `CPanel` `CBadge` `CChip` `CTag` `CAvatar` `CPixmap` `CProgressBar` `CSkeleton` `CDivider` `CHDiv` `CVDiv` `CBreadcrumb` `CSteps` `CPageTransition` |
+| 浮层 | `CDrawer` `COverlayPanel` `CToolTip` `CMenu` |
+| 反馈 | `CMessage` `CToast` `CConfirmDialog` `CDialog` |
+| 布局 | `CTabs` `CAccordion` `CAccordionPanel` `CFieldset` `CFormField` `CFormGrid` `CScrollArea` `CSplitter` `CSplitterHandle` `CToolbar` |
+| 窗口部件 | `CWindow` `CTitleBar` `CLeftMenu` `CLeftColumn` `CGrips` `CCredits` |
+| 样式 | `Styles` `Severity` `Variant` |
 
-**下拉框不使用原生 `QComboBox`**：`CComboBox` 使用自绘圆角弹层，避免 Windows 原生弹层黑角。
-
-完整 API 见 [docs/API.md](docs/API.md)。
-
----
-
-## 设计令牌
-
-颜色、字体、间距、圆角、边框和尺寸统一由 `GuiCore.styles` 与 `AppCore.DesignTokens` 提供：
+主题与令牌：
 
 ```python
-from AppCore import get_design_tokens
+from customgui.appcore import get_design_tokens, get_theme_manager
 
 tokens = get_design_tokens()
-tokens.colors.surface_card
-tokens.radius.window
-tokens.size.control_height
+tokens.radius.window          # 圆角
+tokens.color.primary          # 主色
+get_theme_manager().apply("dark")
 ```
-
-主题颜色在 `themes/*.yaml`，几何值在组件本地默认值与设计令牌中维护，避免样式散落。
 
 ---
 
-## 打包与发布
-
-基座 wheel：
+## 开发
 
 ```powershell
-uv build --wheel
+uv sync --extra dev
+uv run pytest                 # 270 passed, 5 skipped
+uv run ruff check src tests
+
+uv run python -m build --wheel --no-isolation
+uv run twine check dist/*.whl
 ```
 
-在宿主应用中使用 PyInstaller 时，需要收集包内资源：
-
-```python
-from PyInstaller.utils.hooks import collect_data_files
-
-datas = collect_data_files("customgui")
-```
-
-如果宿主只安装 wheel，不携带 `Apps/`，请通过 `CUSTOMGUI_APPS_DIR` 指向自己的插件目录。
+提交前请读 [docs/contributing.md](docs/contributing.md)。有一条**硬规则**：
+本项目是木兰宽松许可证 v2，**不得**把 GPL 项目（如 py-cl2）的业务代码搬进来，
+否则整个仓库会变成 GPL 衍生物。
 
 ---
 
-## 测试与质量
+## 许可证
 
-```powershell
-uv run pytest
-uv run ruff check AppCore GuiCore Guis customgui
-```
-
-当前测试覆盖：
-
-- 配置加载与类型校验；
-- 路径与资源覆盖；
-- 语言服务；
-- 页面注册/路由/懒加载；
-- 插件协议；
-- 主窗口控制器；
-- 设计令牌与组件几何；
-- 主题切换与遥测；
-- 错误边界。
-
----
-
-## 许可证与致谢
-
-- 代码许可证：[木兰宽松许可证，第 2 版](LICENSE)。
-- 设计灵感：[PyOneDark](https://github.com/Wanderson-Magalhaes/PyOneDark_Qt_Widgets_Modern_GUI)。
-- 基座在 [Gitee](https://gitee.com/shilianlvke/CustomGUI_Qt_For_Python) 与 [GitHub](https://github.com/shilianlvke/CustomGUI_Qt_For_Python) 开源。
-
-> `PyCL2` 是使用本基座构建的 Minecraft 启动器示例，二者的业务代码和品牌资源保持独立。
+[木兰宽松许可证，第 2 版](LICENSE)（MulanPSL-2.0）。可商用、可闭源分发。

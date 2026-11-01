@@ -50,7 +50,9 @@ def package_root() -> Path:
     return PACKAGE_ROOT
 
 
-from .config import AppConfig, ConfigAlreadyLoadedError, configure, current_config, reset_config
+# 配置 API 放在函数定义之后导入：config 模块会延迟 import appcore，
+# 放在这里可以避免包初始化期出现半初始化模块。
+from .config import AppConfig, ConfigAlreadyLoadedError, configure, current_config, reset_config  # noqa: E402
 
 __all__ = [
     "AppConfig",

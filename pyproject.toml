@@ -5,9 +5,23 @@ build-backend = "hatchling.build"
 [project]
 name = "customgui"
 dynamic = ["version"]
-description = "基于 PySide6 的开源 UI 基座：窗口框架、组件库、主题、语言与插件加载。"
+description = "基于 PySide6 的开源 UI 基座：窗口框架、组件库、主题、语言与插件加载"
 readme = "README.md"
+license = "MulanPSL-2.0"
+license-files = ["LICENSE"]
 requires-python = ">=3.12"
+authors = [{ name = "CustomGUI Contributors" }]
+keywords = ["pyside6", "qt", "ui", "desktop", "widgets", "theme", "plugin", "framework"]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Developers",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Topic :: Software Development :: User Interfaces",
+    "Topic :: Software Development :: Widget Sets",
+    "Typing :: Typed",
+]
 dependencies = [
     "pyside6>=6.10.1",
     "pyyaml>=6.0.3",
@@ -21,10 +35,22 @@ windows-hardware = [
 ]
 dev = [
     "pytest>=8.3.5",
+    "pytest-qt>=4.4.0",
     "ruff>=0.11.2",
     "black",
     "pyinstaller>=6.22.3",
+    "build>=1.2",
+    "twine>=5.1",
 ]
+
+[project.urls]
+Homepage = "https://gitee.com/shilianlvke/CustomGUI_Qt_For_Python"
+Repository = "https://gitee.com/shilianlvke/CustomGUI_Qt_For_Python"
+Issues = "https://gitee.com/shilianlvke/CustomGUI_Qt_For_Python/issues"
+Changelog = "https://gitee.com/shilianlvke/CustomGUI_Qt_For_Python/blob/main/CHANGELOG.md"
+
+[project.scripts]
+customgui = "customgui.cli:main"
 
 [[tool.uv.index]]
 url = "https://pypi.tuna.tsinghua.edu.cn/simple"
@@ -38,14 +64,21 @@ line-length = 120
 target-version = "py312"
 
 [tool.ruff.lint]
-select = ["E", "F", "W", "I", "UP", "B", "TID252"]
-ignore = ["E501"]
+select = ["E", "F", "W", "I", "UP", "B"]
+ignore = ["E501", "TID252"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
+addopts = "-q"
 
 [tool.hatch.build.targets.sdist]
 include = ["src/customgui", "apps", "examples", "docs", "tests", "scripts"]
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/customgui"]
+
+# 内置示例随 wheel 分发，让 `customgui install-demo` / `customgui examples`
+# 在只装了 wheel 的机器上也能用（"开箱即用"的关键一环）。
+[tool.hatch.build.targets.wheel.force-include]
+"apps" = "customgui/apps"
+"examples/hello_world" = "customgui/examples/hello_world"

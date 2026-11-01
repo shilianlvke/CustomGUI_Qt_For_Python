@@ -69,8 +69,14 @@ stages:
           - uv sync --extra dev
           - uv pip install "pyinstaller>=6.10.0"
           # ---- 质量检查 ----
-          - uv run ruff check . --select E9,F63,F7,F82
+          - uv run ruff check src tests --select E9,F63,F7,F82
           - uv run pytest -q
+          # ---- wheel 构建 + 干净环境冒烟（验证「开箱即用」）----
+          - uv run python -m build --wheel
+          - uv run twine check dist/*.whl
+          - uv venv /tmp/smoke --python 3.13
+          - uv pip install --python /tmp/smoke/bin/python dist/customgui-*.whl
+          - /tmp/smoke/bin/customgui doctor
           # ---- Linux 打包 ----
           - uv run python scripts/build_package.py
           - uv run python scripts/archive_dist.py linux
