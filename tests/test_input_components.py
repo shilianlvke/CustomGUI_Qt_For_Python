@@ -9,7 +9,7 @@ from PySide6.QtCore import QDate, QPoint, Qt
 from PySide6.QtTest import QTest
 from PySide6.QtWidgets import QApplication, QWidget
 
-from GuiCore import (
+from customgui.guicore import (
     CAutoComplete,
     CCalendarPanel,
     CCheckbox,

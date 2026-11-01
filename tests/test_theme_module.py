@@ -6,8 +6,8 @@ os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
 
 import pytest
 
-from AppCore import ColorPalette, ThemeManager, get_theme_manager
-from AppCore.SYS.module.telemetry_module import read_recent_events
+from customgui.appcore import ColorPalette, ThemeManager, get_theme_manager
+from customgui.appcore.sysx.modules.telemetry_module import read_recent_events
 
 
 @pytest.fixture

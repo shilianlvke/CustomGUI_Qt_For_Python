@@ -31,7 +31,7 @@ url = "https://pypi.tuna.tsinghua.edu.cn/simple"
 default = true
 
 [tool.hatch.version]
-path = "customgui/_version.py"
+path = "src/customgui/_version.py"
 
 [tool.ruff]
 line-length = 120
@@ -44,5 +44,8 @@ ignore = ["E501"]
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 
+[tool.hatch.build.targets.sdist]
+include = ["src/customgui", "apps", "examples", "docs", "tests", "scripts"]
+
 [tool.hatch.build.targets.wheel]
-packages = ["AppCore", "GuiCore", "Guis", "customgui"]
+packages = ["src/customgui"]

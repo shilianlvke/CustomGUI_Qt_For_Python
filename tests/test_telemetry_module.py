@@ -1,4 +1,4 @@
-from AppCore.SYS.module.telemetry_module import read_recent_events, record_event, track_timing
+from customgui.appcore.sysx.modules.telemetry_module import read_recent_events, record_event, track_timing
 
 
 def test_record_event_writes_event_and_metric(tmp_path, monkeypatch):

@@ -11,10 +11,10 @@ os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
 import pytest
 from PySide6.QtWidgets import QApplication
 
-from AppCore import ColorPalette, PluginRegistry, get_theme_manager
-from AppCore.SYS.module.telemetry_module import read_recent_events
-from Guis.app_loader import register_app
-from Guis.language_service import apply_language
+from customgui.appcore import ColorPalette, PluginRegistry, get_theme_manager
+from customgui.appcore.sysx.modules.telemetry_module import read_recent_events
+from customgui.guis.app_loader import register_app
+from customgui.guis.language_service import apply_language
 
 pytestmark = pytest.mark.skip(reason="example 应用已迁移到 Apps_legacy，不参与基座装配")
 
@@ -71,7 +71,7 @@ def test_example_paradigm_base_access(qapp, diagnostics_dir):
     page = container.widgets[0]
 
     # 基座组件（CCard/CPushButton）已挂载
-    from GuiCore import CCard, CPushButton
+    from customgui.guicore import CCard, CPushButton
 
     assert len(page.findChildren(CCard)) >= 1
     assert len(page.findChildren(CPushButton)) == 1

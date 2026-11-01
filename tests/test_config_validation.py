@@ -1,6 +1,6 @@
 import pytest
 
-from AppCore.SYS.config.schema import (
+from customgui.appcore.sysx.config.schema import (
     validate_language_data,
     validate_settings_data,
     validate_theme_data,

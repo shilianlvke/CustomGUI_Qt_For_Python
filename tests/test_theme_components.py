@@ -2,10 +2,10 @@
 
 样式统一后的契约（与 ``CPushButton`` 一致）：
 
-- 组件实例只声明 ``objectName``，颜色/状态/字体一律定义在 ``GuiCore/styles.py``；
+- 组件实例只声明 ``objectName``，颜色/状态/字体一律定义在 ``customgui.guicore/styles.py``；
 - **几何量不进中央样式表**：圆角、边框宽度、内边距、固定宽高、偏移一律由组件
   本地用一条只含几何属性的样式表提供；
-- 组件几何**全部取设计令牌**（``AppCore.SYS.module.token_module``）：组件暴露的
+- 组件几何**全部取设计令牌**（``customgui.appcore.sysx.modules.token_module``）：组件暴露的
   几何参数默认取 ``None`` 并回落到对应令牌，显式传参可覆盖；
 - 主题切换由 ``CWindow.apply_style()`` 重建中央样式表并下发，组件自身不订阅主题。
 """
@@ -16,11 +16,11 @@ import re
 os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
 
 import pytest
-from PySide6.QtGui import QColor, QPalette
+from PySide6.QtGui import QPalette
 from PySide6.QtWidgets import QApplication, QWidget
 
-from AppCore import ColorPalette, get_design_tokens, get_theme_manager
-from GuiCore import (
+from customgui.appcore import ColorPalette, get_design_tokens, get_theme_manager
+from customgui.guicore import (
     CLineEdit,
     CMenu,
     CMenuButton,
@@ -199,7 +199,7 @@ def test_scroll_area_custom_background(qapp):
 
 
 def test_window_frame_override(qapp):
-    from GuiCore import CWindow
+    from customgui.guicore import CWindow
 
     window = CWindow()
     default_style = window.styleSheet()
@@ -321,14 +321,14 @@ def test_tooltip_geometry_follows_params(qapp):
 
 def _init_language():
     """CLeftMenu / CLeftColumn 构造期会读取语言资源，按应用启动的方式初始化一次。"""
-    from AppCore import AppLanguages, AppSettings, Language
+    from customgui.appcore import AppLanguages, AppSettings, Language
 
     Language.update(AppLanguages[AppSettings.language].data)
 
 
 def test_left_menu_radius_falls_back_to_token(qapp):
     """CLeftMenu 的圆角默认回落设计令牌，且由组件本地提供。"""
-    from GuiCore import CLeftMenu
+    from customgui.guicore import CLeftMenu
 
     _init_language()
 
@@ -341,7 +341,7 @@ def test_left_menu_radius_falls_back_to_token(qapp):
 
 def test_left_column_geometry_follows_token(qapp):
     """CLeftColumn 的圆角与标题标签几何取设计令牌，显式传参可覆盖。"""
-    from GuiCore import CLeftColumn
+    from customgui.guicore import CLeftColumn
 
     _init_language()
     tokens = get_design_tokens()
@@ -380,7 +380,7 @@ def test_line_edit_height_follows_token(qapp):
 
 def test_combo_box_drop_down_width_follows_token(qapp):
     """CComboBox 的下拉箭头区域宽度取设计令牌。"""
-    from GuiCore import CComboBox
+    from customgui.guicore import CComboBox
 
     tokens = get_design_tokens()
     sheet = CComboBox().styleSheet()

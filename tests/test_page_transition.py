@@ -15,8 +15,8 @@ from PySide6.QtCore import QCoreApplication, QEasingCurve, QEvent
 from PySide6.QtTest import QTest
 from PySide6.QtWidgets import QApplication, QStackedWidget, QWidget
 
-from GuiCore import CPageTransition
-from Guis.windows.main_window.functions import MainFunctions
+from customgui.guicore import CPageTransition
+from customgui.guis.windows.main_window.functions import MainFunctions
 
 LAYER_NAME = "CPageTransition_Layer"
 

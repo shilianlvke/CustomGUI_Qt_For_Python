@@ -9,9 +9,9 @@ from PySide6.QtCore import QSize, Qt
 from PySide6.QtTest import QTest
 from PySide6.QtWidgets import QApplication, QVBoxLayout, QWidget
 
-from AppCore import get_theme_manager
-from GuiCore import CButton, CButtonGroup, CPushButton, CSplitButton
-from GuiCore.CustomUI.button.severity import Severity, Variant, colors_for, is_dark_theme
+from customgui.appcore import get_theme_manager
+from customgui.guicore import CButton, CButtonGroup, CPushButton, CSplitButton
+from customgui.guicore.custom_ui.button.severity import Severity, Variant, colors_for, is_dark_theme
 
 
 @pytest.fixture(scope="module")

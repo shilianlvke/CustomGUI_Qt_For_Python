@@ -2,8 +2,8 @@
 
 from pathlib import Path
 
-from AppCore.SYS.config.paths import iter_files, project_root, resolve_path
-from AppCore.SYS.other.static_func import PathFinder
+from customgui.appcore.sysx.common.static_func import PathFinder
+from customgui.appcore.sysx.config.paths import iter_files, project_root, resolve_path
 
 
 def test_resolve_from_project_root():

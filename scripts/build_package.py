@@ -141,7 +141,7 @@ a = Analysis(
 #    PyInstaller 的 PySide6 钩子会无条件拷贝所有 Qt6*.dll，模块级 excludes 拦不住，
 #    必须在 a.binaries 里按文件名过滤。保留清单 _KEEP_QT6 由源码导入自动推导。
 # 3) Qt 网络相关插件（tls / networkinformation）：随 QtNetwork 一并移除
-# 4) Qt 翻译文件：应用自带语言系统（AppCore Language），无需 Qt 内置翻译
+# 4) Qt 翻译文件：应用自带语言系统（customgui.appcore Language），无需 Qt 内置翻译
 
 _NETWORK_EXCLUDED = 'QtNetwork' in _EXCLUDE_QT_SUBSTR
 # opengl32sw.dll = 软件 OpenGL 光栅器；纯 QWidget 应用走 raster 引擎，运行时不会加载，

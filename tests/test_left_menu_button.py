@@ -13,8 +13,8 @@ import pytest
 from PySide6.QtTest import QTest
 from PySide6.QtWidgets import QApplication, QVBoxLayout, QWidget
 
-from AppCore import ColorPalette, get_theme_manager
-from GuiCore.WindowDefineUI.left_menu.menu_button import CLeftMenuButton, _mix_color
+from customgui.appcore import ColorPalette, get_theme_manager
+from customgui.guicore.window.left_menu.menu_button import CLeftMenuButton, _mix_color
 
 _FONT = "微软雅黑"
 

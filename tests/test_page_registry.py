@@ -1,6 +1,5 @@
-from AppCore import Language
-from AppCore import get_plugin_registry
-from Guis.windows.main_window.registry import (
+from customgui.appcore import Language, get_plugin_registry
+from customgui.guis.windows.main_window.registry import (
     get_default_page_object,
     get_page_routes,
 )

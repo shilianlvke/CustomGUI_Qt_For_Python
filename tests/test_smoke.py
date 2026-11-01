@@ -1,5 +1,5 @@
 def test_core_config_smoke():
-    from AppCore import AppLanguages, AppSettings, AppThemes
+    from customgui.appcore import AppLanguages, AppSettings, AppThemes
 
     assert hasattr(AppSettings, "theme_name")
     assert hasattr(AppSettings, "language")
@@ -8,17 +8,17 @@ def test_core_config_smoke():
 
 
 def test_public_imports_smoke():
-    import AppCore
-    import Guis
-    import GuiCore
+    import customgui.appcore
+    import customgui.guicore
+    import customgui.guis
 
-    assert hasattr(AppCore, "Logger")
-    assert hasattr(Guis, "UiMainWindow")
-    assert hasattr(GuiCore, "Styles")
+    assert hasattr(customgui.appcore, "Logger")
+    assert hasattr(customgui.guis, "UiMainWindow")
+    assert hasattr(customgui.guicore, "Styles")
 
 
 def test_logger_api_smoke():
-    from AppCore import Logger
+    from customgui.appcore import Logger
 
     Logger.debug("smoke-debug")
     Logger.info("smoke-info")

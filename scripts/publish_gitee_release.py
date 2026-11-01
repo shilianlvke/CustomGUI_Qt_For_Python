@@ -51,14 +51,14 @@ def _encode_multipart(fields: dict[str, str], file_path: Path) -> tuple[bytes, s
     boundary = "----CustomGUI" + os.urandom(16).hex()
     lines = []
     for key, value in fields.items():
-        lines.append(f"--{boundary}\r\nContent-Disposition: form-data; name=\"{key}\"\r\n\r\n{value}\r\n".encode("utf-8"))
+        lines.append(f"--{boundary}\r\nContent-Disposition: form-data; name=\"{key}\"\r\n\r\n{value}\r\n".encode())
     filename = file_path.name
     lines.append(
         f"--{boundary}\r\nContent-Disposition: form-data; name=\"file\"; filename=\"{filename}\"\r\n"
-        "Content-Type: application/octet-stream\r\n\r\n".encode("utf-8")
+        "Content-Type: application/octet-stream\r\n\r\n".encode()
     )
     lines.append(file_path.read_bytes())
-    lines.append(b"\r\n" + f"--{boundary}--\r\n".encode("utf-8"))
+    lines.append(b"\r\n" + f"--{boundary}--\r\n".encode())
     return b"".join(lines), boundary
 
 

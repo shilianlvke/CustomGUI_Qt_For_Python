@@ -1,24 +1,23 @@
 import re
 from pathlib import Path
 
-
 ROOT = Path(__file__).resolve().parents[1]
-RUNTIME_DIRS = ["AppCore", "Guis", "GuiCore"]
-RUNTIME_FILES = ["main.py"]
+RUNTIME_DIRS = ["src/customgui/appcore", "src/customgui/guis", "src/customgui/guicore"]
+RUNTIME_FILES = ["examples/hello_world/main.py"]
 
 LEGACY_IMPORT_PATTERNS = [
-    re.compile(r"^\s*from\s+AppCore\.SYS\.module\.config_module\b"),
-    re.compile(r"^\s*from\s+AppCore\.SYS\.module\.languge_module\b"),
-    re.compile(r"^\s*from\s+AppCore\.SYS\.module\.settings_module\b"),
-    re.compile(r"^\s*from\s+AppCore\.SYS\.other\.folder_tools\b"),
-    re.compile(r"^\s*from\s+AppCore\.SYS\.other\.resource_locator\b"),
-    re.compile(r"^\s*from\s+AppCore\.SYS\.logger\b"),
-    re.compile(r"^\s*from\s+AppCore\.SYS\.locator\b"),
-    re.compile(r"^\s*from\s+AppCore\.SYS\.loader\b"),
-    re.compile(r"^\s*from\s+Guis\.windows\.loading_window\.ui_mian\b"),
-    # 业务页面已迁移至 Apps/ 目录，基座运行时代码不得再引用
-    re.compile(r"^\s*from\s+Guis\.windows\.main_window\.user_define_pages\.p2ptest\w*\b"),
-    re.compile(r"^\s*from\s+Guis\.windows\.main_window\.user_define_pages\b"),
+    re.compile(r"^\s*from\s+customgui.appcore\.sysx\.modules\.config_module\b"),
+    re.compile(r"^\s*from\s+customgui.appcore\.sysx\.modules\.languge_module\b"),
+    re.compile(r"^\s*from\s+customgui.appcore\.sysx\.modules\.settings_module\b"),
+    re.compile(r"^\s*from\s+customgui.appcore\.sysx\.common\.folder_tools\b"),
+    re.compile(r"^\s*from\s+customgui.appcore\.sysx\.common\.resource_locator\b"),
+    re.compile(r"^\s*from\s+customgui.appcore\.sysx\.logger\b"),
+    re.compile(r"^\s*from\s+customgui.appcore\.sysx\.locator\b"),
+    re.compile(r"^\s*from\s+customgui.appcore\.sysx\.loader\b"),
+    re.compile(r"^\s*from\s+customgui.guis\.windows\.loading_window\.ui_mian\b"),
+    # 业务页面已迁移至 apps/ 目录，基座运行时代码不得再引用
+    re.compile(r"^\s*from\s+customgui.guis\.windows\.main_window\.user_define_pages\.p2ptest\w*\b"),
+    re.compile(r"^\s*from\s+customgui.guis\.windows\.main_window\.user_define_pages\b"),
     re.compile(r"^\s*from\s+\.p2ptest\w*\b"),
     re.compile(r"^\s*from\s+\.normal_widget_show\b"),
     re.compile(r"^\s*from\s+\.\.logger\b"),
@@ -31,8 +30,8 @@ LEGACY_IMPORT_PATTERNS = [
 ]
 
 ALLOWED_FILES = {
-    "AppCore/SYS/module/language_module.py",
-    "Guis/windows/loading_window/ui_main.py",
+    "src/customgui/appcore/sysx/modules/language_module.py",
+    "src/customgui/guis/windows/loading_window/ui_main.py",
 }
 
 

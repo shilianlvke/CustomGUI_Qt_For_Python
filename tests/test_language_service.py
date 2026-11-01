@@ -4,8 +4,8 @@ from types import SimpleNamespace
 
 import pytest
 
-from AppCore import Language
-from Guis.language_service import apply_language, current_language, switch_language
+from customgui.appcore import Language
+from customgui.guis.language_service import apply_language, current_language, switch_language
 
 
 @pytest.fixture(autouse=True)
@@ -76,7 +76,7 @@ def test_language_subscription_notifies_listeners():
     def _listener():
         calls.append(True)
 
-    from AppCore import Language
+    from customgui.appcore import Language
 
     Language.subscribe(_listener)
     try:
@@ -95,7 +95,7 @@ def test_apply_same_language_is_idempotent():
     def _listener():
         calls.append(True)
 
-    from AppCore import Language
+    from customgui.appcore import Language
 
     Language.subscribe(_listener)
     try:

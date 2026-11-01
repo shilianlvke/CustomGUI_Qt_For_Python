@@ -1,5 +1,5 @@
-from AppCore import CommandPlugin, MenuPlugin, PagePlugin, get_plugin_registry
-from AppCore.SYS.module.error_module import DomainErrorBoundary
+from customgui.appcore import CommandPlugin, MenuPlugin, PagePlugin, get_plugin_registry
+from customgui.appcore.sysx.modules.error_module import DomainErrorBoundary
 
 
 def test_plugin_registry_page_menu_command_flow():
@@ -208,7 +208,7 @@ def test_discover_and_load_plugins_from_module_register_function(tmp_path, monke
     module_file = plugin_dir / "demo_plugin.py"
     module_file.write_text(
         """
-from AppCore import CommandPlugin
+from customgui.appcore import CommandPlugin
 
 
 def register_plugins(registry):

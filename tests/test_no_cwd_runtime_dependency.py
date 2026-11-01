@@ -1,21 +1,32 @@
 import ast
 from pathlib import Path
 
-
 ROOT = Path(__file__).resolve().parents[1]
-RUNTIME_DIRS = ["AppCore", "Guis", "GuiCore"]
-RUNTIME_FILES = ["main.py"]
+# src layout：运行时包在 src/customgui 下，扫错路径会让断言永远通过。
+RUNTIME_DIRS = [
+    "src/customgui/appcore",
+    "src/customgui/guis",
+    "src/customgui/guicore",
+]
+RUNTIME_FILES = ["examples/hello_world/main.py"]
 
 
 def _iter_runtime_files():
+    found = False
     for rel in RUNTIME_DIRS:
         base = ROOT / rel
         for path in base.rglob("*.py"):
+            if "__pycache__" in path.parts:
+                continue
+            found = True
             yield path
     for rel in RUNTIME_FILES:
         path = ROOT / rel
         if path.exists():
+            found = True
             yield path
+    # 自检：一个文件都没扫到时必须报错，不能静默通过。
+    assert found, "runtime 目录清单失效（路径不存在），请检查 src layout"
 
 
 def test_runtime_code_must_not_use_os_getcwd():

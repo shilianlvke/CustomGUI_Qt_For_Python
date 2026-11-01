@@ -2,7 +2,7 @@
 
 import pytest
 
-from AppCore import (
+from customgui.appcore import (
     AppLanguages,
     AppSettings,
     AppThemes,
@@ -10,9 +10,9 @@ from AppCore import (
     YamlHandler,
     get_app_context,
 )
-from AppCore.SYS.config.mapping import deep_merge, to_attrs, to_dict
-from AppCore.SYS.config.registry import ConfigFile, ConfigRegistry
-from AppCore.SYS.config.schema import (
+from customgui.appcore.sysx.config.mapping import deep_merge, to_attrs, to_dict
+from customgui.appcore.sysx.config.registry import ConfigFile, ConfigRegistry
+from customgui.appcore.sysx.config.schema import (
     AppSettingsModel,
     SizeRange,
     from_mapping,
@@ -20,9 +20,8 @@ from AppCore.SYS.config.schema import (
     validate_settings_data,
     validate_theme_data,
 )
-from AppCore.SYS.config.yaml_io import dump_yaml_file, load_yaml_file
-from AppCore.SYS.module.error_module import DomainErrorBoundary, IOErrorBoundary
-
+from customgui.appcore.sysx.config.yaml_io import dump_yaml_file, load_yaml_file
+from customgui.appcore.sysx.modules.error_module import DomainErrorBoundary, IOErrorBoundary
 
 # ---------------------------------------------------------------------------
 # Attrs（属性访问映射）

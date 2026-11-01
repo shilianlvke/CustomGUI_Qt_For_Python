@@ -10,10 +10,10 @@ from types import SimpleNamespace
 
 import pytest
 
-import AppCore.SYS.module.telemetry_module as telemetry
-from AppCore import CommandPlugin, PagePlugin, PluginRegistry, record_event
-from AppCore.SYS.module.telemetry_module import read_recent_events
-from Guis.windows.main_window.controller import MainWindowController, ThemeController
+import customgui.appcore.sysx.modules.telemetry_module as telemetry
+from customgui.appcore import CommandPlugin, PagePlugin, PluginRegistry, record_event
+from customgui.appcore.sysx.modules.telemetry_module import read_recent_events
+from customgui.guis.windows.main_window.controller import MainWindowController, ThemeController
 
 
 @pytest.fixture
@@ -112,7 +112,7 @@ class _StubMainFunctions:
 
 
 def test_controller_language_switch_is_recorded(diagnostics_dir):
-    from Guis.language_service import apply_language
+    from customgui.guis.language_service import apply_language
 
     apply_language("zh_cn")  # 重置语言状态，确保切换方向确定
 
@@ -140,7 +140,7 @@ def test_theme_controller_records_theme_switch(diagnostics_dir):
         def __init__(self):
             self.style = "demo"
 
-    from AppCore import ThemeManager
+    from customgui.appcore import ThemeManager
 
     controller = ThemeController(
         window=window,

@@ -9,7 +9,7 @@ from PySide6.QtCore import QPoint, Qt
 from PySide6.QtTest import QTest
 from PySide6.QtWidgets import QApplication, QLabel, QWidget
 
-from GuiCore import CConfirmDialog, CDialog, CDrawer, COverlayPanel
+from customgui.guicore import CConfirmDialog, CDialog, CDrawer, COverlayPanel
 
 
 @pytest.fixture(scope="module")

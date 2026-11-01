@@ -5,8 +5,8 @@ from pathlib import Path
 
 import pytest
 
-from AppCore import Attrs, Language, PluginRegistry
-from Guis.app_loader import (
+from customgui.appcore import Attrs, Language, PluginRegistry
+from customgui.guis.app_loader import (
     AppContext,
     apply_apps_language,
     discover_app_dirs,
@@ -51,7 +51,7 @@ def build_page(app):
 """
 
 REGISTER_PLUGINS_CODE = """
-from AppCore import CommandPlugin
+from customgui.appcore import CommandPlugin
 
 
 def register_plugins(registry, app):
@@ -180,7 +180,7 @@ def test_load_apps_idempotent_and_missing_main_still_registers_menu(apps_root):
     again = load_apps()
     assert again == dirs
 
-    from AppCore import get_plugin_registry
+    from customgui.appcore import get_plugin_registry
 
     registry = get_plugin_registry()
     assert "app.menu.left.demo" in registry._menus
@@ -207,12 +207,17 @@ def test_manifest_defaults(apps_root):
 
 
 def test_app_relative_import_of_user_lib_directory(apps_root, qapp):
-    """App 内部自定义逻辑目录（lib）可通过相对导入使用。"""
+    """App 内部自定义逻辑目录（lib）可通过相对导入使用。
+
+    ``lib/__init__.py`` 里的 ``from ..calc import add`` 要求：
+    - ``_customgui_apps.demo`` 是包（``__path__`` 指向应用目录）；
+    - ``calc.py`` 位于 ``<app>/calc.py``。
+    """
     app_dir = apps_root / "demo"
     _write_app(app_dir, page_code=None)
     (app_dir / "lib").mkdir(parents=True, exist_ok=True)
-    (app_dir / "lib" / "__init__.py").write_text("from .calc import add\n__all__ = ['add']\n", encoding="utf-8")
-    (app_dir / "lib" / "calc.py").write_text("def add(a, b):\n    return a + b\n", encoding="utf-8")
+    (app_dir / "lib" / "__init__.py").write_text("from ..calc import add\n__all__ = ['add']\n", encoding="utf-8")
+    (app_dir / "calc.py").write_text("def add(a, b):\n    return a + b\n", encoding="utf-8")
     (app_dir / "gui" / "main.py").write_text(
         '''
 from PySide6.QtWidgets import QLabel, QWidget

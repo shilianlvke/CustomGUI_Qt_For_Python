@@ -1,4 +1,4 @@
-from AppCore import MainWindowButtonUseCase
+from customgui.appcore import MainWindowButtonUseCase
 
 
 def test_use_case_identifies_page_route_first():

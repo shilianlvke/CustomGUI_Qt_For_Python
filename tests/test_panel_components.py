@@ -10,15 +10,15 @@ from PySide6.QtGui import QColor
 from PySide6.QtTest import QTest
 from PySide6.QtWidgets import QApplication, QLabel, QWidget
 
-from GuiCore import (
+from customgui.guicore import (
     CAccordion,
     CBreadcrumb,
     CButton,
     CDialog,
     CDrawer,
     CFieldset,
-    CFormGrid,
     CFormField,
+    CFormGrid,
     CInputText,
     CPanel,
     CSplitter,
@@ -26,7 +26,7 @@ from GuiCore import (
     CTabs,
     CToolbar,
 )
-from GuiCore.CustomUI.icon_utils import render_icon
+from customgui.guicore.custom_ui.icon_utils import render_icon
 
 
 @pytest.fixture(scope="module")
