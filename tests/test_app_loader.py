@@ -526,3 +526,75 @@ def test_context_icon_path_is_none_when_missing(apps_root):
     context = register_app(app_dir, registry=PluginRegistry())
 
     assert context.icon_path is None
+
+
+# ==========================================================================
+# 命名空间 Finder：多个应用并存时不串台
+# ==========================================================================
+def test_multiple_apps_do_not_share_modules(apps_root):
+    """两个应用的内部模块必须各走各的目录，不能串台。"""
+    for name, value in (("alpha", 1), ("beta", 2)):
+        app_dir = apps_root / name
+        (app_dir / "gui").mkdir(parents=True)
+        (app_dir / "resource" / "icon").mkdir(parents=True)
+        (app_dir / "resource" / "lang").mkdir(parents=True)
+        (app_dir / "shared").mkdir()
+        (app_dir / "shared" / "__init__.py").write_text(f"VALUE = {value}\n", encoding="utf-8")
+        (app_dir / "gui" / "main.py").write_text(
+            """
+from customgui.appcore import AppPage, AppPlugin
+
+
+class P(AppPlugin):
+    def pages(self):
+        from PySide6.QtWidgets import QWidget
+
+        from ..shared import VALUE
+        return [AppPage("btn_x", "pageX", lambda ctx, window: QWidget(), title=str(VALUE))]
+""",
+            encoding="utf-8",
+        )
+        (app_dir / "config.yml").write_text(
+            f'app_name: "{name}"\nprotocol: 2\nbutton_id: "btn_x"\n', encoding="utf-8"
+        )
+
+    alpha = register_app(apps_root / "alpha", registry=PluginRegistry())
+    beta = register_app(apps_root / "beta", registry=PluginRegistry())
+
+    assert alpha.import_module("shared").VALUE == 1
+    assert beta.import_module("shared").VALUE == 2
+    # 两个模块是不同对象，不是缓存串台
+    assert alpha.import_module("shared") is not beta.import_module("shared")
+
+
+def test_namespace_finder_is_installed_once(apps_root):
+    """Finder 全局唯一，多次加载应用不能重复插进 meta_path。"""
+    import sys
+
+    from customgui.guis.app_loader import _NamespacePackageFinder
+
+    app_dir = apps_root / "demo"
+    _write_app(app_dir, V2_PLUGIN_CODE, "protocol: 2\n")
+    for _ in range(3):
+        register_app(app_dir, registry=PluginRegistry())
+
+    finders = [f for f in sys.meta_path if isinstance(f, _NamespacePackageFinder)]
+    assert len(finders) == 1
+
+
+def test_namespace_finder_ignores_foreign_modules(apps_root):
+    """Finder 只处理自己的私有命名空间，不能拦截常规导入。"""
+    from customgui.guis.app_loader import _APP_NAMESPACE, _NamespacePackageFinder
+
+    finder = _NamespacePackageFinder()
+    assert finder.find_spec("json") is None
+    assert finder.find_spec("customgui.appcore") is None
+    assert finder.find_spec(_APP_NAMESPACE) is None  # 根命名空间本身不处理
+
+
+def test_unknown_app_module_returns_none(apps_root):
+    """未登记的应用名不应被 Finder 命中（返回 None 而不是乱猜路径）。"""
+    from customgui.guis.app_loader import _APP_NAMESPACE, _NamespacePackageFinder
+
+    finder = _NamespacePackageFinder()
+    assert finder.find_spec(f"{_APP_NAMESPACE}.never_registered.something") is None
