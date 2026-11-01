@@ -50,10 +50,17 @@ def package_root() -> Path:
     return PACKAGE_ROOT
 
 
+from .config import AppConfig, ConfigAlreadyLoadedError, configure, current_config, reset_config
+
 __all__ = [
+    "AppConfig",
+    "ConfigAlreadyLoadedError",
     "PACKAGE_ROOT",
     "RESOURCE_ROOT",
+    "configure",
+    "current_config",
     "package_root",
+    "reset_config",
     "resource_root",
     "__version__",
 ]

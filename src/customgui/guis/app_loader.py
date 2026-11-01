@@ -105,6 +105,27 @@ class AppContext:
         return self.resource("lang", f"{language or self.language}.yml")
 
 
+@dataclass
+class AppHandle:
+    """已加载应用的句柄：消费方按**名字**取模块，不再猜模块路径。
+
+    模块在 ``_customgui_apps.<name>...`` 这个**私有**命名空间下（不在
+    ``sys.path`` 里的目录插件只能这样导入），所以名字对消费方是透明的：
+
+    .. code-block:: python
+
+        handles = {handle.name: handle for handle in load_apps()}
+        hub = handles["pycl2"].module.hub.LauncherHub.instance()
+
+    ``module`` 在应用没有 ``gui/main.py`` 时为 ``None``。
+    """
+
+    name: str
+    module: ModuleType | None
+    context: AppContext
+    source: str = "path"
+
+
 def discover_app_dirs(root: str | Path | None = None) -> list[Path]:
     """扫描应用目录，返回全部含 ``config.yml`` 的子目录（按名称排序）。"""
     base = Path(root) if root is not None else apps_root()
@@ -257,7 +278,7 @@ def _import_app_module(module_name: str, app_dir: Path, file_path: Path) -> Modu
     return module
 
 
-def register_app(app_dir: Path, registry=None) -> AppContext | None:
+def register_app(app_dir: Path, registry=None, *, with_handle: bool = False) -> AppContext | AppHandle | None:
     """注册单个应用：解析清单 -> 注册菜单插件 -> 装载页面协议 -> 注册页面插件。
 
     返回 AppContext（应用无页面入口时仍注册菜单并返回上下文）。
@@ -305,15 +326,17 @@ def register_app(app_dir: Path, registry=None) -> AppContext | None:
     main_py = app_dir / "gui" / "main.py"
     if not main_py.is_file():
         Logger.warning(f"应用缺少页面实现: {name} (gui/main.py)")
-        return context
+        return AppHandle(name=name, module=None, context=context) if with_handle else context
 
     module = _import_app_module(f"{_APP_NAMESPACE}.{name}.gui.main", app_dir, main_py)
+    handle = AppHandle(name=name, module=module, context=context)
+    finish = (lambda: handle) if with_handle else (lambda: context)
 
     # 协议 1：register_plugins(registry, app) —— 完全自由
     if callable(getattr(module, "register_plugins", None)):
         module.register_plugins(registry, context)
         Logger.info(f"应用注册完成: {name} (register_plugins)")
-        return context
+        return finish()
 
     # 协议 2：PAGE（含 load_page(window) 方法）
     page_obj = getattr(module, "PAGE", None)
@@ -330,7 +353,7 @@ def register_app(app_dir: Path, registry=None) -> AppContext | None:
                 default=is_default,
             )
         )
-        return context
+        return finish()
 
     # 协议 3：build_page(app) -> QWidget
     if callable(getattr(module, "build_page", None)):
@@ -351,10 +374,13 @@ def register_app(app_dir: Path, registry=None) -> AppContext | None:
                 default=is_default,
             )
         )
-        return context
+        return finish()
 
     Logger.warning(f"应用缺少页面入口: {name} (需导出 PAGE / build_page / register_plugins)")
-    return context
+    return finish()
+
+
+_HANDLES: list[AppHandle] = []
 
 
 def load_apps(root: str | Path | None = None, force: bool = False) -> list[Path]:
@@ -362,8 +388,11 @@ def load_apps(root: str | Path | None = None, force: bool = False) -> list[Path]
 
     - 单个应用加载失败不影响其余应用；
     - 完成后注入当前语言的全部应用语言包。
+
+    需要按名字取应用模块时用 :func:`load_app_handles`——不要自己拼模块路径，
+    应用模块位于私有命名空间下。
     """
-    global _APP_DIRS, _LOADED
+    global _APP_DIRS, _LOADED, _HANDLES
     if _LOADED and not force:
         return _APP_DIRS
 
@@ -372,9 +401,12 @@ def load_apps(root: str | Path | None = None, force: bool = False) -> list[Path]
 
     registry = get_plugin_registry()
     loaded = 0
+    handles: list[AppHandle] = []
     for app_dir in app_dirs:
         try:
-            register_app(app_dir, registry=registry)
+            handle = register_app(app_dir, registry=registry, with_handle=True)
+            if isinstance(handle, AppHandle):
+                handles.append(handle)
             loaded += 1
         except Exception as exc:
             Logger.error(f"应用加载失败: {app_dir.name}: {exc}")
@@ -385,6 +417,7 @@ def load_apps(root: str | Path | None = None, force: bool = False) -> list[Path]
                 payload={"app": app_dir.name, "error": str(exc)},
             )
 
+    _HANDLES = handles
     apply_apps_language(AppSettings.language, app_dirs)
     _LOADED = True
     Logger.info(f"应用加载完成: {loaded}/{len(app_dirs)}")
@@ -392,8 +425,28 @@ def load_apps(root: str | Path | None = None, force: bool = False) -> list[Path]
     return app_dirs
 
 
+def load_app_handles(root: str | Path | None = None, force: bool = False) -> list[AppHandle]:
+    """发现并注册全部应用，返回句柄列表（``name`` -> 模块 + 上下文）。
+
+    这是消费方（宿主应用）取自身业务模块的**唯一正路**：
+    ``{h.name: h for h in load_app_handles()}``。
+    """
+    load_apps(root, force=force)
+    return list(_HANDLES)
+
+
+def get_app_handle(name: str, root: str | Path | None = None) -> AppHandle | None:
+    """按应用名取句柄；未加载时先加载。找不到返回 ``None``。"""
+    load_apps(root)
+    for handle in _HANDLES:
+        if handle.name == name:
+            return handle
+    return None
+
+
 def reset_apps_cache() -> None:
     """重置加载标记（测试/热重载场景使用）。"""
-    global _LOADED, _APP_DIRS
+    global _LOADED, _APP_DIRS, _HANDLES
     _LOADED = False
     _APP_DIRS = []
+    _HANDLES = []
