@@ -150,3 +150,6 @@ cython_debug/
 
 # WorkBuddy AI 本地工作记忆（不纳入版本控制）
 .workbuddy-ai/
+
+# Local agent workspace.
+/.workbuddy/
