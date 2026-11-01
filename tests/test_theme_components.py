@@ -235,7 +235,6 @@ def test_window_frame_override(qapp):
         ("#CLeftColumnTitle_Label", "padding-bottom"),
         ("#CLeftColumnTitle_Label", "font:"),
         ("#CLineEdit_LineEdit {", "height:"),
-        ("#CComboBox_ComboBox::drop-down", "width:"),
         ("#label_tooltip {", "border-radius"),
         ("#label_tooltip {", "padding-left"),
     ],
@@ -378,10 +377,26 @@ def test_line_edit_height_follows_token(qapp):
     assert f"height: {tokens.size.control_height}px" in CLineEdit().styleSheet()
 
 
-def test_combo_box_drop_down_width_follows_token(qapp):
-    """CComboBox 的下拉箭头区域宽度取设计令牌。"""
+def test_combo_box_has_no_native_subcontrol_rules(qapp):
+    """CComboBox 已重写为自绘控件，中央样式表不得再残留原生子控件规则。
+
+    自绘版不继承 ``QComboBox``，``::drop-down`` / ``::down-arrow`` /
+    ``QAbstractItemView`` 这些规则对原生弹出层才有效，留着只会误导后来者。
+    """
+    block = _central_block("#CComboBox_Field")
+    assert "border-radius" in block
+    assert "sur" in block or "border" in block
+    for native in ("::drop-down", "::down-arrow", "QAbstractItemView"):
+        assert native not in block, f"中央样式表仍残留原生下拉框规则 {native}"
+
+
+def test_combo_box_is_not_a_qcombobox(qapp):
+    """重写后的 CComboBox 不再继承 QComboBox（这是消除黑角的前提）。"""
+    from PySide6.QtWidgets import QComboBox, QWidget
+
     from customgui.guicore import CComboBox
 
-    tokens = get_design_tokens()
-    sheet = CComboBox().styleSheet()
-    assert f"width: {tokens.size.drop_down_width}px" in sheet
+    combo = CComboBox(items=["a", "b"])
+    assert not isinstance(combo, QComboBox)
+    assert isinstance(combo, QWidget)
+    assert combo.objectName() == "CComboBox_Field"

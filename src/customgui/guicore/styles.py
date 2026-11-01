@@ -163,52 +163,31 @@ class Styles:
         """
 
     def update_combobox_style(self):
-        """CComboBox：颜色与状态（下拉箭头区域宽度由组件本地覆盖）。"""
+        """CComboBox：自绘下拉框的底色、描边与三态（hover / focused / disabled）。
+
+        ``CComboBox`` 不再继承 ``QComboBox``，弹层与箭头都是自绘的，因此这里
+        不再声明 ``::drop-down`` / ``::down-arrow`` / ``QAbstractItemView`` 等
+        子控件规则——那些规则只对原生弹出层生效，留着只会误导后来者。
+        弹层内部的列表样式由组件自身按当前主题实时生成（见 ``popup.py``）。
+        """
         self.style += f"""
-            #CComboBox_ComboBox {{
-                border: {self.tokens.border.width}px solid {self.tokens.colors.surface_interactive};
+            #CComboBox_Field {{
+                border: {self.tokens.border.width}px solid {self.tokens.colors.border_transparent};
                 border-radius: {self.tokens.radius.window}px;
                 background-color: {self.tokens.colors.surface_interactive};
                 color: {self.tokens.colors.text_primary};
-                padding-left: {self.tokens.spacing.padding_sm}px;
             }}
-            #CComboBox_ComboBox:hover {{
-                background-color: {self.tokens.colors.surface_interactive_pressed};
+            #CComboBox_Field[hovered="true"] {{
+                border-color: {self.tokens.colors.border_context};
+                background-color: {self.tokens.colors.surface_interactive_hover};
             }}
-            #CComboBox_ComboBox QAbstractItemView {{
-                border: {self.tokens.border.width}px solid {self.tokens.colors.surface_interactive};
-                border-radius: {self.tokens.radius.window}px;
-                outline: none;  /* 移除选中虚线框 */
-                color: {self.tokens.colors.text_primary};
-                background-color: transparent;
+            #CComboBox_Field[focused="true"] {{
+                border-color: {self.tokens.colors.text_active};
+                background-color: {self.tokens.colors.surface_interactive_hover};
             }}
-            #CComboBox_ComboBox QAbstractItemView::item {{
-                padding-left:{self.tokens.spacing.padding_sm}px;
-                color: {self.tokens.colors.text_primary};
-                background-color: {self.tokens.colors.surface_interactive};
-            }}
-            #CComboBox_ComboBox QAbstractItemView::item:hover {{
-                /*border-radius: {self.tokens.radius.window}px;*/
-                background-color: {self.tokens.colors.surface_interactive_pressed};
-            }}
-            #CComboBox_ComboBox QAbstractItemView::item:selected {{
-                /*border-radius: {self.tokens.radius.window}px;*/
-                background-color: {self.tokens.colors.surface_interactive_pressed};
-            }}
-            #CComboBox_ComboBox::drop-down {{
-                subcontrol-origin: padding;
-                subcontrol-position: right center;
-                border: none;
-            }}
-            #CComboBox_ComboBox::down-arrow {{
-                image: url({self._icon_arrow_right});
-                width: {self.tokens.size.icon}px;
-                height: {self.tokens.size.icon}px;
-            }}
-            #CComboBox_ComboBox::down-arrow:on {{
-                image: url({self._icon_arrow_down});
-                width: {self.tokens.size.icon}px;
-                height: {self.tokens.size.icon}px;
+            #CComboBox_Field:disabled {{
+                background-color: {self.tokens.colors.surface_app};
+                color: {self.tokens.colors.text_muted};
             }}
         """
 
