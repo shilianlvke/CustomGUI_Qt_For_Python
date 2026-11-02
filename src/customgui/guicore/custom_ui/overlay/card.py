@@ -6,7 +6,7 @@ from PySide6.QtCore import QRectF, Qt
 from PySide6.QtGui import QColor, QPainter, QPainterPath, QPen
 from PySide6.QtWidgets import QFrame
 
-from customgui.appcore import ColorPalette
+from customgui.appcore import get_design_tokens
 
 from ..display.palette import tokens
 
@@ -27,8 +27,9 @@ class COverlayCard(QFrame):
         painter = QPainter(self)
         painter.setRenderHint(QPainter.Antialiasing)
         palette = tokens()
-        dark = QColor(palette["surface"]).lightness() < 128
-        background = QColor(ColorPalette.custom_bg_one if dark else "#ffffff")
+        # 底色取主题的 surface_app：深色主题下与旧的 custom_bg_one 完全等价，
+        # 浅色主题（如 eye/bright）则跟随主题，不再是一张突兀的纯白卡片。
+        background = QColor(get_design_tokens().colors.surface_app)
         border = QColor(palette["border"])
 
         rect = QRectF(self.rect()).adjusted(0.5, 0.5, -0.5, -0.5)

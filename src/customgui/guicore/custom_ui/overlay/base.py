@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from PySide6.QtCore import QEasingCurve, QPoint, QPropertyAnimation, QRect, QRectF, Qt, Signal
+from PySide6.QtCore import QEasingCurve, QEvent, QPoint, QPropertyAnimation, QRect, QRectF, Qt, QTimer, Signal
 from PySide6.QtGui import QColor, QPainter
 from PySide6.QtWidgets import QDialog
 
@@ -28,6 +28,9 @@ class _OverlayBase(QDialog):
     accepted = Signal()
     rejected = Signal()
 
+    #: 打开时是否让整个浮层窗口淡入（抽屉只滑入卡片，遮罩保持常亮）
+    _fade_on_open = True
+
     def __init__(
         self,
         parent=None,
@@ -45,11 +48,18 @@ class _OverlayBase(QDialog):
         self._closable = closable
         self._dismissable = dismissable_mask
         self._closing = False
+        self._follow_pending = False
         self._card = COverlayCard(self)
 
         self._fade: QPropertyAnimation | None = None
         self._slide: QPropertyAnimation | None = None
         self._build_card()
+
+        # 父窗口移动/缩放（最大化、还原、拖边框）时重新贴靠：浮层是独立顶层
+        # 窗口，Qt 不会带着它一起动，否则会停在旧位置、露出半截。
+        parent_widget = self.parentWidget()
+        if parent_widget is not None:
+            parent_widget.installEventFilter(self)
 
     # ------------------------------------------------------------------
     # 子类实现
@@ -60,17 +70,58 @@ class _OverlayBase(QDialog):
     def _layout_card(self) -> QRect:  # pragma: no cover - 子类实现
         return QRect(0, 0, self.width(), self.height())
 
+    def _target_geometry(self) -> QRect:
+        """浮层窗口应占据的屏幕矩形；默认铺满父窗口。
+
+        抽屉会覆盖此方法，把范围收窄到内容区，避免遮住左侧菜单、标题栏与版权栏。
+        """
+        parent = self.parentWidget()
+        if parent is None:
+            return QRect()
+        origin = parent.mapToGlobal(QPoint(0, 0))
+        return QRect(origin.x(), origin.y(), parent.width(), parent.height())
+
+    # ------------------------------------------------------------------
+    # 跟随父窗口
+    # ------------------------------------------------------------------
+    def eventFilter(self, obj, event):  # noqa: N802 - 覆写 Qt 命名
+        if obj is self.parentWidget() and event.type() in (QEvent.Resize, QEvent.Move):
+            self._schedule_follow()
+        return super().eventFilter(obj, event)
+
+    def _schedule_follow(self) -> None:
+        """父窗口几何变化后，延到本轮事件末尾再贴靠。
+
+        父窗口的 Resize 早于它内部控件（内容区）完成布局，此刻读到的锚点尺寸
+        还是旧的；等一轮事件循环再算，才拿得到布局后的真实几何。
+        """
+        if self._follow_pending or not self.isVisible() or self._closing:
+            return
+        self._follow_pending = True
+        QTimer.singleShot(0, self._follow_parent)
+
+    def _follow_parent(self) -> None:
+        """按父窗口的新几何重新铺开浮层（关闭中/未显示时跳过）。"""
+        self._follow_pending = False
+        if not self.isVisible() or self._closing:
+            return
+        geometry = self._target_geometry()
+        if geometry.isNull() or geometry == self.geometry():
+            return
+        self.setGeometry(geometry)
+        self._layout_card()
+        self.update()
+
     # ------------------------------------------------------------------
     # 展示与关闭
     # ------------------------------------------------------------------
     def open_dialog(self) -> None:
-        """以父窗口为范围铺满遮罩并淡入。"""
-        parent = self.parentWidget()
-        if parent is not None:
-            origin = parent.mapToGlobal(QPoint(0, 0))
-            self.setGeometry(origin.x(), origin.y(), parent.width(), parent.height())
+        """按 :meth:`_target_geometry` 定位并铺开遮罩。"""
+        geometry = self._target_geometry()
+        if not geometry.isNull():
+            self.setGeometry(geometry)
         self._layout_card()
-        self.setWindowOpacity(0.0)
+        self.setWindowOpacity(0.0 if self._fade_on_open else 1.0)
         self.show()
         self.raise_()
         self.activateWindow()
@@ -160,6 +211,12 @@ class _OverlayBase(QDialog):
 
     def paintEvent(self, event):  # noqa: N802 - 覆写 Qt 命名
         painter = QPainter(self)
+        # 透明窗口没有背景擦除：局部重绘时旧遮罩留在后备存储里，再叠一层就会
+        # 变深，表现为卡片边缘一串越来越密的竖线（滑入/缩放时最明显）。
+        # 先把本次脏区清成透明，再画遮罩与投影。
+        painter.setCompositionMode(QPainter.CompositionMode_Source)
+        painter.fillRect(event.rect(), Qt.transparent)
+        painter.setCompositionMode(QPainter.CompositionMode_SourceOver)
         painter.setRenderHint(QPainter.Antialiasing)
         painter.fillRect(self.rect(), QColor(0, 0, 0, self._mask_alpha))
 

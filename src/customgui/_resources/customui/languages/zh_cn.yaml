@@ -13,6 +13,7 @@ UI:
   # 窗口
   ui_Minimize: 最小化
   ui_Maximize: 最大化
+  ui_Restore: 还原
   # 打开和关闭
   ui_Open: 打开
   ui_Close: 关闭

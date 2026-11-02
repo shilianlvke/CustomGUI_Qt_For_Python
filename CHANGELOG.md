@@ -6,7 +6,30 @@
 ## 未发布
 
 按钮组件按 PrimeVue Aura（`sakai-vue` 的 Button 页）做了一轮全盘复核，修掉渲染偏差；
-输入组件按同一套手法对照 `InputDoc` 复核了一遍。
+输入组件按同一套手法对照 `InputDoc` 复核了一遍；抽屉组件以主窗口「软件信息」左抽屉为
+范例重做，并修掉最大化/还原时整窗重建样式表导致的卡顿。
+
+### 新增
+
+#### 抽屉（`CDrawer`）
+
+- 以主窗口左侧的「软件信息」抽屉（`CLeftColumn`）为范例重做四个方向：47px 头部 +
+  圆角标题胶囊 + 30×30 图标位 + 30×30 关闭按钮，直接复用同批样式表对象名
+  （`CLeftColumnTitle_Frame` / `CLeftColumnTitle_Label` / `CLeftColumnIcon_Frame` /
+  `CLeftColumnContent_Frame`），深浅主题与四套配色自动跟随。
+- 新增 `anchor` 参数（默认取 `ui.content_area_frame`）：抽屉的活动范围收窄到内容区，
+  **不再铺满整个窗口**，因此左侧菜单栏、顶部标题栏、底部版权栏始终可见可点；
+  四个方向的停靠位置与滑入方向据此重新规划：
+  - `left`：内容区左缘，自左滑入（与左抽屉同一停靠边）
+  - `right`：内容区右缘，自右滑入
+  - `top`：标题栏下方，自上滑入
+  - `bottom`：版权栏上方，自下滑入
+- 抽屉默认非模态（`modal=False`）：打开时仍可切换栏目/主题，和左抽屉一致；
+  点击遮罩或 ESC 仍可关闭。
+- 内容区改为可滚动（`add_widget()` 自动插在末尾弹性空间之前，内容贴顶排列）；
+  内边缘阴影按滑入方向落在朝向内容的一侧。
+- 新增 `set_icon()` / `bounds()` / `set_resizable()`；`icon` 默认 `icon_setting`。
+- 预览页抽屉卡改为四个语义示例（软件信息 / 通知 / 筛选 / 详情）并附布局说明。
 
 ### 修复
 
@@ -69,6 +92,30 @@
   统一走 surface 色阶；主色实心按钮的文字改为白字（此前按 HSL 亮度判成近黑，与其它语义色不一致）。
 - **loading 排版**：spinner 占前置图标位、文案保留，转速改为 Aura 的 2s/圈；禁用态透明度改为 0.6。
 
+#### 窗口（最大化/还原卡顿）
+
+- **点击最大化卡一下、还原再卡一下**：`maximize_restore()` 调 `set_stylesheet()`
+  重建整张全局样式表并 `setStyleSheet` 到整个窗口，实测一次切换触发 **2780 次
+  StyleChange、同步阻塞 280~340ms**（`Styles()` 自身只占 ~3ms，其余全是整棵控件树
+  重新 polish + 重新布局）。
+  改为 `#CWindow_Frame[frameStyle="flat"]` 动态属性：切换时只 `unpolish/polish`
+  框架本身，同步耗时降到 **3~20ms（约 20~90 倍）**，StyleChange 归零，
+  LayoutRequest 从 ~139 降到 ~8。
+- 最大化时关闭 `QGraphicsDropShadowEffect`：满屏时阴影不可见，却会让整窗走离屏合成。
+- 最大化状态由模块级全局改为 `CTitleBar` 实例属性，多窗口不再互相串状态；
+  按钮图标与提示（新增 `language.UI.ui_Restore`）随状态同步更新。
+
+#### 浮层（抽屉 / 对话框）
+
++- **抽屉开着最大化/还原后停在旧位置**：浮层是独立顶层窗口，Qt 不会带着它一起动。
++  `_OverlayBase` 现在监听父窗口的 `Resize`/`Move`（延到下一轮事件循环，等内容区
++  布局完成再取锚点尺寸）重新贴边，滑入动画途中的终点也会改到新位置。
++- **卡片边缘出现一串越来越密的竖线**：透明窗口不做背景擦除，遮罩/投影在局部重绘时
++  反复叠 alpha（滑入、最大化时最明显）。`paintEvent` 先把脏区清成透明再绘制，
++  卡片动画期间逐帧刷新整层遮罩。
++- **浅色主题下抽屉/对话框是一张纯白卡片**：`COverlayCard` 底色改为设计令牌的
++  `surface_app`（深色主题数值不变），`eye`/`bright` 下与板面同色。
+
 ### 变更
 
 - `CButton` 新增 `icon_size` / `focus_ring` 参数；`set_divider`（分体按钮的伪分隔线）移除。
@@ -76,6 +123,13 @@
   `guicore.custom_ui.paint_utils` 新增 `shadow_layers` / `draw_shadow` / `SHADOW_MARGINS`（按钮与浮层共用）。
 - 按钮预览页：分组标题对齐 Sakai 的 `text-xl`，自定义内容用 24px 图标，分体按钮菜单补齐
   分隔线与 `pi-times` 图标。
+- `CDrawer` 默认尺寸 360→320，默认非模态（`modal=False`）；新增 `anchor` / `icon` /
+  `resizable` 关键字参数与 `add_widget()` / `bounds()` / `set_icon()` / `set_resizable()`。
+  旧的 `content_layout.addWidget()` 调用方式仍然可用（会排在末尾弹性空间之后）。
+- `CWindow.set_stylesheet()` 不再重建样式表：`(0, 0)` 走 `frameStyle="flat"` 动态属性，
+  主题重建仍由 `apply_style()` 负责（主窗口控制器已订阅主题变更）。
+- `CCloseButton` 新增 `radius` 参数：传值时为圆角方形（抽屉/标题栏用），不传保持圆形。
+- 新增语言键 `language.UI.ui_Restore`（还原）。
 
 ## 0.4.0
 

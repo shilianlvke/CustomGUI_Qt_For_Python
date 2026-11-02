@@ -72,30 +72,61 @@ def _dialog_buttons(window):
     return [box]
 
 
+_DRAWER_ICONS = {
+    "left": "icon_setting",
+    "right": "icon_bell",
+    "top": "icon_search",
+    "bottom": "icon_report",
+}
+
+
 def _show_drawer(window, position: str) -> None:
-    size = 380 if position in ("left", "right") else 260
-    drawer = CDrawer(_t("drawer_title"), position=position, size=size, parent=window)
+    """打开指定方向的抽屉。
+
+    抽屉的停靠范围由 ``anchor`` 决定，默认取主窗口内容区，因此左侧菜单、
+    顶部标题栏、底部版权栏都不会被盖住；四个方向共用同一套头部与内容结构。
+    """
+    size = 360 if position in ("left", "right") else 260
+    drawer = CDrawer(
+        _t(f"drawer_{position}_title"),
+        position=position,
+        size=size,
+        icon=_DRAWER_ICONS[position],
+        parent=window,
+    )
     drawer.setAttribute(Qt.WA_DeleteOnClose, True)
 
-    text = QLabel(_t("drawer_body"))
-    text.setWordWrap(True)
-    drawer.content_layout.addWidget(text)
+    hint = QLabel(_t("drawer_hint"))
+    hint.setWordWrap(True)
+    drawer.add_widget(hint)
+    drawer.add_widget(CDivider())
+    for key in ("drawer_row_1", "drawer_row_2", "drawer_row_3"):
+        drawer.add_widget(QLabel(_t(key)))
     close = CButton(_t("dialog_cancel"), variant="outlined", severity="secondary")
     close.clicked.connect(drawer.reject)
-    drawer.content_layout.addWidget(close)
+    drawer.add_widget(close)
     drawer.open_dialog()
 
 
 def _drawer_buttons(window):
     box = QWidget()
-    layout = QHBoxLayout(box)
+    layout = QVBoxLayout(box)
     layout.setContentsMargins(0, 0, 0, 0)
     layout.setSpacing(8)
+
+    row = QHBoxLayout()
+    row.setContentsMargins(0, 0, 0, 0)
+    row.setSpacing(8)
     for position in ("left", "right", "top", "bottom"):
         button = CButton(_t(f"drawer_{position}"), variant="outlined", severity="secondary")
         button.clicked.connect(lambda _checked=False, p=position: _show_drawer(window, p))
-        layout.addWidget(button)
-    layout.addStretch()
+        row.addWidget(button)
+    row.addStretch()
+    layout.addLayout(row)
+
+    note = QLabel(_t("drawer_note"))
+    note.setWordWrap(True)
+    layout.addWidget(note)
     return [box]
 
 

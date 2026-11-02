@@ -14,6 +14,7 @@ UI:
   # ウィンドウ
   ui_Minimize: 最小化
   ui_Maximize: 最大化
+  ui_Restore: 元に戻す
   # 開くと閉じる
   ui_Open: 開く
   ui_Close: 閉じる

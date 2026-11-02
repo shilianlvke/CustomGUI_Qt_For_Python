@@ -13,6 +13,7 @@ UI:
   # Window
   ui_Minimize: Minimize
   ui_Maximize: Maximize
+  ui_Restore: Restore
   # Open and Close
   ui_Open: Open
   ui_Close: Close

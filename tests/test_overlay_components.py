@@ -5,7 +5,7 @@ import os
 os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
 
 import pytest
-from PySide6.QtCore import QPoint, Qt
+from PySide6.QtCore import QPoint, QRect, Qt
 from PySide6.QtTest import QTest
 from PySide6.QtWidgets import QApplication, QLabel, QWidget
 
@@ -124,3 +124,113 @@ def test_overlay_panel_opens_below_target(host):
     panel.close_panel()
     QTest.qWait(60)
     assert not panel.is_open()
+
+
+# ----------------------------------------------------------------------
+# 抽屉：与左列「软件信息」抽屉同构，并限制在内容区内
+# ----------------------------------------------------------------------
+class _FakeMain(QWidget):
+    """带内容区的最小主窗口替身（只提供 ui.content_area_frame）。"""
+
+    def __init__(self):
+        from types import SimpleNamespace
+
+        super().__init__()
+        self.resize(900, 600)
+        self.content_area_frame = QWidget(self)
+        self.content_area_frame.setGeometry(60, 50, 780, 500)
+        self.ui = SimpleNamespace(content_area_frame=self.content_area_frame)
+
+
+def test_drawer_is_confined_to_content_area(qapp):
+    """抽屉只覆盖内容区，不压住左侧菜单、标题栏与版权栏。"""
+    parent = _FakeMain()
+    parent.show()
+    QTest.qWait(60)
+
+    drawer = CDrawer("Software Info", position="left", size=240, parent=parent)
+    drawer.open_dialog()
+    QTest.qWait(320)
+
+    anchor = parent.content_area_frame
+    origin = anchor.mapToGlobal(QPoint(0, 0))
+    assert drawer.geometry() == QRect(origin, anchor.size())
+    assert drawer.bounds() == QRect(origin, anchor.size())
+    # 非模态：打开抽屉时标题栏/菜单仍可操作（与左列抽屉一致）
+    assert drawer.isModal() is False
+
+    drawer.reject()
+    QTest.qWait(320)
+
+
+def test_drawer_follows_parent_resize(qapp):
+    """父窗口缩放（最大化/还原）后抽屉重新贴边，不会停在旧位置。"""
+    parent = _FakeMain()
+    parent.show()
+    QTest.qWait(60)
+
+    drawer = CDrawer("Details", position="right", size=240, parent=parent)
+    drawer.open_dialog()
+    QTest.qWait(320)
+    assert drawer.card().x() + drawer.card().width() == drawer.width()
+
+    parent.resize(1100, 760)
+    parent.content_area_frame.setGeometry(60, 50, 980, 660)
+    QTest.qWait(120)
+
+    anchor = parent.content_area_frame
+    assert drawer.geometry() == QRect(anchor.mapToGlobal(QPoint(0, 0)), anchor.size())
+    card = drawer.card().geometry()
+    assert card.x() + card.width() == drawer.width()
+    assert card.height() == drawer.height()
+
+    drawer.reject()
+    QTest.qWait(320)
+
+
+def test_drawer_header_matches_left_column(host):
+    """头部复用左列抽屉的结构与样式表对象名（47px + 胶囊 + 30px 控件位）。"""
+    drawer = CDrawer("Software Info", icon="icon_setting", parent=host)
+    assert drawer.header is not None
+    assert drawer.header.height() == 47
+    assert drawer.title_label is not None
+    assert drawer.title_label.text() == "Software Info"
+    assert drawer.title_label.objectName() == "CLeftColumnTitle_Label"
+    assert drawer._scroll.widget() is not None  # 内容放在滚动区里，超高可滚动
+
+    drawer.set_title("")
+    assert drawer.title_label.text() == ""
+
+
+def test_drawer_all_positions_flush_to_anchor(host):
+    """四个方向的卡片都贴住锚点对应的边。"""
+    drawers = {}
+    for position, size in (("left", 220), ("right", 220), ("top", 180), ("bottom", 180)):
+        drawer = CDrawer("Details", position=position, size=size, parent=host)
+        drawer.open_dialog()
+        QTest.qWait(300)
+        drawers[position] = drawer
+
+    left = drawers["left"].card().geometry()
+    assert left.left() == 0 and left.height() == drawers["left"].height()
+
+    right = drawers["right"].card().geometry()
+    assert right.right() == drawers["right"].width() - 1
+
+    top = drawers["top"].card().geometry()
+    assert top.top() == 0 and top.width() == drawers["top"].width()
+
+    bottom = drawers["bottom"].card().geometry()
+    assert bottom.bottom() == drawers["bottom"].height() - 1
+
+    for drawer in drawers.values():
+        drawer.reject()
+    QTest.qWait(320)
+
+
+def test_drawer_title_and_icon_can_change(host):
+    drawer = CDrawer("Filters", icon="icon_search", parent=host)
+    drawer.set_title("Details")
+    drawer.set_icon("icon_report")
+    assert drawer.title_label.text() == "Details"
+    assert drawer._icon_name == "icon_report"
