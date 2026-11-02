@@ -463,12 +463,27 @@ class CButton(QPushButton):
             return 160
 
     def _lerp_color(self, start: QColor, end: QColor, t: float) -> QColor:
-        return QColor(
-            round(start.red() + (end.red() - start.red()) * t),
-            round(start.green() + (end.green() - start.green()) * t),
-            round(start.blue() + (end.blue() - start.blue()) * t),
-            round(start.alpha() + (end.alpha() - start.alpha()) * t),
-        )
+        """按**预乘 alpha** 在两个颜色之间插值。
+
+        直接对 RGBA 四个分量各自插值时，``全透明(0,0,0,0) -> 不透明浅色`` 的中途
+        会经过「半透明灰」，叠到背景上就是先变暗再变亮（浅色主题下特别扎眼，
+        表现为 hover 时按钮闪一下）。预乘后插值等价于标准 alpha 混合：中途只有
+        「目标色 + 部分不透明度」，色相不会跑偏。
+        """
+        start_alpha = start.alphaF()
+        end_alpha = end.alphaF()
+        alpha = start_alpha + (end_alpha - start_alpha) * t
+        if alpha <= 0.0:
+            return QColor(0, 0, 0, 0)
+        blended = []
+        for begin, finish in (
+            (start.redF(), end.redF()),
+            (start.greenF(), end.greenF()),
+            (start.blueF(), end.blueF()),
+        ):
+            premultiplied = begin * start_alpha + (finish * end_alpha - begin * start_alpha) * t
+            blended.append(min(1.0, max(0.0, premultiplied / alpha)))
+        return QColor.fromRgbF(blended[0], blended[1], blended[2], alpha)
 
     def _set_state(self, state: str) -> None:
         """切换视觉状态；悬停/按下按配置时长做颜色过渡。

@@ -6,6 +6,7 @@ os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
 
 import pytest
 from PySide6.QtCore import QSize, Qt
+from PySide6.QtGui import QColor
 from PySide6.QtTest import QTest
 from PySide6.QtWidgets import QApplication, QVBoxLayout, QWidget
 
@@ -224,3 +225,45 @@ def test_loading_keeps_label(qapp):
 
     image = button.grab()
     assert not image.isNull()
+
+
+def _luminance(rgb: tuple[int, int, int]) -> float:
+    return 0.2126 * rgb[0] + 0.7152 * rgb[1] + 0.0722 * rgb[2]
+
+
+def _composite_over(color: QColor, base: QColor) -> tuple[int, int, int]:
+    alpha = color.alphaF()
+    return (
+        round(color.red() * alpha + base.red() * (1 - alpha)),
+        round(color.green() * alpha + base.green() * (1 - alpha)),
+        round(color.blue() * alpha + base.blue() * (1 - alpha)),
+    )
+
+
+@pytest.mark.parametrize("theme", ["default", "bright", "dracula", "eye"])
+def test_hover_fade_from_transparent_never_darkens(qapp, theme):
+    """透明底按钮（text / outlined 及其圆角变体）hover 渐变时不能先变暗。
+
+    逐分量插值 RGBA 会让 ``(0,0,0,0) -> 不透明浅色`` 的中途经过「半透明灰」，
+    叠到卡片上就是先变暗再变亮——浅色主题下肉眼看到的就是 hover 时闪一下。
+    改为预乘 alpha 插值后，中间帧亮度必须始终落在两端之间。
+    """
+    get_theme_manager().apply(theme)
+    button = CButton(text="Fade", variant="text")
+    card = QColor("#e2e6eb")
+
+    for end in (QColor("#f0f9ff"), QColor("#608edb")):
+        start = QColor(0, 0, 0, 0)
+        base_lum = _luminance(_composite_over(start, card))
+        end_lum = _luminance(_composite_over(end, card))
+        for step in range(11):
+            mid = button._lerp_color(start, end, step / 10)
+            value = _luminance(_composite_over(mid, card))
+            assert min(base_lum, end_lum) - 0.5 <= value <= max(base_lum, end_lum) + 0.5, (
+                f"{theme}: t={step / 10} 中间色越界 {mid.getRgb()} -> {value:.1f}"
+            )
+
+    # 中点应当仍是目标色的色相（只是半透明），而不是被拉向黑色
+    mid = button._lerp_color(QColor(0, 0, 0, 0), QColor("#f0f9ff"), 0.5)
+    assert mid.alpha() in (127, 128)
+    assert mid.red() > 230 and mid.green() > 235 and mid.blue() > 240
