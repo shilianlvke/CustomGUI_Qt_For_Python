@@ -140,6 +140,9 @@
 | 数字输入步进块 | 底色几乎不可见、左边缘重复描边、箭头是小三角 | 底色跟随输入框，左边缘不描边，中间分隔线 + chevron 箭头 + 半区 hover 高亮 |
 | 分段单选 | 选中段内缩成一颗独立圆角按钮 | 段铺满整格、共享外框、内部 1px 分隔线（挨着选中段的那条取强调色） |
 | 旋钮数值 | 只有数字 | 新增 `value_template`（对齐 `valueTemplate`），预览页显示 `20%` |
+| 浮层圆角 | 半透明窗口 + 无阴影：圆角外是一块见底的缺口，叠在比它浅的卡片上就像「透明直角」 | `CPopover` 补 Aura 的 `overlay.navigation.shadow`（`draw_shadow` 画在本体外圈）+ `NoDropShadowWindowHint`，圆角有阴影包边 |
+| 浮层内容内衬 | 4px < 圆角半径 8px，子控件可能画进圆角 | 内衬改为阴影边距 + `POPOVER_INSET`(6px)，内容永远不进圆角区 |
+| 浮层尺寸 | 只固定宽度，高度靠 `adjustSize()` | 保留 `adjustSize()`，但本体宽高与阴影边距分开计算（`body_width()`），定位按本体左上角 |
 
 ### 3.1 `CInputText` API
 

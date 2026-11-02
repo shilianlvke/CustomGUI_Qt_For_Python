@@ -185,7 +185,10 @@ def test_split_button_menu_uses_separator(qapp):
     assert menu is not None
     # 顺序与 PrimeVue 的 items 一致，None 表示分隔线
     assert menu.entries() == ["Update", "Delete", None, "Home"]
-    assert menu.height() > 0 and menu.width() >= 200  # Aura 的 min-width: 12.5rem
+    # 浮层外观由 CPopover 提供（与下拉字段共用），最小宽度按 Aura 的 12.5rem
+    popover = split.popover()
+    assert popover is not None and popover.body_width() >= 200
+    assert menu.height() > 0 and menu.width() > 0
     host.hide()
 
 

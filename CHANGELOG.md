@@ -31,6 +31,20 @@
   并排），去掉参考页没有的「尺寸」分组，ToggleSwitch 不再带标签，ToggleButton 固定 10em，
   分组标题与按钮页统一用 `title_size`。
 
+#### 下拉浮层（`CDropdownField` 一族 + 分体按钮菜单）
+
+- **浮层右下角「透明直角」**：`CPopover` 是半透明独立窗口，圆角只由 `QPainterPath` 决定、
+  圆角外 alpha=0，且**没有阴影**——叠在比它浅的卡片/页面上时，那一角就是一块见底的缺口。
+  现在按 Aura 的 `overlay.navigation.shadow` 在本体外圈画阴影（复用 `paint_utils.draw_shadow`），
+  并加 `Qt.NoDropShadowWindowHint` 关掉系统矩形投影。
+- **内容内衬**：原来布局内衬 4px 小于圆角半径 8px，子控件（列表悬停行、日历、色板）可能画进
+  圆角把它削平；改为「阴影边距 + `POPOVER_INSET`(6px)」，内容不再进入圆角区。
+- **统一两套实现**：分体按钮的弹出菜单原本是另一个 `Qt.Popup` 窗口、自己画阴影/圆角；
+  现拆成「`_SplitMenu` 只画菜单行 + `CPopover` 负责浮层外观」，与 `CSelect` / `CMultiSelect` /
+  `CAutoComplete` / `CTreeSelect` / `CDatePicker` / `CColorPicker` 共用同一个容器，
+  圆角、阴影、内衬、出屏翻边只有一处定义。`CSplitButton.menu()` 返回菜单内容，
+  新增 `CSplitButton.popover()` 返回浮层容器。
+
 #### 按钮组件
 
 - **`CButton` 焦点框**：只在键盘聚焦（`Tab` / `Shift+Tab`）时绘制，鼠标点击不再留框，

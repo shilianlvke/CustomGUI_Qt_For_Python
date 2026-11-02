@@ -109,7 +109,7 @@ Sakai 按钮页是一个双栏布局（`md:w-1/2`），共 **14 个分组**。�
 |----|------|----------|
 | `CButton` | 单按钮，覆盖 severity × variant × shape × elevation × content × state | 分组 1/2/3/4/7/8/9/10/11/12/13/14（73 个） |
 | `CButtonGroup` | 横向按钮组，首尾圆角、相邻边框合并 | 分组 5（3 个） |
-| `CSplitButton` | 主按钮 + 箭头按钮 + 自绘弹出菜单 `_SplitMenu`（两段之间无分隔线，对齐 Aura 的 `border-inline-end: 0`） | 分组 6（8 个） |
+| `CSplitButton` | 主按钮 + 箭头按钮 + 弹出菜单（`_SplitMenu` 只画菜单行，浮层容器复用 `line_edit.overlay.CPopover`；两段之间无分隔线，对齐 Aura 的 `border-inline-end: 0`） | 分组 6（8 个） |
 
 ### 3.2 `CButton` 建议 API
 
@@ -243,7 +243,7 @@ GuiCore/CustomUI/button/
 ├── __init__.py            # 导出 CButton / CButtonGroup / CSplitButton（保留旧导出）
 ├── button.py              # CButton：绘制 + 状态机 + 参数解析
 ├── button_group.py        # CButtonGroup：边框合并、首尾圆角
-├── split_button.py        # CSplitButton：主按钮 + 箭头 + _SplitMenu（.p-menu 规格）
+├── split_button.py        # CSplitButton：主按钮 + 箭头 + _SplitMenu（内容复用 CPopover）
 ├── severity.py            # Severity 枚举与颜色解析（读调色板）
 ├── README.md              # 本文
 ├── push_btn.py            # 现有，保留

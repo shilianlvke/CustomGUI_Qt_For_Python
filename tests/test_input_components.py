@@ -360,3 +360,65 @@ def test_input_icon_is_tinted_by_theme(host):
 def test_knob_value_template(host):
     knob = CKnob(20, -50, 50, 10, value_template="{value}%", parent=host)
     assert knob._template.replace("{value}", str(knob.value())) == "20%"
+
+
+# ----------------------------------------------------------------------
+# 浮层外观（圆角 / 阴影 / 内衬）——下拉字段与分体按钮共用
+# ----------------------------------------------------------------------
+def test_popover_reserves_shadow_margins_and_inset(host):
+    from customgui.guicore.custom_ui.line_edit.overlay import (
+        POPOVER_INSET,
+        POPOVER_SHADOW,
+        CPopover,
+    )
+
+    popover = CPopover(host, width=200)
+    left, _top, right, _bottom = POPOVER_SHADOW
+    assert popover.body_width() == 200
+    assert popover.width() == 200 + left + right
+    margins = popover.content_layout().contentsMargins()
+    assert margins.left() == left + POPOVER_INSET
+    assert margins.right() == right + POPOVER_INSET
+    # 半透明窗口 + 不要系统矩形阴影，圆角才不会多出一个直角
+    assert popover.testAttribute(Qt.WA_TranslucentBackground)
+    assert popover.windowFlags() & Qt.NoDropShadowWindowHint
+
+
+def test_popover_body_is_rounded_and_inset(qapp, host):
+    """本体四角必须是圆角、内容不侵入圆角；右下角投影区不应有实心直角。"""
+    from PySide6.QtWidgets import QLabel
+
+    from customgui.guicore.custom_ui.line_edit.overlay import POPOVER_SHADOW, CPopover
+
+    popover = CPopover(host, width=200)
+    filler = QLabel("content", popover)
+    filler.setFixedSize(120, 80)
+    popover.content_layout().addWidget(filler)
+    popover.adjustSize()
+    popover.show()
+    QTest.qWait(40)
+    image = popover.grab().toImage()
+    w, h = image.width(), image.height()
+
+    left, _top, right, bottom = POPOVER_SHADOW
+    # 本体内部（离本体边缘 8px）不透明
+    assert image.pixelColor(w - right - 8, h - bottom - 8).alpha() > 200
+    # 最角上（圆角之外、阴影边距内）接近全透明：既没有实心直角，也不该有硬阴影
+    assert image.pixelColor(w - 1, h - 1).alpha() < 60
+    # 四角都是圆角：左右两侧同样位置表现一致
+    assert image.pixelColor(left + 8, h - bottom - 8).alpha() > 200
+    popover.close()
+
+
+def test_dropdown_popup_reuses_popover(host):
+    """CDropdownField 的浮层必须是 CPopover，且本体宽度等于 _popup_width()。"""
+    from customgui.guicore.custom_ui.line_edit.overlay import CPopover
+
+    field = CSelect(["Rome", "London"], "Rome", parent=host)
+    field.show()
+    QTest.qWait(30)
+    field._toggle_popup()
+    popover = field.popup()
+    assert isinstance(popover, CPopover)
+    assert popover.body_width() == field._popup_width()
+    field.close_popup()

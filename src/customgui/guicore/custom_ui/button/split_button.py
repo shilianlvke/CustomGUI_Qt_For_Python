@@ -1,26 +1,28 @@
 """分体按钮：主按钮 + 下拉箭头（对应 PrimeVue 的 SplitButton）。
 
-附带一个 :class:`_SplitMenu`：PrimeVue 的 SplitButton 弹的是 ``<Menu popup>``，
-样式由 ``.p-menu`` 决定（圆角卡片 + 4px 内衬 + 36px 圆角菜单项 + 悬停高亮 + 着色图标），
-``QMenu`` 的原生渲染做不出这套排版，所以这里按同一规格自绘一个浮层。
+弹出内容拆成两层：
+
+* :class:`_SplitMenu` 只画「菜单行」（36px 行高、4px 圆角悬停、着色图标、分隔线）；
+* 浮层容器复用下拉字段那套 :class:`~customgui.guicore.custom_ui.line_edit.overlay.CPopover`
+  （圆角 + 描边 + Aura 阴影 + 内容内衬 + 出屏翻边）。
+
+以前菜单自己是一个 ``Qt.Popup`` 窗口、自己画阴影，和 ``CSelect`` 等下拉字段是两套实现，
+圆角/阴影容易各走各的；统一到 ``CPopover`` 后只有一个地方定义「浮层长什么样」。
 """
 
 from __future__ import annotations
 
 from PySide6.QtCore import QPoint, QRect, QRectF, QSize, Qt, Signal
-from PySide6.QtGui import QColor, QFont, QFontMetrics, QGuiApplication, QKeyEvent, QPainter, QPainterPath, QPen
+from PySide6.QtGui import QColor, QFont, QFontMetrics, QKeyEvent, QPainter, QPen
 from PySide6.QtWidgets import QHBoxLayout, QWidget
 
 from customgui.appcore import AppSettings, get_design_tokens
 
 from ..icon_utils import render_icon
-from ..paint_utils import draw_shadow
+from ..line_edit.overlay import CPopover
 from .button import _SIZES, CButton
 
-#: 浮层圆角（Aura ``menu.border.radius`` = ``content.border.radius`` = 6px）
-_MENU_RADIUS = 6
-#: ``navigation.list.padding`` = 0.25rem，``navigation.list.gap`` = 2px
-_MENU_PADDING = 4
+#: ``navigation.list.gap`` = 2px（行与行、行与分隔线之间）
 _MENU_GAP = 2
 #: ``navigation.item.padding`` = 0.5rem 0.75rem，``border.radius.sm`` = 4px
 _MENU_ITEM_PADDING_X = 12
@@ -31,23 +33,23 @@ _MENU_ICON_GAP = 8
 _MENU_ICON = 16
 #: ``menu.min-width`` = 12.5rem
 _MENU_MIN_WIDTH = 200
-#: 浮层的阴影比按钮更大（``overlay.navigation.shadow``），边距相应放大
-_MENU_SHADOW_MARGINS = (6, 2, 6, 10)
-#: 浮层与箭头按钮之间的间距
-_MENU_OFFSET = 4
 
 
 class _SplitMenu(QWidget):
-    """PrimeVue ``Menu`` 的弹出形态：单选、带图标、可含分隔线。"""
+    """PrimeVue ``Menu`` 的**内容**部分（单选、带图标、可含分隔线）。
+
+    它不再是独立窗口：圆角、描边、阴影、内衬统一由 :class:`CPopover` 负责——
+    和 ``CSelect`` / ``CDatePicker`` 等下拉字段共用同一套浮层外观，避免两套实现
+    在圆角/阴影上各走各的（浮层右下角出现透明直角就是这么来的）。
+    """
 
     actionTriggered = Signal(str)
 
-    def __init__(self, items, min_width: int = _MENU_MIN_WIDTH, parent=None):
-        super().__init__(parent, Qt.Popup | Qt.FramelessWindowHint | Qt.NoDropShadowWindowHint)
-        self.setAttribute(Qt.WA_TranslucentBackground)
+    def __init__(self, items, parent=None):
+        super().__init__(parent)
+        self.setObjectName("CSplitMenu_Content")
         self.setMouseTracking(True)
         self.setFocusPolicy(Qt.StrongFocus)
-        self.setObjectName("CSplitMenu_Popup")
 
         self._items = list(items)
         self._hover = -1
@@ -56,8 +58,11 @@ class _SplitMenu(QWidget):
         self._font.setPixelSize(max(12, AppSettings.text_size + 2))
         self._font.setWeight(QFont.Weight.Normal)
         self._item_height = _MENU_ITEM_PADDING_Y * 2 + max(_MENU_ICON, QFontMetrics(self._font).height())
-
-        self._layout_rows(max(min_width, self._natural_width()))
+        self.setFont(self._font)
+        width = self._natural_width()
+        self._build_rows(width)
+        self.setMinimumWidth(width)
+        self.setFixedHeight(self._rows_height())
 
     # ------------------------------------------------------------------
     # 尺寸与排版
@@ -71,91 +76,57 @@ class _SplitMenu(QWidget):
             label, icon = item
             icon_width = _MENU_ICON + _MENU_ICON_GAP if icon else 0
             widest = max(widest, icon_width + metrics.horizontalAdvance(label))
-        return widest + _MENU_ITEM_PADDING_X * 2 + _MENU_PADDING * 2
+        return widest + _MENU_ITEM_PADDING_X * 2
 
-    def _layout_rows(self, body_width: int) -> None:
-        left, top, right, bottom = _MENU_SHADOW_MARGINS
-        x = left + _MENU_PADDING
-        width = body_width - 2 * _MENU_PADDING
-        y = top + _MENU_PADDING
+    def _build_rows(self, width: int) -> None:
+        y = 0
         rows: list[tuple[str, str | None, str | None, QRect]] = []
         for item in self._items:
             if item is None:
-                rows.append(("separator", None, None, QRect(x, y, width, 1)))
+                rows.append(("separator", None, None, QRect(0, y, width, 1)))
                 y += 1 + _MENU_GAP
                 continue
             label, icon = item
-            rows.append(("item", label, icon, QRect(x, y, width, self._item_height)))
+            rows.append(("item", label, icon, QRect(0, y, width, self._item_height)))
             y += self._item_height + _MENU_GAP
         self._rows = rows
-        content = y - _MENU_GAP + _MENU_PADDING
-        self.setFixedSize(body_width + left + right, content + top + bottom)
+        self._last_height = max(0, y - _MENU_GAP)
+
+    def _rows_height(self) -> int:
+        return getattr(self, "_last_height", 0)
+
+    def resizeEvent(self, event):  # noqa: N802 - 覆写 Qt 命名
+        # 宽度由浮层内容区决定，行矩形跟着重排
+        if self.width() > 0:
+            self._build_rows(self.width())
+        super().resizeEvent(event)
 
     def entries(self) -> list[str | None]:
         """菜单项标签（``None`` = 分隔线），顺序与构造时的 ``items`` 一致。"""
         return [label if kind == "item" else None for kind, label, _icon, _rect in self._rows]
 
-    def _body_rect(self) -> QRectF:
-        left, top, right, bottom = _MENU_SHADOW_MARGINS
-        return QRectF(self.rect()).adjusted(left, top, -right, -bottom)
-
-    def popup(self, global_pos: QPoint) -> None:
-        """在 ``global_pos``（分体按钮左下角）弹出浮层，超出屏幕时自动翻边。"""
-        screen = QGuiApplication.screenAt(global_pos) or QGuiApplication.primaryScreen()
-        left, top, _right, _bottom = _MENU_SHADOW_MARGINS
-        pos = QPoint(global_pos)
-        if screen is not None:
-            available = screen.availableGeometry()
-            if pos.x() + self.width() - left - _MENU_SHADOW_MARGINS[2] > available.right():
-                pos.setX(available.right() - self.width() + _MENU_SHADOW_MARGINS[2])
-            if pos.y() + self.height() - top - _MENU_SHADOW_MARGINS[3] > available.bottom():
-                pos.setY(max(available.top(), pos.y() - self.height() - _MENU_OFFSET))
-        self.move(pos - QPoint(left, top))
-        self.show()
-        self.raise_()
-        self.setFocus(Qt.PopupFocusReason)
-
     # ------------------------------------------------------------------
-    # 外观
+    # 外观（只画内容行，浮层外观由 CPopover 负责）
     # ------------------------------------------------------------------
-    def _menu_colors(self) -> tuple[QColor, QColor, QColor, QColor, QColor]:
-        """(底色, 描边, 正文色, 悬停色, 图标色)。
-
-        对齐 Aura 的关系：浮层比卡片更「深一档」，描边是正文色的低透明度叠加，
-        悬停是正文色 9% 的叠加（``navigation.item.focus.background``），
-        图标比正文再暗一档（``navigation.item.icon.color``）。
-        """
-        colors = get_design_tokens().colors
-        background = QColor(colors.surface_sidebar)
-        text = QColor(colors.text_primary)
-        active = QColor(colors.text_active)
-        icon = QColor(colors.text_muted)
-        border = QColor(text)
-        border.setAlpha(60)
-        return background, border, text, active, icon
+    def _menu_colors(self) -> tuple[QColor, QColor, QColor, QColor]:
+        """(正文色, 悬停色, 图标色, 分隔线色)。"""
+        tokens = get_design_tokens().colors
+        text = QColor(tokens.text_primary)
+        active = QColor(tokens.text_active)
+        icon = QColor(tokens.text_muted)
+        separator = QColor(text)
+        separator.setAlpha(60)
+        return text, active, icon, separator
 
     def paintEvent(self, event):  # noqa: N802 - 覆写 Qt 命名
         painter = QPainter(self)
         painter.setRenderHint(QPainter.Antialiasing)
-        background, border, text_color, active_color, icon_color = self._menu_colors()
-
-        body = self._body_rect()
-        path = QPainterPath()
-        path.addRoundedRect(body, _MENU_RADIUS, _MENU_RADIUS)
-
-        draw_shadow(painter, path, body, _MENU_RADIUS)
-        painter.fillPath(path, background)
-
-        border_path = QPainterPath()
-        border_path.addRoundedRect(body.adjusted(0.5, 0.5, -0.5, -0.5), _MENU_RADIUS, _MENU_RADIUS)
-        painter.setBrush(Qt.NoBrush)
-        painter.setPen(QPen(border, 1))
-        painter.drawPath(border_path)
-
+        text_color, active_color, icon_color, separator = self._menu_colors()
         painter.setFont(self._font)
+
         for index, (kind, label, icon, rect) in enumerate(self._rows):
             if kind == "separator":
-                painter.setPen(QPen(border, 1))
+                painter.setPen(QPen(separator, 1))
                 painter.drawLine(rect.left(), rect.center().y(), rect.right(), rect.center().y())
                 continue
 
@@ -214,13 +185,17 @@ class _SplitMenu(QWidget):
 
     def _activate(self, index: int) -> None:
         _kind, label, _icon, _rect = self._rows[index]
-        self.close()
+        host = self.window()
+        if host is not None:
+            host.close()
         if label:
             self.actionTriggered.emit(label)
 
     def keyPressEvent(self, event: QKeyEvent):  # noqa: N802 - 覆写 Qt 命名
         if event.key() == Qt.Key_Escape:
-            self.close()
+            host = self.window()
+            if host is not None:
+                host.close()
             return
         if event.key() in (Qt.Key_Down, Qt.Key_Up):
             items = [i for i, row in enumerate(self._rows) if row[0] == "item"]
@@ -266,6 +241,7 @@ class CSplitButton(QWidget):
         self._items: list[tuple[str, str | None] | None] = list(items or [])
         self._severity = severity
         self._menu: _SplitMenu | None = None
+        self._popover: CPopover | None = None
 
         layout = QHBoxLayout(self)
         layout.setContentsMargins(0, 0, 0, 0)
@@ -317,8 +293,19 @@ class CSplitButton(QWidget):
         return self._arrow
 
     def menu(self) -> _SplitMenu | None:
-        """最近一次弹出的浮层（没弹过为 ``None``）。"""
+        """最近一次弹出的菜单内容（没弹过为 ``None``）。"""
         return self._menu
+
+    def popover(self) -> CPopover | None:
+        """最近一次弹出的浮层容器（与下拉字段共用 :class:`CPopover`）。"""
+        return self._popover
+
+    def _on_menu_closed(self) -> None:
+        popover = self._popover
+        self._popover = None
+        self._menu = None
+        if popover is not None:
+            popover.deleteLater()
 
     def sizeHint(self) -> QSize:  # noqa: N802 - 覆写 Qt 命名
         main = self._main.sizeHint()
@@ -327,13 +314,18 @@ class CSplitButton(QWidget):
     def _show_menu(self) -> None:
         if not self._items:
             return
-        if self._menu is not None:
-            self._menu.close()
-            self._menu.deleteLater()
-        menu = _SplitMenu(self._items, min_width=max(_MENU_MIN_WIDTH, self.width()), parent=self)
+        if self._popover is not None:
+            self._popover.close()
+            self._popover.deleteLater()
+
+        popover = CPopover(self, width=max(_MENU_MIN_WIDTH, self.width()))
+        menu = _SplitMenu(self._items, popover)
         menu.actionTriggered.connect(self.actionTriggered.emit)
+        popover.content_layout().addWidget(menu)
+        popover.closed.connect(self._on_menu_closed)
+        self._popover = popover
         self._menu = menu
-        menu.popup(self.mapToGlobal(QPoint(0, self.height() + _MENU_OFFSET)))
+        popover.show_at(self._arrow)
 
 
 __all__ = ["CSplitButton"]

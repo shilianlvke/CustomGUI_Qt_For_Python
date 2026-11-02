@@ -2,7 +2,7 @@
 
 三者被 ``CSelect`` / ``CMultiSelect`` / ``CAutoComplete`` / ``CTreeSelect`` /
 ``CDatePicker`` / ``CColorPicker`` 共用。浮层用 ``Qt.Popup``，点击外部自动关闭，
-因此外观（底色、边框、圆角）全部自绘，与主题调色板实时同步。
+因此外观（底色、边框、圆角、阴影）全部自绘，与主题调色板实时同步。
 """
 
 from __future__ import annotations
@@ -13,7 +13,7 @@ from PySide6.QtWidgets import QFrame, QVBoxLayout, QWidget
 
 from customgui.appcore import AppSettings
 
-from ..paint_utils import draw_check, draw_chevron
+from ..paint_utils import draw_check, draw_chevron, draw_shadow
 from .input_style import colors, rounded_path
 
 #: 列表行高（Aura 菜单项约 2.25rem）
@@ -23,6 +23,12 @@ MAX_VISIBLE_ROWS = 8
 #: 列表上下留白
 LIST_PADDING = 3
 
+#: 浮层阴影边距（左, 上, 右, 下）——Aura 的 ``overlay.navigation.shadow`` 比按钮大一圈，
+#: 圆角外不再是一块「透明的直角缺口」，而是被阴影包住的悬浮卡片
+POPOVER_SHADOW = (8, 4, 8, 14)
+#: 内容与浮层本体之间的内衬：必须 ≥ 圆角半径 ×(1-1/√2)≈2.35，且不侵入圆角区
+POPOVER_INSET = 6
+
 
 def list_font() -> QFont:
     font = QFont(AppSettings.family)
@@ -31,22 +37,47 @@ def list_font() -> QFont:
 
 
 class CPopover(QFrame):
-    """圆角浮层容器（``Qt.Popup``：点外部自动关闭）。"""
+    """圆角浮层容器（``Qt.Popup``：点外部自动关闭）。
+
+    外观分三层，缺一层右下角就会露出「透明的直角」：
+
+    1. **本体**：``paintEvent`` 用圆角路径铺底色 + 1px 描边，路径以外 alpha=0；
+    2. **阴影**：用 ``paint_utils.draw_shadow`` 在本体外圈画 Aura 的浮层阴影，
+       否则半透明窗口的圆角直接叠在页面上，看着像缺了一块；
+    3. **内衬**：内容距本体至少 :data:`POPOVER_INSET`，保证任何子控件（列表的悬停行、
+       日历的日期圆点、色板网格）都不会画进圆角里把它「削」成直角。
+    """
 
     closed = Signal()
 
     def __init__(self, parent=None, width: int = 220, radius: int = 8):
-        super().__init__(parent, Qt.Popup | Qt.FramelessWindowHint)
+        # NoDropShadowWindowHint：不要系统那种矩形投影，否则透明圆角处会多出一个直角阴影
+        super().__init__(parent, Qt.Popup | Qt.FramelessWindowHint | Qt.NoDropShadowWindowHint)
         self.setAttribute(Qt.WA_TranslucentBackground)
         self.setObjectName("CPopover")
         self._radius = radius
+        self._body_width = width
+        left, top, right, bottom = POPOVER_SHADOW
         self._layout = QVBoxLayout(self)
-        self._layout.setContentsMargins(4, 4, 4, 4)
+        self._layout.setContentsMargins(
+            left + POPOVER_INSET,
+            top + POPOVER_INSET,
+            right + POPOVER_INSET,
+            bottom + POPOVER_INSET,
+        )
         self._layout.setSpacing(4)
-        self.setFixedWidth(width)
+        self.setFixedWidth(width + left + right)
 
     def content_layout(self) -> QVBoxLayout:
         return self._layout
+
+    def body_width(self) -> int:
+        """浮层本体的宽度（不含阴影边距）。"""
+        return self._body_width
+
+    def _body_rect(self) -> QRectF:
+        left, top, right, bottom = POPOVER_SHADOW
+        return QRectF(self.rect()).adjusted(left, top, -right, -bottom)
 
     # ------------------------------------------------------------------
     # 绘制与定位
@@ -55,24 +86,32 @@ class CPopover(QFrame):
         painter = QPainter(self)
         painter.setRenderHint(QPainter.Antialiasing)
         palette = colors()
-        rect = QRectF(self.rect()).adjusted(0.5, 0.5, -0.5, -0.5)
-        painter.setBrush(QColor(palette["background"]))
+        body = self._body_rect()
+        path = rounded_path(body, self._radius)
+
+        draw_shadow(painter, path, body, self._radius)
+        painter.fillPath(path, QColor(palette["background"]))
+        painter.setBrush(Qt.NoBrush)
         painter.setPen(QPen(QColor(palette["border"]), 1))
-        painter.drawPath(rounded_path(rect, self._radius))
+        painter.drawPath(rounded_path(body.adjusted(0.5, 0.5, -0.5, -0.5), self._radius))
         painter.end()
 
     def show_at(self, anchor: QWidget) -> None:
         """贴住控件下方展开；下方空间不足时翻到上方。"""
         self.adjustSize()
+        left, top, right, bottom = POPOVER_SHADOW
+        body_width = self.width() - left - right
+        body_height = self.height() - top - bottom
         origin = anchor.mapToGlobal(QPoint(0, 0))
         position = QPoint(origin.x(), origin.y() + anchor.height() + 6)
         screen = QGuiApplication.screenAt(origin)
         if screen is not None:
             area = screen.availableGeometry()
-            if position.y() + self.height() > area.bottom():
-                position.setY(origin.y() - self.height() - 6)
-            position.setX(max(area.left(), min(position.x(), area.right() - self.width())))
-        self.move(position)
+            if position.y() + body_height > area.bottom():
+                position.setY(origin.y() - body_height - 6)
+            position.setX(max(area.left(), min(position.x(), area.right() - body_width)))
+        # 定位以「本体」左上角为准，阴影边距要减掉
+        self.move(position - QPoint(left, top))
         self.show()
         self.raise_()
 
@@ -348,4 +387,12 @@ class CTreeList(QWidget):
         self.activated.emit(str(node.get("label", "")))
 
 
-__all__ = ["CPopover", "COptionList", "CTreeList", "ROW_HEIGHT", "list_font"]
+__all__ = [
+    "CPopover",
+    "COptionList",
+    "CTreeList",
+    "ROW_HEIGHT",
+    "POPOVER_SHADOW",
+    "POPOVER_INSET",
+    "list_font",
+]
