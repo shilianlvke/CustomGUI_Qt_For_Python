@@ -3,7 +3,7 @@
 本项目遵循 [语义化版本](https://semver.org/lang/zh-CN/)。`0.x` 阶段 minor 版本可能含
 破坏性变更，均在下方显式列出。
 
-## 未发布
+## 0.5.0
 
 按钮组件按 PrimeVue Aura（`sakai-vue` 的 Button 页）做了一轮全盘复核，修掉渲染偏差；
 输入组件按同一套手法对照 `InputDoc` 复核了一遍；抽屉从浮层改为「栏目」组件并新增

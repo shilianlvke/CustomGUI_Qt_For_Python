@@ -39,7 +39,7 @@
 ### 当作依赖装进你自己的项目
 
 ```powershell
-uv add "customgui @ git+https://gitee.com/shilianlvke/CustomGUI_Qt_For_Python.git@base-v0.4.0"
+uv add "customgui @ git+https://gitee.com/shilianlvke/CustomGUI_Qt_For_Python.git@base-v0.5.0"
 ```
 
 固定到具体 tag 而不是分支，避免上游改动把你的构建搞红。
@@ -60,7 +60,7 @@ uv build --wheel
 uv run twine check dist/*.whl
 ```
 
-产物 `dist/customgui-0.4.0-py3-none-any.whl`（约 257 个包内文件），包含：
+产物 `dist/customgui-0.5.0-py3-none-any.whl`（约 257 个包内文件），包含：
 
 ```text
 customgui/
@@ -96,7 +96,7 @@ customgui doctor
 ```text
 CustomGUI doctor
 ========================================================
-✓ 版本          : 0.4.0
+✓ 版本          : 0.5.0
 ✓ 包目录        : .../site-packages/customgui
 ✓ 资源根 #0     : .../site-packages/customgui/_resources
 ✓ 数据根        : ~/.customgui
