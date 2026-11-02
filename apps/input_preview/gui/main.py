@@ -1,10 +1,10 @@
 """输入预览页：按 Sakai 输入页展示全部表单控件。
 
-分组对应 https://sakai.primevue.org/uikit/input 的 21 个区块：
-InputText / Sizes / Icons / Float Label / Textarea / AutoComplete / DatePicker /
-InputNumber / Slider / Rating / ColorPicker / Knob / RadioButton / Checkbox /
-ToggleSwitch / Listbox / Select / MultiSelect / TreeSelect / ToggleButton /
-SelectButton / InputGroup。
+分组对应 https://sakai.primevue.org/uikit/input 的 18 个区块，卡片划分也与参考页一致
+（参考页是 6 张卡片，一张卡片里放多个小标题，而不是每个控件一张卡）：
+InputText / Icons / Float Label / Textarea / AutoComplete / DatePicker / InputNumber ｜
+Slider / Rating / ColorPicker / Knob ｜ RadioButton / Checkbox / ToggleSwitch ｜
+Listbox / Select / MultiSelect / TreeSelect ｜ ToggleButton / SelectButton ｜ InputGroup。
 
 页面协议（``PAGE``）由基座以 ``load_page(window)`` 调用，因此 ``self`` 是主窗口，
 全部构建逻辑放在模块级函数里。
@@ -86,14 +86,6 @@ def _input_text_buttons():
     ]
 
 
-def _size_inputs():
-    return [
-        _fixed(CInputText(placeholder="Small", size="sm"), 170),
-        _fixed(CInputText(placeholder="Default", size="md"), 210),
-        _fixed(CInputText(placeholder="Large", size="lg"), 250),
-    ]
-
-
 def _icon_inputs():
     return [
         _fixed(CInputText(placeholder="Username", icon="icon_users", icon_pos="left"), 240),
@@ -149,7 +141,7 @@ def _color_pickers():
 
 
 def _knobs():
-    return [CKnob(20, -50, 50, 10)]
+    return [CKnob(20, -50, 50, 10, value_template="{value}%")]
 
 
 def _radio_buttons():
@@ -164,7 +156,7 @@ def _checkboxes():
 
 
 def _toggle_switches():
-    return [CToggleSwitch("Wifi", checked=True)]
+    return [CToggleSwitch(checked=True)]
 
 
 def _listboxes():
@@ -189,7 +181,7 @@ def _tree_selects():
 
 
 def _toggle_buttons():
-    return [CToggleButton("Yes", "No", checked=False)]
+    return [_fixed(CToggleButton("Yes", "No", checked=False), 160)]
 
 
 def _select_buttons():
@@ -198,7 +190,7 @@ def _select_buttons():
 
 def _input_groups():
     return [
-        _fixed(CInputGroup([CInputGroupAddon(icon="icon_users"), CInputText(placeholder="Username")]), 420),
+        _fixed(CInputGroup([CInputGroupAddon(icon="icon_users"), CInputText(placeholder="Username")]), 330),
         _fixed(
             CInputGroup(
                 [
@@ -208,51 +200,67 @@ def _input_groups():
                     CInputGroupAddon(text=".00"),
                 ]
             ),
-            420,
+            330,
         ),
-        _fixed(CInputGroup([CButton(text="Search"), CInputText(placeholder="Keyword")]), 420),
-        _fixed(CInputGroup([CInputGroupAddon(widget=CCheckbox()), CInputText(placeholder="Confirm")]), 420),
+        _fixed(CInputGroup([CButton(text="Search"), CInputText(placeholder="Keyword")]), 330),
+        _fixed(CInputGroup([CInputGroupAddon(widget=CCheckbox()), CInputText(placeholder="Confirm")]), 330),
     ]
 
 
-def _sections():
+def _cards():
+    """按参考页的卡片划分返回页面结构。
+
+    每张卡片是一组「子块」；子块为 ``(标题, 控件列表, 每行列数)``，若某一项是列表
+    则表示这几个子块并排（对应 Sakai 的 ``flex-row``，例如 Rating 与 ColorPicker）。
+    """
     return [
-        (_t("group_inputtext"), _input_text_buttons(), 3),
-        (_t("group_sizes"), _size_inputs(), 3),
-        (_t("group_icons"), _icon_inputs(), 2),
-        (_t("group_floatlabel"), _float_labels(), 2),
-        (_t("group_textarea"), _textareas(), 1),
-        (_t("group_autocomplete"), _autocompletes(), 2),
-        (_t("group_datepicker"), _date_pickers(), 2),
-        (_t("group_inputnumber"), _input_numbers(), 2),
-        (_t("group_slider"), _sliders(), 2),
-        (_t("group_rating"), _ratings(), 1),
-        (_t("group_colorpicker"), _color_pickers(), 1),
-        (_t("group_knob"), _knobs(), 1),
-        (_t("group_radio"), _radio_buttons(), 3),
-        (_t("group_checkbox"), _checkboxes(), 3),
-        (_t("group_toggleswitch"), _toggle_switches(), 1),
-        (_t("group_listbox"), _listboxes(), 1),
-        (_t("group_select"), _selects(), 2),
-        (_t("group_multiselect"), _multi_selects(), 2),
-        (_t("group_treeselect"), _tree_selects(), 2),
-        (_t("group_togglebutton"), _toggle_buttons(), 1),
-        (_t("group_selectbutton"), _select_buttons(), 1),
-        (_t("group_inputgroup"), _input_groups(), 1),
+        [
+            (_t("group_inputtext"), _input_text_buttons(), 3),
+            (_t("group_icons"), _icon_inputs(), 2),
+            (_t("group_floatlabel"), _float_labels(), 2),
+            (_t("group_textarea"), _textareas(), 1),
+            (_t("group_autocomplete"), _autocompletes(), 1),
+            (_t("group_datepicker"), _date_pickers(), 1),
+            (_t("group_inputnumber"), _input_numbers(), 2),
+        ],
+        [
+            (_t("group_slider"), _sliders(), 1),
+            [(_t("group_rating"), _ratings(), 1), (_t("group_colorpicker"), _color_pickers(), 1)],
+            (_t("group_knob"), _knobs(), 1),
+        ],
+        [
+            (_t("group_radio"), _radio_buttons(), 3),
+            (_t("group_checkbox"), _checkboxes(), 3),
+            (_t("group_toggleswitch"), _toggle_switches(), 1),
+        ],
+        [
+            (_t("group_listbox"), _listboxes(), 1),
+            (_t("group_select"), _selects(), 1),
+            (_t("group_multiselect"), _multi_selects(), 1),
+            (_t("group_treeselect"), _tree_selects(), 1),
+        ],
+        [
+            (_t("group_togglebutton"), _toggle_buttons(), 1),
+            (_t("group_selectbutton"), _select_buttons(), 1),
+        ],
+        [
+            (_t("group_inputgroup"), _input_groups(), 2),
+        ],
     ]
 
 
 # ----------------------------------------------------------------------
 # 页面装配
 # ----------------------------------------------------------------------
-def _section_card(title: str, widgets, columns: int = 3) -> CCard:
-    card = CCard()
-    layout = QVBoxLayout(card)
-    layout.setContentsMargins(QMargins(12, 10, 12, 12))
+def _block(title: str, widgets, columns: int = 3) -> QWidget:
+    """卡片里的一个小标题 + 若干行控件。"""
+    block = QWidget()
+    layout = QVBoxLayout(block)
+    layout.setContentsMargins(QMargins(0, 0, 0, 0))
     layout.setSpacing(8)
 
     label = QLabel(title)
-    font = QFont(AppSettings.family, AppSettings.subtitle_size)
+    font = QFont(AppSettings.family, AppSettings.title_size)
     font.setWeight(QFont.Weight.DemiBold)
     label.setFont(font)
     layout.addWidget(label)
@@ -264,6 +272,26 @@ def _section_card(title: str, widgets, columns: int = 3) -> CCard:
             row.addWidget(widget, 0, Qt.AlignLeft | Qt.AlignVCenter)
         row.addStretch()
         layout.addLayout(row)
+    return block
+
+
+def _card(body) -> CCard:
+    """一张卡片：子块自上而下排列，列表项表示并排的子块。"""
+    card = CCard()
+    layout = QVBoxLayout(card)
+    layout.setContentsMargins(QMargins(12, 10, 12, 14))
+    layout.setSpacing(14)
+
+    for item in body:
+        if isinstance(item, list):
+            row = QHBoxLayout()
+            row.setSpacing(24)
+            for title, widgets, columns in item:
+                row.addWidget(_block(title, widgets, columns), 1)
+            layout.addLayout(row)
+        else:
+            title, widgets, columns = item
+            layout.addWidget(_block(title, widgets, columns))
     return card
 
 
@@ -285,8 +313,8 @@ def _build_page(window) -> QWidget:
     scroller.setWidgetResizable(True)
     outer.addWidget(scroller)
 
-    for title, widgets, columns in _sections():
-        content_layout.addWidget(_section_card(title, widgets, columns))
+    for body in _cards():
+        content_layout.addWidget(_card(body))
     content_layout.addStretch()
     return page
 

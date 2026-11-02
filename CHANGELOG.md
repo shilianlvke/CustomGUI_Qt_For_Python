@@ -5,9 +5,33 @@
 
 ## 未发布
 
-按钮组件按 PrimeVue Aura（`sakai-vue` 的 Button 页）做了一轮全盘复核，修掉渲染偏差。
+按钮组件按 PrimeVue Aura（`sakai-vue` 的 Button 页）做了一轮全盘复核，修掉渲染偏差；
+输入组件按同一套手法对照 `InputDoc` 复核了一遍。
 
 ### 修复
+
+#### 输入组件
+
+- **输入框描边与文字**：hover 描边原本取 `surface_interactive_hover`，深色主题下比常态
+  边框**更暗**；改为「常态描边 → 正文色」的 35% 混合，深浅主题都更醒目。输入文字改用
+  `text_active`，invalid 描边两种主题统一为 Aura 的 `red.400` `#f87171`，且 QSS 与
+  自绘组件（下拉框 / 日期框 / 输入框组）取同一份颜色。
+- **输入框图标着色**：图标 SVG 自带写死的强调蓝，直接 `QIcon(svg)` 会永远那个颜色；
+  改为按 `form.field.icon.color` 栅格化着色，主题切换时重新着色。
+- **输入框组（`CInputGroup`）**：addon 原来只在**共享边**画线、外侧反而没有边，看上去
+  像浮在控件外面的图标。现按 Aura 规则只画外轮廓边（first-child 补左、last-child 补右、
+  紧跟另一个 addon 时补左），共享边交给邻居的边框，addon 底色与输入框同色。
+- **数字输入步进块（`CInputNumber`）**：底色几乎不可见、左边缘重复描边、箭头是小三角；
+  改为底色跟随输入框、左边缘不描边、中间分隔线 + chevron 箭头 + 上/下半区 hover 高亮，
+  并补上 `set_corners` 以便在输入框组里合并圆角。
+- **分段单选（`CSelectButton`）**：选中段原本内缩成一颗独立圆角按钮；改为段铺满整格、
+  共享外框、内部 1px 分隔线（挨着选中段的那条取强调色）。
+- **`CKnob`**：新增 `value_template`（对齐 PrimeVue 的 `valueTemplate`）。
+- **输入预览页**：卡片划分与参考页对齐（6 张卡片、一张卡片多个小标题，Rating / ColorPicker
+  并排），去掉参考页没有的「尺寸」分组，ToggleSwitch 不再带标签，ToggleButton 固定 10em，
+  分组标题与按钮页统一用 `title_size`。
+
+#### 按钮组件
 
 - **`CButton` 焦点框**：只在键盘聚焦（`Tab` / `Shift+Tab`）时绘制，鼠标点击不再留框，
   等效 CSS 的 `:focus-visible`；需要整块关掉时用 `set_focus_ring(False)`（组件级，与全局 QSS 无关）。
