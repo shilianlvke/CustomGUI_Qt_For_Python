@@ -113,3 +113,114 @@ def test_push_button_compatibility_shell(qapp):
     button = CPushButton(size=QSize(80, 32), text="Legacy")
     assert button.size() == QSize(80, 32)
     assert button.text() == "Legacy"
+
+
+def test_focus_ring_only_on_keyboard_focus(qapp):
+    """鼠标点击（等效 CSS 的 :focus）不画焦点框，Tab 聚焦（:focus-visible）才画。"""
+    host = QWidget()
+    layout = QVBoxLayout(host)
+    button = CButton(text="Focus")
+    layout.addWidget(button)
+    host.show()
+    QTest.qWait(30)
+
+    QTest.mouseClick(button, Qt.LeftButton)
+    assert button.hasFocus()
+    assert button._focus_visible is False
+
+    button.clearFocus()
+    button.setFocus(Qt.TabFocusReason)
+    assert button._focus_visible is True
+
+    button.set_focus_ring(False)
+    assert button._focus_ring is False
+    host.hide()
+
+
+def test_raised_reserves_space_for_shadow(qapp):
+    """阴影画在 body 之外，控件必须为它留出透明边距，否则会被裁掉。"""
+    button = CButton(text="Raised", raised=True)
+    assert button._body_rect().height() == 40
+    assert button.height() > 40
+    assert button.sizeHint().height() == button.height()
+
+    button.set_raised(False)
+    assert button.height() == 40
+    assert button._body_rect().height() == 40
+
+
+def test_raised_shadow_covers_every_variant(qapp):
+    """Sakai 的 Rounded Text（text + raised + rounded）同样有阴影。"""
+    for variant in Variant:
+        button = CButton(text="X", variant=variant, raised=True, rounded=True)
+        assert button._shadow_layers(), f"{variant} 缺少 raised 阴影"
+
+
+def test_outlined_border_is_pale_tint_in_light_theme(qapp):
+    assert is_dark_theme()
+    colors = colors_for(Severity.SUCCESS, Variant.OUTLINED)
+    assert colors.text.name() == "#4ade80"  # 深色主题文字取 green.400
+    assert colors.border.name() == "#15803d"  # 描边取 green.700
+
+    get_theme_manager().apply("bright")
+    colors = colors_for(Severity.SUCCESS, Variant.OUTLINED)
+    assert colors.text.name() == "#22c55e"  # 浅色主题文字取 green.500
+    assert colors.border.name() == "#bbf7d0"  # 描边取 green.200
+
+
+def test_split_button_menu_uses_separator(qapp):
+    """分体按钮右侧点击弹出菜单（曾经因相对导入路径写错而崩）。"""
+    split = CSplitButton(
+        "Save",
+        [("Update", "icon_refresh"), ("Delete", "icon_close"), None, ("Home", "icon_home")],
+    )
+    host = QWidget()
+    QVBoxLayout(host).addWidget(split)
+    host.show()
+    QTest.qWait(30)
+
+    split._show_menu()
+    menu = split.menu()
+    assert menu is not None
+    # 顺序与 PrimeVue 的 items 一致，None 表示分隔线
+    assert menu.entries() == ["Update", "Delete", None, "Home"]
+    assert menu.height() > 0 and menu.width() >= 200  # Aura 的 min-width: 12.5rem
+    host.hide()
+
+
+def test_split_button_menu_activates_item(qapp):
+    """点击菜单项要发出 actionTriggered 并关闭浮层（分隔线不可点）。"""
+    split = CSplitButton("Save", [("Update", "icon_refresh"), None, ("Home", "icon_home")])
+    host = QWidget()
+    QVBoxLayout(host).addWidget(split)
+    host.show()
+    QTest.qWait(30)
+
+    seen: list[str] = []
+    split.actionTriggered.connect(seen.append)
+    split._show_menu()
+    menu = split.menu()
+    assert menu is not None and menu.isVisible()
+
+    # 分隔线位置（第 2 行）点了不该触发
+    separator_rect = menu._rows[1][3]
+    QTest.mouseClick(menu, Qt.LeftButton, pos=separator_rect.center())
+    assert seen == []
+    assert menu.isVisible()
+
+    home_rect = menu._rows[2][3]
+    QTest.mouseClick(menu, Qt.LeftButton, pos=home_rect.center())
+    assert seen == ["Home"]
+    assert not menu.isVisible()
+    host.hide()
+
+
+def test_loading_keeps_label(qapp):
+    """Aura 的 loading 只替换前置图标，文案保留（不会让按钮看起来空掉）。"""
+    button = CButton(text="Search", icon="icon_search")
+    button.set_loading(True)
+    assert button.is_loading()
+    assert button.text() == "Search"
+
+    image = button.grab()
+    assert not image.isNull()
