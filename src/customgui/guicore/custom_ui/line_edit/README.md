@@ -123,6 +123,24 @@
 | `CFloatLabel` | 浮动标签容器（标签随聚焦/有值上浮） | #3 |
 | `CLineEdit` | 旧组件，改为 `CInputText` 的兼容壳 | — |
 
+---
+
+## 与 Aura 的一致性检查（最近一轮）
+
+对照 `@primeuix/styles` 与 `@primeuix/themes` 的 `form.field` / `inputgroup` /
+`inputnumber` 规则逐项核对后修正的点：
+
+| 问题 | 之前 | 现在 |
+|------|------|------|
+| hover 描边 | 取 `surface_interactive_hover`，深色主题下比常态**更暗** | 常态描边与正文色的 35% 混合，深浅主题都更醒目 |
+| 输入文字 | `text_primary`（偏灰） | `text_active`（Aura 用最高对比文字） |
+| 输入框图标 | 直接给 `QIcon(svg)`，SVG 里写死的强调蓝，不跟主题 | `render_icon` 按 `form.field.icon.color` 着色，主题切换时重新着色 |
+| invalid 描边 | 深色主题用 `custom_red`（偏暗） | 两种主题都取 Aura 的 `red.400` `#f87171`，且 QSS 与自绘组件同源 |
+| 输入框组 | addon 只在**共享边**画线、外侧没边，看上去像浮在外面的图标 | 按 Aura 规则只画外轮廓边（first/last/紧跟 addon 时补竖边），共享边交给邻居的边框 |
+| 数字输入步进块 | 底色几乎不可见、左边缘重复描边、箭头是小三角 | 底色跟随输入框，左边缘不描边，中间分隔线 + chevron 箭头 + 半区 hover 高亮 |
+| 分段单选 | 选中段内缩成一颗独立圆角按钮 | 段铺满整格、共享外框、内部 1px 分隔线（挨着选中段的那条取强调色） |
+| 旋钮数值 | 只有数字 | 新增 `value_template`（对齐 `valueTemplate`），预览页显示 `20%` |
+
 ### 3.1 `CInputText` API
 
 ```python

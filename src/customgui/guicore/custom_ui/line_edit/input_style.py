@@ -7,7 +7,7 @@ from dataclasses import dataclass
 from PySide6.QtCore import QRectF
 from PySide6.QtGui import QColor, QFont, QPainterPath
 
-from customgui.appcore import AppSettings, ColorPalette
+from customgui.appcore import AppSettings, ColorPalette, get_design_tokens
 
 
 @dataclass(frozen=True)
@@ -37,37 +37,42 @@ def is_dark_theme() -> bool:
     return QColor(ColorPalette.custom_bg_one).lightness() < 128
 
 
+def _mix(start: str, end: str, ratio: float) -> str:
+    """把 ``start`` 按 ``ratio`` 混向 ``end``（用来派生 hover 描边）。"""
+    begin, finish = QColor(start), QColor(end)
+    return QColor(
+        round(begin.red() + (finish.red() - begin.red()) * ratio),
+        round(begin.green() + (finish.green() - begin.green()) * ratio),
+        round(begin.blue() + (finish.blue() - begin.blue()) * ratio),
+    ).name()
+
+
 def colors() -> dict[str, str]:
     """当前主题下的输入组件配色。
 
-    输入框没有 severity 维度，深色沿用基座暗色层，浅色对齐 Aura light。
+    输入框没有 severity 维度，底色/描边/文字全部取设计令牌，与 ``styles.py`` 里
+    ``#CInputText_LineEdit`` 的 QSS **同源**——自绘组件（下拉框、日期框、输入框组）
+    才不会和 QLineEdit 的描边深浅不一。
+
+    hover 描边取「常态描边 → 正文色」的 35% 混合：深色主题变亮、浅色主题变深，
+    两个方向都是「更醒目」，不会像直接用 surface_interactive_hover 那样反向变淡。
     """
-    if is_dark_theme():
-        return {
-            "background": ColorPalette.custom_dark_one,
-            "disabled_background": ColorPalette.custom_dark_two,
-            "border": ColorPalette.custom_dark_four,
-            "hover_border": ColorPalette.custom_bg_two,
-            "focus_border": ColorPalette.custom_context_color,
-            "invalid_border": "#fca5a5",
-            "text": ColorPalette.custom_text_title,
-            "placeholder": ColorPalette.custom_text_description,
-            "addon_background": ColorPalette.custom_dark_three,
-            "icon": ColorPalette.custom_icon_color,
-            "control_border": "#3f3f46",
-        }
+    tokens = get_design_tokens().colors
+    dark = is_dark_theme()
+    border = tokens.surface_interactive_pressed
     return {
-        "background": "#ffffff",
-        "disabled_background": "#e2e8f0",
-        "border": "#cbd5e1",
-        "hover_border": "#94a3b8",
-        "focus_border": ColorPalette.custom_context_color,
+        "background": tokens.surface_sidebar,
+        "disabled_background": tokens.surface_app,
+        "border": border,
+        "hover_border": _mix(border, tokens.text_primary, 0.35),
+        "focus_border": tokens.border_context,
         "invalid_border": "#f87171",
-        "text": "#334155",
-        "placeholder": "#64748b",
-        "addon_background": "#f8fafc",
-        "icon": "#64748b",
-        "control_border": "#94a3b8",
+        "text": tokens.text_active,
+        "placeholder": tokens.text_muted,
+        # Aura 的 addon 底色与输入框同色，靠边框区分，不做深浅对比
+        "addon_background": tokens.surface_sidebar,
+        "icon": tokens.text_primary if dark else tokens.text_muted,
+        "control_border": border,
     }
 
 

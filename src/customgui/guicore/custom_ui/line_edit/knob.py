@@ -30,6 +30,7 @@ class CKnob(QWidget):
         maximum: int = 100,
         step: int = 1,
         size: int = 120,
+        value_template: str = "{value}",
         parent=None,
     ):
         super().__init__(parent)
@@ -37,6 +38,8 @@ class CKnob(QWidget):
         self._maximum = max(minimum + 1, maximum)
         self._step = max(1, step)
         self._value = self._clamp(value)
+        #: 值的显示模板（对齐 PrimeVue 的 ``valueTemplate``，如 ``"{value}%"``）
+        self._template = value_template or "{value}"
         self._drag_origin: tuple[int, int] | None = None
         self._drag_value = self._value
         self.setFixedSize(size, size)
@@ -113,7 +116,7 @@ class CKnob(QWidget):
         font.setWeight(QFont.Weight.DemiBold)
         painter.setFont(font)
         painter.setPen(QColor(palette["text"]))
-        painter.drawText(QRectF(self.rect()), Qt.AlignCenter, str(self._value))
+        painter.drawText(QRectF(self.rect()), Qt.AlignCenter, self._template.replace("{value}", str(self._value)))
         painter.end()
 
     # ------------------------------------------------------------------

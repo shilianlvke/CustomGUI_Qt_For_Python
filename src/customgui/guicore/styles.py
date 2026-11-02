@@ -1,5 +1,17 @@
 # 这里决定整个window的总体样式
-from customgui.appcore import ColorPalette, Logger, PathFactory, get_design_tokens
+from PySide6.QtGui import QColor
+
+from customgui.appcore import Logger, PathFactory, get_design_tokens
+
+
+def _mix(start: str, end: str, ratio: float) -> str:
+    """两个颜色按比例混合（``ratio``=0 取 start，=1 取 end）。"""
+    begin, finish = QColor(start), QColor(end)
+    return QColor(
+        round(begin.red() + (finish.red() - begin.red()) * ratio),
+        round(begin.green() + (finish.green() - begin.green()) * ratio),
+        round(begin.blue() + (finish.blue() - begin.blue()) * ratio),
+    ).name()
 
 
 class Styles:
@@ -127,24 +139,31 @@ class Styles:
         """
 
     def update_lineedit_style(self):
-        """输入框族：颜色与状态（高度/圆角/内边距/字号由组件本地覆盖）。"""
+        """输入框族：颜色与状态（高度/圆角/内边距/字号由组件本地覆盖）。
+
+        hover 描边取「常态描边 → 正文色」的 35% 混合：深色主题变亮、浅色主题变深，
+        两个方向都更醒目；直接用 ``surface_interactive_hover`` 会让深色主题的描边
+        反而变淡。文字色用 ``text_active`` 保证输入内容的可读性。
+        """
+        border = self.tokens.colors.surface_interactive_pressed
+        hover_border = _mix(border, self.tokens.colors.text_primary, 0.35)
         self.style += f"""
             #CInputText_LineEdit, #CTextarea_PlainTextEdit {{
                 background-color: {self.tokens.colors.surface_sidebar};
-                border: 1px solid {self.tokens.colors.surface_interactive_pressed};
-                color: {self.tokens.colors.text_primary};
+                border: 1px solid {border};
+                color: {self.tokens.colors.text_active};
                 placeholder-text-color: {self.tokens.colors.text_muted};
-                selection-color: {self.tokens.colors.text_primary};
+                selection-color: {self.tokens.colors.text_active};
                 selection-background-color: {self.tokens.colors.surface_interactive_hover};
             }}
             #CInputText_LineEdit:hover, #CTextarea_PlainTextEdit:hover {{
-                border-color: {self.tokens.colors.surface_interactive_hover};
+                border-color: {hover_border};
             }}
             #CInputText_LineEdit:focus, #CTextarea_PlainTextEdit:focus {{
                 border-color: {self.tokens.colors.border_context};
             }}
             #CInputText_LineEdit[invalid="true"], #CTextarea_PlainTextEdit[invalid="true"] {{
-                border-color: {ColorPalette.custom_red};
+                border-color: #f87171;
             }}
             #CInputText_LineEdit:disabled, #CTextarea_PlainTextEdit:disabled {{
                 background-color: {self.tokens.colors.surface_app};

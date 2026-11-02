@@ -303,3 +303,60 @@ def test_color_picker_emits_valid_color(host):
     assert seen == ["#ef4444"]
     picker.set_color("not-a-color")
     assert picker.color() == "#ef4444"
+
+
+# ----------------------------------------------------------------------
+# 与 Aura 对齐后的回归点
+# ----------------------------------------------------------------------
+def test_input_group_addon_only_draws_outer_edges(host):
+    """addon 只画外轮廓边，共享边交给邻居的边框（Aura 的 inputgroupaddon 规则）。"""
+    group = CInputGroup([CInputGroupAddon(icon="icon_users"), CInputText(placeholder="Username")], parent=host)
+    addon, field = group.widgets()
+    assert (addon._edge_left, addon._edge_right) == (True, False)
+    assert field._corners == (False, True, True, False)
+
+    # [addon, input, addon]：两段 addon 都不该画共享边
+    group = CInputGroup(
+        [CInputGroupAddon(text="$"), CInputText(), CInputGroupAddon(text=".00")],
+        parent=host,
+    )
+    first, _field, last = group.widgets()
+    assert (first._edge_left, first._edge_right) == (True, False)
+    assert (last._edge_left, last._edge_right) == (False, True)
+
+
+def test_input_group_merges_number_widget(host):
+    """CInputNumber 在组里要能把圆角转发给内层输入框与步进块。"""
+    number = CInputNumber(value=10, show_buttons=True, parent=host)
+    CInputGroup([CInputGroupAddon(icon="icon_heart"), number], parent=host)
+    assert number.input()._corners == (False, False, False, False)
+    assert number._spins._corners == (False, True, True, False)
+
+
+def test_input_icon_is_tinted_by_theme(host):
+    """图标不能保留 SVG 里写死的蓝色，要按 form.field.icon.color 着色。"""
+    from PySide6.QtGui import QColor
+
+    from customgui.guicore.custom_ui.line_edit.input_style import colors
+
+    field = CInputText(icon="icon_users", parent=host)
+    image = field._tinted_icon().pixmap(16, 16).toImage()
+    target = QColor(colors()["icon"])
+    found = None
+    for y in range(image.height()):
+        for x in range(image.width()):
+            color = image.pixelColor(x, y)
+            if color.alpha() > 200:
+                found = color
+                break
+        if found is not None:
+            break
+    assert found is not None, "图标渲染为空"
+    assert abs(found.red() - target.red()) <= 10
+    assert abs(found.green() - target.green()) <= 10
+    assert abs(found.blue() - target.blue()) <= 10
+
+
+def test_knob_value_template(host):
+    knob = CKnob(20, -50, 50, 10, value_template="{value}%", parent=host)
+    assert knob._template.replace("{value}", str(knob.value())) == "20%"

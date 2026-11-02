@@ -2,11 +2,12 @@
 
 from __future__ import annotations
 
-from PySide6.QtCore import QRectF, QSize, Qt, Signal
+from PySide6.QtCore import QPointF, QRectF, QSize, Qt, Signal
 from PySide6.QtGui import QColor, QFontMetrics, QPainter, QPen
 from PySide6.QtWidgets import QSizePolicy, QWidget
 
 from ..button import CButton
+from ..button.severity import contrast_text
 from .input_style import RADIUS, colors, field_font, rounded_path, size_spec
 
 
@@ -111,31 +112,42 @@ class CSelectButton(QWidget):
         painter = QPainter(self)
         painter.setRenderHint(QPainter.Antialiasing)
         palette = colors()
-        rect = QRectF(self.rect()).adjusted(0.5, 0.5, -0.5, -0.5)
-        painter.setBrush(QColor(palette["addon_background"]))
-        painter.setPen(QPen(QColor(palette["border"]), 1))
-        painter.drawPath(rounded_path(rect, RADIUS))
+        frame = rounded_path(QRectF(self.rect()).adjusted(0.5, 0.5, -0.5, -0.5), RADIUS)
+        painter.fillPath(frame, QColor(palette["addon_background"]))
 
         if not self.isEnabled():
             painter.setOpacity(0.5)
 
         accent = QColor(palette["focus_border"])
+        hover_tint = QColor(palette["hover_border"])
+        hover_tint.setAlpha(30)
         width = self._segment_width()
-        for index, option in enumerate(self._options):
-            cell = QRectF(1 + index * width + 2, 3, width - 4, self.height() - 6)
+
+        # 段底色铺满整段（不像旧实现那样内缩成一颗独立按钮），靠外框裁圆角
+        painter.save()
+        painter.setClipPath(frame)
+        for index, _option in enumerate(self._options):
+            cell = QRectF(0.5 + index * width, 0.5, width, self.height() - 1.0)
             if index == self._index:
-                painter.setPen(Qt.NoPen)
-                painter.setBrush(accent)
-                painter.drawRoundedRect(cell, RADIUS - 1, RADIUS - 1)
-                painter.setPen(QColor("#ffffff"))
-            else:
-                if index == self._hover and self.isEnabled():
-                    fill = QColor(palette["hover_border"])
-                    fill.setAlpha(36)
-                    painter.setPen(Qt.NoPen)
-                    painter.setBrush(fill)
-                    painter.drawRoundedRect(cell, RADIUS - 1, RADIUS - 1)
-                painter.setPen(QColor(palette["text"]))
+                painter.fillRect(cell, accent)
+            elif index == self._hover and self.isEnabled():
+                painter.fillRect(cell, hover_tint)
+        painter.restore()
+
+        # 段与段之间的分隔线；挨着选中段的那条用强调色，和 Aura 的 checkedBorder 一致
+        for index in range(1, len(self._options)):
+            x = 0.5 + index * width
+            color = accent if self._index in (index - 1, index) else QColor(palette["border"])
+            painter.setPen(QPen(color, 1))
+            painter.drawLine(QPointF(x, 1.0), QPointF(x, self.height() - 1.0))
+
+        painter.setBrush(Qt.NoBrush)
+        painter.setPen(QPen(QColor(palette["border"]), 1))
+        painter.drawPath(frame)
+
+        for index, option in enumerate(self._options):
+            cell = QRectF(0.5 + index * width, 0.5, width, self.height() - 1.0)
+            painter.setPen(contrast_text(accent) if index == self._index else QColor(palette["text"]))
             painter.drawText(cell, Qt.AlignCenter, option)
         painter.end()
 
