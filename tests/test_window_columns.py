@@ -90,6 +90,43 @@ def test_styles_cover_all_four_columns():
         assert f"#{prefix}Content_Frame" in style
 
 
+def test_region_card_rule_is_shared():
+    """内容区与四向抽屉共用同一张区域背景卡片规则（同 objectName 同规则）。"""
+    style = Styles().style
+    assert "#CRegion_Card_Frame" in style
+    # 规则只出现一次：五个区域容器复用同一条规则，样式天然一致
+    assert style.count("#CRegion_Card_Frame {") == 1
+
+
+def test_main_window_region_frames_share_card_name(qapp):
+    """五个区域容器（内容 + 四向抽屉）都挂 CRegion_Card_Frame。"""
+    from PySide6.QtWidgets import QMainWindow
+
+    from customgui.appcore import AppLanguages, AppSettings, AppThemes, ColorPalette, Language, get_app_context
+    from customgui.guis.windows.main_window.ui_main import UiMainWindow
+
+    # 装配真实主窗口 UI 需要语言包（左列菜单读取 Language.UI）
+    get_app_context()
+    ColorPalette.update(AppThemes[AppSettings.theme_name].data)
+    Language.update(AppLanguages[AppSettings.language].data)
+
+    window = QMainWindow()
+    ui = UiMainWindow()
+    ui.setup_ui(window)
+    try:
+        for name in (
+            "content_area_left_frame",
+            "left_column_frame",
+            "right_column_frame",
+            "top_column_frame",
+            "bottom_column_frame",
+        ):
+            frame = getattr(ui, name)
+            assert frame.objectName() == "CRegion_Card_Frame", name
+    finally:
+        window.deleteLater()
+
+
 # ----------------------------------------------------------------------
 # 开合动画（顶/底与左/右同一套规则，主轴换成高度）
 # ----------------------------------------------------------------------

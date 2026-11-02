@@ -125,6 +125,13 @@
 
 ### 变更
 
+- **区域背景卡片（微前端基座的视觉层次）**：主内容区（插件页面容器）与四向抽屉
+  （左/右/顶/底列）统一挂 `#CRegion_Card_Frame` 区域卡片——底色取 `surface_app` 与
+  `surface_panel` 的中间调（区别于窗口底色，也不与页面里的 `surface_card` 撞色）、
+  描边沿用窗口框的 `border.width` + `surface_interactive_pressed`、圆角取
+  `radius.window`，五个区域一套规则，四套主题自动跟随。内容卡片与右列卡片之间
+  留出 `right_content_space` 间距，页面内容从卡片描边内缩 5px；最小窗口尺寸
+  （960×540）下开合抽屉均无遮挡冲突。
 - `CButton` 新增 `icon_size` / `focus_ring` 参数；`set_divider`（分体按钮的伪分隔线）移除。
 - `CSplitButton.items` 支持 `None` 作为分隔线，并新增 `set_items` / `items` / `menu()`；
   `guicore.custom_ui.paint_utils` 新增 `shadow_layers` / `draw_shadow` / `SHADOW_MARGINS`（按钮与浮层共用）。

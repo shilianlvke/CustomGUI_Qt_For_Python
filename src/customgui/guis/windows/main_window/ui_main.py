@@ -74,8 +74,9 @@ class UiMainWindow:
         self.left_menu_layout.setContentsMargins(margin, margin, margin, margin)
         self.left_menu = CLeftMenu(parent=self.left_menu_frame, app_parent=self.central_widget)
         self.left_menu_layout.addWidget(self.left_menu)
-        # 左侧抽屉
+        # 左侧抽屉（栏目卡片样式见 Styles.update_region_card_style）
         self.left_column_frame = QFrame()
+        self.left_column_frame.setObjectName("CRegion_Card_Frame")
         self.left_column_frame.setMaximumWidth(AppSettings.left_column_size.minimum)
         self.left_column_frame.setMinimumWidth(AppSettings.left_column_size.minimum)
         self.left_column_layout = QVBoxLayout(self.left_column_frame)
@@ -108,14 +109,19 @@ class UiMainWindow:
         self.content_area_frame = QFrame()
         self.content_area_layout = QHBoxLayout(self.content_area_frame)
         self.content_area_layout.setContentsMargins(0, 0, 0, 0)
-        self.content_area_layout.setSpacing(0)
-        # 左侧内容
+        # 内容卡片与右列卡片之间留出间距，两条描边不贴在一起
+        self.content_area_layout.setSpacing(AppSettings.right_content_space)
+        # 左侧内容：主内容区背景卡片，插件页面都渲染在这张卡片之上
         self.content_area_left_frame = QFrame()
+        self.content_area_left_frame.setObjectName("CRegion_Card_Frame")
         # 将主页导入到内容区域
         self.load_pages = Ui_MainPages()
         self.load_pages.setupUi(self.content_area_left_frame)
+        # 页面内容从卡片描边内缩一圈（uic 生成的布局默认 0 边距）
+        self.load_pages.Main_layout.setContentsMargins(5, 5, 5, 5)
         # 右侧工具栏
         self.right_column_frame = QFrame()
+        self.right_column_frame.setObjectName("CRegion_Card_Frame")
         self.right_column_frame.setMinimumWidth(AppSettings.right_column_size.minimum)
         self.right_column_frame.setMaximumWidth(AppSettings.right_column_size.minimum)
         # 导入右列
@@ -146,6 +152,7 @@ class UiMainWindow:
         # 顶部抽屉：标题栏下方、内容区上方（结构同左列，见 CTopColumn）
         # 闭合同步钳住 min/max（开合动画成对改两个属性），避免 min>max 的布局病态
         self.top_column_frame = QFrame()
+        self.top_column_frame.setObjectName("CRegion_Card_Frame")
         self.top_column_frame.setMaximumHeight(AppSettings.top_column_size.minimum)
         self.top_column_frame.setMinimumHeight(AppSettings.top_column_size.minimum)
         self.top_column_layout = QVBoxLayout(self.top_column_frame)
@@ -161,7 +168,8 @@ class UiMainWindow:
         self.top_column_layout.addWidget(self.top_column)
         # 底部抽屉：内容区下方、版权栏上方（结构同左列，见 CBottomColumn）
         self.bottom_column_frame = QFrame()
-        self.bottom_column_frame.setMaximumHeight(AppSettings.bottom_column_size.maximum)
+        self.bottom_column_frame.setObjectName("CRegion_Card_Frame")
+        self.bottom_column_frame.setMaximumHeight(AppSettings.bottom_column_size.minimum)
         self.bottom_column_frame.setMinimumHeight(AppSettings.bottom_column_size.minimum)
         self.bottom_column_layout = QVBoxLayout(self.bottom_column_frame)
         self.bottom_column_layout.setContentsMargins(0, 0, 0, 0)

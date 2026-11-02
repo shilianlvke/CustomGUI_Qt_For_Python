@@ -90,7 +90,26 @@ class Styles:
         self.update_tooltip_style()
         self.update_title_bar_style()
         self.update_columns_style()
+        self.update_region_card_style()
         self.update_grips_style()
+
+    def update_region_card_style(self):
+        """内容区与四向抽屉共用的区域背景卡片。
+
+        底色取 ``surface_app`` 与 ``surface_panel`` 的中间调：既区别于窗口底色
+        （否则只剩描边一条线），也不与页面里的 ``surface_card`` 卡片撞色（否则
+        插件页面自己的卡片会融进背景）。描边沿用窗口框的 ``border.width`` 与
+        ``surface_interactive_pressed``，圆角取 ``radius.window``，五个区域完全
+        同一套规则，深浅主题自动跟随。
+        """
+        region_bg = _mix(self.tokens.colors.surface_app, self.tokens.colors.surface_panel, 0.5)
+        self.style += f"""
+            #CRegion_Card_Frame {{
+                background-color: {region_bg};
+                border: {self.tokens.border.width}px solid {self.tokens.colors.surface_interactive_pressed};
+                border-radius: {self.tokens.radius.window}px;
+            }}
+        """
 
     def update_btn_style(self):
         """按钮族样式。
