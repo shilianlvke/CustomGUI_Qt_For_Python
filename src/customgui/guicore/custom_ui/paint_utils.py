@@ -98,4 +98,52 @@ def star_path(center: QPointF, outer: float, inner: float | None = None) -> QPai
     return path
 
 
-__all__ = ["draw_calendar", "draw_check", "draw_chevron", "draw_cross", "star_path"]
+#: 阴影溢出控件盒子的量（左, 上, 右, 下）：控件要留出这块透明边距，本体画在缩小后的矩形里
+SHADOW_MARGINS = (3, 1, 3, 4)
+
+#: Aura 的 ``raisedShadow``：``0 3px 1px -2px rgba(0,0,0,.2), 0 2px 2px 0 rgba(0,0,0,.14), 0 1px 5px 0 rgba(0,0,0,.12)``
+#: 拆成 (下移, 外扩, 透明度) 三层，末层再拆一半模拟模糊扩散。
+AURA_SHADOW_LAYERS = (
+    (3, -2, 52),
+    (2, 0, 34),
+    (1, 2, 22),
+    (1, 3, 12),
+)
+
+
+def shadow_layers(
+    body_path: QPainterPath,
+    body_rect: QRectF,
+    radius: float,
+    layers: tuple[tuple[int, int, int], ...] = AURA_SHADOW_LAYERS,
+) -> list[tuple[QPainterPath, QColor]]:
+    """生成「只落在按钮本体之外」的阴影层，供调用方自行缓存。
+
+    Qt 的绘制被裁剪在控件矩形内，因此使用前必须给控件留出 :data:`SHADOW_MARGINS`
+    的透明边距，本体画在缩小后的矩形里，阴影才有地方落。
+    """
+    result: list[tuple[QPainterPath, QColor]] = []
+    for offset_y, spread, alpha in layers:
+        rect = body_rect.adjusted(-spread, -spread + offset_y, spread, spread + offset_y)
+        layer = QPainterPath()
+        layer.addRoundedRect(rect, radius + max(0, spread), radius + max(0, spread))
+        result.append((layer.subtracted(body_path), QColor(0, 0, 0, alpha)))
+    return result
+
+
+def draw_shadow(painter: QPainter, body_path: QPainterPath, body_rect: QRectF, radius: float) -> None:
+    """直接画阴影（不做缓存；低频重绘的浮层用，高频重绘请自建缓存）。"""
+    for layer, color in shadow_layers(body_path, body_rect, radius):
+        painter.fillPath(layer, color)
+
+
+__all__ = [
+    "AURA_SHADOW_LAYERS",
+    "draw_calendar",
+    "draw_check",
+    "draw_chevron",
+    "draw_cross",
+    "draw_shadow",
+    "shadow_layers",
+    "star_path",
+]
