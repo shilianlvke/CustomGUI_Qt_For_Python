@@ -32,7 +32,6 @@
 from __future__ import annotations
 
 from .guis import (
-    LoadingWindow,
     MainFunctions,
     SetupMainWindow,
     Ui_LeftColumn,
@@ -60,7 +59,6 @@ __all__ = [
     "SetupMainWindow",
     "MainWindowController",
     "MainFunctions",
-    "LoadingWindow",
     "Ui_MainPages",
     "Ui_LeftColumn",
     "Ui_RightColumn",

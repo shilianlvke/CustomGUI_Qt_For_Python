@@ -11,14 +11,3 @@ def test_canonical_language_module_imports():
 def test_legacy_language_module_is_removed():
     with pytest.raises(ModuleNotFoundError):
         from customgui.appcore.sysx.modules.languge_module import Language  # noqa: F401
-
-
-def test_canonical_loading_ui_module_imports():
-    from customgui.guis.windows.loading_window.ui_main import LoadingWindow
-
-    assert LoadingWindow is not None
-
-
-def test_legacy_loading_ui_module_is_removed():
-    with pytest.raises(ModuleNotFoundError):
-        from customgui.guis.windows.loading_window.ui_mian import LoadingWindow  # noqa: F401

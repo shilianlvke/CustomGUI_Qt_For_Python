@@ -7,13 +7,12 @@
 from customgui.guicore.window import Ui_LeftColumn, Ui_RightColumn
 
 from .pages import Ui_MainPages
-from .windows import LoadingWindow, MainFunctions, SetupMainWindow, UiMainWindow
+from .windows import MainFunctions, SetupMainWindow, UiMainWindow
 
 __all__ = [
     "Ui_LeftColumn",
     "Ui_RightColumn",
     "Ui_MainPages",
-    "LoadingWindow",
     "MainFunctions",
     "SetupMainWindow",
     "UiMainWindow",
