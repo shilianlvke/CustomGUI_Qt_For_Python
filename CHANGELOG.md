@@ -3,6 +3,37 @@
 本项目遵循 [语义化版本](https://semver.org/lang/zh-CN/)。`0.x` 阶段 minor 版本可能含
 破坏性变更，均在下方显式列出。
 
+## 未发布
+
+按钮组件按 PrimeVue Aura（`sakai-vue` 的 Button 页）做了一轮全盘复核，修掉渲染偏差。
+
+### 修复
+
+- **`CButton` 焦点框**：只在键盘聚焦（`Tab` / `Shift+Tab`）时绘制，鼠标点击不再留框，
+  等效 CSS 的 `:focus-visible`；需要整块关掉时用 `set_focus_ring(False)`（组件级，与全局 QSS 无关）。
+- **`CButton.raised` 阴影**：此前阴影被控件矩形裁掉，视觉上等于没有。现在为阴影预留
+  透明边距、真正画在按钮盒子之外，且四种 variant 都生效——Sakai 的 Rounded Text 就是
+  `text + raised + rounded`。
+- **`CSplitButton` 右侧展开按钮报错**：`from .menu import CMenu` 写成同级包，应为 `..menu`。
+  同时把弹出内容换成按 Aura `.p-menu` 规格自绘的 `_SplitMenu`（6px 圆角卡片 + 描边 + 阴影 +
+  4px 内衬 + 36px 圆角菜单项 + 悬停高亮 + 着色图标 + 分隔线 + 200px 最小宽度 + 出屏翻边），
+  `QMenu` 的原生渲染做不出这套排版。
+- **hover 时「闪一下」**：过渡的起点原本取「上一个稳定状态」，鼠标快速划过时过渡被打断会先跳回
+  原色再走一遍。现在起点取**上一次实际画出来的颜色**，打断后能平滑反向，不再跳变（与阴影无关）。
+- **按钮组 / 分体按钮的 1px 白缝**：底色改为铺满整个控件矩形，只有描边内缩 0.5px。
+- **配色对齐 Aura 色阶**：outlined 描边改取 200 档（深色主题 700 档）；text / outlined 的
+  hover/active 底色改取 50/100 档（深色主题按 4%/16% 叠加）；secondary / contrast / plain
+  统一走 surface 色阶；主色实心按钮的文字改为白字（此前按 HSL 亮度判成近黑，与其它语义色不一致）。
+- **loading 排版**：spinner 占前置图标位、文案保留，转速改为 Aura 的 2s/圈；禁用态透明度改为 0.6。
+
+### 变更
+
+- `CButton` 新增 `icon_size` / `focus_ring` 参数；`set_divider`（分体按钮的伪分隔线）移除。
+- `CSplitButton.items` 支持 `None` 作为分隔线，并新增 `set_items` / `items` / `menu()`；
+  `guicore.custom_ui.paint_utils` 新增 `shadow_layers` / `draw_shadow` / `SHADOW_MARGINS`（按钮与浮层共用）。
+- 按钮预览页：分组标题对齐 Sakai 的 `text-xl`，自定义内容用 24px 图标，分体按钮菜单补齐
+  分隔线与 `pi-times` 图标。
+
 ## 0.4.0
 
 本轮围绕「应用资产跟着插件走 + 反哺 PyCL2」：根 `resource/` 不再必要、插件协议

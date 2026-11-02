@@ -74,7 +74,7 @@ Sakai 按钮页是一个双栏布局（`md:w-1/2`），共 **14 个分组**。�
 | 3 | Text | 8 | `text` + 8 severity（含 `plain text`） | 「Plain」是 `plain + text` |
 | 4 | Outlined | 8 | `outlined` + 8 severity | 含 contrast |
 | 5 | Group | 3 | 同组内边框合并 | Save / Delete / Cancel，均带图标 |
-| 6 | SplitButton | 8 | 主按钮 + 箭头 + 菜单，8 severity | 菜单项：Update / Delete / Home |
+| 6 | SplitButton | 8 | 主按钮 + 箭头 + 弹出菜单，8 severity | 菜单项：Update / Delete / ─ / Home |
 | 7 | Templating | 2 | 纯图片按钮 / 图片+文字（outlined success） | 自定义内容插槽 |
 | 8 | Icons | 3 | 纯图标 / 图标左 / 图标右（`iconPos="right"`） | |
 | 9 | Raised | 8 | `raised` + 8 severity | 阴影 |
@@ -109,7 +109,7 @@ Sakai 按钮页是一个双栏布局（`md:w-1/2`），共 **14 个分组**。�
 |----|------|----------|
 | `CButton` | 单按钮，覆盖 severity × variant × shape × elevation × content × state | 分组 1/2/3/4/7/8/9/10/11/12/13/14（73 个） |
 | `CButtonGroup` | 横向按钮组，首尾圆角、相邻边框合并 | 分组 5（3 个） |
-| `CSplitButton` | 主按钮 + 分隔线 + 箭头按钮 + 弹出菜单 | 分组 6（8 个，依赖现有 `CMenu`） |
+| `CSplitButton` | 主按钮 + 箭头按钮 + 自绘弹出菜单 `_SplitMenu`（两段之间无分隔线，对齐 Aura 的 `border-inline-end: 0`） | 分组 6（8 个） |
 
 ### 3.2 `CButton` 建议 API
 
@@ -140,18 +140,20 @@ CButton(
 normal ──enter──> hover ──press──> pressed ──release──> hover ──leave──> normal
   │                                                            │
   └── setEnabled(False) ──> disabled（不响应鼠标/键盘）          │
-  └── setLoading(True) ──> loading（锁交互、显示 spinner、保留宽度）─┘
+  └── setLoading(True) ──> loading（锁交互、保留文案、spinner 占前置图标位）─┘
 ```
 
 ### 3.3 交互与可访问性
 
 - 键盘：`Tab` 聚焦、`Space`/`Enter` 触发（复用 `QPushButton` 默认行为）；
-- 焦点环：Aura 为 `1px solid {primary}`、offset 2px（与 Sakai 一致，不做虚线框）；
+- 焦点环：**只在键盘聚焦时绘制**（等效 CSS 的 `:focus-visible`），鼠标点击不留框；
+  组件级开关 `set_focus_ring(False)` 可整块关掉，与全局 QSS 无关；
 - 状态过渡：hover/pressed 切换时背景、边框、文字在起点与目标状态色之间线性插值，
   时长 `button.hover_duration`（默认 160ms，Aura 为 0.2s；配置为 0 时瞬切），
   图标随文字色一起渐变；
-- loading：文案与图标保持占位（避免按钮宽度跳动），右侧/左侧显示旋转指示器；
-- disabled：不接收 hover/pressed，透明度与色阶按 Aura 规则处理。
+- loading：spinner 占前置图标位、**文案保留**（与 Aura 的 Button 一致），
+  转速 2s/圈；无图标的文字按钮会因此加宽一个图标位（Aura 同为 flex 自适应）；
+- disabled：不接收 hover/pressed，整体 0.6 透明度（Aura 的 `disabled.opacity`）。
 
 ---
 
@@ -241,7 +243,7 @@ GuiCore/CustomUI/button/
 ├── __init__.py            # 导出 CButton / CButtonGroup / CSplitButton（保留旧导出）
 ├── button.py              # CButton：绘制 + 状态机 + 参数解析
 ├── button_group.py        # CButtonGroup：边框合并、首尾圆角
-├── split_button.py        # CSplitButton：主按钮 + 箭头 + CMenu
+├── split_button.py        # CSplitButton：主按钮 + 箭头 + _SplitMenu（.p-menu 规格）
 ├── severity.py            # Severity 枚举与颜色解析（读调色板）
 ├── README.md              # 本文
 ├── push_btn.py            # 现有，保留
@@ -319,7 +321,7 @@ Templating 分组的 logo 按钮直接用现有图片资源（`PathFactory.set_s
 | S1 | `severity.py` + `CButton` 基础绘制（solid/outlined/text/link × 8 severity） | 分组 2/3/4 与截图一致，hover/pressed 正确 |
 | S2 | shape/elevation/content/state（rounded、raised、icon 左右、纯图标、disabled、focus） | 分组 1/8/9/10/11/12/13 一致 |
 | S3 | loading（spinner + 宽度锁定） | 分组 14 点击表现一致 |
-| S4 | `CButtonGroup` + `CSplitButton`（复用 `CMenu`） | 分组 5/6 一致，菜单可弹出/收起 |
+| S4 | `CButtonGroup` + `CSplitButton`（自绘 `.p-menu` 浮层） | 分组 5/6 一致，菜单可弹出/收起 |
 | S5 | 主题令牌扩展（`tokens.button.*`、语义色）+ 四套主题校色 | 切换主题按钮颜色全部跟随 |
 | S6 | 预览页 + 移除旧页面 + 语言包 | 启动即进入按钮预览，语言切换正常 |
 | S7 | 测试与文档 | 新增 `tests/test_button_components.py`；`Docs/API.md` 重新生成 |
@@ -334,7 +336,8 @@ Templating 分组的 logo 按钮直接用现有图片资源（`PathFactory.set_s
    若影响下游项目，以下游跟随本基座为准。当前 `CPushButton` 已是 `CButton` 兼容壳，
    `CStatusButton` / `CMenuButton` 因带独立状态机暂未合并。
 2. **size 变体**：已实现 `sm`(32) / `md`(40) / `lg`(48)，并提供 `set_size()` 运行时切换。
-3. **Group / SplitButton**：均已实现（`CButtonGroup` 合并外框，`CSplitButton` 复用 `CMenu`）。
+3. **Group / SplitButton**：均已实现（`CButtonGroup` 合并外框；`CSplitButton` 自带 `.p-menu` 规格的浮层，
+   `QMenu` 生不出 Aura 的菜单项排版与悬停高亮，因此没有复用 `CMenu`）。
 4. **美术资源**：新增图标统一放 `customgui/resource/customui/images/svg_icons/`，可随时按同名替换。
 5. **旧页面**：`Apps/` 下 9 个应用已移到 `Apps_legacy/` 备查（不参与装配）。
 

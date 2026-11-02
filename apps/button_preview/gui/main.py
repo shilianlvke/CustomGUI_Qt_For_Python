@@ -30,9 +30,11 @@ _ROUND_ICONS = (
     ("icon_close", "danger"),
 )
 
-_SPLIT_ITEMS = (
+#: 分体按钮的下拉菜单项（None = 分隔线，与 Sakai 的 items 一致）
+_SPLIT_ITEMS: list[tuple[str, str | None] | None] = (
     ("Update", "icon_refresh"),
-    ("Delete", "icon_trash"),
+    ("Delete", "icon_close"),
+    None,
     ("Home", "icon_home"),
 )
 
@@ -111,10 +113,10 @@ def _split_buttons():
 
 
 def _templating_buttons():
-    # Sakai 原页用 logo 图片占位，这里用图标 + 文字复刻同样的内容排布
+    # Sakai 原页用 1.5rem（24px）的 logo 图片占位，这里用同尺寸图标复刻同样的内容排布
     return [
-        _button(icon="icon_star_fill"),
-        _button(text="PrimeVue", icon="icon_star_fill", variant="outlined", severity="success"),
+        _button(icon="icon_star_fill", icon_size=24),
+        _button(text="PrimeVue", icon="icon_star_fill", icon_size=24, variant="outlined", severity="success"),
     ]
 
 
@@ -181,10 +183,11 @@ def _section_card(title: str, widgets, columns: int = 4) -> CCard:
     card = CCard()
     layout = QVBoxLayout(card)
     layout.setContentsMargins(QMargins(12, 10, 12, 12))
-    layout.setSpacing(8)
+    layout.setSpacing(10)
 
+    # Sakai 的分组标题是 text-xl + font-semibold，用本项目的标题字号对齐
     label = QLabel(title)
-    font = QFont(AppSettings.family, AppSettings.subtitle_size)
+    font = QFont(AppSettings.family, AppSettings.title_size)
     font.setWeight(QFont.Weight.DemiBold)
     label.setFont(font)
     layout.addWidget(label)
