@@ -10,6 +10,7 @@ output/
 files/
 logs/
 Data/
+!src/customgui/guicore/custom_ui/data/
 
 # 编辑器 / IDE
 .vscode/
