@@ -17,6 +17,9 @@ class MainFunctions:
 
         ``animate=False`` 时瞬时切换（如语言重建页面）；
         ``menu`` / ``button_id`` / ``previous_button_id`` 让栏目按钮高亮跟随过场时序。
+
+        过场以整张区域背景卡片（``content_area_left_frame``）为画布：卡片底色与
+        圆角都进动画，页面内容与卡片表面是同一块画面，一起擦除、一起展开。
         """
         pages = self.ui.load_pages.pages
         if not animate:
@@ -29,6 +32,7 @@ class MainFunctions:
             menu=menu,
             button_id=button_id,
             previous_button_id=previous_button_id,
+            stage=getattr(self.ui, "content_area_left_frame", None),
         )
 
     # SET LEFT COLUMN PAGES

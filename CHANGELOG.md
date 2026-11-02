@@ -3,6 +3,32 @@
 本项目遵循 [语义化版本](https://semver.org/lang/zh-CN/)。`0.x` 阶段 minor 版本可能含
 破坏性变更，均在下方显式列出。
 
+## 未发布
+
+### 修复
+
+#### 区域背景卡片：内容齐平、去描边、纳入页面过场
+
+- **卡片不再描边**：`#CRegion_Card_Frame` 原先用 `border.width` +
+  `surface_interactive_pressed` 描了一圈边，卡片与内部内容之间因此夹着一圈异色
+  窄环，内容永远不可能"贴"在卡片上。现在该规则只保留底色与圆角（描边宽度写 0），
+  五个区域（内容区 + 四向抽屉）继续共用同一条规则。
+  底色取值抽成 `customgui.guicore.styles.region_card_background()`，样式表与
+  页面过场遮罩同源取色。
+- **内容与卡片齐平**：`load_pages.Main_layout` / `content_area_right_layout` 的
+  5px 内缩改为 0；左/顶/底三列的 `title_base_layout` 由 `(5, 3, 5, 3)` 改为 0，
+  标题条与卡片同宽同顶，圆角改为「上圆角 = 卡片圆角、下沿直角」
+  （新增 `customgui.guicore.window.column_geometry.title_strip_style()`，
+  三列共用一条几何样式，避免手写圆角跑偏）。
+- **主内容区背景卡片纳入栏目切换过场**：过场遮罩原先只覆盖内缩后的页面矩形，
+  卡片底色与描边在动画期间保持静止，看起来像"画框不动、画在换"。现在
+  `CPageTransition.switch(..., stage=...)` 以整张区域背景卡片为画布：遮罩铺满
+  卡片、按 `radius.window` 圆角裁剪、快照以卡片底色打底，擦除阶段露出的就是
+  卡片表面而不是另一种底色，卡片与页面内容一起擦除、一起展开，全程无颜色跳变。
+  `MainFunctions.set_page` 已把 `content_area_left_frame` 作为 `stage` 传入。
+- 上一版 0.5.0「区域背景卡片」条目里"描边沿用窗口框""内容内缩 5px"的说法已被
+  本次修复取代。
+
 ## 0.5.1
 
 ### 修复

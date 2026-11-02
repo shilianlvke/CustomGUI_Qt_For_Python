@@ -109,7 +109,7 @@ class UiMainWindow:
         self.content_area_frame = QFrame()
         self.content_area_layout = QHBoxLayout(self.content_area_frame)
         self.content_area_layout.setContentsMargins(0, 0, 0, 0)
-        # 内容卡片与右列卡片之间留出间距，两条描边不贴在一起
+        # 两块区域卡片之间留出间距，各自成为一块独立的板面
         self.content_area_layout.setSpacing(AppSettings.right_content_space)
         # 左侧内容：主内容区背景卡片，插件页面都渲染在这张卡片之上
         self.content_area_left_frame = QFrame()
@@ -117,8 +117,9 @@ class UiMainWindow:
         # 将主页导入到内容区域
         self.load_pages = Ui_MainPages()
         self.load_pages.setupUi(self.content_area_left_frame)
-        # 页面内容从卡片描边内缩一圈（uic 生成的布局默认 0 边距）
-        self.load_pages.Main_layout.setContentsMargins(5, 5, 5, 5)
+        # 页面与背景卡片齐平（uic 生成的布局默认 0 边距，这里显式钉住）：
+        # 只要留一点内缩，卡片边缘就会露出一圈底色窄环，页面像被"装裱"在卡片里
+        self.load_pages.Main_layout.setContentsMargins(0, 0, 0, 0)
         # 右侧工具栏
         self.right_column_frame = QFrame()
         self.right_column_frame.setObjectName("CRegion_Card_Frame")
@@ -126,7 +127,8 @@ class UiMainWindow:
         self.right_column_frame.setMaximumWidth(AppSettings.right_column_size.minimum)
         # 导入右列
         self.content_area_right_layout = QVBoxLayout(self.right_column_frame)
-        self.content_area_right_layout.setContentsMargins(5, 5, 5, 5)
+        # 右列内容同样与卡片齐平（内缩量交给右列自身的页面处理）
+        self.content_area_right_layout.setContentsMargins(0, 0, 0, 0)
         self.content_area_right_layout.setSpacing(0)
         # 右背景
         self.content_area_right_bg_frame = QFrame()

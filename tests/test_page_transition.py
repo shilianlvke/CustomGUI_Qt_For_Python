@@ -2,6 +2,9 @@
 
 约定：旧页擦除 → 原按钮 1→0 → 新按钮 0→1 → 新页展开，四段串联；
 切换本身立即生效（不等动画），过场结束必须撤干净遮罩与临时状态。
+
+过场的画布是**整张区域背景卡片**（``stage``）：遮罩铺满卡片、按卡片圆角裁剪、
+以卡片底色打底，于是卡片表面和页面内容一起擦除、一起展开，且擦除过程不跳色。
 """
 
 import os
@@ -12,10 +15,12 @@ from types import SimpleNamespace
 
 import pytest
 from PySide6.QtCore import QCoreApplication, QEasingCurve, QEvent
+from PySide6.QtGui import QColor
 from PySide6.QtTest import QTest
-from PySide6.QtWidgets import QApplication, QStackedWidget, QWidget
+from PySide6.QtWidgets import QApplication, QFrame, QStackedWidget, QWidget
 
 from customgui.guicore import CPageTransition
+from customgui.guicore.styles import region_card_background
 from customgui.guis.windows.main_window.functions import MainFunctions
 
 LAYER_NAME = "CPageTransition_Layer"
@@ -50,6 +55,31 @@ def fast_timing(monkeypatch):
     curve = QEasingCurve(QEasingCurve.Type.Linear)
     monkeypatch.setattr(CPageTransition, "_timing", classmethod(lambda cls: (60, 60, 60, 60, curve)))
     return 240
+
+
+@pytest.fixture
+def stage(qapp):
+    """区域背景卡片 + 内缩 6px 的页面堆栈：卡片边缘那一圈靠卡片底色兜住。"""
+    container = QWidget()
+    container.resize(400, 300)
+    card = QFrame(container)
+    card.setObjectName("CRegion_Card_Frame")
+    card.setGeometry(10, 20, 300, 200)
+    stack = QStackedWidget(card)
+    stack.setGeometry(6, 6, 288, 188)
+    for name, color in (("pageC", "#101010"), ("pageD", "#eeeeee")):
+        page = QWidget()
+        page.setObjectName(name)
+        page.setStyleSheet(f"background: {color};")
+        stack.addWidget(page)
+    stack.setCurrentWidget(stack.widget(0))
+    container.show()
+    QTest.qWait(30)
+    yield container, card, stack
+    CPageTransition.cancel(stack)
+    container.close()
+    container.deleteLater()
+    _flush_deletes()
 
 
 class _FakeLayer:
@@ -220,3 +250,45 @@ def test_set_page_honours_animate_flag(stack, fast_timing):
     assert _layer(stack) is not None
     QTest.qWait(fast_timing + 300)
     stack.hide()
+
+
+# ----------------------------------------------------------------------
+# 区域背景卡片参与过场
+# ----------------------------------------------------------------------
+def test_stage_card_is_part_of_the_transition(stage, fast_timing):
+    """遮罩铺满整张卡片，卡片底色随过场一起出现在画面上（不跳色）。"""
+    container, card, stack = stage
+    surface = QColor(region_card_background())
+
+    assert CPageTransition.switch(stack, stack.widget(1), stage=card) is True
+    state = getattr(stack, CPageTransition._STATE_ATTR)
+    state.animation.stop()  # 冻结时间线，逐帧检查
+
+    # 遮罩挂在卡片的父级（不与卡片争 z-order），几何与卡片完全一致
+    assert state.layer.parentWidget() is container
+    assert state.layer.geometry() == card.geometry()
+
+    # 首帧：整张卡片可见，卡片边缘那一圈已经是卡片底色，而非内容区底色
+    state.layer.repaint()
+    ring = container.grab().toImage().pixelColor(card.x() + 2, card.y() + card.height() // 2)
+    assert ring.name().lower() == surface.name().lower()
+
+    # 擦除到底：整张卡片都是卡片底色，擦除阶段结束时颜色不跳变
+    state.layer.set_out_progress(1.0)
+    state.layer.repaint()
+    center = container.grab().toImage().pixelColor(
+        card.x() + card.width() // 2, card.y() + card.height() // 2
+    )
+    assert center.name().lower() == surface.name().lower()
+
+
+def test_switch_without_stage_keeps_page_rect(stack, fast_timing):
+    """不传 stage 时退回旧行为：遮罩只覆盖页面矩形，挂在堆叠控件自身之下。"""
+    stack.show()
+    QTest.qWait(30)
+
+    assert CPageTransition.switch(stack, stack.widget(1)) is True
+    layer = _layer(stack)
+    assert layer is not None
+    assert layer.parentWidget() is stack
+    assert layer.geometry() == stack.rect()

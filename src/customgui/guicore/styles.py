@@ -14,6 +14,20 @@ def _mix(start: str, end: str, ratio: float) -> str:
     ).name()
 
 
+def region_card_background() -> str:
+    """区域背景卡片（主内容区 + 四向抽屉）的底色。
+
+    取 ``surface_app`` 与 ``surface_panel`` 的中间调：既区别于窗口底色
+    （否则整块卡片会看不见），也不与页面里的 ``surface_card`` 卡片撞色
+    （否则插件页面自己的卡片会融进背景）。
+
+    本函数是**唯一**取色处：样式表与页面过场遮罩共用它，过场擦除时才不会
+    在卡片表面留下一条异色带（颜色跳变）。
+    """
+    colors = get_design_tokens().colors
+    return _mix(colors.surface_app, colors.surface_panel, 0.5)
+
+
 class Styles:
     """全局样式表：所有组件的**颜色 / 状态 / 字体**都集中在这里。
 
@@ -96,17 +110,19 @@ class Styles:
     def update_region_card_style(self):
         """内容区与四向抽屉共用的区域背景卡片。
 
-        底色取 ``surface_app`` 与 ``surface_panel`` 的中间调：既区别于窗口底色
-        （否则只剩描边一条线），也不与页面里的 ``surface_card`` 卡片撞色（否则
-        插件页面自己的卡片会融进背景）。描边沿用窗口框的 ``border.width`` 与
-        ``surface_interactive_pressed``，圆角取 ``radius.window``，五个区域完全
-        同一套规则，深浅主题自动跟随。
+        卡片只提供**底色 + 圆角**，不再描边：描边会在卡片与内部内容之间夹出
+        一圈异色窄环，内容也就不可能和卡片"无缝拼接"。底色见
+        :func:`region_card_background`（页面过场遮罩复用同一函数取色，切换时
+        不跳色），圆角取 ``radius.window``，五个区域完全同一套规则，深浅主题
+        自动跟随。
+
+        内容与卡片齐平由挂载处保证（``ui_main`` 的内容区布局、三向栏目的标题
+        条布局边距均为 0），本文件只负责颜色，几何留在实例侧。
         """
-        region_bg = _mix(self.tokens.colors.surface_app, self.tokens.colors.surface_panel, 0.5)
         self.style += f"""
             #CRegion_Card_Frame {{
-                background-color: {region_bg};
-                border: {self.tokens.border.width}px solid {self.tokens.colors.surface_interactive_pressed};
+                background-color: {region_card_background()};
+                border: 0px solid transparent;
                 border-radius: {self.tokens.radius.window}px;
             }}
         """

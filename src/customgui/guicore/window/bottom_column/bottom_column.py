@@ -3,6 +3,7 @@ from PySide6.QtWidgets import QFrame, QHBoxLayout, QLabel, QVBoxLayout, QWidget
 
 from customgui.appcore import ColorPalette, Language, get_design_tokens, get_theme_manager
 
+from ..column_geometry import title_strip_style
 from ..left_column.icon import PyIcon
 from ..left_column.left_button import PyLeftButton
 from .ui import Ui_BottomColumn
@@ -87,14 +88,15 @@ class CBottomColumn(QWidget):
         self.title_frame.setMaximumHeight(47)
         self.title_frame.setMinimumHeight(47)
 
-        # 标题基础布局
+        # 标题基础布局：贴死卡片边缘（留边距会在卡片与标题条之间露出一圈底色窄环）
         self.title_base_layout = QVBoxLayout(self.title_frame)
-        self.title_base_layout.setContentsMargins(5, 3, 5, 3)
+        self.title_base_layout.setContentsMargins(0, 0, 0, 0)
 
         # 标题背景框架（配色见 customgui.guicore/styles.py；圆角是实例参数，本地覆盖）
+        # 标题条与卡片同宽同顶，只有上圆角需要与卡片圆角对齐，下沿是内部接缝必须为直角
         self.title_bg_frame = QFrame()
         self.title_bg_frame.setObjectName("CBottomColumnTitle_Frame")
-        self.title_bg_frame.setStyleSheet(f"#CBottomColumnTitle_Frame {{ border-radius: {self._radius}px; }}")
+        self.title_bg_frame.setStyleSheet(title_strip_style("CBottomColumnTitle_Frame", self._radius))
 
         # 布局标题BG
         self.title_bg_layout = QHBoxLayout(self.title_bg_frame)

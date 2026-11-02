@@ -98,6 +98,43 @@ def test_region_card_rule_is_shared():
     assert style.count("#CRegion_Card_Frame {") == 1
 
 
+def test_region_card_has_no_visible_border():
+    """区域背景卡片不描边：描边会在卡片与内容之间夹出一圈异色窄环。"""
+    import re
+
+    style = Styles().style
+    block = re.search(r"#CRegion_Card_Frame \{(.*?)\}", style, re.S).group(1)
+    border_widths = {int(value) for value in re.findall(r"border:\s*(\d+)px", block)}
+    assert border_widths == {0}
+    # 底色仍由同一条规则提供，且与四向抽屉同源
+    assert "background-color" in block
+    assert "border-radius" in block
+
+
+def test_main_content_is_flush_with_region_card(qapp):
+    """主内容区页面与背景卡片齐平：卡片边缘不再露出一圈底色窄环。"""
+    from PySide6.QtWidgets import QMainWindow
+
+    from customgui.appcore import AppLanguages, AppSettings, AppThemes, ColorPalette, Language, get_app_context
+    from customgui.guis.windows.main_window.ui_main import UiMainWindow
+
+    get_app_context()
+    ColorPalette.update(AppThemes[AppSettings.theme_name].data)
+    Language.update(AppLanguages[AppSettings.language].data)
+
+    window = QMainWindow()
+    ui = UiMainWindow()
+    ui.setup_ui(window)
+    try:
+        for layout in (ui.load_pages.Main_layout, ui.content_area_right_layout):
+            margins = layout.contentsMargins()
+            assert (margins.left(), margins.top(), margins.right(), margins.bottom()) == (0, 0, 0, 0)
+        # 页面堆栈铺满整张卡片（卡片 contentsRect 不再被描边内缩）
+        assert ui.load_pages.pages.parentWidget() is ui.content_area_left_frame
+    finally:
+        window.deleteLater()
+
+
 def test_main_window_region_frames_share_card_name(qapp):
     """五个区域容器（内容 + 四向抽屉）都挂 CRegion_Card_Frame。"""
     from PySide6.QtWidgets import QMainWindow

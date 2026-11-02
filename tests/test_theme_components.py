@@ -342,7 +342,11 @@ def test_left_menu_radius_falls_back_to_token(qapp):
 
 
 def test_left_column_geometry_follows_token(qapp):
-    """CLeftColumn 的圆角与标题标签几何取设计令牌，显式传参可覆盖。"""
+    """CLeftColumn 的圆角与标题标签几何取设计令牌，显式传参可覆盖。
+
+    标题条与区域背景卡片同宽同顶：上圆角必须等于卡片圆角（否则方角顶出卡片
+    轮廓），下沿是卡片内部的接缝，必须是直角。
+    """
     from customgui.guicore import CLeftColumn
 
     _init_language()
@@ -356,7 +360,14 @@ def test_left_column_geometry_follows_token(qapp):
         icon_close_path="icon_menu_close",
         font_family=tokens.typography.family,
     )
-    assert f"border-radius: {tokens.radius.window}px" in column.title_bg_frame.styleSheet()
+    strip_sheet = column.title_bg_frame.styleSheet()
+    assert f"border-top-left-radius: {tokens.radius.window}px" in strip_sheet
+    assert f"border-top-right-radius: {tokens.radius.window}px" in strip_sheet
+    assert "border-bottom-left-radius: 0px" in strip_sheet
+    assert "border-bottom-right-radius: 0px" in strip_sheet
+    # 标题条贴死卡片边缘：留边距就会在卡片与标题条之间露出一圈底色窄环
+    margins = column.title_base_layout.contentsMargins()
+    assert (margins.left(), margins.top(), margins.right(), margins.bottom()) == (0, 0, 0, 0)
 
     label_sheet = column.title_label.styleSheet()
     assert f"padding-bottom: {tokens.spacing.label_padding_bottom}px" in label_sheet
@@ -371,7 +382,7 @@ def test_left_column_geometry_follows_token(qapp):
         font_family=tokens.typography.family,
         radius=3,
     )
-    assert "border-radius: 3px" in custom.title_bg_frame.styleSheet()
+    assert "border-top-left-radius: 3px" in custom.title_bg_frame.styleSheet()
 
 
 def test_line_edit_height_follows_token(qapp):
