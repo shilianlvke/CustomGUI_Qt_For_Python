@@ -5,7 +5,7 @@ import os
 os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
 
 import pytest
-from PySide6.QtCore import QPoint, Qt
+from PySide6.QtCore import Qt
 from PySide6.QtGui import QColor
 from PySide6.QtTest import QTest
 from PySide6.QtWidgets import QApplication, QLabel, QWidget
@@ -15,7 +15,6 @@ from customgui.guicore import (
     CBreadcrumb,
     CButton,
     CDialog,
-    CDrawer,
     CFieldset,
     CFormField,
     CFormGrid,
@@ -233,19 +232,6 @@ def test_dialog_body_wrapped_in_scroll(qapp, host):
     assert body_scroller is not None
     assert body_scroller.widget() is dialog.content_layout.parentWidget()
     dialog.deleteLater()
-
-
-def test_drawer_resize_from_grip(qapp, host):
-    drawer = CDrawer("Panel", position="right", size=300, parent=host)
-    drawer.open_dialog()
-    QTest.qWait(260)
-    # 右侧抽屉向左拖（dx<0）变宽
-    drawer._resize_from_grip(300, QPoint(-50, 0))
-    assert drawer._size == 350
-    # 拖得太宽受窗口尺寸约束
-    drawer._resize_from_grip(350, QPoint(400, 0))
-    assert drawer._size == 200
-    drawer.deleteLater()
 
 
 def test_render_icon_dpr_cache(qapp):

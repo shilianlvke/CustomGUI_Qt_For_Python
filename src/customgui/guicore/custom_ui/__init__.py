@@ -122,7 +122,6 @@ from .line_edit import (
 from .menu import CMenu as CMenu
 from .overlay import CConfirmDialog as CConfirmDialog
 from .overlay import CDialog as CDialog
-from .overlay import CDrawer as CDrawer
 from .overlay import COverlayPanel as COverlayPanel
 from .page_transition import CPageTransition as CPageTransition
 from .panels import (
@@ -217,7 +216,6 @@ __all__ = [
     "CMessage",
     "CToast",
     "CDialog",
-    "CDrawer",
     "CConfirmDialog",
     "COverlayPanel",
     "CTabs",

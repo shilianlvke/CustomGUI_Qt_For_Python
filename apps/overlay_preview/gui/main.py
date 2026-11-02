@@ -14,7 +14,6 @@ from customgui.guicore import (
     CConfirmDialog,
     CDialog,
     CDivider,
-    CDrawer,
     COverlayPanel,
     CScrollArea,
     CToast,
@@ -72,40 +71,37 @@ def _dialog_buttons(window):
     return [box]
 
 
-_DRAWER_ICONS = {
-    "left": "icon_setting",
-    "right": "icon_bell",
-    "top": "icon_search",
-    "bottom": "icon_report",
-}
+def _toggle_column(window, position: str) -> None:
+    """切换指定方向的栏目抽屉（左/右列为基座既有栏目，顶/底列与之同构）。"""
+    from customgui.appcore import PathFactory
+    from customgui.guis.windows.main_window.functions import MainFunctions
 
-
-def _show_drawer(window, position: str) -> None:
-    """打开指定方向的抽屉。
-
-    抽屉的停靠范围由 ``anchor`` 决定，默认取主窗口内容区，因此左侧菜单、
-    顶部标题栏、底部版权栏都不会被盖住；四个方向共用同一套头部与内容结构。
-    """
-    size = 360 if position in ("left", "right") else 260
-    drawer = CDrawer(
-        _t(f"drawer_{position}_title"),
-        position=position,
-        size=size,
-        icon=_DRAWER_ICONS[position],
-        parent=window,
-    )
-    drawer.setAttribute(Qt.WA_DeleteOnClose, True)
-
-    hint = QLabel(_t("drawer_hint"))
-    hint.setWordWrap(True)
-    drawer.add_widget(hint)
-    drawer.add_widget(CDivider())
-    for key in ("drawer_row_1", "drawer_row_2", "drawer_row_3"):
-        drawer.add_widget(QLabel(_t(key)))
-    close = CButton(_t("dialog_cancel"), variant="outlined", severity="secondary")
-    close.clicked.connect(drawer.reject)
-    drawer.add_widget(close)
-    drawer.open_dialog()
+    if position == "left":
+        MainFunctions.set_left_column_menu(
+            window,
+            menu=window.ui.left_column.menus.menu_2,
+            title=_t("drawer_left_title"),
+            icon_path=PathFactory.set_svg_icon("icon_setting"),
+        )
+        MainFunctions.toggle_left_column(window)
+    elif position == "right":
+        MainFunctions.toggle_right_column(window)
+    elif position == "top":
+        MainFunctions.set_top_column_menu(
+            window,
+            menu=window.ui.top_column.menus.menu_1,
+            title=_t("drawer_top_title"),
+            icon_path=PathFactory.set_svg_icon("icon_search"),
+        )
+        MainFunctions.toggle_top_column(window)
+    else:
+        MainFunctions.set_bottom_column_menu(
+            window,
+            menu=window.ui.bottom_column.menus.menu_1,
+            title=_t("drawer_bottom_title"),
+            icon_path=PathFactory.set_svg_icon("icon_report"),
+        )
+        MainFunctions.toggle_bottom_column(window)
 
 
 def _drawer_buttons(window):
@@ -119,7 +115,7 @@ def _drawer_buttons(window):
     row.setSpacing(8)
     for position in ("left", "right", "top", "bottom"):
         button = CButton(_t(f"drawer_{position}"), variant="outlined", severity="secondary")
-        button.clicked.connect(lambda _checked=False, p=position: _show_drawer(window, p))
+        button.clicked.connect(lambda _checked=False, p=position: _toggle_column(window, p))
         row.addWidget(button)
     row.addStretch()
     layout.addLayout(row)
