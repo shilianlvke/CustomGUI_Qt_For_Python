@@ -42,6 +42,11 @@ class Styles:
                 border-radius: {self.tokens.radius.window};
                 border: {self.tokens.border.width}px solid {self.tokens.colors.surface_interactive_pressed};
             }}
+            /* 最大化/贴边：由 CWindow 改这条动态属性即可，无需重建整张样式表 */
+            #CWindow_Frame[frameStyle="flat"] {{
+                border-radius: 0px;
+                border: 0px solid transparent;
+            }}
             #CLeftMenu_Bg_Frame {{
                 background: {self.tokens.colors.surface_sidebar};
             }}

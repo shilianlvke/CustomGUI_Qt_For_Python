@@ -8,8 +8,8 @@ from customgui.guicore.custom_ui.div import CVDiv
 
 from .title_button import CTitleButton
 
-_is_maximized = False
-_old_size = QSize()
+#: 正常窗口四周留给外阴影的边距（最大化时归零）
+_SAFE_MARGINS = (10, 10, 10, 10)
 
 
 def fit_logo_size(svg: QSvgWidget, limit: int) -> QSize:
@@ -41,6 +41,10 @@ class CTitleBar(QWidget):
         self._parent = parent
         self._app_parent = app_parent
         self.settings = AppSettings
+
+        # 最大化状态跟随窗口实例（此前是模块级全局，多窗口会互相串状态）
+        self._is_maximized = False
+        self._old_size = QSize()
 
         # 参数
         self._logo_image = AppSettings.logo_title
@@ -178,7 +182,8 @@ class CTitleBar(QWidget):
         """语言切换后刷新窗口控制按钮与自定义菜单按钮的提示文本（订阅自动触发）。"""
         resolver = resolver or self._resolve_text
         self.minimize_button.set_tooltip(resolver("language.UI.ui_Minimize"))
-        self.maximize_restore_button.set_tooltip(resolver("language.UI.ui_Maximize"))
+        maximize_key = "language.UI.ui_Restore" if self._is_maximized else "language.UI.ui_Maximize"
+        self.maximize_restore_button.set_tooltip(resolver(maximize_key))
         self.close_button.set_tooltip(resolver("language.UI.ui_Close"))
         for btn_id, tooltip_key in self._custom_lang_keys.items():
             button = self._custom_buttons.get(btn_id)
@@ -203,31 +208,48 @@ class CTitleBar(QWidget):
     # 最大化并恢复父窗口
     # ///////////////////////////////////////////////////////////////
     def maximize_restore(self, e=None):
-        global _is_maximized
-        global _old_size
+        """最大化 / 还原父窗口。
 
-        # 更改UI并调整夹点大小
-        def change_ui():
-            if hasattr(self._parent, "ui"):
-                if _is_maximized:
-                    self._parent.ui.central_widget_layout.setContentsMargins(0, 0, 0, 0)
-                    self._parent.ui.window.set_stylesheet(border_radius=0, border_size=0)
-                    self.maximize_restore_button.set_icon(PathFactory.set_svg_icon("icon_restore"))
-                else:
-                    self._parent.ui.central_widget_layout.setContentsMargins(10, 10, 10, 10)
-                    self._parent.ui.window.set_stylesheet()  # 清除覆盖，恢复主题默认圆角/边框
-                    self.maximize_restore_button.set_icon(PathFactory.set_svg_icon("icon_maximize"))
+        顺序很关键：**先把框架切到目标状态（只改动态属性，微秒级），再让窗口改尺寸**。
+        旧实现是 ``showMaximized()`` 之后重建整张样式表，一次切换会让整棵控件树
+        重新 polish（400+ 次 StyleChange、同步阻塞数十到数百毫秒），
+        于是「点一下卡一下、还原再卡一下」。
+        """
+        parent = self._parent
+        if parent is None:
+            return
 
-        # 检查事件
-        if self._parent.isMaximized():
-            _is_maximized = False
-            self._parent.showNormal()
-            change_ui()
+        maximize = not bool(parent.isMaximized())
+        if maximize:
+            self._old_size = QSize(parent.width(), parent.height())
+        self._is_maximized = maximize
+
+        self._apply_window_chrome(maximize)
+
+        if maximize:
+            parent.showMaximized()
         else:
-            _is_maximized = True
-            _old_size = QSize(self._parent.width(), self._parent.height())
-            self._parent.showMaximized()
-            change_ui()
+            parent.showNormal()
+
+    def _apply_window_chrome(self, maximized: bool) -> None:
+        """按最大化状态刷新窗口框架、阴影、边距与按钮图标（全部为轻量操作）。"""
+        ui = getattr(self._parent, "ui", None)
+        if ui is not None:
+            ui.central_widget_layout.setContentsMargins(*(0, 0, 0, 0) if maximized else _SAFE_MARGINS)
+            window = getattr(ui, "window", None)
+            if window is not None:
+                if maximized:
+                    window.set_stylesheet(border_radius=0, border_size=0)
+                else:
+                    window.set_stylesheet()
+                set_shadow = getattr(window, "set_shadow_enabled", None)
+                if callable(set_shadow):
+                    set_shadow(not maximized)
+
+        icon = "icon_restore" if maximized else "icon_maximize"
+        self.maximize_restore_button.set_icon(PathFactory.set_svg_icon(icon))
+        tooltip = "language.UI.ui_Restore" if maximized else "language.UI.ui_Maximize"
+        self.maximize_restore_button.set_tooltip(self._resolve_text(tooltip))
 
     # SETUP APP
     # ///////////////////////////////////////////////////////////////

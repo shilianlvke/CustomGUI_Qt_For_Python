@@ -204,19 +204,22 @@ def test_window_frame_override(qapp):
     window = CWindow()
     default_style = window.styleSheet()
 
-    # 最大化：覆盖为无圆角无边框
+    # 最大化：走 frameStyle 动态属性，只重刷框架，不重建整张样式表
     window.set_stylesheet(border_radius=0, border_size=0)
-    assert "border-radius: 0px" in window.styleSheet()
-    assert "border: 0px solid" in window.styleSheet()
+    assert window.property("frameStyle") == "flat"
+    assert '#CWindow_Frame[frameStyle="flat"]' in default_style
+    assert window.styleSheet() == default_style
 
     # 主题重建后覆盖保持
     get_theme_manager().apply("eye")
     window.apply_style()
-    assert "border-radius: 0px" in window.styleSheet()
+    assert window.property("frameStyle") == "flat"
 
-    # 还原：清除覆盖，恢复主题默认
+    # 还原：清除覆盖，恢复主题默认（主题重建由控制器订阅触发，这里显式调用）
     get_theme_manager().apply("default")
+    window.apply_style()
     window.set_stylesheet()
+    assert window.property("frameStyle") == "default"
     assert window.styleSheet() == default_style
 
 
