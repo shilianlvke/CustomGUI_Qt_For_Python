@@ -1,0 +1,576 @@
+"""Sakai 风格主题配置抽屉。
+
+右侧滑入的浮层面板：主题卡片、主色 / 表面色示意色板、菜单模式与深色模式。
+所有配色在绘制或刷新时实时读取设计令牌与调色板，切换主题后重绘即生效。
+"""
+
+from __future__ import annotations
+
+from PySide6.QtCore import QEasingCurve, QEvent, QPoint, QPropertyAnimation, QRectF, Qt, Signal
+from PySide6.QtGui import QColor, QFont, QPainter, QPainterPath, QPen
+from PySide6.QtWidgets import QFrame, QGridLayout, QHBoxLayout, QLabel, QSizePolicy, QVBoxLayout, QWidget
+
+from customgui.appcore import AppSettings, AppThemes, ColorPalette, get_design_tokens, get_theme_manager
+
+from ..custom_ui.close_button import CCloseButton
+from ..custom_ui.line_edit.choice import CToggleSwitch
+from ..custom_ui.line_edit.toggle_button import CSelectButton
+from ..custom_ui.scroll.scroll_area import CScrollArea
+
+#: 主题卡片预览所用的调色板键
+_PREVIEW_KEYS = ("custom_dark_one", "custom_bg_one", "custom_context_color", "custom_text_title")
+#: 主色示意色板（属性名，绘制时实时读取）
+_PRIMARY_SWATCHES = (
+    "custom_context_color",
+    "custom_context_hover",
+    "custom_context_pressed",
+    "custom_icon_active",
+    "custom_yellow",
+)
+#: 表面色示意色板
+_SURFACE_SWATCHES = (
+    "custom_dark_one",
+    "custom_dark_three",
+    "custom_bg_one",
+    "custom_bg_two",
+    "custom_bg_three",
+)
+
+
+class _ThemeCard(QWidget):
+    """可点击的主题卡片：名称 + 四个调色块预览。"""
+
+    clicked = Signal(str)
+
+    def __init__(self, theme_name: str, parent=None):
+        super().__init__(parent)
+        self._name = theme_name
+        self._selected = False
+        self._hover = False
+        self.setCursor(Qt.PointingHandCursor)
+        self.setMinimumHeight(66)
+        self.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed)
+
+    def name(self) -> str:
+        return self._name
+
+    def is_selected(self) -> bool:
+        return self._selected
+
+    def set_selected(self, selected: bool) -> None:
+        if self._selected != bool(selected):
+            self._selected = bool(selected)
+            self.update()
+
+    def _preview_colors(self) -> list[str]:
+        config = AppThemes.get(self._name)
+        data = getattr(config, "data", None)
+        if data is None:
+            return []
+        colors = []
+        for key in _PREVIEW_KEYS:
+            try:
+                colors.append(str(getattr(data, key)))
+            except AttributeError:
+                continue
+        return colors
+
+    def paintEvent(self, event):  # noqa: N802 - 覆写 Qt 命名
+        colors = get_design_tokens().colors
+        accent = QColor(colors.border_context)
+        painter = QPainter(self)
+        painter.setRenderHint(QPainter.Antialiasing)
+
+        rect = QRectF(self.rect()).adjusted(0.5, 0.5, -0.5, -0.5)
+        path = QPainterPath()
+        path.addRoundedRect(rect, 6, 6)
+        if self._selected:
+            fill = QColor(accent)
+            fill.setAlpha(28)
+            painter.fillPath(path, fill)
+            painter.setPen(QPen(accent, 1.5))
+        else:
+            painter.fillPath(path, QColor(ColorPalette.custom_dark_two if self._hover else ColorPalette.custom_dark_one))
+            painter.setPen(QPen(QColor(colors.surface_interactive_pressed), 1))
+        painter.drawPath(path)
+
+        font = QFont(AppSettings.family)
+        font.setPixelSize(13)
+        font.setWeight(QFont.Weight.DemiBold)
+        painter.setFont(font)
+        painter.setPen(QColor(colors.text_active if self._selected else colors.text_primary))
+        preview = self._preview_colors()
+        text_rect = QRectF(rect.left() + 10, rect.top() + 6, rect.width() - 20, 20)
+        painter.drawText(text_rect, Qt.AlignLeft | Qt.AlignVCenter, self._name.replace("_", " ").title())
+
+        # 调色块预览：底色按卡片宽度均分，未取到颜色的槽位留空
+        left = rect.left() + 10
+        width = max(8.0, (rect.width() - 20) / 4)
+        for index, value in enumerate(preview[:4]):
+            chip = QRectF(left + index * width, rect.top() + 32, width - 3, 22)
+            chip_path = QPainterPath()
+            chip_path.addRoundedRect(chip, 4, 4)
+            painter.fillPath(chip_path, QColor(value))
+            painter.setPen(QPen(QColor(255, 255, 255, 22), 1))
+            painter.drawPath(chip_path)
+        painter.end()
+
+    def enterEvent(self, event):  # noqa: N802 - 覆写 Qt 命名
+        self._hover = True
+        self.update()
+        super().enterEvent(event)
+
+    def leaveEvent(self, event):  # noqa: N802 - 覆写 Qt 命名
+        self._hover = False
+        self.update()
+        super().leaveEvent(event)
+
+    def mouseReleaseEvent(self, event):  # noqa: N802 - 覆写 Qt 命名
+        if event.button() == Qt.LeftButton and self.rect().contains(event.position().toPoint()):
+            self.clicked.emit(self._name)
+            event.accept()
+            return
+        super().mouseReleaseEvent(event)
+
+
+class _Swatch(QWidget):
+    """示意色块：只维护自身的选中状态，不改变全局令牌。"""
+
+    clicked = Signal(object)
+
+    def __init__(self, attribute: str, parent=None):
+        super().__init__(parent)
+        self._attribute = attribute
+        self._selected = False
+        self._hover = False
+        self.setFixedSize(30, 30)
+        self.setCursor(Qt.PointingHandCursor)
+        self.setToolTip(attribute.replace("custom_", "").replace("_", " "))
+
+    def attribute(self) -> str:
+        return self._attribute
+
+    def is_selected(self) -> bool:
+        return self._selected
+
+    def set_selected(self, selected: bool) -> None:
+        if self._selected != bool(selected):
+            self._selected = bool(selected)
+            self.update()
+
+    def color(self) -> QColor:
+        return QColor(getattr(ColorPalette, self._attribute, ColorPalette.custom_bg_one))
+
+    def paintEvent(self, event):  # noqa: N802 - 覆写 Qt 命名
+        colors = get_design_tokens().colors
+        painter = QPainter(self)
+        painter.setRenderHint(QPainter.Antialiasing)
+        rect = QRectF(self.rect()).adjusted(1.5, 1.5, -1.5, -1.5)
+        path = QPainterPath()
+        path.addRoundedRect(rect, 6, 6)
+        painter.fillPath(path, self.color())
+
+        if self._selected:
+            painter.setBrush(Qt.NoBrush)
+            painter.setPen(QPen(QColor(colors.border_context), 2))
+        else:
+            painter.setBrush(Qt.NoBrush)
+            border = QColor(colors.text_muted if self._hover else colors.surface_interactive_pressed)
+            painter.setPen(QPen(border, 1))
+        painter.drawPath(path)
+        painter.end()
+
+    def enterEvent(self, event):  # noqa: N802 - 覆写 Qt 命名
+        self._hover = True
+        self.update()
+        super().enterEvent(event)
+
+    def leaveEvent(self, event):  # noqa: N802 - 覆写 Qt 命名
+        self._hover = False
+        self.update()
+        super().leaveEvent(event)
+
+    def mouseReleaseEvent(self, event):  # noqa: N802 - 覆写 Qt 命名
+        if event.button() == Qt.LeftButton and self.rect().contains(event.position().toPoint()):
+            self.clicked.emit(self)
+            event.accept()
+            return
+        super().mouseReleaseEvent(event)
+
+
+class CAppConfigurator(QFrame):
+    """右侧滑入的主题配置抽屉。
+
+    用法::
+
+        panel = CAppConfigurator(host_widget)
+        panel.themeChanged.connect(on_theme)
+        panel.open()
+
+    信号 ``themeChanged`` 只在通过本面板切换主题时发出；外部调用
+    ``ThemeManager.apply`` 时面板会静默同步选中态。
+    """
+
+    themeChanged = Signal(str)
+    menuModeChanged = Signal(str)
+    darkModeChanged = Signal(bool)
+    closed = Signal()
+
+    #: 抽屉默认宽度
+    DEFAULT_WIDTH = 360
+    #: 配置未就绪时的滑动时长（毫秒）
+    FALLBACK_DURATION = 200
+
+    def __init__(self, parent=None, width: int = DEFAULT_WIDTH):
+        super().__init__(parent)
+        self.setObjectName("CAppConfigurator_Frame")
+        self._width = max(280, int(width))
+        self._open = False
+        self._closing = False
+        self._animation: QPropertyAnimation | None = None
+        self._menu_mode = "static"
+        self._suppress_dark_sync = False
+        self._color_labels: list[tuple[QLabel, str]] = []
+        self._theme_cards: list[_ThemeCard] = []
+        self._primary_swatches: list[_Swatch] = []
+        self._surface_swatches: list[_Swatch] = []
+
+        self.setFixedWidth(self._width)
+        self.setSizePolicy(QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Expanding)
+        self._setup_ui()
+        self._sync_theme_state()
+        self.update_style()
+
+        get_theme_manager().subscribe(self._on_theme_applied)
+        if parent is not None:
+            parent.installEventFilter(self)
+        self.hide()
+
+    # ------------------------------------------------------------------
+    # 构建
+    # ------------------------------------------------------------------
+    def _setup_ui(self) -> None:
+        root = QVBoxLayout(self)
+        root.setContentsMargins(0, 0, 0, 0)
+        root.setSpacing(0)
+
+        header = QFrame(self)
+        header.setFixedHeight(56)
+        header_layout = QHBoxLayout(header)
+        header_layout.setContentsMargins(20, 0, 12, 0)
+        header_layout.setSpacing(8)
+
+        self.header_title = self._make_label("主题配置", "header")
+        font = QFont(AppSettings.family)
+        font.setPixelSize(16)
+        font.setWeight(QFont.Weight.DemiBold)
+        self.header_title.setFont(font)
+        header_layout.addWidget(self.header_title, 1)
+
+        self.close_button = CCloseButton(QColor(get_design_tokens().colors.text_primary), size=28, radius=6, parent=header)
+        self.close_button.clicked.connect(self.close)
+        header_layout.addWidget(self.close_button, 0, Qt.AlignVCenter)
+        root.addWidget(header)
+
+        self.content_scroll = CScrollArea(background="transparent", parent=self)
+        content = QWidget()
+        self.content_layout = QVBoxLayout(content)
+        self.content_layout.setContentsMargins(20, 8, 20, 20)
+        self.content_layout.setSpacing(22)
+        self.content_layout.setAlignment(Qt.AlignTop)
+
+        self._build_theme_section(content)
+        self._build_palette_section(content)
+        self._build_menu_mode_section(content)
+        self._build_dark_mode_section(content)
+        self.content_layout.addStretch(1)
+
+        self.content_scroll.setWidget(content)
+        root.addWidget(self.content_scroll, 1)
+
+    def _make_label(self, text: str, role: str) -> QLabel:
+        """创建一个随主题刷新颜色的标签；role 为 header / title / hint。"""
+        label = QLabel(text, self)
+        font = QFont(AppSettings.family)
+        if role == "header":
+            font.setPixelSize(16)
+            font.setWeight(QFont.Weight.DemiBold)
+        elif role == "title":
+            font.setPixelSize(13)
+            font.setWeight(QFont.Weight.DemiBold)
+        else:
+            font.setPixelSize(12)
+        label.setFont(font)
+        label.setWordWrap(role == "hint")
+        self._color_labels.append((label, role))
+        return label
+
+    def _section_layout(self, content: QWidget, title: str, hint: str = "") -> QVBoxLayout:
+        box = QWidget(content)
+        layout = QVBoxLayout(box)
+        layout.setContentsMargins(0, 0, 0, 0)
+        layout.setSpacing(8)
+        layout.addWidget(self._make_label(title, "title"))
+        if hint:
+            layout.addWidget(self._make_label(hint, "hint"))
+        self.content_layout.addWidget(box)
+        return layout
+
+    def _build_theme_section(self, content: QWidget) -> None:
+        layout = self._section_layout(content, "主题", "选择一套内置配色方案")
+        grid = QGridLayout()
+        grid.setContentsMargins(0, 0, 0, 0)
+        grid.setHorizontalSpacing(8)
+        grid.setVerticalSpacing(8)
+        for index, name in enumerate(sorted(AppThemes.keys())):
+            card = _ThemeCard(name)
+            card.clicked.connect(self.set_theme)
+            self._theme_cards.append(card)
+            grid.addWidget(card, index // 2, index % 2)
+        layout.addLayout(grid)
+
+    def _build_palette_section(self, content: QWidget) -> None:
+        layout = self._section_layout(content, "主色 / 表面色", "仅作示意，不改变全局令牌")
+        for caption, attributes, target in (
+            ("主色", _PRIMARY_SWATCHES, self._primary_swatches),
+            ("表面色", _SURFACE_SWATCHES, self._surface_swatches),
+        ):
+            row = QHBoxLayout()
+            row.setContentsMargins(0, 0, 0, 0)
+            row.setSpacing(8)
+            row.addWidget(self._make_label(caption, "hint"))
+            for index, attribute in enumerate(attributes):
+                swatch = _Swatch(attribute)
+                swatch.set_selected(index == 0)
+                swatch.clicked.connect(lambda item, group=target: self._select_swatch(item, group))
+                target.append(swatch)
+                row.addWidget(swatch)
+            row.addStretch(1)
+            layout.addLayout(row)
+
+    def _build_menu_mode_section(self, content: QWidget) -> None:
+        layout = self._section_layout(content, "菜单模式", "Static 固定展示，Overlay 浮层展开")
+        self.menu_mode_select = CSelectButton(["Static", "Overlay"], index=0, size="sm")
+        self.menu_mode_select.setFixedWidth(180)
+        self.menu_mode_select.selectionChanged.connect(self._on_menu_mode_selected)
+        layout.addWidget(self.menu_mode_select, 0, Qt.AlignLeft)
+
+    def _build_dark_mode_section(self, content: QWidget) -> None:
+        layout = self._section_layout(content, "深色模式", "开启后使用暗色主题，关闭回退默认主题")
+        self.dark_switch = CToggleSwitch("深色模式")
+        self.dark_switch.toggled.connect(self._on_dark_toggled)
+        layout.addWidget(self.dark_switch, 0, Qt.AlignLeft)
+
+    # ------------------------------------------------------------------
+    # 主题
+    # ------------------------------------------------------------------
+    def set_theme(self, name: str) -> bool:
+        """应用指定主题并发出 ``themeChanged``；未知主题返回 False。"""
+        if name not in AppThemes:
+            return False
+        get_theme_manager().apply(name)
+        self._sync_theme_state()
+        self.themeChanged.emit(name)
+        return True
+
+    def current_theme(self) -> str:
+        return get_theme_manager().current()
+
+    def _on_theme_applied(self) -> None:
+        self._sync_theme_state()
+        self.update_style()
+
+    def _sync_theme_state(self) -> None:
+        current = get_theme_manager().current()
+        for card in self._theme_cards:
+            card.set_selected(card.name() == current)
+        if not self._suppress_dark_sync:
+            dark = QColor(ColorPalette.custom_bg_one).lightness() < 128
+            self.dark_switch.blockSignals(True)
+            self.dark_switch.setChecked(dark)
+            self.dark_switch.blockSignals(False)
+
+    @staticmethod
+    def _first_dark_theme() -> str | None:
+        names = sorted(AppThemes.keys())
+        for preferred in ("dracula", "default"):
+            if preferred in names:
+                return preferred
+        for name in names:
+            try:
+                if QColor(AppThemes[name].data.custom_bg_one).lightness() < 128:
+                    return name
+            except AttributeError:
+                continue
+        return None
+
+    @staticmethod
+    def _default_theme() -> str | None:
+        names = sorted(AppThemes.keys())
+        try:
+            configured = AppSettings.theme_name
+        except Exception:
+            configured = None
+        if configured in names:
+            return configured
+        return "default" if "default" in names else (names[0] if names else None)
+
+    def _on_dark_toggled(self, checked: bool) -> None:
+        target = self._first_dark_theme() if checked else self._default_theme()
+        self._suppress_dark_sync = True
+        try:
+            if target is not None:
+                self.set_theme(target)
+        finally:
+            self._suppress_dark_sync = False
+        self.darkModeChanged.emit(bool(checked))
+
+    # ------------------------------------------------------------------
+    # 菜单模式与色板
+    # ------------------------------------------------------------------
+    def menu_mode(self) -> str:
+        return self._menu_mode
+
+    def set_menu_mode(self, mode: str) -> None:
+        value = "overlay" if str(mode).lower() == "overlay" else "static"
+        self.menu_mode_select.set_index(1 if value == "overlay" else 0, emit=False)
+        if value == self._menu_mode:
+            return
+        self._menu_mode = value
+        self.menuModeChanged.emit(value)
+
+    def _on_menu_mode_selected(self, index: int) -> None:
+        self.set_menu_mode("overlay" if index == 1 else "static")
+
+    def _select_swatch(self, swatch: _Swatch, group: list[_Swatch]) -> None:
+        for item in group:
+            item.set_selected(item is swatch)
+
+    # ------------------------------------------------------------------
+    # 开关
+    # ------------------------------------------------------------------
+    def open(self) -> None:
+        """从右侧滑入并展开面板。"""
+        self._closing = False
+        self._open = True
+        self._place(self._start_x())
+        self.show()
+        self.raise_()
+        self._animate_to(QPoint(self._end_x(), 0), None)
+
+    def close(self) -> None:
+        """滑出并隐藏面板，动画结束后发出 ``closed``。"""
+        if self._closing:
+            return
+        if not self._open and not self.isVisible():
+            return
+        self._open = False
+        self._closing = True
+        self._animate_to(QPoint(self._parent_width(), 0), self._finish_close)
+
+    def toggle(self) -> None:
+        if self._open:
+            self.close()
+        else:
+            self.open()
+
+    def is_open(self) -> bool:
+        return self._open
+
+    def _finish_close(self) -> None:
+        self._closing = False
+        self.hide()
+        self.closed.emit()
+
+    def _parent_width(self) -> int:
+        parent = self.parentWidget()
+        return parent.width() if parent is not None else self._width
+
+    def _start_x(self) -> int:
+        return self._parent_width()
+
+    def _end_x(self) -> int:
+        return max(0, self._parent_width() - self._width)
+
+    def _place(self, x: int) -> None:
+        parent = self.parentWidget()
+        height = parent.height() if parent is not None else self.height()
+        self.setGeometry(int(x), 0, self._width, max(1, int(height)))
+
+    def _duration(self) -> int:
+        try:
+            return int(AppSettings.overlay.drawer_duration)
+        except Exception:
+            return self.FALLBACK_DURATION
+
+    def _animate_to(self, end: QPoint, finished) -> None:
+        self._stop_animation()
+        if self._duration() <= 0 or not self.isVisible():
+            self.move(end)
+            if finished is not None:
+                finished()
+            return
+        animation = QPropertyAnimation(self, b"pos", self)
+        animation.setDuration(self._duration())
+        animation.setStartValue(self.pos())
+        animation.setEndValue(end)
+        animation.setEasingCurve(QEasingCurve.OutCubic)
+        if finished is not None:
+            animation.finished.connect(finished)
+        self._animation = animation
+        animation.start()
+
+    def _stop_animation(self) -> None:
+        if self._animation is not None:
+            self._animation.stop()
+            self._animation = None
+
+    def eventFilter(self, obj, event):  # noqa: N802 - 覆写 Qt 命名
+        if obj is self.parentWidget() and event.type() == QEvent.Resize and self._open:
+            self._place(self._end_x())
+        return super().eventFilter(obj, event)
+
+    # ------------------------------------------------------------------
+    # 外观
+    # ------------------------------------------------------------------
+    def update_style(self) -> None:
+        """主题切换后刷新标签颜色与全部自绘控件（不重建控件树）。"""
+        colors = get_design_tokens().colors
+        self.close_button.set_color(QColor(colors.text_primary))
+        for label, role in self._color_labels:
+            color = colors.text_muted if role == "hint" else colors.text_primary
+            label.setStyleSheet(f"color: {color}; background: transparent;")
+        for card in self._theme_cards:
+            card.update()
+        for swatch in (*self._primary_swatches, *self._surface_swatches):
+            swatch.update()
+        self.menu_mode_select.update()
+        self.dark_switch.update()
+        self.update()
+
+    def paintEvent(self, event):  # noqa: N802 - 覆写 Qt 命名
+        tokens = get_design_tokens()
+        colors = tokens.colors
+        painter = QPainter(self)
+        painter.setRenderHint(QPainter.Antialiasing)
+
+        radius = float(tokens.radius.window)
+        rect = QRectF(self.rect())
+        path = QPainterPath()
+        path.moveTo(rect.left() + radius, rect.top())
+        path.lineTo(rect.right(), rect.top())
+        path.lineTo(rect.right(), rect.bottom())
+        path.lineTo(rect.left() + radius, rect.bottom())
+        path.arcTo(QRectF(rect.left(), rect.bottom() - 2 * radius, 2 * radius, 2 * radius), 270, -90)
+        path.lineTo(rect.left(), rect.top() + radius)
+        path.arcTo(QRectF(rect.left(), rect.top(), 2 * radius, 2 * radius), 180, -90)
+        path.closeSubpath()
+
+        painter.fillPath(path, QColor(colors.surface_panel))
+        painter.setBrush(Qt.NoBrush)
+        painter.setPen(QPen(QColor(colors.surface_interactive_pressed), 1))
+        painter.drawPath(path)
+        painter.end()
+
+
+__all__ = ["CAppConfigurator"]

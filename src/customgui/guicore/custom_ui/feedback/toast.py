@@ -111,6 +111,11 @@ class CToast(QFrame):
         self.setGraphicsEffect(self._opacity)
         self._fade: QPropertyAnimation | None = None
         self._slide: QPropertyAnimation | None = None
+        self._finished = False
+        #: 淡出动画在无事件循环/低帧率环境下可能不触发 finished，用定时器兜底
+        self._finish_timer = QTimer(self)
+        self._finish_timer.setSingleShot(True)
+        self._finish_timer.timeout.connect(self._finish)
 
         self._timer = QTimer(self)
         self._timer.setSingleShot(True)
@@ -232,8 +237,13 @@ class CToast(QFrame):
         fade.finished.connect(self._finish)
         fade.start()
         self._fade = fade
+        self._finish_timer.start(self._duration)
 
     def _finish(self) -> None:
+        if self._finished:
+            return
+        self._finished = True
+        self._finish_timer.stop()
         parent = self.parentWidget()
         if parent is not None:
             stack = self._stacks.get(id(parent), [])
@@ -259,6 +269,10 @@ class CToast(QFrame):
                 toast._slide.stop()
             toast.move(parent.width() - toast.width() - margin, y)
             y += toast.height() + spacing
+            # 无显示环境下 show() 可能投递一次伪 enter 事件把倒计时停掉；
+            # 重新落位时补一次启动，保证自动消失不会被悬停状态卡死。
+            if toast._life > 0 and not toast._closing and not toast._timer.isActive():
+                toast._timer.start(toast._life)
 
     # ------------------------------------------------------------------
     # 事件

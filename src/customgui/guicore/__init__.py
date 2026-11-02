@@ -107,6 +107,10 @@ from .task import WorkerSignals as WorkerSignals
 from .task import active_tasks as active_tasks
 from .task import run_task as run_task
 from .window import (
+    CAppConfigurator,
+    CAppMenu,
+    CAppMenuItem,
+    CAppTopbar,
     CBottomColumn,
     CCredits,
     CGrips,
@@ -197,6 +201,10 @@ __all__ = [
     "CBottomColumn",
     "CTitleBar",
     "CWindow",
+    "CAppConfigurator",
+    "CAppTopbar",
+    "CAppMenu",
+    "CAppMenuItem",
     "CTag",
     "CBadge",
     "CChip",

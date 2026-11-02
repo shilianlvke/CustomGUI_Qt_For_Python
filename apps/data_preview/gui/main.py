@@ -1,4 +1,4 @@
-﻿"""数据视图预览页：DataView / PickList / OrderList / Tree / TreeTable / Timeline。"""
+"""数据视图预览页：DataView / PickList / OrderList / Tree / TreeTable / Timeline。"""
 
 from PySide6.QtCore import QMargins
 from PySide6.QtGui import QFont

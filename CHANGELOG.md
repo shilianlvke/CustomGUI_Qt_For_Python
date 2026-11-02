@@ -5,7 +5,49 @@
 
 ## 未发布
 
+### 新增
+
+#### 数据展示族（P0/P1）
+
+- **`CDataTable` + `CTableColumn` + `CTableModel` + `CPaginator`**：列定义、过滤、排序、
+  分页、单选/多选、冻结列、分组行、双击行详情；表头与行样式走设计令牌，语义状态列
+  画成 `CTag` 同款胶囊。
+- **`CDataView` / `CPickList` / `COrderList`**：列表/网格视图、双列表迁移、排序列表。
+- **`CTree` / `CTreeTable`**：单选/多选/复选树与树形表格，列定义复用 `CTableColumn`。
+- **`CTimeline`**：左/右/交替与水平/垂直时间线。
+
+#### 菜单族（P1）
+
+- **`CMenubar` / `CTieredMenu` / `CMegaMenu` / `CPanelMenu` / `CContextMenu` / `CTabMenu`**：
+  共享 `MenuItem` 模型与 `CMenuList` 绘制，支持多级子菜单、MegaMenu 分栏、右键定位。
+- **`CStepper`**：步骤条 + 内容栈 + 上一步/下一步/完成，独立于 `CSteps`。
+
+#### 文件、图表、媒体与杂项（P1/P2）
+
+- **`CFileUpload`**：advanced/basic 两种形态、拖放、后缀/大小校验、文件列表与进度演示。
+- **`CChart`**：line/bar/pie/doughnut/polar/radar 六种图表，QtCharts 可选降级，主题配色跟随令牌。
+- **`CImage` / `CCarousel` / `CGalleria`**：点击预览与缩放、横向轮播、主图 + 缩略图画廊。
+- **`CAvatarGroup` / `CScrollTop` / `CFluid` / `CIconField` / `CInputIcon` / `CConfirmPopup`**：
+  头像堆叠溢出、回到顶部、流式布局、图标输入框与锚点确认气泡。
+
+#### Sakai 壳层（P3）
+
+- **`CAppTopbar`**：logo / 菜单开关 / 搜索 / 通知徽标 / 用户菜单 / 操作按钮。
+- **`CAppMenu` + `CAppMenuItem`**：嵌套侧边菜单、展开收起与单选激活。
+- **`CAppConfigurator`**：右侧滑入的主题配置抽屉，含主题卡片、色板、菜单模式与深色开关。
+
+#### 预览应用与验证
+
+- 新增 `table_preview`、`data_preview`、`menu_preview`、`media_preview`、`shell_preview`
+  五个预览应用，内置示例应用总数达到 10 个。
+- 新增数据、菜单、文件/图表、媒体/杂项、壳层与预览应用冒烟测试，测试总数达到 477。
+
 ### 修复
+
+#### Toast 自动消失
+
+- **悬停/伪 enter 事件导致通知不消失**：`show_message` / `_reflow` 补一次倒计时启动，
+  并增加淡出结束的定时器兜底，避免无显示环境或低帧率下通知永久留在栈里。
 
 #### 区域背景卡片：内容齐平、去描边、纳入页面过场
 

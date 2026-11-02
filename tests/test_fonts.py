@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import sys
+
 import pytest
 from PySide6.QtWidgets import QApplication
 
@@ -29,6 +31,7 @@ def test_install_fonts_accepts_str_and_path(qapp, tmp_path):
     assert result == 0
 
 
+@pytest.mark.skipif(sys.platform != "linux", reason="仅在无 Windows 系统字体目录的 Linux 上断言返回 0")
 def test_install_system_fonts_is_noop_on_linux(qapp):
     """Linux 无 Windows 系统字体目录时返回 0 且不抛异常。"""
     assert install_system_fonts() == 0

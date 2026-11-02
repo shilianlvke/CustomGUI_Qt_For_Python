@@ -25,7 +25,7 @@
 
 - 无边框圆角窗口、自绘标题栏、可折叠左列/左菜单、底部版权栏、拖拽缩放；
 - 一套设计令牌（颜色/字体/间距/圆角/尺寸）驱动的统一样式，切换主题自动生效；
-- 70 个组件：按钮、输入框、下拉、日期、卡片、徽章、抽屉、Toast、气泡确认……
+- 90+ 个组件：表格、树、列表、菜单、上传、图表、媒体、按钮、输入框、浮层、Toast……
 - YAML 配置系统：主题、语言、窗口设置、日志；
 - **目录即插件**：把页面放进 `apps/<name>/`，启动时自动发现、注册菜单、懒加载；
 - 语言切换重建页面、遥测与诊断、错误边界。
@@ -68,7 +68,7 @@ customgui/
 ├── guicore/          # 组件层：custom_ui（组件库）+ window（窗口部件）+ app_ui
 ├── guis/             # 装配层：主窗口、页面栈、插件加载、语言服务
 ├── _resources/       # 只读默认资源：主题/语言/图标/设置四套 YAML
-├── apps/             # 5 个内置示例应用（供 customgui install-demo 使用）
+├── apps/             # 10 个内置示例应用（供 customgui install-demo 使用）
 ├── examples/         # 最小可运行工程（供 customgui examples --copy 使用）
 ├── cli.py            # 命令行入口
 ├── window.py         # 窗口装配门面（宿主应用只认这个）
@@ -83,7 +83,7 @@ customgui/
 装完之后不需要读文档，两条命令就能看到东西：
 
 ```powershell
-customgui install-demo     # 把 5 个示例应用拷到数据目录
+customgui install-demo     # 把 10 个示例应用拷到数据目录
 customgui run              # 起窗口
 ```
 
@@ -102,13 +102,18 @@ CustomGUI doctor
 ✓ 数据根        : ~/.customgui
 ✓ 应用目录      : ~/.customgui/apps
 --------------------------------------------------------
-发现应用      : 5 个
+发现应用      : 10 个
   - button_preview
+  - data_preview
   - feedback_preview
   - input_preview
+  - menu_preview
+  - media_preview
   - overlay_preview
   - panel_preview
-成功加载      : 5 个
+  - shell_preview
+  - table_preview
+成功加载      : 10 个
   + button_preview  ->  _customgui_apps.button_preview.gui.main
   ...
 --------------------------------------------------------
@@ -319,7 +324,7 @@ CustomGUI_Qt_For_Python/
 │   │   ├── app/                      # 主窗口用例（与 Qt 解耦的业务编排）
 │   │   └── tool/                     # 设备等杂项工具
 │   ├── guicore/                      # 组件层
-│   │   ├── custom_ui/                # 40+ 组件（按钮/输入/卡片/浮层/反馈/展示…）
+│   │   ├── custom_ui/                # 90+ 组件（数据/菜单/媒体/按钮/输入/浮层/反馈…）
 │   │   ├── window/                   # 标题栏、左菜单、左列、右列、grips、版权栏
 │   │   ├── app_ui/                   # 对话框等应用级 UI
 │   │   └── styles.py                 # 设计令牌 → QSS 生成
@@ -336,7 +341,7 @@ CustomGUI_Qt_For_Python/
 │   └── py.typed
 ├── apps/                             # 内置示例应用（同时打进 wheel）
 ├── examples/hello_world/             # 最小可运行工程
-├── tests/                            # 270 个测试
+├── tests/                            # 477 个测试
 ├── docs/                             # 组件文档、架构说明、截图
 └── pyproject.toml
 ```
@@ -356,18 +361,21 @@ CustomGUI_Qt_For_Python/
 
 ## 组件库
 
-`customgui.guicore` 导出 **73 个**公开名（70 个组件 + 3 个样式常量），全部由设计令牌驱动，主题切换即时生效：
+`customgui.guicore` 导出 **118 个**公开名，其中 90+ 个 UI 组件全部由设计令牌驱动，主题切换即时生效：
 
 | 分类 | 组件 |
 | --- | --- |
+| 数据 | `CDataTable` `CTableColumn` `CTableModel` `CPaginator` `CDataView` `CPickList` `COrderList` `CTree` `CTreeTable` `CTimeline` |
 | 按钮 | `CButton` `CPushButton` `CButtonGroup` `CSplitButton` `CStatusButton` `CMenuButton` `CToggleButton` |
-| 输入 | `CLineEdit` `CInputText` `CTextarea` `CInputNumber` `CInputGroup` `CInputGroupAddon` `CFloatLabel` `CSelect` `CComboBox` `CListbox` `CMultiSelect` `CTreeSelect` `CAutoComplete` `CDatePicker` `CCalendarPanel` `CColorPicker` `CSlider` `CKnob` `CRating` |
+| 输入 | `CLineEdit` `CInputText` `CTextarea` `CInputNumber` `CInputGroup` `CInputGroupAddon` `CFloatLabel` `CSelect` `CComboBox` `CListbox` `CMultiSelect` `CTreeSelect` `CAutoComplete` `CDatePicker` `CCalendarPanel` `CColorPicker` `CSlider` `CKnob` `CRating` `CIconField` `CInputIcon` |
 | 选择 | `CCheckbox` `CRadioButton` `CSelectButton` `CToggleButton` `CToggleSwitch` |
-| 展示 | `CCard` `CShowCard` `CPanel` `CBadge` `CChip` `CTag` `CAvatar` `CPixmap` `CProgressBar` `CSkeleton` `CDivider` `CHDiv` `CVDiv` `CBreadcrumb` `CSteps` `CPageTransition` |
-| 浮层 | `CDrawer` `COverlayPanel` `CToolTip` `CMenu` |
-| 反馈 | `CMessage` `CToast` `CConfirmDialog` `CDialog` |
-| 布局 | `CTabs` `CAccordion` `CAccordionPanel` `CFieldset` `CFormField` `CFormGrid` `CScrollArea` `CSplitter` `CSplitterHandle` `CToolbar` |
-| 窗口部件 | `CWindow` `CTitleBar` `CLeftMenu` `CLeftColumn` `CGrips` `CCredits` |
+| 菜单 | `CMenu` `MenuItem` `CMenubar` `CTieredMenu` `CMegaMenu` `CPanelMenu` `CContextMenu` `CTabMenu` `CStepper` |
+| 展示 | `CCard` `CShowCard` `CPanel` `CBadge` `CChip` `CTag` `CAvatar` `CAvatarGroup` `CPixmap` `CImage` `CCarousel` `CGalleria` `CProgressBar` `CSkeleton` `CDivider` `CHDiv` `CVDiv` `CBreadcrumb` `CSteps` `CPageTransition` |
+| 浮层 | `COverlayPanel` `CToolTip` `CDialog` `CConfirmDialog` `CConfirmPopup` |
+| 反馈 | `CMessage` `CToast` |
+| 文件/图表 | `CFileUpload` `CChart` |
+| 布局 | `CFluid` `CTabs` `CAccordion` `CAccordionPanel` `CFieldset` `CFormField` `CFormGrid` `CScrollArea` `CScrollTop` `CSplitter` `CSplitterHandle` `CToolbar` |
+| 窗口部件 | `CWindow` `CTitleBar` `CLeftMenu` `CLeftColumn` `CTopColumn` `CBottomColumn` `CGrips` `CCredits` `CAppTopbar` `CAppMenu` `CAppMenuItem` `CAppConfigurator` |
 | 样式 | `Styles` `Severity` `Variant` |
 
 主题与令牌：
@@ -387,7 +395,7 @@ get_theme_manager().apply("dark")
 
 ```powershell
 uv sync --extra dev
-uv run pytest                 # 270 passed, 5 skipped
+uv run pytest                 # 477 tests（当前平台 skip 6）
 uv run ruff check src tests
 
 uv run python -m build --wheel --no-isolation

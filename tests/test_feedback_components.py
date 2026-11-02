@@ -159,7 +159,7 @@ def test_toast_stacks_and_auto_dismiss(host):
     stack = CToast._stacks.get(id(host), [])
     assert len(stack) == 2
     assert stack[0].y() < stack[1].y()  # 最新的在最上面
-    QTest.qWait(500)
+    QTest.qWait(900)
     assert CToast._stacks.get(id(host), []) == []
 
 
