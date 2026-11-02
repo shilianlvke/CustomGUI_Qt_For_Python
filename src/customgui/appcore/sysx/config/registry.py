@@ -22,7 +22,7 @@ from dataclasses import dataclass
 from pathlib import Path
 
 from ..config.mapping import Attrs, deep_merge, to_attrs
-from ..config.paths import iter_files
+from ..config.paths import iter_file_layers
 from ..config.schema import (
     AppSettingsModel,
     validate_language_data,
@@ -36,15 +36,34 @@ from ..modules.logger_module import Logger
 
 @dataclass(frozen=True)
 class ConfigFile:
-    """一份已加载的配置文件。"""
+    """一份已加载的配置（同名的各资源层已合并）。
+
+    ``data`` 是合并后的视图，``path`` 是**最高优先级**那一层（品牌层 / 覆盖层），
+    也就是「想改这份配置时该编辑的文件」；``sources`` 列出参与合并的全部层
+    （低 -> 高），排查覆盖关系时按它看。
+    """
 
     name: str
     path: Path
     data: Attrs
+    sources: tuple[Path, ...] = ()
 
 
 class ConfigGroup(Attrs):
     """一组配置文件（文件名 -> ConfigFile）。"""
+
+
+def _merge_layers(paths: tuple[Path, ...]) -> Attrs:
+    """把同一文件的多个资源层按「低 -> 高」顺序深合并成一份视图。
+
+    覆盖层的职责是「只写要改的键」，基座后续新增的键继续生效——这正是
+    :func:`iter_files` 做不到的部分（同名文件整份替换会把基座那层挤掉，
+    基座升级加了必填字段，下游就在启动校验时崩）。
+    """
+    merged: dict = {}
+    for path in paths:
+        deep_merge(merged, load_yaml_file(path))
+    return to_attrs(merged)
 
 
 def _load_group(
@@ -57,9 +76,9 @@ def _load_group(
     log_label: str,
 ) -> ConfigGroup:
     group = ConfigGroup()
-    for path in iter_files(directory, ".yaml"):
-        name = path.stem.lower()
-        data = to_attrs(load_yaml_file(path))
+    for key, paths in sorted(iter_file_layers(directory, ".yaml").items()):
+        name = Path(key).stem.lower()
+        data = _merge_layers(paths)
         if validator is not None:
             try:
                 validator(data, **{validator_arg: name})
@@ -69,7 +88,7 @@ def _load_group(
                     message=error_message,
                     details=str(exc),
                 ) from exc
-        group[name] = ConfigFile(name=name, path=path, data=data)
+        group[name] = ConfigFile(name=name, path=paths[-1], data=data, sources=paths)
 
     Logger.debug(f"{log_label}: {sorted(group.keys())}")
     return group
@@ -104,10 +123,18 @@ class ConfigRegistry:
                 setattr(self, name, value)
 
     def load_settings(self) -> AppSettingsModel:
-        """加载并合并 settings 目录下全部 YAML，返回强类型模型。"""
+        """装载 settings 目录下全部 YAML，同名文件按资源层逐层深合并。
+
+        顺序很关键：基座包内的 ``window.yaml`` 先打底，品牌层的同名文件再逐键
+        覆盖。这样应用只需要写「想改的那几个键」，基座新增的必填字段仍然能拿到
+        ——历史实现按「同名只取高优先级那份」装载，品牌层缺了新字段就直接
+        崩在 :class:`DomainErrorBoundary`（``SETTINGS_CONFIG_INVALID``）。
+        """
         merged: dict = {}
-        for path in iter_files(self.SETTINGS_DIR, ".yaml"):
-            deep_merge(merged, load_yaml_file(path))
+        for key, paths in sorted(iter_file_layers(self.SETTINGS_DIR, ".yaml").items()):
+            for path in paths:
+                deep_merge(merged, load_yaml_file(path))
+            Logger.debug(f"系统设置层: {key} <- {[path.name for path in paths]}")
 
         try:
             model = validate_settings_data(merged)

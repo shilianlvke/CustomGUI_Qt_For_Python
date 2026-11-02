@@ -2,6 +2,8 @@
 
 import pytest
 
+import customgui
+from customgui import package_root
 from customgui.appcore import (
     AppLanguages,
     AppSettings,
@@ -428,6 +430,59 @@ def test_registry_settings_merge_across_files(tmp_path):
     assert model.theme_name == "bright"
     assert model.family == "微软雅黑"
     assert model.logger_color is False
+
+
+# ---------------------------------------------------------------------------
+# 资源层合并：品牌层只写要改的键，基座那层继续生效
+# ---------------------------------------------------------------------------
+@pytest.fixture
+def brand_layer(tmp_path):
+    """把配置指向只带品牌覆盖层的临时 apps 目录；用例结束后复原。"""
+    apps = tmp_path / "apps"
+    brand = apps / "overlay_demo" / "brand" / "customui"
+    (brand / "settings").mkdir(parents=True)
+    (apps / "overlay_demo" / "config.yml").write_text("app_name: overlay_demo\n", encoding="utf-8")
+
+    customgui.configure(apps_dir=apps, data_dir=tmp_path / "data", force_reload=True)
+    try:
+        yield brand
+    finally:
+        customgui.configure(apps_dir=package_root().parent.parent / "apps", force_reload=True)
+
+
+def test_settings_layer_merges_with_base_instead_of_replacing(brand_layer):
+    """品牌层只写 ``startup_size`` 时，基座那份 window.yaml 的其余键必须保留。
+
+    历史实现用 ``iter_files()`` 装载设置，同名文件只取高优先级那份，于是品牌层
+    的 window.yaml 会把基座整份挤掉；基座 0.5.0 给 ``AppSettings`` 加了必填字段
+    ``top_column_size`` / ``bottom_column_size`` 后，下游 py-cl2 一启动就崩在
+    ``SETTINGS_CONFIG_INVALID``。这里断言「覆盖生效 + 基座键仍在」两头。
+    """
+    (brand_layer / "settings" / "window.yaml").write_text(
+        "startup_size:\n  - 1280\n  - 800\n",
+        encoding="utf-8",
+    )
+
+    model = ConfigRegistry().load_settings()
+
+    assert model.startup_size == (1280, 800)  # 品牌层覆盖生效
+    assert model.minimum_size == (960, 540)  # 基座打底
+    assert model.family == "微软雅黑"  # 基座打底（品牌层没写）
+    assert model.top_column_size.maximum == 240  # 基座新增的必填字段没被挤掉
+
+
+def test_config_file_records_every_layer(brand_layer):
+    """``ConfigFile`` 要能看到全部层：``path`` 指覆盖层，``sources`` 列出层级。"""
+    (brand_layer / "themes").mkdir(parents=True)
+    (brand_layer / "themes" / "default.yaml").write_text('custom_dark_one: "#010101"\n', encoding="utf-8")
+
+    entry = ConfigRegistry().load_themes()["default"]
+
+    assert len(entry.sources) == 2, entry.sources  # 基座 + 品牌层
+    assert entry.path == entry.sources[-1]  # 想改配置时编辑覆盖层
+    assert entry.data.custom_dark_one == "#010101"  # 单键覆盖生效
+    assert entry.data.custom_bg_one.startswith("#")  # 基座其余配色仍在
+
 
 
 # ---------------------------------------------------------------------------

@@ -3,6 +3,28 @@
 本项目遵循 [语义化版本](https://semver.org/lang/zh-CN/)。`0.x` 阶段 minor 版本可能含
 破坏性变更，均在下方显式列出。
 
+## 未发布
+
+### 修复
+
+#### 配置：同名文件逐层合并，不再整份替换
+
+- **覆盖层的配置文件改为「深合并」而不是「整份替换」**：`settings/` / `themes/` /
+  `languages/` 下同名 YAML 现在按资源优先级**逐层 `deep_merge`**（基座打底 → 应用
+  品牌层覆盖），应用只需写要改的键。此前 `iter_files()` 同名只保留最高优先级那份，
+  品牌层 `window.yaml` 会把基座那份整份挤掉——基座 0.5.0 给 `AppSettings` 加了必填
+  字段 `top_column_size` / `bottom_column_size` 后，下游 py-cl2 启动即崩在
+  `SETTINGS_CONFIG_INVALID`（报「AppSettings 缺少关键字段」），而错误信息完全看不出
+  是覆盖层造成的。
+- **新增 `customgui.appcore.sysx.config.paths.iter_file_layers()`**：返回
+  `{相对路径: (低优先级, ..., 最高优先级)}`，供配置装载逐层合并。
+  `iter_files()` 语义不变（同名只要最高优先级那份），仍是发现类调用与存在性判断的入口。
+- **`ConfigFile` 新增 `sources`**：记录参与合并的全部层（低 → 高）；`path` 仍指向
+  最高优先级那层，也就是「想改配置时该编辑的文件」。
+
+迁移：无需改动。覆盖层若是**故意**用「写少一点」来删掉基座键，现在会被基座键补回来——
+这种用法本来就不成立（配置没有「删除」语义）。
+
 ## 0.5.0
 
 按钮组件按 PrimeVue Aura（`sakai-vue` 的 Button 页）做了一轮全盘复核，修掉渲染偏差；

@@ -215,21 +215,47 @@ def resolve_path(path: str | Path) -> Path:
     return (resource_root() / _normalize_relative(candidate)).resolve()
 
 
-def iter_files(directory: str | Path, suffix: str) -> list[Path]:
-    """按资源优先级合并目录中的文件，同名文件只保留高优先级版本。
+def iter_file_layers(directory: str | Path, suffix: str) -> dict[str, tuple[Path, ...]]:
+    """按文件名分组返回**每一层**的同名文件，组内顺序为「低优先级 -> 高优先级」。
 
-    这允许应用只覆盖少数字体/主题/语言文件，其余文件仍由基座包提供。
+    为什么需要它
+    ------------
+    ``iter_files()`` 的语义是「同名只留高优先级那份」，这对「发现有哪些文件」
+    够用，但对**配置**是错的：应用的品牌层只写 ``window.yaml`` 里的三五个键，
+    整份替换会让基座那份文件里其余键全部消失。基座版本一升级、``AppSettings``
+    新增必填字段，下游就会在启动时崩在配置校验上——而这个崩法完全看不出是
+    覆盖层造成的。
+
+    所以配置装载必须拿到全部层，按顺序 :func:`deep_merge`：低优先级打底，
+    高优先级逐键覆盖，未覆盖的键继续由基座提供。键是「相对资源根的路径」
+    （含子目录），因此 ``settings/`` 下嵌套目录也能正确分层。
+
+    Args:
+        directory: 资源根下的相对目录（如 ``"resource/customui/settings"``），
+            或一个绝对目录（此时只有一层，组内就是一个文件）。
+        suffix: 文件后缀，``".yaml"`` 与 ``"yaml"`` 等价。
+
+    Returns:
+        ``{相对路径: (低优先级文件, ..., 最高优先级文件)}``。目录不存在时返回空字典。
     """
     pattern = suffix if suffix.startswith(".") else f".{suffix}"
     base = Path(directory)
+    layers: dict[str, list[Path]] = {}
+
     if base.is_absolute():
         if not base.is_dir():
-            return []
-        return sorted(path.resolve() for path in base.rglob(f"*{pattern}") if path.is_file())
+            return {}
+        for path in sorted(base.rglob(f"*{pattern}")):
+            if not path.is_file():
+                continue
+            key = path.relative_to(base).as_posix()
+            layers.setdefault(key, []).append(path.resolve())
+        return {key: tuple(paths) for key, paths in layers.items()}
 
     relative = _normalize_relative(base)
-    seen: dict[str, Path] = {}
-    for root in resource_roots():
+    # resource_roots() 是「高 -> 低」优先级；反着收，组内顺序才是
+    # 「基座 -> 品牌层」，调用方顺序 deep_merge 即可让覆盖生效。
+    for root in reversed(resource_roots()):
         directory_path = root / relative
         if not directory_path.is_dir():
             continue
@@ -237,5 +263,18 @@ def iter_files(directory: str | Path, suffix: str) -> list[Path]:
             if not path.is_file():
                 continue
             key = path.relative_to(directory_path).as_posix()
-            seen.setdefault(key, path.resolve())
-    return sorted(seen.values(), key=lambda path: path.as_posix())
+            layers.setdefault(key, []).append(path.resolve())
+    return {key: tuple(paths) for key, paths in layers.items()}
+
+
+def iter_files(directory: str | Path, suffix: str) -> list[Path]:
+    """列出目录中的文件，同名文件只保留高优先级版本。
+
+    适合「有哪些主题/语言/图标」这类**发现**用途，以及存在性判断。
+
+    注意：它**不能**用来装载配置——被覆盖层挡住的基座文件不会出现在结果里。
+    配置请用 :func:`iter_file_layers()` 拿全部层再逐层合并（见
+    :meth:`customgui.appcore.sysx.config.registry.ConfigRegistry.load_settings`）。
+    """
+    layers = iter_file_layers(directory, suffix)
+    return sorted((paths[-1] for paths in layers.values()), key=lambda path: path.as_posix())

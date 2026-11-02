@@ -15,7 +15,7 @@ import customgui
 from customgui import package_root
 from customgui.appcore import LANGUAGE_OPTIONS
 from customgui.appcore.sysx.common.static_func import PathFinder
-from customgui.appcore.sysx.config.paths import iter_files, project_root, resolve_path
+from customgui.appcore.sysx.config.paths import iter_file_layers, iter_files, project_root, resolve_path
 
 
 def test_resolve_from_project_root():
@@ -172,6 +172,62 @@ def test_no_duplicate_roots(tmp_path):
     roots = _fresh(tmp_path / "apps", resource_dirs=[app / "brand"])
 
     assert len(roots) == len(set(roots))
+
+
+# -- 同名文件：分层 vs 只取一份 ---------------------------------------------
+def _write_theme(directory: Path, name: str, body: str) -> Path:
+    directory.mkdir(parents=True, exist_ok=True)
+    target = directory / f"{name}.yaml"
+    target.write_text(body, encoding="utf-8")
+    return target
+
+
+def test_iter_file_layers_keeps_every_layer_low_to_high(tmp_path):
+    """同名 YAML 必须每层都留着，且顺序是「基座 -> 品牌层」。
+
+    配置装载要在这些层上顺序 ``deep_merge``：只留最高优先级那份，品牌层少写
+    一个键就会把基座那层整份挤掉——这正是 ``AppSettings`` 新增必填字段后
+    下游启动即崩的根因。
+    """
+    app = tmp_path / "apps" / "demo"
+    brand_default = _write_theme(
+        app / "brand" / "customui" / "themes",
+        "default",
+        'custom_dark_one: "#010101"\n',
+    )
+    (app / "config.yml").write_text("app_name: demo\n", encoding="utf-8")
+
+    _fresh(tmp_path / "apps")
+
+    layers = iter_file_layers("resource/customui/themes", ".yaml")
+
+    paths = layers["default.yaml"]
+    assert len(paths) == 2, paths  # 断言必须真的收满两层，不能是空扫描
+    assert paths[-1] == brand_default.resolve()  # 末位是覆盖层
+    assert paths[0].parent != brand_default.parent  # 首位来自基座包内
+    assert "010101" in paths[-1].read_text(encoding="utf-8")
+
+
+def test_iter_files_still_returns_one_file_per_name(tmp_path):
+    """``iter_files()`` 保持「同名只给一份」：发现类调用不能被分层影响。"""
+    app = tmp_path / "apps" / "demo"
+    brand_default = _write_theme(
+        app / "brand" / "customui" / "themes",
+        "default",
+        'custom_dark_one: "#010101"\n',
+    )
+    (app / "config.yml").write_text("app_name: demo\n", encoding="utf-8")
+
+    _fresh(tmp_path / "apps")
+
+    files = iter_files("resource/customui/themes", ".yaml")
+    defaults = [path for path in files if path.stem == "default"]
+
+    assert len(defaults) == 1
+    assert defaults[0] == brand_default.resolve()
+    # 其余主题（基座自带）仍然在，覆盖层只影响同名的那个
+    assert {"bright", "dracula", "eye"} <= {path.stem for path in files}
+
 
 
 # -- 惰性语言发现 ----------------------------------------------------------
