@@ -25,6 +25,10 @@ from .button import (
 from .card import CCard as CCard
 from .card import CShowCard as CShowCard
 from .combo_box import CComboBox as CComboBox
+from .data import CDataTable as CDataTable
+from .data import CPaginator as CPaginator
+from .data import CTableColumn as CTableColumn
+from .data import CTableModel as CTableModel
 from .display import (
     CAvatar as CAvatar,
 )
@@ -174,6 +178,10 @@ __all__ = [
     "CStatusButton",
     "CMenuButton",
     "CComboBox",
+    "CDataTable",
+    "CTableColumn",
+    "CTableModel",
+    "CPaginator",
     "CMenu",
     "CCard",
     "CShowCard",

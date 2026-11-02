@@ -106,6 +106,7 @@ class Styles:
         self.update_columns_style()
         self.update_region_card_style()
         self.update_grips_style()
+        self.update_table_style()
 
     def update_region_card_style(self):
         """内容区与四向抽屉共用的区域背景卡片。
@@ -434,4 +435,77 @@ class Styles:
                 background: transparent;
                 border: none;
             }
+        """
+
+    def update_table_style(self):
+        """数据表格与分页条：表头、行、选中态、网格线、滚动条。"""
+        selection = self.tokens.colors.surface_interactive_hover
+        self.style += f"""
+            #CDataTable_View, #CDataTable_FrozenView {{
+                background-color: {self.tokens.colors.surface_card};
+                alternate-background-color: {self.tokens.colors.surface_panel};
+                color: {self.tokens.colors.text_primary};
+                border: 1px solid {self.tokens.colors.surface_interactive_pressed};
+                border-radius: 8px;
+                gridline-color: {self.tokens.colors.surface_interactive_pressed};
+                selection-background-color: {selection};
+                selection-color: {self.tokens.colors.text_active};
+                outline: 0;
+            }}
+            #CDataTable_View::item, #CDataTable_FrozenView::item {{
+                padding-left: 10px;
+                padding-right: 10px;
+                border: none;
+            }}
+            #CDataTable_View::item:hover, #CDataTable_FrozenView::item:hover {{
+                background-color: {self.tokens.colors.surface_interactive};
+            }}
+            #CDataTable_View QHeaderView::section,
+            #CDataTable_FrozenView QHeaderView::section {{
+                background-color: {self.tokens.colors.surface_panel};
+                color: {self.tokens.colors.text_primary};
+                border: none;
+                border-bottom: 1px solid {self.tokens.colors.surface_interactive_pressed};
+                padding: 8px 10px;
+                font-weight: 600;
+            }}
+            #CDataTable_View QTableCornerButton::section,
+            #CDataTable_FrozenView QTableCornerButton::section {{
+                background-color: {self.tokens.colors.surface_panel};
+                border: none;
+            }}
+            #CDataTable_View QScrollBar:vertical,
+            #CDataTable_FrozenView QScrollBar:vertical {{
+                background: transparent;
+                width: 10px;
+                margin: 0px;
+            }}
+            #CDataTable_View QScrollBar::handle:vertical,
+            #CDataTable_FrozenView QScrollBar::handle:vertical {{
+                background: {self.tokens.colors.surface_interactive_pressed};
+                min-height: 24px;
+                border-radius: 4px;
+            }}
+            #CDataTable_View QScrollBar::add-line:vertical,
+            #CDataTable_View QScrollBar::sub-line:vertical,
+            #CDataTable_FrozenView QScrollBar::add-line:vertical,
+            #CDataTable_FrozenView QScrollBar::sub-line:vertical {{
+                height: 0px;
+            }}
+            #CDataTable_Empty, #CDataTable_Loading {{
+                background-color: {self.tokens.colors.surface_card};
+                color: {self.tokens.colors.text_muted};
+                border: 1px solid {self.tokens.colors.surface_interactive_pressed};
+                border-radius: 8px;
+            }}
+            #CDataTable_Detail {{
+                background-color: {self.tokens.colors.surface_panel};
+                border: 1px solid {self.tokens.colors.surface_interactive_pressed};
+                border-radius: 8px;
+            }}
+            #CPaginator_Label {{
+                color: {self.tokens.colors.text_muted};
+                font: {self.tokens.typography.size_text}pt "{self.tokens.typography.family}";
+                padding-left: 8px;
+            }}
         """
