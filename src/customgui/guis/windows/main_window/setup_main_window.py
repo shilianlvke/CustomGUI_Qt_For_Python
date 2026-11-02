@@ -79,6 +79,10 @@ class SetupMainWindow:
             return self.ui.left_menu.sender()
         elif self.ui.left_column.sender() is not None:
             return self.ui.left_column.sender()
+        elif self.ui.top_column.sender() is not None:
+            return self.ui.top_column.sender()
+        elif self.ui.bottom_column.sender() is not None:
+            return self.ui.bottom_column.sender()
         return None
 
     def setup_gui(self):
@@ -149,5 +153,9 @@ class SetupMainWindow:
         self.ui.left_menu.released.connect(self.btn_released)
         self.ui.left_column.clicked.connect(self.btn_clicked)
         self.ui.left_column.released.connect(self.btn_released)
+        self.ui.top_column.clicked.connect(self.btn_clicked)
+        self.ui.top_column.released.connect(self.btn_released)
+        self.ui.bottom_column.clicked.connect(self.btn_clicked)
+        self.ui.bottom_column.released.connect(self.btn_released)
         self.ui.title_bar.clicked.connect(self.btn_clicked)
         self.ui.title_bar.released.connect(self.btn_released)

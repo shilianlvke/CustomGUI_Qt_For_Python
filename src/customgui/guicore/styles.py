@@ -89,7 +89,7 @@ class Styles:
         self.update_show_card_style()
         self.update_tooltip_style()
         self.update_title_bar_style()
-        self.update_left_column_style()
+        self.update_columns_style()
         self.update_grips_style()
 
     def update_btn_style(self):
@@ -320,11 +320,12 @@ class Styles:
             }}
         """
 
-    def update_left_column_style(self):
-        """左列标题区（背景框 + 标题文字）与三个无背景容器框。
+    def update_columns_style(self):
+        """四向抽屉（栏目）的标题区与无背景容器框。
 
-        背景框圆角与标题的内边距/字体是组件本地几何，由组件覆盖。容器框改用 ID
-        选择器（原来是不带选择器的裸规则，会级联到所有子孙控件）。
+        左/右/顶/底四列同构：标题背景框 + 标题文字，图标位/按钮位/内容框保持
+        透明。背景框圆角与标题的内边距/字体是组件本地几何，由组件覆盖。容器框
+        改用 ID 选择器（原来是不带选择器的裸规则，会级联到所有子孙控件）。
         """
         self.style += f"""
             #CLeftColumnTitle_Frame {{
@@ -335,6 +336,26 @@ class Styles:
                 background: none;
             }}
             #CLeftColumnIcon_Frame, #CLeftColumnBtn_Frame, #CLeftColumnContent_Frame {{
+                background: none;
+            }}
+            #CTopColumnTitle_Frame {{
+                background-color: {self.tokens.colors.surface_interactive_pressed};
+            }}
+            #CTopColumnTitle_Label {{
+                color: {self.tokens.colors.text_primary};
+                background: none;
+            }}
+            #CTopColumnIcon_Frame, #CTopColumnBtn_Frame, #CTopColumnContent_Frame {{
+                background: none;
+            }}
+            #CBottomColumnTitle_Frame {{
+                background-color: {self.tokens.colors.surface_interactive_pressed};
+            }}
+            #CBottomColumnTitle_Label {{
+                color: {self.tokens.colors.text_primary};
+                background: none;
+            }}
+            #CBottomColumnIcon_Frame, #CBottomColumnBtn_Frame, #CBottomColumnContent_Frame {{
                 background: none;
             }}
         """

@@ -12,6 +12,8 @@ class MainWindowButtonUseCase:
         "btn_info": "btn_info",
         "btn_more": "btn_more",
         "btn_close_left_column": "btn_more",
+        "btn_close_top_column": "btn_close_top_column",
+        "btn_close_bottom_column": "btn_close_bottom_column",
         "btn_top_settings": "btn_top_settings",
         "btn_language": "btn_language",
         "btn_themes": "btn_themes",

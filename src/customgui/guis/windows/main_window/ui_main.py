@@ -1,7 +1,7 @@
 from PySide6.QtWidgets import QFrame, QHBoxLayout, QVBoxLayout, QWidget
 
 from customgui.appcore import AppSettings, PathFactory
-from customgui.guicore import CCredits, CLeftColumn, CLeftMenu, CTitleBar, CWindow
+from customgui.guicore import CBottomColumn, CCredits, CLeftColumn, CLeftMenu, CTitleBar, CTopColumn, CWindow
 from customgui.guicore.window import Ui_RightColumn
 from customgui.guis import Ui_MainPages
 
@@ -27,6 +27,12 @@ class UiMainWindow:
         self.left_column = None
         self.left_column_layout = None
         self.left_column_frame = None
+        self.top_column = None
+        self.top_column_layout = None
+        self.top_column_frame = None
+        self.bottom_column = None
+        self.bottom_column_layout = None
+        self.bottom_column_frame = None
         self.left_menu = None
         self.left_menu_layout = None
         self.window = None
@@ -137,9 +143,42 @@ class UiMainWindow:
         self.credits = CCredits()
         #  ADD TO LAYOUT
         self.credits_layout.addWidget(self.credits)
+        # 顶部抽屉：标题栏下方、内容区上方（结构同左列，见 CTopColumn）
+        # 闭合同步钳住 min/max（开合动画成对改两个属性），避免 min>max 的布局病态
+        self.top_column_frame = QFrame()
+        self.top_column_frame.setMaximumHeight(AppSettings.top_column_size.minimum)
+        self.top_column_frame.setMinimumHeight(AppSettings.top_column_size.minimum)
+        self.top_column_layout = QVBoxLayout(self.top_column_frame)
+        self.top_column_layout.setContentsMargins(0, 0, 0, 0)
+        self.top_column = CTopColumn(
+            app_parent=self.central_widget,
+            text_title="",
+            text_title_size=AppSettings.title_size,
+            icon_path=PathFactory.set_svg_icon("icon_setting"),
+            icon_close_path=PathFactory.set_svg_icon("icon_close"),
+            font_family=AppSettings.family,
+        )
+        self.top_column_layout.addWidget(self.top_column)
+        # 底部抽屉：内容区下方、版权栏上方（结构同左列，见 CBottomColumn）
+        self.bottom_column_frame = QFrame()
+        self.bottom_column_frame.setMaximumHeight(AppSettings.bottom_column_size.maximum)
+        self.bottom_column_frame.setMinimumHeight(AppSettings.bottom_column_size.minimum)
+        self.bottom_column_layout = QVBoxLayout(self.bottom_column_frame)
+        self.bottom_column_layout.setContentsMargins(0, 0, 0, 0)
+        self.bottom_column = CBottomColumn(
+            app_parent=self.central_widget,
+            text_title="",
+            text_title_size=AppSettings.title_size,
+            icon_path=PathFactory.set_svg_icon("icon_setting"),
+            icon_close_path=PathFactory.set_svg_icon("icon_close"),
+            font_family=AppSettings.family,
+        )
+        self.bottom_column_layout.addWidget(self.bottom_column)
         # 将小部件添加到右侧布局
         self.right_app_layout.addWidget(self.title_bar_frame)
+        self.right_app_layout.addWidget(self.top_column_frame)
         self.right_app_layout.addWidget(self.content_area_frame)
+        self.right_app_layout.addWidget(self.bottom_column_frame)
         self.right_app_layout.addWidget(self.credits_frame)
 
     def add_widget_to_window(self):

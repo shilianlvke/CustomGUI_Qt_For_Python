@@ -152,6 +152,14 @@ class ColumnController:
         top_settings = self._main_functions.get_left_menu_btn(self._window, "btn_settings")
         top_settings.set_active_tab(False)
 
+    def handle_top_column_close(self, btn_name: str):
+        """顶列自带的关闭按钮：与左列的 btn_close_* 一样走统一开合。"""
+        self._main_functions.toggle_top_column(self._window)
+
+    def handle_bottom_column_close(self, btn_name: str):
+        """底列自带的关闭按钮。"""
+        self._main_functions.toggle_bottom_column(self._window)
+
 
 class MainWindowController:
     def __init__(
@@ -209,6 +217,8 @@ class MainWindowController:
             "btn_info": lambda: self.column_controller.handle_info_button(btn_name),
             "btn_more": lambda: self.column_controller.handle_more_button(btn_name),
             "btn_close_left_column": lambda: self.column_controller.handle_more_button(btn_name),
+            "btn_close_top_column": lambda: self.column_controller.handle_top_column_close(btn_name),
+            "btn_close_bottom_column": lambda: self.column_controller.handle_bottom_column_close(btn_name),
             "btn_top_settings": lambda: self.column_controller.handle_top_settings_button(btn),
             "btn_language": self._handle_language_switch,
             "btn_themes": self.theme_controller.cycle_theme,

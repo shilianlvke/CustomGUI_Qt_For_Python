@@ -61,6 +61,34 @@ class MainFunctions:
     def set_right_column_menu(self, menu):
         self.ui.right_column.menus.setCurrentWidget(menu)
 
+    # SET TOP / BOTTOM COLUMN PAGES
+    # ///////////////////////////////////////////////////////////////
+    def set_top_column_menu(self, menu, title, icon_path):
+        self.ui.top_column.menus.menus.setCurrentWidget(menu)
+        self.ui.top_column.title_label.setText(title)
+        self.ui.top_column.icon.set_icon(icon_path)
+
+    def set_bottom_column_menu(self, menu, title, icon_path):
+        self.ui.bottom_column.menus.menus.setCurrentWidget(menu)
+        self.ui.bottom_column.title_label.setText(title)
+        self.ui.bottom_column.icon.set_icon(icon_path)
+
+    # RETURN IF TOP / BOTTOM COLUMN IS VISIBLE
+    # ///////////////////////////////////////////////////////////////
+    def top_column_is_visible(self):
+        height = self.ui.top_column_frame.height()
+        if height == 0:
+            return False
+        else:
+            return True
+
+    def bottom_column_is_visible(self):
+        height = self.ui.bottom_column_frame.height()
+        if height == 0:
+            return False
+        else:
+            return True
+
     # GET TITLE BUTTON BY OBJECT NAME
     # ///////////////////////////////////////////////////////////////
     def get_title_bar_btn(self, object_name):
@@ -84,6 +112,18 @@ class MainFunctions:
         left_column_width = self.ui.left_column_frame.width()
         width = self.ui.right_column_frame.width()
         MainFunctions.start_box_animation(self, left_column_width, width, "right")
+
+    def toggle_top_column(self):
+        # GET ACTUAL COLUMNS SIZE
+        top_column_height = self.ui.top_column_frame.height()
+        bottom_column_height = self.ui.bottom_column_frame.height()
+        MainFunctions.start_box_animation_vertical(self, top_column_height, bottom_column_height, "top")
+
+    def toggle_bottom_column(self):
+        # GET ACTUAL COLUMNS SIZE
+        top_column_height = self.ui.top_column_frame.height()
+        bottom_column_height = self.ui.bottom_column_frame.height()
+        MainFunctions.start_box_animation_vertical(self, top_column_height, bottom_column_height, "bottom")
 
     def start_box_animation(self, left_box_width, right_box_width, direction):
         time_animation = AppSettings.time_animation
@@ -123,6 +163,47 @@ class MainFunctions:
         self.group.stop()
         self.group.addAnimation(self.left_box)
         self.group.addAnimation(self.right_box)
+        self.group.start()
+
+    def start_box_animation_vertical(self, top_box_height, bottom_box_height, direction):
+        """顶/底抽屉的开合动画：与 :meth:`start_box_animation` 同一套规则，主轴换成高度。
+
+        与左右列的区别：``minimumHeight`` / ``maximumHeight`` 成对动画。若只抬高
+        ``minimum`` 而把 ``maximum`` 留在 0，min>max 会让 QVBoxLayout 在竖向空间
+        紧张时错位（子控件相互重叠）。
+        """
+        time_animation = AppSettings.time_animation
+        minimum_top = AppSettings.top_column_size.minimum
+        maximum_top = AppSettings.top_column_size.maximum
+        minimum_bottom = AppSettings.bottom_column_size.minimum
+        maximum_bottom = AppSettings.bottom_column_size.maximum
+
+        # Check Top values
+        if top_box_height <= minimum_top and direction == "top":
+            top_height = maximum_top
+        else:
+            top_height = minimum_top
+
+        # Check Bottom values
+        if bottom_box_height <= minimum_bottom and direction == "bottom":
+            bottom_height = maximum_bottom
+        else:
+            bottom_height = minimum_bottom
+
+        # GROUP ANIMATION（min/max 成对：开 = 两者都到 maximum，关 = 都回 minimum）
+        self.group = QParallelAnimationGroup()
+        self.group.stop()
+        for frame, start, end in (
+            (self.ui.top_column_frame, top_box_height, top_height),
+            (self.ui.bottom_column_frame, bottom_box_height, bottom_height),
+        ):
+            for property_name in (b"minimumHeight", b"maximumHeight"):
+                animation = QPropertyAnimation(frame, property_name)
+                animation.setDuration(time_animation)
+                animation.setStartValue(start)
+                animation.setEndValue(end)
+                animation.setEasingCurve(QEasingCurve.InOutQuart)
+                self.group.addAnimation(animation)
         self.group.start()
 
     def set_select_path(self, obj):

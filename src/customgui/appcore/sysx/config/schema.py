@@ -295,6 +295,8 @@ class AppSettingsModel:
     left_menu_content_margins: NonNegativeInt
     left_column_size: SizeRange
     right_column_size: SizeRange
+    top_column_size: SizeRange
+    bottom_column_size: SizeRange
     right_menu_content_margins: NonNegativeInt
     right_title_bar_height: NonNegativeInt
     right_content_space: NonNegativeInt

@@ -24,6 +24,8 @@ def _base_settings():
         "left_menu_content_margins": 2,
         "left_column_size": {"minimum": 0, "maximum": 240},
         "right_column_size": {"minimum": 0, "maximum": 240},
+        "top_column_size": {"minimum": 0, "maximum": 240},
+        "bottom_column_size": {"minimum": 0, "maximum": 240},
         "right_menu_content_margins": 3,
         "right_title_bar_height": 40,
         "right_content_space": 6,
