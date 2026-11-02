@@ -1,0 +1,11 @@
+app_name: "menu_preview"
+app_id: "app.menu.left.menu_preview"
+button_id: "btn_menu_preview"
+page_object: "menuPreviewPage"
+app_icon: "icon.app.menu_preview.app_icon"
+app_text: "language.app.menu_preview.app_text"
+app_tooltip: "language.app.menu_preview.app_tooltip"
+app_target: "LeftMenu"
+show_top: true
+is_active: false
+is_default: false

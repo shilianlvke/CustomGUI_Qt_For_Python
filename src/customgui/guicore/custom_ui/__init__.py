@@ -24,13 +24,23 @@ from .button import (
 )
 from .card import CCard as CCard
 from .card import CShowCard as CShowCard
+from .chart import CChart as CChart
 from .combo_box import CComboBox as CComboBox
 from .data import CDataTable as CDataTable
+from .data import CDataView as CDataView
+from .data import COrderList as COrderList
 from .data import CPaginator as CPaginator
+from .data import CPickList as CPickList
 from .data import CTableColumn as CTableColumn
 from .data import CTableModel as CTableModel
+from .data import CTimeline as CTimeline
+from .data import CTree as CTree
+from .data import CTreeTable as CTreeTable
 from .display import (
     CAvatar as CAvatar,
+)
+from .display import (
+    CAvatarGroup as CAvatarGroup,
 )
 from .display import (
     CBadge as CBadge,
@@ -54,6 +64,7 @@ from .div import CHDiv as CHDiv
 from .div import CVDiv as CVDiv
 from .feedback import CMessage as CMessage
 from .feedback import CToast as CToast
+from .layout import CFluid as CFluid
 from .line_edit import (
     CAutoComplete as CAutoComplete,
 )
@@ -73,10 +84,16 @@ from .line_edit import (
     CFloatLabel as CFloatLabel,
 )
 from .line_edit import (
+    CIconField as CIconField,
+)
+from .line_edit import (
     CInputGroup as CInputGroup,
 )
 from .line_edit import (
     CInputGroupAddon as CInputGroupAddon,
+)
+from .line_edit import (
+    CInputIcon as CInputIcon,
 )
 from .line_edit import (
     CInputNumber as CInputNumber,
@@ -123,8 +140,20 @@ from .line_edit import (
 from .line_edit import (
     CTreeSelect as CTreeSelect,
 )
+from .media import CCarousel as CCarousel
+from .media import CGalleria as CGalleria
+from .media import CImage as CImage
+from .menu import CContextMenu as CContextMenu
+from .menu import CMegaMenu as CMegaMenu
 from .menu import CMenu as CMenu
+from .menu import CMenubar as CMenubar
+from .menu import CPanelMenu as CPanelMenu
+from .menu import CStepper as CStepper
+from .menu import CTabMenu as CTabMenu
+from .menu import CTieredMenu as CTieredMenu
+from .menu import MenuItem as MenuItem
 from .overlay import CConfirmDialog as CConfirmDialog
+from .overlay import CConfirmPopup as CConfirmPopup
 from .overlay import CDialog as CDialog
 from .overlay import COverlayPanel as COverlayPanel
 from .page_transition import CPageTransition as CPageTransition
@@ -166,7 +195,9 @@ from .panels import (
 )
 from .picture import CPixmap as CPixmap
 from .scroll import CScrollArea as CScrollArea
+from .scroll import CScrollTop as CScrollTop
 from .tooltip import CToolTip as CToolTip
+from .upload import CFileUpload as CFileUpload
 
 __all__ = [
     "CButton",
@@ -182,13 +213,29 @@ __all__ = [
     "CTableColumn",
     "CTableModel",
     "CPaginator",
+    "CDataView",
+    "CPickList",
+    "COrderList",
+    "CTree",
+    "CTreeTable",
+    "CTimeline",
     "CMenu",
+    "MenuItem",
+    "CMenubar",
+    "CTieredMenu",
+    "CMegaMenu",
+    "CPanelMenu",
+    "CContextMenu",
+    "CTabMenu",
+    "CStepper",
     "CCard",
     "CShowCard",
     "CPixmap",
     "CHDiv",
     "CVDiv",
     "CInputText",
+    "CIconField",
+    "CInputIcon",
     "CTextarea",
     "CInputNumber",
     "CInputGroup",
@@ -212,12 +259,14 @@ __all__ = [
     "CKnob",
     "CColorPicker",
     "CScrollArea",
+    "CScrollTop",
     "CToolTip",
     "CPageTransition",
     "CTag",
     "CBadge",
     "CChip",
     "CAvatar",
+    "CAvatarGroup",
     "CSkeleton",
     "CProgressBar",
     "CDivider",
@@ -225,6 +274,7 @@ __all__ = [
     "CToast",
     "CDialog",
     "CConfirmDialog",
+    "CConfirmPopup",
     "COverlayPanel",
     "CTabs",
     "CAccordion",
@@ -238,4 +288,10 @@ __all__ = [
     "CFormField",
     "CBreadcrumb",
     "CSteps",
+    "CImage",
+    "CCarousel",
+    "CGalleria",
+    "CFluid",
+    "CChart",
+    "CFileUpload",
 ]

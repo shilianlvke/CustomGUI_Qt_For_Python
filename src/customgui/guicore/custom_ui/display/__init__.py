@@ -1,4 +1,5 @@
 from .avatar import CAvatar as CAvatar
+from .avatar_group import CAvatarGroup as CAvatarGroup
 from .badge import CBadge as CBadge
 from .chip import CChip as CChip
 from .divider import CDivider as CDivider
@@ -11,6 +12,7 @@ __all__ = [
     "CBadge",
     "CChip",
     "CAvatar",
+    "CAvatarGroup",
     "CSkeleton",
     "CProgressBar",
     "CDivider",

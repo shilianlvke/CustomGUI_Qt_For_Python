@@ -1,0 +1,11 @@
+app_name: "media_preview"
+app_id: "app.menu.left.media_preview"
+button_id: "btn_media_preview"
+page_object: "mediaPreviewPage"
+app_icon: "icon.app.media_preview.app_icon"
+app_text: "language.app.media_preview.app_text"
+app_tooltip: "language.app.media_preview.app_tooltip"
+app_target: "LeftMenu"
+show_top: true
+is_active: false
+is_default: false

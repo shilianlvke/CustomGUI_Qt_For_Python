@@ -5,6 +5,8 @@ from .color_picker import CColorPicker as CColorPicker
 from .date_picker import CCalendarPanel as CCalendarPanel
 from .date_picker import CDatePicker as CDatePicker
 from .float_label import CFloatLabel as CFloatLabel
+from .icon_field import CIconField as CIconField
+from .icon_field import CInputIcon as CInputIcon
 from .input_group import CInputGroup as CInputGroup
 from .input_group import CInputGroupAddon as CInputGroupAddon
 from .input_number import CInputNumber as CInputNumber
@@ -24,6 +26,8 @@ from .toggle_button import CToggleButton as CToggleButton
 
 __all__ = [
     "CInputText",
+    "CIconField",
+    "CInputIcon",
     "CTextarea",
     "CInputNumber",
     "CInputGroup",
