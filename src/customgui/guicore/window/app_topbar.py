@@ -23,6 +23,32 @@ from ..custom_ui.line_edit.input_text import CInputText
 from ..custom_ui.menu.menu import CMenu
 
 
+class _ElidingLabel(QLabel):
+    """顶栏标题/文字 logo：按可用宽度右侧省略，避免把搜索框挤出顶栏。"""
+
+    def __init__(self, text: str = "", parent=None):
+        super().__init__(parent)
+        self._full_text = str(text)
+        self.setSizePolicy(QSizePolicy.Policy.Ignored, QSizePolicy.Policy.Preferred)
+        QLabel.setText(self, self._full_text)
+        self.setToolTip(self._full_text)
+
+    def setText(self, text: str) -> None:  # noqa: N802 - 覆写 Qt 命名
+        self._full_text = str(text)
+        self._refresh()
+        self.setToolTip(self._full_text)
+
+    def resizeEvent(self, event):  # noqa: N802 - 覆写 Qt 命名
+        super().resizeEvent(event)
+        self._refresh()
+
+    def _refresh(self) -> None:
+        elided = self.fontMetrics().elidedText(
+            self._full_text, Qt.ElideRight, max(0, self.width())
+        )
+        QLabel.setText(self, elided)
+
+
 class _IconButton(QPushButton):
     """顶栏用的纯图标按钮（悬停淡底 + 实时着色）。"""
 
@@ -215,7 +241,7 @@ class CAppTopbar(QWidget):
         self.logo_svg.setFixedSize(self.LOGO_LIMIT, self.LOGO_LIMIT)
         layout.addWidget(self.logo_svg, 0, Qt.AlignVCenter)
 
-        self.logo_label = QLabel(self)
+        self.logo_label = _ElidingLabel(parent=self)
         self.logo_label.setFont(self._font(16, QFont.Weight.Bold))
         layout.addWidget(self.logo_label, 0, Qt.AlignVCenter)
 
@@ -223,9 +249,9 @@ class CAppTopbar(QWidget):
         self.menu_button.clicked.connect(self.menuToggled.emit)
         layout.addWidget(self.menu_button, 0, Qt.AlignVCenter)
 
-        self.title_label = QLabel(self)
+        self.title_label = _ElidingLabel(parent=self)
         self.title_label.setFont(self._font(15, QFont.Weight.DemiBold))
-        layout.addWidget(self.title_label, 0, Qt.AlignVCenter)
+        layout.addWidget(self.title_label, 1, Qt.AlignVCenter)
 
         layout.addStretch(1)
 

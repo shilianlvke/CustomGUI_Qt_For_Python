@@ -63,7 +63,7 @@ def _carousel_demo() -> QWidget:
         for index in range(6)
     ] if sources else []
     carousel = CCarousel(items, num_visible=3)
-    carousel.setMinimumHeight(240)
+    carousel.setMinimumHeight(340)
     return carousel
 
 

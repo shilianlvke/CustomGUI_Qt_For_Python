@@ -6,10 +6,11 @@ os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
 
 import pytest
 from PySide6.QtCore import Qt
-from PySide6.QtWidgets import QApplication
+from PySide6.QtTest import QTest
+from PySide6.QtWidgets import QApplication, QLabel
 
 from customgui.guicore import CDataTable, CPaginator, CTableColumn, CTableModel
-from customgui.guicore.custom_ui.data.table import GROUP_ROLE, TAG_ROLE
+from customgui.guicore.custom_ui.data.table import DETAIL_ROLE, GROUP_ROLE, TAG_ROLE
 
 
 @pytest.fixture(scope="module")
@@ -119,3 +120,47 @@ def test_data_table_filter_and_group(qapp):
     table.set_group_by("category")
     assert table.model().rowCount() == 7
     assert table._paginator.isVisible() is False
+
+
+def test_paginator_buttons_survive_repeated_clicks(qapp):
+    """翻页时不能把刚点击的页码按钮立刻析构，否则 CButton 回调会访问野指针。"""
+    table = CDataTable(_columns(), ROWS, page_size=2)
+    table.resize(820, 420)
+    table.show()
+    QTest.qWait(50)
+    first = table._paginator._buttons[1]
+    QTest.mouseClick(first, Qt.LeftButton)
+    QTest.qWait(50)
+    assert table.page() == 1
+    assert first.isVisible() is True
+    table._paginator._buttons[0].click()
+    QTest.qWait(50)
+    assert table.page() == 0
+    table.hide()
+    table.deleteLater()
+
+
+def test_header_click_sorts_without_layout_warning(qapp):
+    table = CDataTable(_columns(), ROWS, page_size=2)
+    table._on_header_clicked(2)
+    assert table.model().sort_field() == "price"
+    table._on_header_clicked(2)
+    assert table.model().sort_order() == Qt.DescendingOrder
+
+
+def test_row_expansion_inserts_inline_detail(qapp):
+    table = CDataTable(_columns(), ROWS, page_size=2)
+    table.resize(820, 420)
+    table.show()
+    table.set_row_detail_provider(lambda record: QLabel(f"detail {record['name']}"))
+    table._show_row_detail(table.model().index(0, 0))
+    assert table.model().rowCount() == 3
+    detail_index = table.model().index(1, 0)
+    assert detail_index.data(DETAIL_ROLE) is True
+    assert table._main.columnSpan(1, 0) == len(_columns())
+    assert table._main.indexWidget(detail_index) is not None
+    # 再次双击同一行应收起详情
+    table._show_row_detail(table.model().index(0, 0))
+    assert table.model().rowCount() == 2
+    table.hide()
+    table.deleteLater()

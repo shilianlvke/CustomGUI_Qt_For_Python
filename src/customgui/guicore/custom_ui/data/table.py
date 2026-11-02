@@ -17,12 +17,11 @@ from collections.abc import Callable
 from dataclasses import dataclass
 from typing import Any
 
-from PySide6.QtCore import QAbstractTableModel, QModelIndex, QRectF, QSize, Qt, Signal
+from PySide6.QtCore import QAbstractTableModel, QModelIndex, QPoint, QRectF, QSize, Qt, QTimer, Signal
 from PySide6.QtGui import QColor, QFont, QPainter, QPainterPath, QPen
 from PySide6.QtWidgets import (
     QAbstractItemView,
     QApplication,
-    QFrame,
     QHBoxLayout,
     QHeaderView,
     QLabel,
@@ -45,6 +44,8 @@ TAG_ROLE = Qt.UserRole + 1
 GROUP_ROLE = Qt.UserRole + 2
 #: 单元格对应的原始行数据
 RECORD_ROLE = Qt.UserRole + 3
+#: 行展开详情行标记
+DETAIL_ROLE = Qt.UserRole + 4
 
 _ALIGN = {
     "left": Qt.AlignLeft | Qt.AlignVCenter,
@@ -120,6 +121,12 @@ class CTableModel(QAbstractTableModel):
         if not index.isValid():
             return None
         kind, payload = self._page_items()[index.row()]
+        if kind == "detail":
+            if role == DETAIL_ROLE:
+                return True
+            if role == RECORD_ROLE:
+                return payload
+            return None
         if kind == "group":
             if role == GROUP_ROLE:
                 return True
@@ -163,17 +170,20 @@ class CTableModel(QAbstractTableModel):
         if not index.isValid():
             return Qt.NoItemFlags
         kind, _ = self._page_items()[index.row()]
-        if kind == "group":
+        if kind in ("group", "detail"):
             return Qt.ItemIsEnabled
         return Qt.ItemIsEnabled | Qt.ItemIsSelectable
 
     def sort(self, column: int, order=Qt.AscendingOrder):  # noqa: N802 - 覆写 Qt 命名
         if not (0 <= column < len(self._columns)):
             return
+        self.beginResetModel()
         self._sort_field = self._columns[column].field
         self._sort_order = order
         self._page = 0
-        self._rebuild(emit_reset=True)
+        self._rebuild()
+        self.endResetModel()
+        self.paginationChanged.emit()
 
     # ------------------------------------------------------------------
     # 数据
@@ -238,7 +248,7 @@ class CTableModel(QAbstractTableModel):
     def page_count(self) -> int:
         if self._page_size <= 0:
             return 1
-        count = len(self._arranged)
+        count = sum(1 for item in self._arranged if item[0] != "detail")
         return max(1, (count + self._page_size - 1) // self._page_size)
 
     def page_size(self) -> int:
@@ -249,6 +259,7 @@ class CTableModel(QAbstractTableModel):
         if target == self._page:
             return
         self.beginResetModel()
+        self._arranged = [item for item in self._arranged if item[0] != "detail"]
         self._page = target
         self.endResetModel()
         self.paginationChanged.emit()
@@ -258,16 +269,51 @@ class CTableModel(QAbstractTableModel):
         if size == self._page_size:
             return
         self.beginResetModel()
+        self._arranged = [item for item in self._arranged if item[0] != "detail"]
         self._page_size = size
         self._page = 0
         self.endResetModel()
         self.paginationChanged.emit()
 
+    def expand_row(self, row: int, record: dict | None = None) -> int:
+        """在当前页的第 ``row`` 行后插入一个详情占位行，返回详情行号。
+
+        参考 Sakai 的 row expansion：详情行与普通行同属一个模型，由视图用
+        跨列 ``setSpan`` + ``setIndexWidget`` 承载实际内容。再次展开会先移除
+        旧详情行；翻页、过滤、排序时由 ``_rebuild`` 一并清除。
+        """
+        target_record = record if record is not None else self.record_at(row)
+        if target_record is None:
+            return -1
+        clean = [item for item in self._page_items() if item[0] != "detail"]
+        target = -1
+        for index, item in enumerate(clean):
+            if item[0] == "row" and item[1] is target_record:
+                target = index
+                break
+        if target < 0:
+            return -1
+        self.beginResetModel()
+        self._arranged = [item for item in self._arranged if item[0] != "detail"]
+        page_start = self._page * self._page_size if self._page_size > 0 else 0
+        absolute = page_start + target + 1
+        self._arranged.insert(absolute, ("detail", target_record))
+        self.endResetModel()
+        return target + 1
+
+    def collapse_expansion(self) -> None:
+        """移除当前的详情占位行。"""
+        if not any(item[0] == "detail" for item in self._arranged):
+            return
+        self.beginResetModel()
+        self._arranged = [item for item in self._arranged if item[0] != "detail"]
+        self.endResetModel()
+
     def total_count(self) -> int:
         return len(self._filtered)
 
     def filtered_count(self) -> int:
-        return len(self._arranged)
+        return sum(1 for item in self._arranged if item[0] != "detail")
 
     def record_at(self, row: int) -> dict | None:
         items = self._page_items()
@@ -279,7 +325,7 @@ class CTableModel(QAbstractTableModel):
     # ------------------------------------------------------------------
     # 内部
     # ------------------------------------------------------------------
-    def _rebuild(self, emit_reset: bool = False) -> None:
+    def _rebuild(self) -> None:
         filtered: list[tuple[dict, int]] = []
         for source_index, record in enumerate(self._rows):
             if self._matches_filter(record):
@@ -300,8 +346,6 @@ class CTableModel(QAbstractTableModel):
                 self._arranged.append(("row", record))
         else:
             self._arranged = [("row", record) for record, _source in filtered]
-        if emit_reset:
-            self.layoutChanged.emit()
 
     def _matches_filter(self, record: dict) -> bool:
         if not self._filter_text:
@@ -325,8 +369,19 @@ class CTableModel(QAbstractTableModel):
     def _page_items(self) -> list[tuple[str, Any]]:
         if self._page_size <= 0:
             return self._arranged
-        start = self._page * self._page_size
-        return self._arranged[start : start + self._page_size]
+        pages: list[list[tuple[str, Any]]] = [[]]
+        data_count = 0
+        for item in self._arranged:
+            if item[0] == "detail":
+                # 详情行永远跟随它上面的数据行，不占用每页条数
+                pages[-1].append(item)
+                continue
+            if data_count and data_count % self._page_size == 0:
+                pages.append([])
+            pages[-1].append(item)
+            data_count += 1
+        index = max(0, min(self._page, len(pages) - 1))
+        return pages[index]
 
 
 class CTableDelegate(QStyledItemDelegate):
@@ -355,7 +410,9 @@ class CTableDelegate(QStyledItemDelegate):
         font.setWeight(QFont.Weight.DemiBold)
         painter.setFont(font)
         painter.setPen(QColor(colors["muted"]))
-        painter.drawText(rect.adjusted(12, 0, -12, 0), Qt.AlignLeft | Qt.AlignVCenter, str(index.data(Qt.DisplayRole)))
+        text = str(index.data(Qt.DisplayRole) or "")
+        text = painter.fontMetrics().elidedText(text, Qt.ElideRight, max(0, int(rect.width()) - 24))
+        painter.drawText(rect.adjusted(12, 0, -12, 0), Qt.AlignLeft | Qt.AlignVCenter, text)
         painter.restore()
 
     @staticmethod
@@ -375,9 +432,11 @@ class CTableDelegate(QStyledItemDelegate):
         font.setPixelSize(max(10, font.pixelSize() - 2))
         painter.setFont(font)
         metrics = painter.fontMetrics()
-        width = max(24, metrics.horizontalAdvance(text) + 16)
-        height = 22
         rect = QRectF(option.rect)
+        max_width = max(24, int(rect.width()) - 20)
+        text = metrics.elidedText(text, Qt.ElideRight, max(0, max_width - 16))
+        width = min(max_width, max(24, metrics.horizontalAdvance(text) + 16))
+        height = 22
         x = rect.left() + 10
         if option.displayAlignment & Qt.AlignRight:
             x = rect.right() - width - 10
@@ -430,6 +489,9 @@ class CDataTable(QWidget):
         self._frozen: QTableView | None = None
         self._syncing_scroll = False
         self._detail_widget: QWidget | None = None
+        self._detail_overlay: QWidget | None = None
+        self._detail_row: int | None = None
+        self._detail_record: dict | None = None
         self._row_detail_provider: Callable[[dict], QWidget | None] | None = None
         self._setup_ui()
 
@@ -471,21 +533,16 @@ class CDataTable(QWidget):
         self._empty = QLabel(self._empty_text, self._stack)
         self._empty.setObjectName("CDataTable_Empty")
         self._empty.setAlignment(Qt.AlignCenter)
+        self._empty.setWordWrap(True)
         self._loading = QLabel("Loading...", self._stack)
         self._loading.setObjectName("CDataTable_Loading")
         self._loading.setAlignment(Qt.AlignCenter)
+        self._loading.setWordWrap(True)
 
         self._stack.addWidget(self._host)
         self._stack.addWidget(self._empty)
         self._stack.addWidget(self._loading)
         layout.addWidget(self._stack, 1)
-
-        self._detail = QFrame(self)
-        self._detail.setObjectName("CDataTable_Detail")
-        self._detail_layout = QVBoxLayout(self._detail)
-        self._detail_layout.setContentsMargins(12, 10, 12, 10)
-        self._detail.setVisible(False)
-        layout.addWidget(self._detail)
 
         self._paginator = CPaginator(parent=self)
         self._paginator.setVisible(self._paginator_enabled)
@@ -513,6 +570,7 @@ class CDataTable(QWidget):
         view.horizontalHeader().setHighlightSections(False)
         view.horizontalHeader().setSectionsClickable(True)
         view.horizontalHeader().setStretchLastSection(True)
+        view.horizontalHeader().setTextElideMode(Qt.ElideRight)
         view.horizontalHeader().setSortIndicatorShown(True)
         view.horizontalHeader().setSortIndicator(-1, Qt.AscendingOrder)
         view.horizontalHeader().sectionClicked.connect(self._on_header_clicked)
@@ -629,6 +687,10 @@ class CDataTable(QWidget):
             self._frozen.horizontalHeader().setStretchLastSection(False)
             self._frozen.verticalScrollBar().valueChanged.connect(self._sync_frozen_scroll)
             self._main.verticalScrollBar().valueChanged.connect(self._sync_main_scroll)
+            self._main.verticalScrollBar().valueChanged.connect(lambda _value: self._position_detail_overlay())
+            self._main.verticalHeader().sectionResized.connect(self._sync_row_height)
+            if self._row_detail_provider is not None:
+                self._frozen.doubleClicked.connect(self._show_row_detail)
             self._host.layout().insertWidget(0, self._frozen)
             self._frozen.show()
 
@@ -652,6 +714,11 @@ class CDataTable(QWidget):
         self._syncing_scroll = True
         self._frozen.verticalScrollBar().setValue(value)
         self._syncing_scroll = False
+
+    def _sync_row_height(self, row: int, _old: int, height: int) -> None:
+        """冻结列表格的行高与主表保持一致。"""
+        if self._frozen is not None and 0 <= row < self._frozen.verticalHeader().count():
+            self._frozen.setRowHeight(row, height)
 
     def _on_header_clicked(self, column: int) -> None:
         if not (0 <= column < len(self._model.columns())):
@@ -685,7 +752,7 @@ class CDataTable(QWidget):
         width = 0
         for column in range(self._frozen_count):
             spec = self._model.columns()[column]
-            width += spec.width or 160
+            width += max(spec.width or 160, spec.min_width)
         width += 2
         self._frozen.setFixedWidth(width)
 
@@ -707,7 +774,7 @@ class CDataTable(QWidget):
                 spec = self._model.columns()[column]
                 frozen_header.setMinimumSectionSize(spec.min_width)
                 frozen_header.setSectionResizeMode(column, QHeaderView.ResizeMode.Fixed)
-                self._frozen.setColumnWidth(column, spec.width or 160)
+                self._frozen.setColumnWidth(column, max(spec.width or 160, spec.min_width))
             self._update_frozen_width()
 
     # ------------------------------------------------------------------
@@ -735,21 +802,79 @@ class CDataTable(QWidget):
         record = self._model.record_at(index.row())
         if record is None or self._row_detail_provider is None:
             return
+        old_record = self._detail_record
+        old_row = self._detail_row
+        self._clear_detail_widget(old_row)
+        if old_record is record:
+            self._model.collapse_expansion()
+            self._detail_record = None
+            return
+
         widget = self._row_detail_provider(record)
         if widget is None:
             return
-        if self._detail_widget is not None:
-            self._detail_layout.removeWidget(self._detail_widget)
-            self._detail_widget.deleteLater()
+        row = self._model.expand_row(index.row(), record)
+        if row < 0:
+            widget.deleteLater()
+            return
+        detail_index = self._model.index(row, 0)
+        for view in (self._main, self._frozen):
+            if view is not None:
+                view.setSpan(row, 0, 1, self._model.columnCount())
+                view.setRowHeight(row, max(48, widget.sizeHint().height()))
+        if self._frozen is None:
+            self._main.setIndexWidget(detail_index, widget)
+        else:
+            # 冻结列由两个视图拼接而成，单个 indexWidget 只能覆盖右半边；
+            # 详情内容改挂到 host 上，横跨冻结列与主表。
+            widget.setParent(self._host)
+            self._detail_overlay = widget
+            widget.show()
+            QTimer.singleShot(0, self._position_detail_overlay)
         self._detail_widget = widget
-        self._detail_layout.addWidget(widget)
-        self._detail.setVisible(True)
+        self._detail_row = row
+        self._detail_record = record
         self.rowDoubleClicked.emit(record)
+
+    def _position_detail_overlay(self) -> None:
+        if self._detail_overlay is None or self._detail_row is None or self._frozen is None:
+            return
+        row = self._detail_row
+        if row >= self._model.rowCount():
+            return
+        y = self._main.viewport().mapTo(self._host, QPoint(0, self._main.rowViewportPosition(row))).y()
+        height = self._main.rowHeight(row)
+        width = self._frozen.width() + self._main.viewport().width()
+        if 0 <= y < self._host.height():
+            self._detail_overlay.setGeometry(0, y, max(0, width), height)
+            self._detail_overlay.show()
+            self._detail_overlay.raise_()
+        else:
+            self._detail_overlay.hide()
+
+    def _clear_detail_widget(self, row: int | None) -> None:
+        if row is not None and row < self._model.rowCount():
+            detail_index = self._model.index(row, 0)
+            for view in (self._main, self._frozen):
+                if view is not None:
+                    view.setIndexWidget(detail_index, None)
+        if self._detail_overlay is not None:
+            self._detail_overlay.deleteLater()
+            self._detail_overlay = None
+        self._detail_widget = None
+        self._detail_row = None
 
     # ------------------------------------------------------------------
     # 模型变化
     # ------------------------------------------------------------------
     def _on_model_changed(self) -> None:
+        # 任何 reset（翻页/排序/过滤）都会清掉详情行，这里的引用同步失效
+        if self._detail_overlay is not None:
+            self._detail_overlay.deleteLater()
+            self._detail_overlay = None
+        self._detail_widget = None
+        self._detail_row = None
+        self._detail_record = None
         self._stack.setCurrentWidget(self._host)
         self._empty.setVisible(self._model.rowCount() == 0)
         self._stack.setCurrentWidget(self._host if self._model.rowCount() > 0 else self._empty)
@@ -776,6 +901,7 @@ class CDataTable(QWidget):
     def resizeEvent(self, event):  # noqa: N802
         super().resizeEvent(event)
         self._update_frozen_width()
+        self._position_detail_overlay()
 
     def sizeHint(self) -> QSize:  # noqa: N802
         return QSize(760, 420)

@@ -11,7 +11,7 @@ from PySide6.QtCore import QEasingCurve, QPointF, QRectF, QSize, Qt, QVariantAni
 from PySide6.QtGui import QColor, QFont, QFontMetrics, QPainter
 from PySide6.QtWidgets import QSizePolicy, QVBoxLayout, QWidget
 
-from customgui.appcore import AppSettings, ColorPalette, get_design_tokens
+from customgui.appcore import AppSettings, ColorPalette, get_design_tokens, get_theme_manager
 
 from ..custom_ui.icon_utils import render_icon
 from ..custom_ui.menu.menu_item import as_menu_item
@@ -267,6 +267,7 @@ class CAppMenu(QWidget):
         self._items: list[CAppMenuItem] = []
         self._active: CAppMenuItem | None = None
         self.set_items(items)
+        get_theme_manager().subscribe(self.update_style)
 
     # ------------------------------------------------------------------
     # 数据

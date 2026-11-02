@@ -90,7 +90,7 @@ class Styles:
             #CVDiv_Frame {{
                 background: {self.tokens.colors.surface_app};
             }}
-            QFrame {{ 
+            QFrame {{
                 color: {self.tokens.colors.text_primary};
                 font: {self.tokens.typography.family};
             }}
@@ -148,7 +148,7 @@ class Styles:
             #CMenuButton_PushButton:pressed {{
                 background-color: {self.tokens.colors.surface_interactive_pressed};
             }}
-            #CMenuButton_PushButton::menu-indicator {{ 
+            #CMenuButton_PushButton::menu-indicator {{
                 image: url({self._icon_arrow_right});
                 width: {self.tokens.size.icon}px;
                 height: {self.tokens.size.icon}px;
@@ -456,6 +456,7 @@ class Styles:
                 padding-left: 10px;
                 padding-right: 10px;
                 border: none;
+                border-bottom: 1px solid {self.tokens.colors.surface_interactive_pressed};
             }}
             #CDataTable_View::item:hover, #CDataTable_FrozenView::item:hover {{
                 background-color: {self.tokens.colors.surface_interactive};
@@ -486,10 +487,45 @@ class Styles:
                 min-height: 24px;
                 border-radius: 4px;
             }}
+            #CDataTable_View QScrollBar:pressed,
+            #CDataTable_FrozenView QScrollBar:pressed {{
+                background: transparent;
+            }}
+            #CDataTable_View QScrollBar:horizontal,
+            #CDataTable_FrozenView QScrollBar:horizontal {{
+                background: transparent;
+                height: 10px;
+                margin: 0px;
+            }}
+            #CDataTable_View QScrollBar::handle:horizontal,
+            #CDataTable_FrozenView QScrollBar::handle:horizontal {{
+                background: {self.tokens.colors.surface_interactive_pressed};
+                min-width: 24px;
+                border-radius: 4px;
+            }}
             #CDataTable_View QScrollBar::add-line:vertical,
             #CDataTable_View QScrollBar::sub-line:vertical,
             #CDataTable_FrozenView QScrollBar::add-line:vertical,
-            #CDataTable_FrozenView QScrollBar::sub-line:vertical {{
+            #CDataTable_FrozenView QScrollBar::sub-line:vertical,
+            #CDataTable_View QScrollBar::add-line:horizontal,
+            #CDataTable_View QScrollBar::sub-line:horizontal,
+            #CDataTable_FrozenView QScrollBar::add-line:horizontal,
+            #CDataTable_FrozenView QScrollBar::sub-line:horizontal {{
+                height: 0px;
+                width: 0px;
+            }}
+            #CFileUpload_ListScroll QScrollBar:vertical {{
+                background: transparent;
+                width: 10px;
+                margin: 0px;
+            }}
+            #CFileUpload_ListScroll QScrollBar::handle:vertical {{
+                background: {self.tokens.colors.surface_interactive_pressed};
+                min-height: 24px;
+                border-radius: 4px;
+            }}
+            #CFileUpload_ListScroll QScrollBar::add-line:vertical,
+            #CFileUpload_ListScroll QScrollBar::sub-line:vertical {{
                 height: 0px;
             }}
             #CDataTable_Empty, #CDataTable_Loading {{

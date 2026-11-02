@@ -341,7 +341,7 @@ CustomGUI_Qt_For_Python/
 │   └── py.typed
 ├── apps/                             # 内置示例应用（同时打进 wheel）
 ├── examples/hello_world/             # 最小可运行工程
-├── tests/                            # 477 个测试
+├── tests/                            # 478 个测试
 ├── docs/                             # 组件文档、架构说明、截图
 └── pyproject.toml
 ```
@@ -395,7 +395,7 @@ get_theme_manager().apply("dark")
 
 ```powershell
 uv sync --extra dev
-uv run pytest                 # 477 tests（当前平台 skip 6）
+uv run pytest                 # 478 tests（当前平台 skip 6）
 uv run ruff check src tests
 
 uv run python -m build --wheel --no-isolation

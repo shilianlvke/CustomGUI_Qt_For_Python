@@ -69,7 +69,7 @@ def _data_view_demo() -> QWidget:
     layout = QVBoxLayout(box)
     layout.setContentsMargins(0, 0, 0, 0)
     layout.setSpacing(8)
-    view = CDataView(_products(), _template, layout="list", empty_text=_t("empty"))
+    view = CDataView(_products(), _template, layout="list", columns=3, empty_text=_t("empty"))
     switch = CSelectButton([_t("layout_list"), _t("layout_grid")], index=0)
     switch.selectionChanged.connect(lambda index: view.set_layout("list" if index == 0 else "grid"))
     header = QWidget()

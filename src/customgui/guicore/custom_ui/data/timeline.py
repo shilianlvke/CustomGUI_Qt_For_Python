@@ -232,6 +232,12 @@ class CTimeline(QWidget):
         self._apply_theme()
         super().update()
 
+    def changeEvent(self, event):  # noqa: N802 - 覆写 Qt 命名
+        super().changeEvent(event)
+        if event.type() in (QEvent.StyleChange, QEvent.PaletteChange):
+            self._theme_signature = None
+            self._apply_theme()
+
     def _apply_theme(self) -> None:
         signature = (tuple(sorted(tokens().items())), tuple(sorted(panel_colors().items())))
         if signature == self._theme_signature:

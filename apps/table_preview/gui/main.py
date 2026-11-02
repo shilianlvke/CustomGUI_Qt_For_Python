@@ -14,8 +14,7 @@ def _t(key: str) -> str:
     return Language.resolve(f"{_LANG}.{key}", key)
 
 
-def _severity(row) -> tuple[str, str] | None:
-    value = row.get("status")
+def _severity(value, row) -> tuple[str, str] | None:
     if value == "INSTOCK":
         return "success", _t("status_instock")
     if value == "LOWSTOCK":
@@ -69,6 +68,7 @@ def _card(title: str, content: QWidget) -> CCard:
 
 def _filter_demo() -> QWidget:
     table = CDataTable(_columns(), _products(), page_size=5)
+    table.setMinimumHeight(320)
     box = QWidget()
     layout = QVBoxLayout(box)
     layout.setContentsMargins(0, 0, 0, 0)

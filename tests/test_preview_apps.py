@@ -33,9 +33,15 @@ def test_preview_page_builds(qapp, app_dir):
     assert hasattr(module, "PAGE")
 
     stack = QStackedWidget()
+    stack.resize(1000, 720)
     page = module.PAGE()
     page.ui = SimpleNamespace(load_pages=SimpleNamespace(pages=stack))
     page.load_page()
     assert stack.count() == 1
     widget = stack.widget(0)
     assert widget.objectName().endswith("Page")
+    # 真正显示并触发一次绘制，捕获绘制回调里的签名/空指针问题
+    stack.show()
+    qapp.processEvents()
+    stack.grab()
+    stack.hide()

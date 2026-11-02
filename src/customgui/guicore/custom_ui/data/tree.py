@@ -15,7 +15,7 @@ from __future__ import annotations
 
 from typing import Any
 
-from PySide6.QtCore import QItemSelectionModel, QModelIndex, QPointF, QRectF, QSize, Qt, Signal
+from PySide6.QtCore import QEvent, QItemSelectionModel, QModelIndex, QPointF, QRectF, QSize, Qt, Signal
 from PySide6.QtGui import QColor, QFont, QPainter, QPainterPath, QPen, QStandardItem, QStandardItemModel
 from PySide6.QtWidgets import (
     QAbstractItemView,
@@ -531,6 +531,12 @@ class CTree(QWidget):
         if column == 0 and self._selection_mode == "checkbox":
             self._emit_selection()
 
+    def changeEvent(self, event):  # noqa: N802 - 覆写 Qt 命名
+        super().changeEvent(event)
+        if event.type() in (QEvent.StyleChange, QEvent.PaletteChange):
+            self._theme_signature = None
+            self._apply_theme()
+
     def _apply_theme(self) -> None:
         tree = getattr(self, "_tree", None)
         if tree is None:
@@ -884,7 +890,8 @@ class CTreeTable(QWidget):
             view.setSelectionMode(QAbstractItemView.SelectionMode.SingleSelection)
 
         header = view.header()
-        header.setStretchLastSection(False)
+        header.setStretchLastSection(True)
+        header.setTextElideMode(Qt.ElideRight)
         header.setHighlightSections(False)
         header.setDefaultAlignment(Qt.AlignLeft | Qt.AlignVCenter)
         header.setSectionsClickable(False)
@@ -1035,6 +1042,12 @@ class CTreeTable(QWidget):
     def _on_item_changed(self, _item: QStandardItem) -> None:
         if not self._updating and self._checkbox:
             self._emit_selection()
+
+    def changeEvent(self, event):  # noqa: N802 - 覆写 Qt 命名
+        super().changeEvent(event)
+        if event.type() in (QEvent.StyleChange, QEvent.PaletteChange):
+            self._theme_signature = None
+            self._apply_theme()
 
     def _apply_theme(self) -> None:
         view = getattr(self, "_view", None)

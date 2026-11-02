@@ -121,7 +121,7 @@ def _tiered_demo() -> QWidget:
 
 def _mega_demo() -> QWidget:
     menu = CMegaMenu(_items(), columns=2)
-    menu.setMinimumHeight(260)
+    menu.setFixedHeight(36)
     return menu
 
 

@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from PySide6.QtCore import Qt, Signal
+from PySide6.QtCore import Qt, QTimer, Signal
 from PySide6.QtWidgets import QHBoxLayout, QLabel, QWidget
 
 from ..button import CButton
@@ -33,8 +33,15 @@ class CPaginator(QWidget):
         self._total = max(0, int(total))
         self._buttons: list[CButton] = []
         self._updating = False
+        self._rebuild_pending = False
+        self._rebuild_timer = QTimer(self)
+        self._rebuild_timer.setSingleShot(True)
+        self._rebuild_timer.timeout.connect(self._rebuild_page_buttons)
         self._setup_ui()
         self.set_state(page, page_count, page_size, total)
+        # 构造期没有用户输入，直接建一次页码，避免首帧空白
+        if self._rebuild_pending:
+            self._rebuild_page_buttons()
 
     # ------------------------------------------------------------------
     # 构建
@@ -124,7 +131,7 @@ class CPaginator(QWidget):
         self._prev.setEnabled(self._page > 0)
         self._next.setEnabled(self._page < self._page_count - 1)
         self._last.setEnabled(self._page < self._page_count - 1)
-        self._rebuild_page_buttons()
+        self._schedule_rebuild()
         start = self._page * self._page_size + 1 if self._total else 0
         end = min(self._total, (self._page + 1) * self._page_size)
         self._report.setText(f"{start}-{end} / {self._total}")
@@ -139,7 +146,7 @@ class CPaginator(QWidget):
         self._prev.setEnabled(page > 0)
         self._next.setEnabled(page < self._page_count - 1)
         self._last.setEnabled(page < self._page_count - 1)
-        self._rebuild_page_buttons()
+        self._schedule_rebuild()
         start = self._page * self._page_size + 1 if self._total else 0
         end = min(self._total, (self._page + 1) * self._page_size)
         self._report.setText(f"{start}-{end} / {self._total}")
@@ -164,12 +171,21 @@ class CPaginator(QWidget):
             return
         self.set_page_size(int(value), emit=True)
 
-    def _rebuild_page_buttons(self) -> None:
-        for button in self._buttons:
-            self._page_layout.removeWidget(button)
-            button.deleteLater()
-        self._buttons.clear()
+    def _schedule_rebuild(self) -> None:
+        """延到下一轮事件循环重建页码。
 
+        页码按钮的 ``clicked`` 会走到 ``set_page``，若在信号栈内立即删除
+        当前 sender，CButton 的动画/重绘回调会访问已析构的 C++ 对象，表现为
+        点击分页闪退。延迟重建可保证信号处理先完整返回。
+        """
+        if self._rebuild_pending:
+            return
+        self._rebuild_pending = True
+        self._rebuild_timer.start(0)
+
+    def _rebuild_page_buttons(self) -> None:
+        self._rebuild_pending = False
+        self._rebuild_timer.stop()
         # 页码窗口：当前页保持在中间，最多 5 个
         if self._page_count <= 7:
             pages = list(range(self._page_count))
@@ -177,18 +193,43 @@ class CPaginator(QWidget):
             start = max(0, min(self._page - 2, self._page_count - 5))
             pages = list(range(start, start + 5))
 
-        for index in pages:
-            button = CButton(
-                str(index + 1),
-                size="sm",
-                variant="solid" if index == self._page else "text",
-                severity="primary" if index == self._page else "secondary",
-                fixed_width=32,
-                parent=self,
-            )
-            button.clicked.connect(lambda _=False, i=index: self.set_page(i, emit=True))
-            self._page_layout.addWidget(button)
-            self._buttons.append(button)
+        # 多余的按钮延迟删除；已有按钮优先复用，避免翻页时删除刚点击的 sender
+        while len(self._buttons) > len(pages):
+            button = self._buttons.pop()
+            self._page_layout.removeWidget(button)
+            button.hide()
+            button.deleteLater()
+
+        for slot, index in enumerate(pages):
+            digits = len(str(self._page_count))
+            width = max(32, 18 + digits * 7)
+            if slot < len(self._buttons):
+                button = self._buttons[slot]
+                button.setText(str(index + 1))
+                button.set_variant("solid" if index == self._page else "text")
+                button.set_severity("primary" if index == self._page else "secondary")
+            else:
+                button = CButton(
+                    str(index + 1),
+                    size="sm",
+                    variant="solid" if index == self._page else "text",
+                    severity="primary" if index == self._page else "secondary",
+                    fixed_width=width,
+                    parent=self,
+                )
+                button.clicked.connect(self._on_page_button_clicked)
+                self._page_layout.addWidget(button)
+                self._buttons.append(button)
+            button.setFixedWidth(width)
+            button.setProperty("pageIndex", index)
+
+    def _on_page_button_clicked(self) -> None:
+        button = self.sender()
+        if button is None:
+            return
+        index = button.property("pageIndex")
+        if index is not None:
+            self.set_page(int(index), emit=True)
 
 
 __all__ = ["CPaginator"]

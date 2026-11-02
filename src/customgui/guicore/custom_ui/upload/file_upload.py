@@ -188,6 +188,32 @@ class _DropArea(QFrame):
         painter.end()
 
 
+class _ElidingLabel(QLabel):
+    """按当前宽度省略中间字符的标签（文件名/标题用）。"""
+
+    def __init__(self, text: str = "", parent=None):
+        super().__init__(parent)
+        self._full_text = str(text)
+        self.setSizePolicy(QSizePolicy.Policy.Ignored, QSizePolicy.Policy.Preferred)
+        QLabel.setText(self, self._full_text)
+        self.setToolTip(self._full_text)
+
+    def setText(self, text: str) -> None:  # noqa: N802 - 覆写 Qt 命名
+        self._full_text = str(text)
+        self._refresh()
+        self.setToolTip(self._full_text)
+
+    def resizeEvent(self, event):  # noqa: N802 - 覆写 Qt 命名
+        super().resizeEvent(event)
+        self._refresh()
+
+    def _refresh(self) -> None:
+        elided = self.fontMetrics().elidedText(
+            self._full_text, Qt.ElideMiddle, max(0, self.width())
+        )
+        QLabel.setText(self, elided)
+
+
 class _FileRow(QFrame):
     """已选文件的一行：文件名、大小、移除按钮。"""
 
@@ -204,9 +230,8 @@ class _FileRow(QFrame):
         layout.setContentsMargins(10, 5, 8, 5)
         layout.setSpacing(8)
 
-        self._name_label = QLabel(os.path.basename(path), self)
+        self._name_label = _ElidingLabel(os.path.basename(path), self)
         self._name_label.setToolTip(path)
-        self._name_label.setSizePolicy(QSizePolicy.Policy.Ignored, QSizePolicy.Policy.Preferred)
 
         self._size_label = QLabel(_format_size(size), self)
         self._size_label.setAlignment(Qt.AlignRight | Qt.AlignVCenter)
@@ -344,6 +369,7 @@ class CFileUpload(QWidget):
             self._rows_layout.setAlignment(Qt.AlignTop)
 
             self._list_scroll = QScrollArea(self)
+            self._list_scroll.setObjectName("CFileUpload_ListScroll")
             self._list_scroll.setWidgetResizable(True)
             self._list_scroll.setFrameShape(QFrame.NoFrame)
             self._list_scroll.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)

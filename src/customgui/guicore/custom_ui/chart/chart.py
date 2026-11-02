@@ -21,7 +21,7 @@ from PySide6.QtCore import QMargins, Qt, Signal
 from PySide6.QtGui import QBrush, QColor, QFont, QPainter, QPen
 from PySide6.QtWidgets import QLabel, QSizePolicy, QVBoxLayout, QWidget
 
-from customgui.appcore import AppSettings, ColorPalette
+from customgui.appcore import AppSettings, ColorPalette, get_theme_manager
 
 from ..display.palette import tokens
 
@@ -140,6 +140,10 @@ class CChart(QWidget):
         self._layout.setContentsMargins(0, 0, 0, 0)
         self._layout.setSpacing(0)
         self.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
+        try:
+            get_theme_manager().subscribe(self.refresh_theme)
+        except Exception:  # pragma: no cover - 配置上下文未就绪时不影响图表构造
+            pass
 
         if not _CHARTS_AVAILABLE:
             self._show_error()
