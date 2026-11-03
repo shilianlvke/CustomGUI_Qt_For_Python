@@ -4,6 +4,9 @@ from PySide6.QtWidgets import QPushButton
 
 from customgui.appcore import PathFactory, get_design_tokens
 
+#: 默认按钮尺寸；放进模块常量，避免在参数默认值里构造可变对象
+_DEFAULT_SIZE = QSize(64, 32)
+
 
 class CMenuButton(QPushButton):
     """带下拉菜单的按钮。
@@ -18,7 +21,7 @@ class CMenuButton(QPushButton):
 
     def __init__(
         self,
-        size: QSize = QSize(64, 32),
+        size: QSize = _DEFAULT_SIZE,
         text: str | None = None,
         icon: QIcon | str | None = None,
         radius: int | None = None,

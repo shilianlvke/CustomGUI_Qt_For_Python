@@ -82,7 +82,8 @@ class CBreadcrumb(QWidget):
         self._measure()
         dpr = self.devicePixelRatioF()
 
-        for index, (item, rect) in enumerate(zip(self._items, self._rects)):
+        # _rects 由 _items 逐个量出，长度天然一致；strict 让将来漏量一项时立刻炸出来
+        for index, (item, rect) in enumerate(zip(self._items, self._rects, strict=True)):
             last = index == len(self._items) - 1
             if last:
                 color = QColor(colors["text"])

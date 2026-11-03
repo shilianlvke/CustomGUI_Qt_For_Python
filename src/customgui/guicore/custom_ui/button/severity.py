@@ -16,14 +16,14 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from enum import Enum
+from enum import StrEnum
 
 from PySide6.QtGui import QColor
 
 from customgui.appcore import ColorPalette
 
 
-class Severity(str, Enum):
+class Severity(StrEnum):
     """按钮语义色。"""
 
     PRIMARY = "primary"
@@ -36,7 +36,7 @@ class Severity(str, Enum):
     CONTRAST = "contrast"
 
 
-class Variant(str, Enum):
+class Variant(StrEnum):
     """按钮变体。"""
 
     SOLID = "solid"

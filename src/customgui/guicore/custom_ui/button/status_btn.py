@@ -4,6 +4,9 @@ from PySide6.QtWidgets import QPushButton
 
 from customgui.appcore import PathFactory, get_design_tokens
 
+#: 默认按钮尺寸；放进模块常量，避免在参数默认值里构造可变对象
+_DEFAULT_SIZE = QSize(64, 32)
+
 
 class CStatusButton(QPushButton):
     """多态按钮：点击在若干状态间循环，边框颜色随状态变化。
@@ -20,7 +23,7 @@ class CStatusButton(QPushButton):
 
     def __init__(
         self,
-        size: QSize = QSize(64, 32),
+        size: QSize = _DEFAULT_SIZE,
         text_negative: str | None = None,
         text_normal: str | None = None,
         text_positive: str | None = None,
