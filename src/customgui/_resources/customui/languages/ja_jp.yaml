@@ -135,8 +135,3 @@ UI:
 TEXT:
   home_page_welcome: こんにちは！CustomGUI です ~
   login: CustomGUI にログイン
-
-Log:
-  pyserial_not_install: "pyserial がインストールされていないため、COM デバイス一覧を取得できません"
-  hidapi_not_install: "hidapi がインストールされていないため、HID デバイス一覧を取得できません"
-  wmi_not_install: "wmi がインストールされていないため、ネットワークアダプター一覧を取得できません"

@@ -135,8 +135,3 @@ UI:
 TEXT:
   home_page_welcome: 你好！我是 CustomGUI ~
   login: 登入 CustomGUI
-
-Log:
-  pyserial_not_install: "pyserial 未安裝，無法取得 COM 裝置清單"
-  hidapi_not_install: "hidapi 未安裝，無法取得 HID 裝置清單"
-  wmi_not_install: "wmi 未安裝，無法取得網路卡裝置清單"

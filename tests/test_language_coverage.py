@@ -20,7 +20,7 @@ from customgui.appcore import LANGUAGE_OPTIONS
 LANGUAGES_DIR = package_root() / "_resources" / "customui" / "languages"
 REFERENCE = "zh_cn"
 EXPECTED_LANGUAGES = ("zh_cn", "en_us", "zh_tw", "ja_jp")
-SECTIONS = ("custom_ui", "UI", "TEXT", "Log")
+SECTIONS = ("custom_ui", "UI", "TEXT")
 
 
 def _load(name: str) -> dict:

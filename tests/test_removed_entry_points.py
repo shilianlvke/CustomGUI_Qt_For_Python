@@ -12,6 +12,12 @@ REMOVED_ENTRY_POINTS = [
     "customgui.appcore.sysx.handlers.json_handler",
     "customgui.guis.windows.main_window.user_define_window",
     "customgui.guis.windows.main_window.user_define_pages",
+    # Windows 设备探测（串口/HID/网卡）与校验算法不属于基座：它们会拖入
+    # pyserial/hidapi/wmi 三个可选依赖，而基座一个都不需要。应用要就自己在
+    # 自己的 core 目录里实现。
+    "customgui.appcore.tool.device",
+    "customgui.appcore.tool.Net",
+    "customgui.appcore.tool.verify",
 ]
 
 # 已下线的公开符号：(模块, 符号名)
