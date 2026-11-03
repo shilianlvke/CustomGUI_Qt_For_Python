@@ -4,6 +4,8 @@
 # 【文件位置】仓库根目录 .workflow/ 下（Gitee Go 只读取该目录的 YAML）。
 # 【触发】推送 v* tag（如 v1.2.3）自动执行；也可在平台手动运行。
 # 【流程】质量检查（ruff + pytest）→ Linux 打包（PyInstaller）→ 暂存产物。
+# 【PR 阶段的质量门禁】见同目录 QualityGate.yml：main 的 PR / 推送即跑 ruff + pytest，
+#   不构建产物。本流水线只在打 tag 时跑，负责打包与产物，两者规则集一致。
 # =============================================================================
 # 【为什么发布 Release 需要令牌（RELEASE_TOKEN）？】
 #   流水线容器没有你的 Gitee 登录态。要把刚构建出的 zip 自动挂到
@@ -69,7 +71,9 @@ stages:
           - uv sync --extra dev
           - uv pip install "pyinstaller>=6.10.0"
           # ---- 质量检查 ----
-          - uv run ruff check src tests --select E9,F63,F7,F82
+          # 与 QualityGate.yml 用同一套规则集；这里再跑一遍是为了保证「能发布」的前提是
+          # 打 tag 的那次提交本身就干净，不依赖 PR 阶段是否走过门禁。
+          - uv run ruff check src tests
           - uv run pytest -q
           # ---- wheel 构建 + 干净环境冒烟（验证「开箱即用」）----
           - uv run python -m build --wheel

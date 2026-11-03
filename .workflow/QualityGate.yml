@@ -1,0 +1,59 @@
+# =============================================================================
+# Gitee Go 原生流水线：质量门禁（QualityGate）
+# =============================================================================
+# 【文件位置】仓库根目录 .workflow/ 下（Gitee Go 只读取该目录的 YAML）。
+# 【触发】向 main 提 PR、或 main 分支有推送时自动执行；也可在平台手动运行。
+# 【流程】ruff（项目规则集）→ pytest（无头运行）。
+# 【与 ReleasePipeline 的分工】
+#   发布流水线只在打 v* tag 时触发，负责打包与产物暂存，一条要跑好几分钟；
+#   本流水线**不构建任何产物**，只回答「这次改动能不能进 main」，一分钟内出结果。
+#   两者共用 pyproject.toml 里的 ruff 规则集与 pytest 配置，避免本地与 CI 打架。
+# =============================================================================
+
+# 当前 yml 文件版本（固定）
+version: '1.0'
+# 流水线唯一标识（仓库内唯一）
+name: quality-gate
+# 流水线展示名称（支持中文）
+displayName: 质量门禁
+
+# 触发规则：main 的 PR 与 main 的推送
+triggers:
+  push:
+    branches:
+      # precise = 精确匹配完整分支名，不监听其它分支，避免每次推都占用构建机
+      precise:
+        - main
+  pr:
+    branches:
+      precise:
+        - main
+
+# 阶段定义
+stages:
+  - name: quality_check
+    displayName: 代码质量检查
+    strategy: naturally
+    trigger: auto
+    steps:
+      - step: build@python
+        name: lint_and_test
+        displayName: ruff 与 pytest
+        # 平台内置最高 3.9，仅用于引导 uv（实际解释器为 3.13）
+        pythonVersion: 3.9
+        commands:
+          # ---- 依赖与解释器 ----
+          # 容器内 pip 以 user 模式安装，uv 落在 ~/.local/bin，必须加入 PATH；
+          # Gitee Go 会把每条 command 单独引号包裹执行，命令必须写成单行。
+          - python3 -m pip config set global.index-url https://pypi.tuna.tsinghua.edu.cn/simple
+          - python3 -m pip install uv
+          - export PATH="$HOME/.local/bin:$PATH"
+          - uv python install 3.13
+          - uv venv --python 3.13
+          - uv sync --extra dev
+          # ---- 质量检查 ----
+          # ruff 不带 --select，直接用 pyproject.toml 的 E/F/W/I/UP/B 规则集；
+          # 本地跑的 `ruff check src tests` 与这里完全等价，不会出现「本地过 CI 挂」。
+          - uv run ruff check src tests
+          # pytest 的 offscreen 由 tests/conftest.py 统一设置，无需虚拟显示。
+          - uv run pytest
