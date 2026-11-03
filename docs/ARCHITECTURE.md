@@ -63,7 +63,6 @@ apps/*  ──────────────┐
 | `sysx/common/static_func.py` | `PathFactory`（图标/图片/ICO 解析）、`PicFixFactory` |
 | `app/main_window_use_cases.py` | `MainWindowButtonUseCase` / `ButtonDecision`：按钮 → 动作的纯逻辑映射 |
 | `tool/storage.py` | 原子写（`fsync` + `os.replace` + `.bak` 回退） |
-| `tool/device.py` / `Net.py` / `verify.py` | 串口/HID/网卡、网络判定、CRC 等设备侧小工具（需要 `windows-hardware` 可选依赖） |
 
 ### guicore
 
@@ -75,13 +74,18 @@ apps/*  ──────────────┐
 | `fonts.py` | `install_fonts()` / `install_system_fonts()`，解决 offscreen / 远程会话的 CJK 豆腐块 |
 | `callbacks.py` | `safe_callback()` / `ui_callback()` / `single_shot()` / `is_deleted_qt_error()` |
 | `task.py` | `TaskWorker` / `WorkerSignals` / `run_task()` / `active_tasks()`，带取消协议 |
-| `app_ui/` | 应用级 UI 片段（对话框等） |
+| `app_ui/` | 应用级 UI 片段：`CPreviewPage` 预览页基类（页面外壳 + 分区卡片 + 语言入口） |
 
 ### guis
 
 | 模块 | 内容 |
 | --- | --- |
-| `app_loader.py` | `discover_app_dirs()`、`load_app_manifest()`、`register_app()`、`load_apps()`、`load_app_handles()`；清单校验、协议选择、私有命名空间 Finder |
+| `app_loader.py` | 编排层：`register_app()`、`load_apps()`、`load_app_handles()`、`get_app_handle()`、`reset_apps_cache()` |
+| `app_manifest.py` | 清单与发现：`discover_app_dirs()`、`load_app_manifest()`、协议/入口校验、应用语言加载 |
+| `app_namespace.py` | 私有命名空间 `_customgui_apps`：MetaPathFinder 与应用模块导入 |
+| `app_context.py` | `AppContext`（`lang_text` / `resource` / `import_module`）与 `AppHandle` |
+| `app_v2.py` | 协议 v2：`AppPlugin` / `AppPage` → `MenuPlugin` + `PagePlugin` 的注册转换 |
+| `app_state.py` | 应用目录、句柄与加载标志的集中状态（解开 manifest ↔ loader 的循环依赖） |
 | `windows/main_window/ui_main.py` | `UiMainWindow`：标题栏 / 左菜单 / 页面栈 / 右列 / 版权栏的静态布局 |
 | `windows/main_window/setup_main_window.py` | `SetupMainWindow`：信号连接、按钮总线、grips、初始页面 |
 | `windows/main_window/controller.py` | `MainWindowController` + `PageRouterController`：按钮路由、页面切换、主题循环 |
@@ -167,7 +171,10 @@ flowchart LR
 | `test_language_coverage.py` | 四套语言键逐键对齐 |
 | `test_preview_apps.py` | 10 个示例应用能装载并完成一次绘制 |
 
-全量 478 条用例在 `QT_QPA_PLATFORM=offscreen` 下运行（`tests/conftest.py` 已设）。
+全量用例在 `QT_QPA_PLATFORM=offscreen` 下运行（`tests/conftest.py` 已设）。
+`test_preview_apps.py` 同时校验页面 `objectName` 与清单 `page_object` 一致——页面跳转靠这个字符串定位。
+用例数与告警数随代码变化，以 `uv run pytest` / `uv run ruff check src tests` 的实际输出为准；
+这两个命令也是 `.workflow/QualityGate.yml` 在 PR 阶段执行的判定标准。
 
 ## 10. 扩展点
 
@@ -186,14 +193,20 @@ flowchart LR
 
 内测阶段明确保留、但需要在正式版前处理的问题：
 
-1. **`--apps-dir` 相对路径**：`load_app_manifest()` 经 `YamlHandler` → `resolve_path()` 解析，
-   相对路径会落到包内 `_resources/apps/...`。应在入口处 `Path(...).resolve()`。
-2. **版本读取**：`customgui.__version__` 优先读已安装元数据，源码树里可能显示旧版本。
-3. **兼容壳**：`CLineEdit` / `CPushButton`、协议 v1、旧 `resource/` 布局仍保留，增加认知成本。
-4. **超大模块**：`custom_ui/data/tree.py`（约 1.1k 行）、`data/table.py`（约 0.9k 行）、
-   `guis/app_loader.py`（约 0.7k 行）需要拆分。
-5. **应用脚手架重复**：10 个预览应用的 `gui/main.py` 各自重复页面构建与滚动容器代码，
-   可抽出宿主页基类。
-6. **死代码**：`guis/windows/loading_window/` 只剩 `__pycache__`；
-   `appcore/tool/{device,Net,verify}.py` 无内部引用；`tests/test_example_paradigm.py` 整文件 skip
-   且指向已不存在的 `Apps_legacy`。
+1. **兼容壳**：`CLineEdit` / `CPushButton`、协议 v1（`PAGE` / `build_page`）、旧 `resource/`
+   布局仍保留，增加认知成本。三者都有真实调用方，删除要连带改应用与文档，
+   留到正式版前一次性处理。
+
+内测期已经清掉、留档备查的几项（原「已知架构债」1/2/4/5/6 条）：
+
+- **相对路径**：`--apps-dir` / `--data-dir` 在 CLI 入口统一 `Path(...).resolve()`，
+  `install-demo` / `examples --copy` 在源码树回落到仓库 `apps/` 与 `examples/`；
+  版本号改为以 `_version.py` 为唯一来源，不再优先读 site-packages 里的旧 wheel。
+- **超大模块**：`custom_ui/data/tree.py`、`data/table.py` 按「角色常量 / 列定义 / 模型 /
+  委托 / 视图」拆分，`guis/app_loader.py` 拆成编排 + 清单 + 命名空间 + 上下文 + 协议 v2 +
+  状态六个模块，对外导出面不变。
+- **应用脚手架**：10 个预览应用统一继承 `guicore/app_ui/page.py` 的 `CPreviewPage`。
+- **死代码**：`guis/windows/loading_window/`、`appcore/tool/{device,Net,verify}.py`、
+  整文件 skip 的 `tests/test_example_paradigm.py`、`guicore/app_ui/dialog/` 的重复
+  `CDialog` 均已删除，`windows-hardware` 可选依赖与对应的多语言键一并移除。
+

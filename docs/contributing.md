@@ -10,13 +10,21 @@
 
 ```powershell
 uv sync --extra dev
-uv run pytest                 # 478 passed, 6 skipped（当前平台）
 uv run ruff check src tests
+uv run pytest
 ```
 
-测试必须全绿。`ruff check` 目前还有 **6 条存量告警**（`B008` ×3：`QSize(...)` 作默认值；
-`UP042` ×2：`Severity` / `Variant` 可用 `StrEnum`；`B905` ×1：`zip()` 缺 `strict=`），
-新提交不得再新增告警。测试数量随代码变化，以实际输出为准，不要在文档里写死未来值。
+两条命令都必须干净：`ruff check` 零告警，`pytest` 零失败、skip 只允许平台相关的用例。
+测试数量随代码变化，以实际输出为准，不要写进文档。
+
+这两条就是 CI 的判定标准：向 `main` 提 PR（以及推送 `main`）会触发 `.workflow/QualityGate.yml`，
+跑的命令与上面完全一致——本地过了 CI 就不会挂。打 `v*` tag 触发的
+`.workflow/ReleasePipeline.yml` 会再跑一遍，然后才打包。
+
+窗口类测试统一走 `QT_QPA_PLATFORM=offscreen`（`tests/conftest.py` 已设置），
+本地与无头容器都不需要真实显示。`ruff` 的规则集在 `pyproject.toml` 的
+`[tool.ruff.lint]`（`E/F/W/I/UP/B`，忽略 `E501`、`TID252`），新增规则要同步更新该处，
+不要只在命令行加 `--select`。
 
 ## 硬规则：许可证边界
 

@@ -50,7 +50,7 @@
 | 操作系统 | Windows 为主要验证平台；Linux / macOS 可运行 |
 | 包管理 | 推荐 [uv](https://docs.astral.sh/uv/)，`pyproject.toml` 已配置清华镜像 |
 
-可选依赖 `windows-hardware`（`pyserial` / `hidapi` / `wmi`）仅用于 `appcore.tool` 的串口、HID、网卡查询。
+运行时只依赖 PySide6 与 PyYAML，没有可选依赖、不装任何硬件驱动库。
 
 ## 安装
 
@@ -161,11 +161,11 @@ CustomGUI_Qt_For_Python/
 │   │   ├── sysx/handlers/            # YamlHandler
 │   │   ├── sysx/common/              # PathFactory / PicFixFactory
 │   │   ├── app/                      # 主窗口按钮用例（与 Qt 解耦）
-│   │   └── tool/                     # 原子存储、设备/网络/校验小工具
+│   │   └── tool/                     # 原子存储（JSON/文本的安全读写）
 │   ├── guicore/                      # 组件层
 │   │   ├── custom_ui/                # 91 个组件（数据/菜单/媒体/按钮/输入/浮层/反馈/布局…）+ 3 个模型/枚举
 │   │   ├── window/                   # 标题栏、左菜单、四向栏目、grips、版权栏、壳层
-│   │   ├── app_ui/                   # 应用级 UI 片段
+│   │   ├── app_ui/                   # 预览页基类 CPreviewPage（页面外壳 + 分区卡片）
 │   │   ├── styles.py                 # 设计令牌 → QSS
 │   │   ├── fonts.py                  # 字体安装
 │   │   ├── task.py                   # 后台任务
@@ -173,7 +173,7 @@ CustomGUI_Qt_For_Python/
 │   ├── guis/                         # 装配层
 │   │   ├── windows/main_window/      # 主窗口装配、控制器、页面注册表
 │   │   ├── pages/                    # 页面栈容器
-│   │   ├── app_loader.py             # 应用发现、清单校验、协议装载
+│   │   ├── app_*.py                  # 应用加载：编排 / 清单 / 命名空间 / 上下文 / 协议 v2
 │   │   └── language_service.py       # 语言切换 + 页面重建
 │   ├── _resources/customui/          # 只读默认资源（themes / languages / settings / images）
 │   ├── window.py                     # ★ 宿主门面
@@ -182,7 +182,7 @@ CustomGUI_Qt_For_Python/
 │   └── py.typed                      # PEP 561
 ├── apps/                             # 10 个内置示例应用（同时打进 wheel）
 ├── examples/hello_world/main.py      # 最小宿主骨架
-├── tests/                            # 50 个测试文件，478 条用例
+├── tests/                            # 48 个测试文件（架构守卫、组件、CLI、应用加载…）
 ├── docs/                             # 架构、插件、组件、API、贡献指南、截图、图标库
 └── pyproject.toml
 ```
@@ -248,7 +248,7 @@ v2 的约定：`build(ctx, window)` 两个参数永远都在，`setObjectName` �
 | 优先级 | 写法 | 适用 |
 | --- | --- | --- |
 | 1 | `def register_plugins(registry, app)` | 多页面应用，自行入栈 |
-| 2 | `PAGE = MyPage()`（实例或类，含 `load_page(window)`） | 单页面，页面自建 |
+| 2 | `PAGE = MyPage` / `MyPage()`（含 `load_page(window)`） | 单页面，页面自建；建议继承 `guicore.CPreviewPage` |
 | 3 | `def build_page(app) -> QWidget` | 最简，由基座入栈 |
 
 `app` 是 `AppContext`：`config`、`app_dir`、`icon_path`、`lang_text(key)`、`resource(*parts)` /
@@ -352,8 +352,8 @@ API 速查见 [docs/API.md](docs/API.md)，组件分类与常用参数见 [docs/
 
 ```powershell
 uv sync --extra dev
-uv run pytest                 # 478 条用例（当前平台 skip 6）
-uv run ruff check src tests
+uv run pytest                 # 全绿为准；skip 只允许平台相关用例
+uv run ruff check src tests   # 必须零告警
 uv build --wheel
 uv run twine check dist/*.whl
 ```
@@ -365,9 +365,6 @@ uv run twine check dist/*.whl
 
 - **未上 PyPI**：PyPI 上的 `customgui` 已被另一个无关项目占用（`customGUI` 1.0.7），
   本项目只通过 git tag / wheel 分发；正式发布前需要另选分发名。
-- `--apps-dir` 传相对路径时，应用清单会被解析到包内资源根（`_resources/apps/...`）而加载失败，请用绝对路径。
-- 源码树不支持 `install-demo` / `examples --copy`，这两个命令依赖 wheel 内注入的示例目录。
-- `customgui doctor` 的版本号优先读已安装元数据；在源码树里 `uv sync` 之后若版本落后，会显示上次安装的版本。
 - `CLineEdit` / `CPushButton` 是 `CInputText` / `CButton` 的兼容壳，新代码不要再用。
 - 文档为手工维护（不再自动生成），以 `__all__` 与源码为准；`docs/icons/library/` 的 2481 个 SVG 不随包分发。
 

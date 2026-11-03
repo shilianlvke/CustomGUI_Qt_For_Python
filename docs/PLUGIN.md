@@ -114,7 +114,12 @@ class HelloApp(AppPlugin):
 | 优先级 | 写法 | 入栈由谁负责 | 能拿到 `AppContext` |
 | --- | --- | --- | --- |
 | 1 | `def register_plugins(registry, app)` | 应用自己 `addWidget` | 能 |
-| 2 | `PAGE = MyPage()` / `PAGE = MyPage`（含 `load_page`） | 页面自己 | 不能（`load_page` 的 `self` 是主窗口） |
+| 2 | `PAGE = MyPage` / `PAGE = MyPage()`（含 `load_page(window)`） | 页面自己 | 不能 |
+
+> **`PAGE` 的 `self` 是陷阱**：加载器按 `PAGE.load_page(window)` 调用，`PAGE` 写成**类**时
+> `self` 拿到的是主窗口，写成**实例**时 `self` 是页面对象、`window` 才是窗口——同一份代码
+> 不能依赖 `self` 的含义。内置的 10 个预览应用统一继承 `customgui.guicore.CPreviewPage`，
+> 它的钩子全部是 `classmethod`，两种写法都成立，新页面建议直接以它为起点。
 | 3 | `def build_page(app) -> QWidget` | 基座 | 能 |
 
 ```python

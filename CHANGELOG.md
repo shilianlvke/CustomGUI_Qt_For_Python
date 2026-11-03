@@ -27,7 +27,7 @@ minor 版本可能包含破坏性变更，均在本文件显式列出；patch �
 #### 新增示例应用
 
 `table_preview`、`data_preview`、`menu_preview`、`media_preview`、`shell_preview`，
-内置示例应用达到 10 个；测试达到 478 条。
+内置示例应用达到 10 个。
 
 #### 修复要点
 
@@ -36,6 +36,26 @@ minor 版本可能包含破坏性变更，均在本文件显式列出；patch �
 - **Toast 不消失**：`show_message` / `_reflow` 补启动倒计时，并加淡出兜底定时器。
 - **区域背景卡片**：去掉描边、内容与卡片齐平，栏目切换过场以整张卡片为画布。
 - **文字截断与主题刷新**：表格/树/菜单/时间线/顶栏补省略与最小宽度；图表与树类补主题变更刷新入口。
+
+#### 重构与清理
+
+- **相对路径**：`--apps-dir` / `--data-dir` 在 CLI 入口统一 `Path(...).resolve()`，
+  应用清单不再被当成包内资源路径解析；`install-demo` / `examples --copy` 在源码树回落到仓库
+  `apps/` 与 `examples/`。
+- **版本号**：`customgui.__version__` 改为以 `_version.py` 为唯一来源，源码树不再显示
+  site-packages 里旧 wheel 的版本。
+- **模块拆分**：`custom_ui/data/tree.py` / `data/table.py` 按角色常量、列定义、模型、委托、视图拆分；
+  `guis/app_loader.py` 拆成编排、清单、命名空间、上下文、协议 v2、状态六个模块。对外导出面不变。
+- **新增 `guicore.CPreviewPage`**：预览应用的页面外壳、分区卡片与语言入口收进基类，
+  10 个内置示例应用的 `gui/main.py` 不再各抄一份脚手架。钩子为 `classmethod`，
+  `PAGE` 写成类或实例都能被加载器正确调用（`self` 的两种含义不再需要关心）。
+- **死代码**：删除 `guis/windows/loading_window/`、`appcore/tool/{device,Net,verify}.py`、
+  整文件 skip 的 `tests/test_example_paradigm.py`，以及 `guicore/app_ui/dialog/` 下与
+  `custom_ui/overlay/dialog.py` 重名且无人引用的 `CDialog`。
+- **移除 `windows-hardware` 可选依赖**：随设备侧工具一起下线，基座运行时只依赖 PySide6 与 PyYAML。
+- **CI**：新增 `.workflow/QualityGate.yml`，`main` 的 PR 与推送即跑 ruff + pytest；
+  发布流水线的 ruff 由 `--select E9,F63,F7,F82` 改为项目规则集。
+- **代码风格**：`ruff check src tests` 清零（原 6 条存量告警），规则集 `E/F/W/I/UP/B`。
 
 ### 0.5.1 已发布内容
 

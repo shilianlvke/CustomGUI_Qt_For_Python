@@ -13,7 +13,7 @@
 | `customgui` | `configure()` / `current_config()` / `reset_config()` / `__version__` / `package_root()` / `resource_root()` |
 | `customgui.appcore` | 配置视图、主题、语言、令牌、插件协议、错误边界、遥测、存储工具 |
 | `customgui.window` | 窗口骨架、应用装载、语言服务 |
-| `customgui.guicore` | 组件、窗口部件、样式、字体、后台任务、回调守卫 |
+| `customgui.guicore` | 组件、窗口部件、页面基类 `CPreviewPage`、样式、字体、后台任务、回调守卫 |
 
 ## 2. 配置
 
@@ -212,6 +212,30 @@ SetupMainWindow.setup_gui(window)
 controller = MainWindowController(window)
 ```
 
+单页面应用可以直接继承预览页基类，省掉滚动容器、卡片与标题样式的样板：
+
+```python
+from customgui.guicore import CPreviewPage
+
+
+class MyPage(CPreviewPage):
+    slug = "my_app"           # 语言命名空间 app.my_app；objectName 推导为 myAppPage
+    columns = 3               # 分区内默认每行控件数
+    title_scale = "subtitle"  # 分区标题字号：subtitle（默认）或 title
+
+    @classmethod
+    def sections(cls, page, window):
+        # 条目三种写法：(标题, 控件) / (标题, [控件...], 每行列数) / 现成 QWidget
+        return [(cls.tr("group_a"), [widget_a, widget_b], 2)]
+
+
+PAGE = MyPage
+```
+
+`slug` 决定语言命名空间与 `page_object`，须与清单 `config.yml` 的 `page_object` 一致
+（`tests/test_preview_apps.py` 会校验）。钩子都是 `classmethod`，因此 `PAGE` 写成类或实例
+都能被加载器正确调用。
+
 ## 11. 样式与字体
 
 ```python
@@ -224,7 +248,7 @@ install_system_fonts()               # 注册系统字体，缓解 offscreen / �
 
 ## 12. 版本与兼容
 
-- 版本单一来源：`src/customgui/_version.py`；`customgui.__version__` 优先读已安装元数据，
-  源码运行时回落到该文件。
+- 版本单一来源：`src/customgui/_version.py`。`customgui.__version__` **先读该文件**，
+  只有文件缺失时才回落到已安装元数据——反过来会让源码树显示 site-packages 里旧 wheel 的版本号。
 - 已下线的历史入口由 `tests/test_removed_entry_points.py` 守着，不得复活。
 - `0.x` 内测期允许 minor 版本破坏兼容，破坏性变更必须写入 [CHANGELOG](../CHANGELOG.md)。
