@@ -1,4 +1,4 @@
-"""预览应用冒烟测试：每个 Apps/<name>/gui/main.py 都能构建页面。"""
+"""预览应用冒烟测试：每个 apps/<name>/gui/main.py 都能构建页面。"""
 
 import importlib.util
 import os
@@ -10,8 +10,10 @@ os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
 import pytest
 from PySide6.QtWidgets import QApplication, QStackedWidget
 
+from customgui.guis.app_manifest import load_app_manifest
+
 ROOT = Path(__file__).resolve().parents[1]
-APPS = ROOT / "Apps"
+APPS = ROOT / "apps"
 
 
 @pytest.fixture(scope="module")
@@ -34,9 +36,9 @@ def test_preview_page_builds(qapp, app_dir):
 
     stack = QStackedWidget()
     stack.resize(1000, 720)
-    page = module.PAGE()
-    page.ui = SimpleNamespace(load_pages=SimpleNamespace(pages=stack))
-    page.load_page()
+    # 与加载器一致：以 PAGE.load_page(window) 形式调用，类/实例两种写法都成立
+    window = SimpleNamespace(ui=SimpleNamespace(load_pages=SimpleNamespace(pages=stack)))
+    module.PAGE.load_page(window)
     assert stack.count() == 1
     widget = stack.widget(0)
     assert widget.objectName().endswith("Page")
@@ -45,3 +47,17 @@ def test_preview_page_builds(qapp, app_dir):
     qapp.processEvents()
     stack.grab()
     stack.hide()
+
+
+@pytest.mark.parametrize("app_dir", _app_dirs(), ids=lambda path: path.name)
+def test_page_object_matches_manifest(app_dir):
+    """页面 objectName 必须与清单声明的 ``page_object`` 一致（跳转靠它定位页面）。"""
+    config = load_app_manifest(app_dir)
+    expected = str(config.get("page_object") or "")
+    assert expected, f"{app_dir.name} 的 config.yml 缺少 page_object"
+
+    spec = importlib.util.spec_from_file_location(f"_manifest_{app_dir.name}", app_dir / "gui" / "main.py")
+    assert spec is not None and spec.loader is not None
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    assert module.PAGE.object_name() == expected

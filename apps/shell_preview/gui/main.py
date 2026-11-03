@@ -1,135 +1,90 @@
 """Sakai 壳层预览页：顶栏、嵌套侧边菜单与主题配置抽屉。"""
 
-from PySide6.QtCore import QMargins
-from PySide6.QtGui import QFont
 from PySide6.QtWidgets import QHBoxLayout, QLabel, QVBoxLayout, QWidget
 
-from customgui.appcore import AppSettings, Language
 from customgui.guicore import (
     CAppConfigurator,
     CAppMenu,
     CAppTopbar,
     CButton,
-    CCard,
-    CScrollArea,
+    CPreviewPage,
 )
 
-_LANG = "app.shell_preview"
 
+class ShellPreviewPage(CPreviewPage):
+    """PAGE 协议入口：壳层三件套（顶栏 / 菜单 / 主题抽屉）。"""
 
-def _t(key: str) -> str:
-    return Language.resolve(f"{_LANG}.{key}", key)
+    slug = "shell_preview"
 
+    @classmethod
+    def _menu_items(cls) -> list[dict]:
+        return [
+            {
+                "label": cls.tr("group_ui"),
+                "icon": "icon_widget",
+                "items": [
+                    {"label": "DataTable", "key": "table"},
+                    {"label": "List", "key": "list"},
+                    {
+                        "label": cls.tr("group_forms"),
+                        "items": [
+                            {"label": "InputText", "key": "input"},
+                            {"label": "Select", "key": "select"},
+                        ],
+                    },
+                ],
+            },
+            {
+                "label": cls.tr("group_pages"),
+                "icon": "icon_home",
+                "items": [
+                    {"label": cls.tr("menu_dashboard"), "key": "dashboard"},
+                    {"label": cls.tr("menu_settings"), "key": "settings"},
+                ],
+            },
+        ]
 
-def _card(title: str, content: QWidget) -> CCard:
-    card = CCard()
-    layout = QVBoxLayout(card)
-    layout.setContentsMargins(QMargins(12, 10, 12, 12))
-    layout.setSpacing(8)
-    label = QLabel(title)
-    font = QFont(AppSettings.family, AppSettings.subtitle_size)
-    font.setWeight(QFont.Weight.DemiBold)
-    label.setFont(font)
-    layout.addWidget(label)
-    layout.addWidget(content)
-    return card
+    @classmethod
+    def sections(cls, page, window):
+        # 状态条串起顶栏、菜单与配置抽屉的反馈，所有回调都写到这里
+        status = QLabel(cls.tr("hint"))
+        status.setStyleSheet("color: palette(mid);")
 
+        topbar = CAppTopbar(title="Sakai Shell", logo="mihoutao")
+        topbar.set_user("Y")
+        topbar.set_unread_count(3)
+        topbar.searchChanged.connect(lambda text: status.setText(f"{cls.tr('search')}: {text}"))
+        topbar.notificationsClicked.connect(lambda: status.setText(cls.tr("notifications")))
+        topbar.userMenuRequested.connect(lambda: status.setText(cls.tr("user_menu")))
 
-def _menu_items() -> list[dict]:
-    return [
-        {
-            "label": _t("group_ui"),
-            "icon": "icon_widget",
-            "items": [
-                {"label": "DataTable", "key": "table"},
-                {"label": "List", "key": "list"},
-                {
-                    "label": _t("group_forms"),
-                    "items": [
-                        {"label": "InputText", "key": "input"},
-                        {"label": "Select", "key": "select"},
-                    ],
-                },
-            ],
-        },
-        {
-            "label": _t("group_pages"),
-            "icon": "icon_home",
-            "items": [
-                {"label": _t("menu_dashboard"), "key": "dashboard"},
-                {"label": _t("menu_settings"), "key": "settings"},
-            ],
-        },
-    ]
+        menu = CAppMenu(cls._menu_items())
+        menu.setMinimumWidth(280)
+        menu.itemClicked.connect(lambda item: status.setText(f"{cls.tr('menu_selected')}: {getattr(item, 'label', item)}"))
 
+        # 抽屉以页面为父对象挂在页面上，页面存一份引用便于外部访问
+        configurator = CAppConfigurator(page)
+        configurator.setVisible(False)
+        configurator.themeChanged.connect(lambda name: status.setText(f"{cls.tr('theme')}: {name}"))
+        page._shell_configurator = configurator
 
-def _build_page(window) -> QWidget:
-    page = QWidget()
-    page.setObjectName("shellPreviewPage")
-    window.ui.load_pages.pages.addWidget(page)
+        trigger = CButton(cls.tr("open_config"), icon="icon_config", variant="outlined")
+        trigger.clicked.connect(configurator.toggle)
 
-    outer = QVBoxLayout(page)
-    outer.setContentsMargins(QMargins(0, 0, 0, 0))
-    outer.setSpacing(0)
+        row = QWidget()
+        row_layout = QHBoxLayout(row)
+        row_layout.setContentsMargins(0, 0, 0, 0)
+        row_layout.setSpacing(6)
+        row_layout.addWidget(cls.card(cls.tr("group_menu"), menu), 2)
 
-    scroller = CScrollArea()
-    content = QWidget()
-    layout = QVBoxLayout(content)
-    layout.setContentsMargins(QMargins(6, 6, 6, 6))
-    layout.setSpacing(6)
-    scroller.setWidget(content)
-    scroller.setWidgetResizable(True)
-    outer.addWidget(scroller)
+        right = QVBoxLayout()
+        right.setContentsMargins(0, 0, 0, 0)
+        right.setSpacing(6)
+        right.addWidget(cls.card(cls.tr("group_config"), trigger))
+        right.addWidget(status)
+        right.addStretch(1)
+        row_layout.addLayout(right, 3)
 
-    topbar = CAppTopbar(title="Sakai Shell", logo="mihoutao")
-    topbar.set_user("Y")
-    topbar.set_unread_count(3)
-    status = QLabel(_t("hint"))
-    status.setStyleSheet("color: palette(mid);")
-    topbar.searchChanged.connect(lambda text: status.setText(f"{_t('search')}: {text}"))
-    topbar.notificationsClicked.connect(lambda: status.setText(_t("notifications")))
-    topbar.userMenuRequested.connect(lambda: status.setText(_t("user_menu")))
-
-    menu = CAppMenu(_menu_items())
-    menu.setMinimumWidth(280)
-    menu.itemClicked.connect(lambda item: status.setText(f"{_t('menu_selected')}: {getattr(item, 'label', item)}"))
-
-    configurator = CAppConfigurator(page)
-    configurator.setVisible(False)
-    configurator.themeChanged.connect(lambda name: status.setText(f"{_t('theme')}: {name}"))
-
-    trigger = CButton(_t("open_config"), icon="icon_config", variant="outlined")
-    trigger.clicked.connect(configurator.toggle)
-
-    topbar_card = _card(_t("group_topbar"), topbar)
-    menu_card = _card(_t("group_menu"), menu)
-    config_card = _card(_t("group_config"), trigger)
-
-    row = QWidget()
-    row_layout = QHBoxLayout(row)
-    row_layout.setContentsMargins(0, 0, 0, 0)
-    row_layout.setSpacing(6)
-    row_layout.addWidget(menu_card, 2)
-    right = QVBoxLayout()
-    right.setContentsMargins(0, 0, 0, 0)
-    right.setSpacing(6)
-    right.addWidget(config_card)
-    right.addWidget(status)
-    right.addStretch(1)
-    row_layout.addLayout(right, 3)
-
-    layout.addWidget(topbar_card)
-    layout.addWidget(row)
-    layout.addStretch()
-    page._shell_configurator = configurator
-    return page
-
-
-class ShellPreviewPage:
-    """PAGE 协议入口。"""
-
-    def load_page(self):
-        _build_page(self)
+        return [cls.card(cls.tr("group_topbar"), topbar), row]
 
 
 PAGE = ShellPreviewPage

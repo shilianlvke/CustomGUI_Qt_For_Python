@@ -1,3 +1,5 @@
-from .dialog import CDialog
+"""应用级 UI 片段：预览应用直接复用的页面骨架。"""
 
-__all__ = ["CDialog"]
+from .page import CPreviewPage as CPreviewPage
+
+__all__ = ["CPreviewPage"]

@@ -3,19 +3,12 @@
 分组与 https://sakai.primevue.org/uikit/button 一一对应：
 Default / Severities / Text / Outlined / Group / SplitButton / Templating /
 Icons / Raised / Rounded / Rounded Icons / Rounded Text / Rounded Outlined / Loading。
-
-页面协议（``PAGE``）由基座以 ``load_page(window)`` 调用，因此 ``self`` 是主窗口，
-全部构建逻辑放在模块级函数里。
 """
 
-from PySide6.QtCore import QMargins, Qt, QTimer
-from PySide6.QtGui import QFont
-from PySide6.QtWidgets import QHBoxLayout, QLabel, QVBoxLayout, QWidget
+from PySide6.QtCore import QTimer
 
-from customgui.appcore import AppSettings, Language, Logger
-from customgui.guicore import CButton, CButtonGroup, CCard, CScrollArea, CSplitButton
-
-_LANG = "app.button_preview"
+from customgui.appcore import Logger
+from customgui.guicore import CButton, CButtonGroup, CPreviewPage, CSplitButton
 
 _SEVERITIES = ("primary", "secondary", "success", "info", "warn", "help", "danger", "contrast")
 
@@ -39,199 +32,144 @@ _SPLIT_ITEMS: list[tuple[str, str | None] | None] = (
 )
 
 
-def _t(key: str) -> str:
-    return Language.resolve(f"{_LANG}.{key}", key)
+class ButtonPreviewPage(CPreviewPage):
+    """PAGE 协议入口：全部按钮形态按参考页分组排列。"""
 
+    slug = "button_preview"
+    columns = 4
+    title_scale = "title"
 
-def _severity(value):
-    return value or "primary"
+    # ------------------------------------------------------------------
+    # 按钮构造
+    # ------------------------------------------------------------------
+    @classmethod
+    def _button(cls, **kwargs) -> CButton:
+        button = CButton(**kwargs)
+        button.clicked.connect(lambda: Logger.info(f"点击按钮: {button.text() or 'icon'}"))
+        return button
 
+    @classmethod
+    def _loading_button(cls, **kwargs) -> CButton:
+        button = CButton(**kwargs)
+        button.clicked.connect(lambda: cls._run_loading(button))
+        return button
 
-# ----------------------------------------------------------------------
-# 按钮构造
-# ----------------------------------------------------------------------
-def _button(**kwargs) -> CButton:
-    button = CButton(**kwargs)
-    button.clicked.connect(lambda: Logger.info(f"点击按钮: {button.text() or 'icon'}"))
-    return button
+    @staticmethod
+    def _run_loading(button: CButton) -> None:
+        button.set_loading(True)
+        Logger.info("按钮进入加载态")
+        QTimer.singleShot(1000, lambda: button.set_loading(False))
 
-
-def _loading_button(**kwargs) -> CButton:
-    button = CButton(**kwargs)
-    button.clicked.connect(lambda: _run_loading(button))
-    return button
-
-
-def _run_loading(button: CButton) -> None:
-    button.set_loading(True)
-    Logger.info("按钮进入加载态")
-    QTimer.singleShot(1000, lambda: button.set_loading(False))
-
-
-def _default_buttons():
-    disabled = _button(text=_t("btn_disabled"))
-    disabled.setEnabled(False)
-    return [
-        _button(text=_t("btn_submit")),
-        disabled,
-        _button(text=_t("btn_link"), variant="link"),
-    ]
-
-
-def _severity_buttons():
-    return [_button(text=name.title(), severity=name) for name in _SEVERITIES]
-
-
-def _text_buttons():
-    buttons = [_button(text=name.title(), severity=name, variant="text") for name in _SEVERITIES[:-1]]
-    buttons.append(_button(text=_t("btn_plain"), variant="text", plain=True))
-    return buttons
-
-
-def _outlined_buttons():
-    return [_button(text=name.title(), severity=name, variant="outlined") for name in _SEVERITIES]
-
-
-def _button_group():
-    return CButtonGroup(
-        [
-            _button(text=_t("btn_save"), icon="icon_check"),
-            _button(text=_t("btn_delete"), icon="icon_trash"),
-            _button(text=_t("btn_cancel"), icon="icon_close"),
+    @classmethod
+    def _default_buttons(cls):
+        disabled = cls._button(text=cls.tr("btn_disabled"))
+        disabled.setEnabled(False)
+        return [
+            cls._button(text=cls.tr("btn_submit")),
+            disabled,
+            cls._button(text=cls.tr("btn_link"), variant="link"),
         ]
-    )
 
+    @classmethod
+    def _severity_buttons(cls):
+        return [cls._button(text=name.title(), severity=name) for name in _SEVERITIES]
 
-def _split_buttons():
-    buttons = []
-    for name in _SEVERITIES:
-        split = CSplitButton(_t("btn_save"), list(_SPLIT_ITEMS), severity=name)
-        split.clicked.connect(lambda: Logger.info("点击分体按钮主操作"))
-        split.actionTriggered.connect(lambda action: Logger.info(f"点击分体按钮菜单: {action}"))
-        buttons.append(split)
-    return buttons
+    @classmethod
+    def _text_buttons(cls):
+        buttons = [cls._button(text=name.title(), severity=name, variant="text") for name in _SEVERITIES[:-1]]
+        buttons.append(cls._button(text=cls.tr("btn_plain"), variant="text", plain=True))
+        return buttons
 
+    @classmethod
+    def _outlined_buttons(cls):
+        return [cls._button(text=name.title(), severity=name, variant="outlined") for name in _SEVERITIES]
 
-def _templating_buttons():
-    # Sakai 原页用 1.5rem（24px）的 logo 图片占位，这里用同尺寸图标复刻同样的内容排布
-    return [
-        _button(icon="icon_star_fill", icon_size=24),
-        _button(text="PrimeVue", icon="icon_star_fill", icon_size=24, variant="outlined", severity="success"),
-    ]
+    @classmethod
+    def _button_group(cls):
+        return CButtonGroup(
+            [
+                cls._button(text=cls.tr("btn_save"), icon="icon_check"),
+                cls._button(text=cls.tr("btn_delete"), icon="icon_trash"),
+                cls._button(text=cls.tr("btn_cancel"), icon="icon_close"),
+            ]
+        )
 
+    @classmethod
+    def _split_buttons(cls):
+        buttons = []
+        for name in _SEVERITIES:
+            split = CSplitButton(cls.tr("btn_save"), list(_SPLIT_ITEMS), severity=name)
+            split.clicked.connect(lambda: Logger.info("点击分体按钮主操作"))
+            split.actionTriggered.connect(lambda action: Logger.info(f"点击分体按钮菜单: {action}"))
+            buttons.append(split)
+        return buttons
 
-def _icon_buttons():
-    return [
-        _button(icon="icon_star_fill"),
-        _button(text="Bookmark", icon="icon_bookmark"),
-        _button(text="Bookmark", icon="icon_bookmark", icon_pos="right"),
-    ]
+    @classmethod
+    def _templating_buttons(cls):
+        # Sakai 原页用 1.5rem（24px）的 logo 图片占位，这里用同尺寸图标复刻同样的内容排布
+        return [
+            cls._button(icon="icon_star_fill", icon_size=24),
+            cls._button(text="PrimeVue", icon="icon_star_fill", icon_size=24, variant="outlined", severity="success"),
+        ]
 
+    @classmethod
+    def _icon_buttons(cls):
+        return [
+            cls._button(icon="icon_star_fill"),
+            cls._button(text="Bookmark", icon="icon_bookmark"),
+            cls._button(text="Bookmark", icon="icon_bookmark", icon_pos="right"),
+        ]
 
-def _raised_buttons():
-    return [_button(text=name.title(), severity=name, raised=True) for name in _SEVERITIES]
+    @classmethod
+    def _raised_buttons(cls):
+        return [cls._button(text=name.title(), severity=name, raised=True) for name in _SEVERITIES]
 
+    @classmethod
+    def _rounded_buttons(cls):
+        return [cls._button(text=name.title(), severity=name, rounded=True) for name in _SEVERITIES]
 
-def _rounded_buttons():
-    return [_button(text=name.title(), severity=name, rounded=True) for name in _SEVERITIES]
+    @classmethod
+    def _round_icon_buttons(cls, variant: str):
+        buttons = []
+        for icon, severity in _ROUND_ICONS:
+            kwargs = {"icon": icon, "rounded": True, "severity": severity or "primary"}
+            if variant != "solid":
+                kwargs["variant"] = variant
+            if variant == "text":
+                kwargs["raised"] = True
+            buttons.append(cls._button(**kwargs))
+        return buttons
 
+    @classmethod
+    def _loading_buttons(cls):
+        return [
+            cls._loading_button(text="Search", icon="icon_search"),
+            cls._loading_button(text="Search", icon="icon_search", icon_pos="right"),
+            cls._loading_button(icon="icon_search"),
+            cls._loading_button(text="Search"),
+        ]
 
-def _round_icon_buttons(variant: str):
-    buttons = []
-    for icon, severity in _ROUND_ICONS:
-        kwargs = {"icon": icon, "rounded": True, "severity": _severity(severity)}
-        if variant != "solid":
-            kwargs["variant"] = variant
-        if variant == "text":
-            kwargs["raised"] = True
-        buttons.append(_button(**kwargs))
-    return buttons
-
-
-def _loading_buttons():
-    return [
-        _loading_button(text="Search", icon="icon_search"),
-        _loading_button(text="Search", icon="icon_search", icon_pos="right"),
-        _loading_button(icon="icon_search"),
-        _loading_button(text="Search"),
-    ]
-
-
-def _sections():
-    return [
-        (_t("group_default"), _default_buttons(), 4),
-        (_t("group_severities"), _severity_buttons(), 4),
-        (_t("group_text"), _text_buttons(), 4),
-        (_t("group_outlined"), _outlined_buttons(), 4),
-        (_t("group_group"), [_button_group()], 1),
-        (_t("group_split"), _split_buttons(), 4),
-        (_t("group_templating"), _templating_buttons(), 4),
-        (_t("group_icons"), _icon_buttons(), 4),
-        (_t("group_raised"), _raised_buttons(), 4),
-        (_t("group_rounded"), _rounded_buttons(), 4),
-        (_t("group_rounded_icons"), _round_icon_buttons("solid"), 4),
-        (_t("group_rounded_text"), _round_icon_buttons("text"), 4),
-        (_t("group_rounded_outlined"), _round_icon_buttons("outlined"), 4),
-        (_t("group_loading"), _loading_buttons(), 4),
-    ]
-
-
-# ----------------------------------------------------------------------
-# 页面装配
-# ----------------------------------------------------------------------
-def _section_card(title: str, widgets, columns: int = 4) -> CCard:
-    card = CCard()
-    layout = QVBoxLayout(card)
-    layout.setContentsMargins(QMargins(12, 10, 12, 12))
-    layout.setSpacing(10)
-
-    # Sakai 的分组标题是 text-xl + font-semibold，用本项目的标题字号对齐
-    label = QLabel(title)
-    font = QFont(AppSettings.family, AppSettings.title_size)
-    font.setWeight(QFont.Weight.DemiBold)
-    label.setFont(font)
-    layout.addWidget(label)
-
-    # 按行分批，行内左对齐排列（对齐 Sakai 的 flex-wrap 手感，避免网格列被拉宽）
-    for start in range(0, len(widgets), columns):
-        row = QHBoxLayout()
-        row.setSpacing(8)
-        for widget in widgets[start : start + columns]:
-            row.addWidget(widget, 0, Qt.AlignLeft | Qt.AlignVCenter)
-        row.addStretch()
-        layout.addLayout(row)
-    return card
-
-
-def _build_page(window) -> QWidget:
-    page = QWidget()
-    page.setObjectName("buttonPreviewPage")
-    window.ui.load_pages.pages.addWidget(page)
-
-    outer = QVBoxLayout(page)
-    outer.setContentsMargins(QMargins(0, 0, 0, 0))
-    outer.setSpacing(0)
-
-    scroller = CScrollArea()
-    content = QWidget()
-    content_layout = QVBoxLayout(content)
-    content_layout.setContentsMargins(QMargins(6, 6, 6, 6))
-    content_layout.setSpacing(6)
-    scroller.setWidget(content)
-    scroller.setWidgetResizable(True)
-    outer.addWidget(scroller)
-
-    for title, widgets, columns in _sections():
-        content_layout.addWidget(_section_card(title, widgets, columns))
-    content_layout.addStretch()
-    return page
-
-
-class ButtonPreviewPage:
-    """PAGE 协议入口：``load_page(window)`` 的 self 是主窗口。"""
-
-    def load_page(self):
-        _build_page(self)
+    # ------------------------------------------------------------------
+    # 页面结构
+    # ------------------------------------------------------------------
+    @classmethod
+    def sections(cls, page, window):
+        return [
+            (cls.tr("group_default"), cls._default_buttons(), 4),
+            (cls.tr("group_severities"), cls._severity_buttons(), 4),
+            (cls.tr("group_text"), cls._text_buttons(), 4),
+            (cls.tr("group_outlined"), cls._outlined_buttons(), 4),
+            (cls.tr("group_group"), [cls._button_group()], 1),
+            (cls.tr("group_split"), cls._split_buttons(), 4),
+            (cls.tr("group_templating"), cls._templating_buttons(), 4),
+            (cls.tr("group_icons"), cls._icon_buttons(), 4),
+            (cls.tr("group_raised"), cls._raised_buttons(), 4),
+            (cls.tr("group_rounded"), cls._rounded_buttons(), 4),
+            (cls.tr("group_rounded_icons"), cls._round_icon_buttons("solid"), 4),
+            (cls.tr("group_rounded_text"), cls._round_icon_buttons("text"), 4),
+            (cls.tr("group_rounded_outlined"), cls._round_icon_buttons("outlined"), 4),
+            (cls.tr("group_loading"), cls._loading_buttons(), 4),
+        ]
 
 
 PAGE = ButtonPreviewPage

@@ -1,3 +1,4 @@
+from .app_ui import CPreviewPage as CPreviewPage
 from .callbacks import is_deleted_qt_error as is_deleted_qt_error
 from .callbacks import safe_callback as safe_callback
 from .callbacks import single_shot as single_shot
@@ -123,6 +124,7 @@ from .window import (
 
 __all__ = [
     "CButton",
+    "CPreviewPage",
     "CButtonGroup",
     "CSplitButton",
     "Severity",
