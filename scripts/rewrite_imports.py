@@ -12,8 +12,7 @@
 2. 只处理 ``level == 0`` 的绝对导入，相对导入保持不动；
 3. 按 AST 的 ``lineno/col_offset`` 定位后做**行内文本替换**，保留缩进、
    注释、``# noqa`` 与 ``as`` 别名——不使用 ``ast.unparse``，因为它会丢注释；
-4. 只替换导入语句里的模块文本，字符串字面量里的包名需人工处理
-   （见 docs/legacy-cleanup.md 与改造方案 3.3 表）。
+4. 只替换导入语句里的模块文本，字符串字面量里的包名需人工处理。
 """
 
 from __future__ import annotations

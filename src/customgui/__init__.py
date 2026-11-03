@@ -7,8 +7,8 @@
     customgui.guis       窗口装配：主窗口、页面栈、插件加载、语言服务
     customgui._resources 只读默认资源（主题/语言/图标/设置）
 
-对外稳定面：``configure()`` / ``get_app_context()`` / ``create_application()`` /
-``run()`` / ``install_demo_apps()``，以及 ``customgui.window`` 门面。
+对外稳定面：``configure()`` / ``current_config()`` / ``reset_config()`` / ``__version__``，
+以及 ``customgui.appcore``、``customgui.window`` 两个门面。
 """
 
 from __future__ import annotations
