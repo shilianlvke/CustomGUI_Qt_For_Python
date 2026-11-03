@@ -208,21 +208,38 @@ class AppHandle:
     plugin: AppPlugin | None = None
 
 
+def _absolute_dir(app_dir: str | Path) -> Path:
+    """把应用目录统一成绝对路径。
+
+    ``YamlHandler`` 内部走 :func:`resolve_path`，它把**相对路径当作资源相对路径**
+    去各资源根里找——``Path("apps/demo/config.yml")`` 会被解析成
+    ``<wheel>/customui/apps/demo/config.yml``，读不到就抛 ``IOErrorBoundary``。
+    用户在项目目录里敲 ``customgui run --apps-dir apps`` 时正好落进这个坑，
+    表现是「应用目录里明明有应用，窗口却是空的」。
+    """
+    return Path(app_dir).expanduser().resolve()
+
+
 def discover_app_dirs(root: str | Path | None = None) -> list[Path]:
-    """扫描应用目录，返回全部含 ``config.yml`` 的子目录（按名称排序）。"""
-    base = Path(root) if root is not None else apps_root()
+    """扫描应用目录，返回全部含 ``config.yml`` 的子目录（按名称排序）。
+
+    ``root`` 为相对路径时按**当前工作目录**解析（CLI 传入的 ``--apps-dir apps``
+    就是这种用法），不是按资源根解析。
+    """
+    base = _absolute_dir(root) if root is not None else apps_root()
     if not base.is_dir():
         return []
     return sorted(path for path in base.iterdir() if path.is_dir() and (path / "config.yml").is_file())
 
 
 def load_app_manifest(app_dir: Path) -> Attrs:
-    """读取应用的 config.yml 清单。"""
-    return YamlHandler(str(app_dir / "config.yml")).data
+    """读取应用的 config.yml 清单（``app_dir`` 可以是相对路径）。"""
+    return YamlHandler(str(_absolute_dir(app_dir) / "config.yml")).data
 
 
 def _load_app_lang_data(app_dir: Path, language: str) -> dict:
     """读取应用的语言文件（支持 .yml/.yaml），缺失时返回空字典。"""
+    app_dir = _absolute_dir(app_dir)
     for suffix in (".yml", ".yaml"):
         lang_file = app_dir / "resource" / "lang" / f"{language}{suffix}"
         if lang_file.is_file():
@@ -535,6 +552,7 @@ def register_app(app_dir: Path, registry=None, *, with_handle: bool = False) -> 
 
     返回 AppContext（应用无页面入口时仍注册菜单并返回上下文）。
     """
+    app_dir = _absolute_dir(app_dir)
     registry = registry or get_plugin_registry()
     config = load_app_manifest(app_dir)
     protocol = _manifest_protocol(config)

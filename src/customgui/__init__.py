@@ -15,23 +15,30 @@ from __future__ import annotations
 
 from pathlib import Path
 
+from . import _version
+
 
 def _read_version() -> str:
-    """单一来源：优先读已安装包的元数据，源码运行时回落到 ``_version.py``。"""
+    """版本以 ``_version.py`` 为**唯一来源**，缺失时才回落到已安装元数据。
+
+    顺序不能反：以前优先读 ``importlib.metadata``，结果是源码树里改了
+    ``_version.py``（或 ``git tag`` 已到 0.5.1）却还显示装进 site-packages
+    那个旧 wheel 的版本号，``doctor`` 与 ``CHANGELOG`` 对不上。
+    ``_version.py`` 会随包一起分发，因此 wheel 形态下两种来源本来就一致。
+    """
+    source_version = getattr(_version, "__version__", "")
+    if source_version:
+        return str(source_version)
+
     try:
         from importlib.metadata import PackageNotFoundError, version
-    except ImportError:  # pragma: no cover
-        PackageNotFoundError = Exception  # type: ignore[assignment,misc]
-        version = None  # type: ignore[assignment]
+    except ImportError:  # pragma: no cover - 3.8+ 一定有
+        return "0.0.0"
 
-    if version is not None:
-        try:
-            return version("customgui")
-        except PackageNotFoundError:
-            pass
-    from ._version import __version__ as fallback
-
-    return fallback
+    try:
+        return version("customgui")
+    except PackageNotFoundError:
+        return "0.0.0"
 
 
 __version__ = _read_version()

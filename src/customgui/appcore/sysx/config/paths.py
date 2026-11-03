@@ -141,6 +141,21 @@ def project_root() -> Path:
     return resource_root().parent
 
 
+def source_root() -> Path | None:
+    """返回**源码树**的仓库根，wheel / PyInstaller 形态下返回 ``None``。
+
+    判定方式刻意用「上一级是否有 ``pyproject.toml``」而不是目录深度：源码树
+    与安装形态的层级不同，按层数回溯是最隐蔽的「装完就崩」来源（见
+    ``tests/test_architecture_boundaries.py`` 的 ``parents[N]`` 守卫）。
+
+    源码树独有 ``apps/`` 与 ``examples/``（wheel 里它们被 ``force-include``
+    复制进包内），``customgui install-demo`` / ``customgui examples`` 需要
+    在这里回落，否则源码用户会被告知「安装包里没有内置示例」。
+    """
+    candidate = package_root().parent.parent
+    return candidate if (candidate / "pyproject.toml").is_file() else None
+
+
 def apps_root() -> Path:
     """返回应用模组目录（``configure(apps_dir=...)`` / ``CUSTOMGUI_APPS_DIR`` 优先）。
 

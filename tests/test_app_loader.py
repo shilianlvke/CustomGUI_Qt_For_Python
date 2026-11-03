@@ -114,6 +114,30 @@ def test_discover_and_manifest(apps_root):
     assert manifest.button_id == "btn_demo"
 
 
+def test_relative_app_dir_is_resolved_against_cwd(apps_root, monkeypatch):
+    """相对路径的应用目录必须按调用方 CWD 解析。
+
+    回归：``YamlHandler`` 内部走 ``resolve_path()``，会把**相对路径当作资源
+    相对路径**去各资源根里找。于是 ``apps/demo/config.yml`` 被解析成
+    ``<包>/_resources/customui/apps/demo/config.yml``，读不到就抛
+    ``IOErrorBoundary``——用户看到的是「目录里明明有应用，窗口却是空的」。
+    这正是 ``customgui run --apps-dir apps`` 的踩坑路径。
+    """
+    app_dir = apps_root / "apps" / "demo"
+    _write_app(app_dir, PAGE_CODE)
+
+    monkeypatch.chdir(apps_root)
+    relative = Path("apps") / "demo"
+
+    assert discover_app_dirs("apps") == [app_dir.resolve()]
+    assert load_app_manifest(relative).app_name == "demo"
+
+    context = register_app(relative, registry=PluginRegistry())
+    assert context.app_dir == app_dir.resolve()
+    assert context.icon_path is not None
+    assert Path(context.icon_path).is_file()
+
+
 def test_register_app_page_protocol(apps_root):
     app_dir = apps_root / "demo"
     _write_app(app_dir, PAGE_CODE)

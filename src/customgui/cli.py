@@ -9,9 +9,10 @@
 ``doctor``         打印全部路径与发现结果，排查「为什么窗口是空的」
 =================  ================================================
 
-``install-demo`` 与 ``examples`` 读的是 wheel 包内的 ``apps`` / ``examples``
-（由 ``pyproject.toml`` 的 ``force-include`` 注入）。源码树里这两个目录不存在，
-命令会提示「当前安装包里没有内置示例应用」——源码用户直接用仓库的 ``apps/``。
+``install-demo`` 与 ``examples`` 读的是内置示例目录：wheel 安装时在包内
+（由 ``pyproject.toml`` 的 ``force-include`` 注入 ``customgui/apps`` 与
+``customgui/examples``），源码树运行时回落到仓库根的 ``apps/`` 与
+``examples/hello_world/`` —— 两种形态下命令行为一致。
 
 设计约定：本模块只做命令行编排，不 import PySide6（``run`` 里延迟导入），
 这样 ``customgui doctor`` 在没有显示环境的服务器上也能跑。
@@ -33,15 +34,39 @@ def _package_dir() -> Path:
     return package_root()
 
 
+def _absolute(value: str | None) -> str | None:
+    """把命令行给的相对路径按**当前工作目录**解析成绝对路径。
+
+    ``--apps-dir apps`` 若原样下传，会被资源解析器当成「资源根下的相对路径」
+    去 wheel 包内找，找到的是不存在的目录——用户看到「窗口是空的」而不是
+    一条能读懂的报错。路径语义必须在入口处就定死。
+    """
+    if not value:
+        return None
+    return str(Path(value).expanduser().resolve())
+
+
+def _bundled_dir(relative: str) -> Path | None:
+    """内置示例目录：包内优先，源码树（仓库根）兜底。"""
+    from customgui.appcore.sysx.config.paths import source_root
+
+    for base in (_package_dir(), source_root()):
+        if base is None:
+            continue
+        candidate = base / relative
+        if candidate.is_dir():
+            return candidate
+    return None
+
+
 def _demo_source() -> Path | None:
-    """包内自带的示例应用目录（wheel 里由 force-include 注入）。"""
-    candidate = _package_dir() / "apps"
-    return candidate if candidate.is_dir() else None
+    """自带的示例应用目录（wheel 在包内，源码树在仓库 ``apps/``）。"""
+    return _bundled_dir("apps")
 
 
 def _example_source() -> Path | None:
-    candidate = _package_dir() / "examples" / "hello_world"
-    return candidate if candidate.is_dir() else None
+    """最小可运行工程骨架目录。"""
+    return _bundled_dir("examples/hello_world")
 
 
 # ----------------------------------------------------------------------
@@ -50,7 +75,7 @@ def _example_source() -> Path | None:
 def _cmd_install_demo(args: argparse.Namespace) -> int:
     source = _demo_source()
     if source is None:
-        print("✗ 当前安装包里没有内置示例应用（可能装的是源码树而非 wheel）。")
+        print("✗ 找不到内置示例应用（包内与仓库 apps/ 都不存在）。")
         print("  请改用：customgui examples --copy DIR 导出最小工程骨架。")
         return 1
 
@@ -87,7 +112,7 @@ def _cmd_examples(args: argparse.Namespace) -> int:
     if not args.copy:
         source = _example_source()
         if source is None:
-            print("✗ 包里没有内置示例。")
+            print("✗ 找不到内置示例工程。")
             return 1
         print(f"内置示例位置：{source}")
         print("用 customgui examples --copy DIR 导出到自己的工程目录。")
@@ -95,7 +120,7 @@ def _cmd_examples(args: argparse.Namespace) -> int:
 
     source = _example_source()
     if source is None:
-        print("✗ 包里没有内置示例。")
+        print("✗ 找不到内置示例工程。")
         return 1
 
     dest = Path(args.copy).expanduser().resolve()
@@ -141,9 +166,12 @@ def _cmd_doctor(args: argparse.Namespace) -> int:
     data_ok = data.exists()
     print(f"{_mark(data_ok)} 数据根        : {data}{'' if data_ok else '（尚未创建）'}")
 
-    apps = apps_root()
+    # ``--apps-dir`` 显式指定时以它为准：默认应用目录不存在、但用户指了别的
+    # 目录时，仍然要打印「发现/加载」结果，否则排查信息在最需要的时候缺席。
+    explicit = _absolute(args.apps_dir)
+    apps = Path(explicit) if explicit else apps_root()
     apps_ok = apps.is_dir()
-    print(f"{_mark(apps_ok)} 应用目录      : {apps}")
+    print(f"{_mark(apps_ok)} 应用目录      : {apps}{'' if explicit else '（默认）'}")
     if not apps_ok:
         print("    提示：customgui install-demo 可放入示例应用")
 
@@ -152,11 +180,11 @@ def _cmd_doctor(args: argparse.Namespace) -> int:
         try:
             from customgui.window import discover_app_dirs, load_app_handles
 
-            dirs = discover_app_dirs(args.apps_dir or None)
+            dirs = discover_app_dirs(explicit)
             print(f"发现应用      : {len(dirs)} 个")
             for app_dir in dirs:
                 print(f"  - {app_dir.name}")
-            handles = load_app_handles(args.apps_dir or None)
+            handles = load_app_handles(explicit)
             print(f"成功加载      : {len(handles)} 个")
             for handle in handles:
                 module = handle.module.__name__ if handle.module else "（无 gui/main.py）"
@@ -186,10 +214,12 @@ def _cmd_doctor(args: argparse.Namespace) -> int:
 def _cmd_run(args: argparse.Namespace) -> int:
     import customgui
 
-    if args.apps_dir:
-        customgui.configure(apps_dir=args.apps_dir, force_reload=True)
-    if args.data_dir:
-        customgui.configure(data_dir=args.data_dir, force_reload=True)
+    apps_dir = _absolute(args.apps_dir)
+    data_dir = _absolute(args.data_dir)
+    if apps_dir:
+        customgui.configure(apps_dir=apps_dir, force_reload=True)
+    if data_dir:
+        customgui.configure(data_dir=data_dir, force_reload=True)
 
     from PySide6.QtGui import QIcon
     from PySide6.QtWidgets import QApplication, QMainWindow
@@ -216,7 +246,7 @@ def _cmd_run(args: argparse.Namespace) -> int:
         app.setWindowIcon(QIcon(icon_path))
 
     try:
-        load_apps(args.apps_dir or None)
+        load_apps(apps_dir)
     except Exception as exc:  # noqa: BLE001 - 加载失败也要把空态窗口显示出来
         print(f"应用加载失败：{exc}", file=sys.stderr)
 
