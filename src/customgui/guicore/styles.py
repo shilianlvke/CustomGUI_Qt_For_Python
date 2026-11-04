@@ -119,6 +119,10 @@ class Styles:
         self._region_bg = _rgba(region_card_tint(), GLASS_REGION) if glass else region_card_tint()
         self._control_bg = _rgba(colors.surface_sidebar, GLASS_CONTROL) if glass else colors.surface_sidebar
         self._menu_bg = _rgba(colors.surface_interactive, GLASS_MENU) if glass else colors.surface_interactive
+        # Overlay 左菜单浮在内容之上，需要接近不透明的面板底色；沿用侧栏的
+        # 0 透明度会让菜单和页面文字互相穿透。
+        self._overlay_panel_bg = _rgba(colors.surface_panel, 0.96) if glass else colors.surface_panel
+        self._overlay_panel_border = _rgba(colors.text_primary, 0.14) if glass else colors.surface_interactive_pressed
         self._tooltip_bg = _rgba(colors.surface_sidebar, GLASS_MENU) if glass else colors.surface_sidebar
 
         # 描边与状态层：玻璃模式用正文色的低透明度，深浅主题都会得到
@@ -156,6 +160,11 @@ class Styles:
             }}
             #CLeftMenu_Bg_Frame {{
                 background-color: {self._sidebar_bg};
+            }}
+            /* Overlay 模式：左菜单浮在内容区上，改用接近不透明的面板底色 */
+            #CLeftMenu_Bg_Frame[overlay="true"] {{
+                background-color: {self._overlay_panel_bg};
+                border: 1px solid {self._overlay_panel_border};
             }}
             #CTitleBar_Bg_Frame {{
                 background-color: {self._panel_bg};

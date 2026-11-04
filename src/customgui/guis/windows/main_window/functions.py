@@ -1,39 +1,26 @@
 import os
 
 from PySide6 import QtCore, QtGui
-from PySide6.QtCore import QEasingCurve, QEvent, QObject, QParallelAnimationGroup, QPropertyAnimation, QRect
-from PySide6.QtWidgets import QFileDialog, QPushButton
+from PySide6.QtCore import QEasingCurve, QParallelAnimationGroup, QPropertyAnimation, Qt
+from PySide6.QtGui import QColor, QKeySequence, QShortcut
+from PySide6.QtWidgets import (
+    QFileDialog,
+    QGraphicsDropShadowEffect,
+    QPushButton,
+    QSizePolicy,
+    QWidget,
+)
 
 from customgui.appcore import AppSettings
 from customgui.guicore import CPageTransition
-
-
-def _overlay_menu_geometry(window, width=None) -> QRect:
-    """Overlay 模式下左菜单的几何：贴窗口左上，随窗口高度伸缩。"""
-    ui = window.ui
-    frame = ui.left_menu_frame
-    margins = ui.window.layout.contentsMargins()
-    width = frame.width() if width is None else width
-    return QRect(
-        margins.left(),
-        margins.top(),
-        max(1, int(width)),
-        max(1, window.height() - margins.top() - margins.bottom()),
-    )
-
-
-class _MenuOverlayTracker(QObject):
-    """Overlay 菜单的尺寸跟随器：窗口缩放时同步浮动菜单的高度。"""
-
-    def __init__(self, window, parent):
-        super().__init__(parent)
-        self._window = window
-
-    def eventFilter(self, obj, event):  # noqa: N802 - 覆写 Qt 命名
-        if obj is self._window and event.type() == QEvent.Type.Resize:
-            frame = self._window.ui.left_menu_frame
-            frame.setGeometry(_overlay_menu_geometry(self._window, frame.width()))
-        return False
+from customgui.guicore.window.left_menu.overlay import (
+    CLeftMenuOverlayTracker,
+    CMenuOverlayScrim,
+    menu_panel_width,
+    menu_rail_width,
+    overlay_menu_rect,
+    overlay_scrim_rect,
+)
 
 
 # FUNCTIONS
@@ -69,46 +56,119 @@ class MainFunctions:
         """切换左菜单模式：``static`` 布局内占位，``overlay`` 浮层覆盖内容区。
 
         - ``static``：菜单框是窗口水平布局的成员，展开时挤压内容区（默认）；
-        - ``overlay``：菜单框脱离布局、浮在内容之上，展开/收起不改变内容区宽度。
+        - ``overlay``：布局里只保留一条与收起态等宽的轨道占位，菜单框浮在内容
+          区之上；展开时覆盖内容、收起时回到轨道，内容区宽度始终不变。
 
-        两种模式共用同一个菜单控件与同一套展开动画，只是容器归属不同；切换
-        模式不会重建菜单按钮，也不影响当前页面。
+        Overlay 额外提供：内容遮罩（点击/滚轮关闭并拦截穿透）、面板阴影、
+        Esc 收起、点击菜单项后自动收起。切换模式不会重建菜单按钮，也不影响
+        当前页面。
         """
         value = "overlay" if str(mode).lower() == "overlay" else "static"
         if getattr(self, "_menu_mode", "static") == value:
             return
         self._menu_mode = value
+        if value == "overlay":
+            MainFunctions._enter_overlay_menu(self)
+        else:
+            MainFunctions._exit_overlay_menu(self)
 
-        ui = self.ui
+    @staticmethod
+    def _enter_overlay_menu(window):
+        """进入 Overlay：轨道占位 + 浮动菜单 + 遮罩 + 阴影 + Esc。"""
+        ui = window.ui
         frame = ui.left_menu_frame
         layout = ui.window.layout
-        margin = int(AppSettings.left_menu_content_margins)
-        thin = int(AppSettings.lef_menu_size.minimum) + margin * 2
-        wide = int(AppSettings.lef_menu_size.maximum) + margin * 2
+        thin = menu_rail_width()
+        wide = menu_panel_width()
 
-        if value == "overlay":
+        # 轨道占位：收起态仍占住布局宽度，展开的浮层不会推动内容区
+        spacer = getattr(ui, "_menu_overlay_spacer", None)
+        if spacer is None:
+            spacer = QWidget(ui.window)
+            spacer.setObjectName("CMenuOverlaySpacer")
+            spacer.setFixedWidth(thin)
+            spacer.setSizePolicy(QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Expanding)
+            layout.insertWidget(0, spacer)
+            ui._menu_overlay_spacer = spacer
+
+        if layout.indexOf(frame) >= 0:
             layout.removeWidget(frame)
-            frame.setParent(ui.window)
-            frame.setMinimumWidth(thin)
-            frame.setMaximumWidth(wide)
-            frame.setGeometry(_overlay_menu_geometry(self, min(max(frame.width(), thin), wide)))
-            frame.show()
-            frame.raise_()
-            tracker = _MenuOverlayTracker(ui.window, ui.window)
-            ui.window.installEventFilter(tracker)
-            self._menu_overlay_tracker = tracker
-            return
+        frame.setParent(ui.window)
+        frame.setMinimumWidth(thin)
+        frame.setMaximumWidth(wide)
+        frame.setGeometry(overlay_menu_rect(window, thin))
+        frame.show()
 
-        tracker = getattr(self, "_menu_overlay_tracker", None)
+        # 面板阴影只作用于浮动菜单本身；不做整窗阴影，避免亚克力残影
+        effect = QGraphicsDropShadowEffect(frame)
+        effect.setBlurRadius(28)
+        effect.setXOffset(0)
+        effect.setYOffset(8)
+        effect.setColor(QColor(0, 0, 0, 90))
+        frame.setGraphicsEffect(effect)
+        window._menu_overlay_shadow = effect
+
+        scrim = CMenuOverlayScrim(ui.window)
+        scrim.setGeometry(overlay_scrim_rect(window))
+        scrim.dismissed.connect(ui.left_menu.collapse)
+        window._menu_overlay_scrim = scrim
+
+        tracker = CLeftMenuOverlayTracker(ui.window)
+        ui.window.installEventFilter(tracker)
+        window._menu_overlay_tracker = tracker
+
+        shortcut = QShortcut(QKeySequence(Qt.Key_Escape), ui.window)
+        shortcut.setContext(Qt.WidgetWithChildrenShortcut)
+        shortcut.activated.connect(ui.left_menu.collapse)
+        window._menu_overlay_esc = shortcut
+
+        ui.left_menu.sync_toggle_appearance(False)
+        ui.left_menu.set_overlay_appearance(True)
+        frame.raise_()
+
+    @staticmethod
+    def _exit_overlay_menu(window):
+        """退出 Overlay：撤掉遮罩/阴影/快捷键/跟随器与轨道占位。"""
+        ui = window.ui
+        frame = ui.left_menu_frame
+        layout = ui.window.layout
+
+        scrim = getattr(window, "_menu_overlay_scrim", None)
+        if scrim is not None:
+            scrim.hide()
+            scrim.deleteLater()
+            window._menu_overlay_scrim = None
+
+        tracker = getattr(window, "_menu_overlay_tracker", None)
         if tracker is not None:
             ui.window.removeEventFilter(tracker)
             tracker.deleteLater()
-            self._menu_overlay_tracker = None
+            window._menu_overlay_tracker = None
+
+        shortcut = getattr(window, "_menu_overlay_esc", None)
+        if shortcut is not None:
+            shortcut.setEnabled(False)
+            shortcut.deleteLater()
+            window._menu_overlay_esc = None
+
+        if frame.graphicsEffect() is not None:
+            frame.setGraphicsEffect(None)
+        window._menu_overlay_shadow = None
+
+        spacer = getattr(ui, "_menu_overlay_spacer", None)
+        if spacer is not None:
+            layout.removeWidget(spacer)
+            spacer.deleteLater()
+            ui._menu_overlay_spacer = None
+
+        thin = menu_rail_width()
         frame.setMinimumWidth(thin)
         frame.setMaximumWidth(thin)
         frame.setParent(ui.window)
         if layout.indexOf(frame) < 0:
             layout.insertWidget(0, frame)
+        ui.left_menu.sync_toggle_appearance(False)
+        ui.left_menu.set_overlay_appearance(False)
         frame.show()
 
     # SET LEFT COLUMN PAGES

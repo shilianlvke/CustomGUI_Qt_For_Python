@@ -145,6 +145,9 @@ class CLeftMenu(QWidget):
     def btn_clicked(self):
         sender = self.sender()
         self.clicked.emit(sender if sender is not None else self.menu)
+        # Overlay 下点完菜单项立即收回到轨道，避免浮层持续盖住新页面
+        if getattr(self._parent.window(), "_menu_mode", "static") == "overlay" and self._overlay_expanded():
+            self.collapse()
 
     def btn_released(self):
         sender = self.sender()
@@ -162,26 +165,86 @@ class CLeftMenu(QWidget):
     def _animate_width(self, target: int, expanded: bool) -> None:
         if self._parent is None:
             return
-        # Overlay 模式：菜单框已脱离布局、浮在内容区之上，只能对 geometry 做动画
-        # （改 minimumWidth 不会带动实际宽度）。Static 模式仍是布局内占位，
-        # 动画 minimumWidth 由布局重新分配空间。
-        overlay = getattr(self._parent.window(), "_menu_mode", "static") == "overlay"
+        window = self._parent.window()
+        overlay = getattr(window, "_menu_mode", "static") == "overlay"
+        duration = self._duration_time
+        easing = QEasingCurve(QEasingCurve.Type.InOutCubic)
         if overlay:
+            # Overlay：菜单框已脱离布局、浮在内容区之上，只能对 geometry 做动画
+            # （改 minimumWidth 不会带动实际宽度）；更短的时长与 OutCubic 更跟手。
             start = self._parent.geometry()
             end = QRect(start.x(), start.y(), max(1, int(target)), start.height())
             self.animation = QPropertyAnimation(self._parent, b"geometry")
             self.animation.setStartValue(start)
             self.animation.setEndValue(end)
+            duration = self._overlay_duration()
+            easing = QEasingCurve(QEasingCurve.Type.OutCubic)
+            if expanded:
+                self._show_overlay_scrim()
         else:
             self.animation = QPropertyAnimation(self._parent, b"minimumWidth")
             self.animation.setStartValue(self._parent.width())
             self.animation.setEndValue(target)
         self.animation.stop()
-        self.toggle_button.set_active_toggle(expanded)
-        self.toggle_button.set_icon(self._icon_path_close if expanded else self._icon_path)
-        self.animation.setEasingCurve(QEasingCurve.InOutCubic)
-        self.animation.setDuration(self._duration_time)
+        self.sync_toggle_appearance(expanded)
+        self.animation.setEasingCurve(easing)
+        self.animation.setDuration(duration)
+        self.animation.finished.connect(self._sync_overlay_scrim)
         self.animation.start()
+
+    def sync_toggle_appearance(self, expanded: bool) -> None:
+        """同步展开按钮的 active 与图标（不触发动画，供宿主切换模式时调用）。"""
+        self.toggle_button.set_active_toggle(bool(expanded))
+        self.toggle_button.set_icon(self._icon_path_close if expanded else self._icon_path)
+
+    def set_overlay_appearance(self, enabled: bool) -> None:
+        """Overlay 浮层使用接近不透明的面板底色，避免与页面文字互相穿透。
+
+        只在 ``bg`` 上打一个动态属性，由全局样式表的属性选择器接管颜色；
+        切换模式时重刷该控件，不重建样式表。
+        """
+        self.bg.setProperty("overlay", "true" if enabled else None)
+        style = self.bg.style()
+        style.unpolish(self.bg)
+        style.polish(self.bg)
+        self.bg.update()
+
+    def _overlay_duration(self) -> int:
+        """Overlay 展开/收起时长：与右侧抽屉共用一组配置，收起更迅速。"""
+        try:
+            return int(AppSettings.overlay.drawer_duration)
+        except Exception:
+            return 200
+
+    def _show_overlay_scrim(self) -> None:
+        window = self._parent.window()
+        scrim = getattr(window, "_menu_overlay_scrim", None)
+        if scrim is None:
+            return
+        scrim.fade_in()
+        scrim.raise_()
+        self._parent.raise_()
+
+    def _sync_overlay_scrim(self) -> None:
+        """动画结束后按实际宽度显示/淡出遮罩（收起才淡出，展开保持可见）。"""
+        parent = self._parent
+        if parent is None:
+            return
+        window = parent.window()
+        if getattr(window, "_menu_mode", "static") != "overlay":
+            return
+        scrim = getattr(window, "_menu_overlay_scrim", None)
+        if scrim is None:
+            return
+        if parent.width() > self._minimum_width + 8:
+            scrim.fade_in()
+            scrim.raise_()
+            parent.raise_()
+        else:
+            scrim.fade_out()
+
+    def _overlay_expanded(self) -> bool:
+        return self._parent is not None and self._parent.width() > self._minimum_width + 8
 
     def expand(self) -> None:
         self._animate_width(self._maximum_width, True)
