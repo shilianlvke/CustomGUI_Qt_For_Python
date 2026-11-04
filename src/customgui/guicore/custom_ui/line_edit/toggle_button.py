@@ -97,6 +97,17 @@ class CSelectButton(QWidget):
         if emit:
             self.selectionChanged.emit(index)
 
+    def set_options(self, options, index: int | None = None, emit: bool = False) -> None:
+        """替换分段文案（语言切换后刷新用），保留或指定选中下标。"""
+        self._options = list(options)
+        if index is None:
+            index = self._index
+        self._index = max(0, min(len(self._options) - 1, index)) if self._options else 0
+        self.updateGeometry()
+        self.update()
+        if emit and self._options:
+            self.selectionChanged.emit(self._index)
+
     def sizeHint(self) -> QSize:  # noqa: N802 - 覆写 Qt 命名
         metrics = QFontMetrics(self.font())
         width = sum(metrics.horizontalAdvance(option) + 24 for option in self._options) + 2

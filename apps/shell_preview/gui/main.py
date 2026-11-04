@@ -1,6 +1,6 @@
-"""Sakai 壳层预览页：顶栏、嵌套侧边菜单与主题配置抽屉。"""
+"""Sakai 壳层预览页：顶栏、嵌套侧边菜单与外观配置抽屉。"""
 
-from PySide6.QtWidgets import QHBoxLayout, QLabel, QVBoxLayout, QWidget
+from PySide6.QtWidgets import QHBoxLayout, QVBoxLayout, QWidget
 
 from customgui.guicore import (
     CAppMenu,
@@ -11,7 +11,7 @@ from customgui.guicore import (
 
 
 class ShellPreviewPage(CPreviewPage):
-    """PAGE 协议入口：壳层三件套（顶栏 / 菜单 / 主题抽屉）。"""
+    """PAGE 协议入口：壳层三件套（顶栏 / 菜单 / 外观配置）。"""
 
     slug = "shell_preview"
 
@@ -45,23 +45,15 @@ class ShellPreviewPage(CPreviewPage):
 
     @classmethod
     def sections(cls, page, window):
-        # 状态条串起顶栏、菜单与配置抽屉的反馈，所有回调都写到这里
-        status = QLabel(cls.tr("hint"))
-        status.setStyleSheet("color: palette(midlight);")
-
         topbar = CAppTopbar(title="Sakai Shell", logo="mihoutao")
         topbar.set_user("Y")
         topbar.set_unread_count(3)
-        topbar.searchChanged.connect(lambda text: status.setText(f"{cls.tr('search')}: {text}"))
-        topbar.notificationsClicked.connect(lambda: status.setText(cls.tr("notifications")))
-        topbar.userMenuRequested.connect(lambda: status.setText(cls.tr("user_menu")))
 
         menu = CAppMenu(cls._menu_items())
         menu.setMinimumWidth(280)
-        menu.itemClicked.connect(lambda item: status.setText(f"{cls.tr('menu_selected')}: {getattr(item, 'label', item)}"))
 
-        # 主题配置不再以页面浮层出现：改为打开主窗口右侧抽屉里的主题配置页。
-        trigger = CButton(cls.tr("open_config"), icon="icon_config", variant="outlined")
+        # 外观配置不再以页面浮层出现：改为打开主窗口右侧抽屉里的配置页。
+        trigger = CButton(cls.tr("open_config"), icon="icon_palette", variant="outlined")
         trigger.clicked.connect(lambda: cls._toggle_theme_drawer(window))
 
         row = QWidget()
@@ -74,7 +66,6 @@ class ShellPreviewPage(CPreviewPage):
         right.setContentsMargins(0, 0, 0, 0)
         right.setSpacing(6)
         right.addWidget(cls.card(cls.tr("group_config"), trigger))
-        right.addWidget(status)
         right.addStretch(1)
         row_layout.addLayout(right, 3)
 
@@ -82,7 +73,7 @@ class ShellPreviewPage(CPreviewPage):
 
     @staticmethod
     def _toggle_theme_drawer(window) -> None:
-        """打开/收起主窗口右侧的主题配置抽屉（兼容无 controller 的测试宿主）。"""
+        """打开/收起主窗口右侧的外观配置抽屉（兼容无 controller 的测试宿主）。"""
         controller = getattr(window, "controller", None)
         theme_controller = getattr(controller, "theme_controller", None) if controller is not None else None
         toggle = getattr(theme_controller, "toggle_theme_drawer", None)

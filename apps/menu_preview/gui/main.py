@@ -1,6 +1,5 @@
 """菜单与步骤预览页：Menubar / TieredMenu / MegaMenu / PanelMenu / ContextMenu / TabMenu / Stepper。"""
 
-from PySide6.QtCore import Qt
 from PySide6.QtWidgets import QHBoxLayout, QLabel, QVBoxLayout, QWidget
 
 from customgui.guicore import (
@@ -74,32 +73,13 @@ class MenuPreviewPage(CPreviewPage):
 
     @classmethod
     def _menubar_demo(cls) -> QWidget:
-        box = QWidget()
-        layout = QVBoxLayout(box)
-        layout.setContentsMargins(0, 0, 0, 0)
-        layout.setSpacing(8)
         bar = CMenubar(cls._items())
-        status = QLabel(cls.tr("menu_hint"))
-        status.setStyleSheet("color: palette(midlight);")
-        bar.itemClicked.connect(lambda item: status.setText(f"{cls.tr('clicked')}: {getattr(item, 'label', item)}"))
-        layout.addWidget(bar)
-        layout.addWidget(status)
-        layout.addStretch(1)
-        return box
+        return bar
 
     @classmethod
     def _tiered_demo(cls) -> QWidget:
-        box = QWidget()
-        layout = QVBoxLayout(box)
-        layout.setContentsMargins(0, 0, 0, 0)
-        layout.setSpacing(8)
         menu = CTieredMenu(cls._nested_items())
-        status = QLabel(cls.tr("menu_hint"))
-        status.setStyleSheet("color: palette(midlight);")
-        menu.itemClicked.connect(lambda item: status.setText(f"{cls.tr('clicked')}: {getattr(item, 'label', item)}"))
-        layout.addWidget(menu, 0, Qt.AlignLeft)
-        layout.addWidget(status)
-        return box
+        return menu
 
     @classmethod
     def _mega_demo(cls) -> QWidget:
@@ -120,29 +100,18 @@ class MenuPreviewPage(CPreviewPage):
         layout.setContentsMargins(0, 0, 0, 0)
         layout.setSpacing(8)
         menu = CContextMenu(cls._items())
-        status = QLabel(cls.tr("context_hint"))
-        status.setStyleSheet("color: palette(midlight);")
-        menu.itemClicked.connect(lambda item: status.setText(f"{cls.tr('clicked')}: {getattr(item, 'label', item)}"))
 
         trigger = CButton(cls.tr("open_context"), icon="icon_menu", variant="outlined")
         trigger.clicked.connect(lambda: menu.show_at(trigger.mapToGlobal(trigger.rect().bottomLeft())))
+        hint = QLabel(cls.tr("context_hint"))
+        hint.setStyleSheet("color: palette(midlight);")
         layout.addWidget(trigger)
-        layout.addWidget(status, 1)
+        layout.addWidget(hint, 1)
         return box
 
     @classmethod
     def _tab_menu_demo(cls) -> QWidget:
-        box = QWidget()
-        layout = QVBoxLayout(box)
-        layout.setContentsMargins(0, 0, 0, 0)
-        layout.setSpacing(8)
-        tabs = CTabMenu([cls.tr("tab_home"), cls.tr("tab_components"), cls.tr("tab_settings")])
-        content = QLabel(cls.tr("tab_content"))
-        content.setStyleSheet("color: palette(midlight);")
-        tabs.tabChanged.connect(lambda index: content.setText(f"{cls.tr('tab_selected')}: {tabs.tabs()[index]}"))
-        layout.addWidget(tabs)
-        layout.addWidget(content)
-        return box
+        return CTabMenu([cls.tr("tab_home"), cls.tr("tab_components"), cls.tr("tab_settings")])
 
     @classmethod
     def _stepper_demo(cls) -> QWidget:

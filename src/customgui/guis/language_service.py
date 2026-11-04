@@ -43,7 +43,11 @@ def apply_language(language: str, window=None) -> str:
 
 
 def switch_language(window=None) -> str:
-    """在可用语言间循环切换，返回新语言名。"""
+    """在可用语言间循环切换，返回新语言名。
+
+    仅作为宿主脚本/自定义按钮的程序化助手；基座标题栏不再提供循环切换，
+    外观配置抽屉由用户直接选择目标语言。
+    """
     options = available_languages()
     try:
         index = options.index(current_language())

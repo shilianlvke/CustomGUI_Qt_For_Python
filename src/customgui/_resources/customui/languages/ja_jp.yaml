@@ -129,7 +129,19 @@ UI:
 
   # タイトルバーと基盤メニュー
   ui_SwitchLanguage: 言語を切り替える
-  ui_SwitchTheme: テーマ設定
+  ui_SwitchTheme: 外観設定
+  ui_Appearance: 外観設定
+  ui_AppearanceHint: テーマ・言語・レイアウト
+  ui_Theme: テーマ
+  ui_ThemeHint: 内蔵の配色を選択
+  ui_Language: 言語
+  ui_LanguageHint: 表示言語を選択
+  ui_MenuMode: メニューモード
+  ui_MenuModeHint: コンテンツ横に固定表示、または現在のページに重ねて表示
+  ui_DarkMode: ダークモード
+  ui_DarkModeHint: 暗色テーマを使用
+  ui_ModeStatic: 固定
+  ui_ModeOverlay: オーバーレイ
   ui_SoftwareInfo: ソフトウェア情報
 
 TEXT:

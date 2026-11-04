@@ -116,16 +116,16 @@ class ThemeController:
         self._theme_manager.cycle()
 
     def toggle_theme_drawer(self) -> bool:
-        """打开/收起右侧主题配置抽屉。
+        """打开/收起右侧外观配置抽屉。
 
         - 抽屉收起：切换到 ``theme_menu`` 并展开；
-        - 抽屉已展开且当前就是主题页：收起（Toggle）；
-        - 抽屉已展开但停在别的右侧页：只切到主题页，不收起。
+        - 抽屉已展开且当前就是外观配置页：收起（Toggle）；
+        - 抽屉已展开但停在别的右侧页：只切到外观配置页，不收起。
         """
         ui = getattr(self._window, "ui", None)
         menu = getattr(ui, "theme_menu", None)
         if menu is None or not hasattr(ui, "right_column"):
-            self._logger.warning("当前窗口没有主题配置抽屉页")
+            self._logger.warning("当前窗口没有外观配置抽屉页")
             return False
         visible = MainFunctions.right_column_is_visible(self._window)
         if visible and ui.right_column.menus.currentWidget() is menu:
@@ -139,7 +139,7 @@ class ThemeController:
         return True
 
     def _sync_theme_button(self) -> None:
-        """让标题栏“主题配置”按钮始终反映主题抽屉的展开状态。"""
+        """让标题栏外观配置按钮始终反映抽屉的展开状态。"""
         ui = getattr(self._window, "ui", None)
         if ui is None:
             return
@@ -253,6 +253,9 @@ class MainWindowController:
         menu_mode_changed = getattr(config, "menuModeChanged", None)
         if menu_mode_changed is not None:
             menu_mode_changed.connect(self._apply_menu_mode)
+        language_changed = getattr(config, "languageChanged", None)
+        if language_changed is not None:
+            language_changed.connect(self._apply_language)
         # 关闭窗口时把正常尺寸写入 ui_state.json，下次启动恢复
         # （测试桩可能只提供 SimpleNamespace，不是 QObject，跳过即可）
         if isinstance(window, QObject):
@@ -260,10 +263,16 @@ class MainWindowController:
             window.installEventFilter(self._window_state_tracker)
 
     def _apply_menu_mode(self, mode: str) -> None:
-        """主题配置里的 Static / Overlay 菜单模式，交给宿主改变左菜单布局。"""
+        """外观配置里的 Static / Overlay 菜单模式，交给宿主改变左菜单布局。"""
         setter = getattr(self._main_functions, "set_menu_mode", None)
         if callable(setter):
             setter(self._window, mode)
+
+    def _apply_language(self, language: str) -> None:
+        """外观配置里直接选中的目标语言：整体切换并重建页面。"""
+        from customgui.guis.language_service import apply_language
+
+        apply_language(language, self._window)
 
     def handle_button(self, btn):
         btn_name = btn.objectName()
@@ -299,7 +308,6 @@ class MainWindowController:
             "btn_close_top_column": lambda: self.column_controller.handle_top_column_close(btn_name),
             "btn_close_bottom_column": lambda: self.column_controller.handle_bottom_column_close(btn_name),
             "btn_top_settings": lambda: self.column_controller.handle_top_settings_button(btn),
-            "btn_language": self._handle_language_switch,
             "btn_themes": self._handle_theme_button,
             "btn_search": lambda: self._handle_search_button(btn),
         }
@@ -309,12 +317,6 @@ class MainWindowController:
             action()
         else:
             self._logger.warning(f"按钮动作未实现: {action_name} (button={btn_name})")
-
-    def _handle_language_switch(self):
-        """语言切换：整体切换基座 + 全部应用语言并刷新 UI。"""
-        from customgui.guis.language_service import switch_language
-
-        switch_language(self._window)
 
     def _handle_search_button(self, anchor):
         """标题栏搜索：弹出按页面标题过滤的快速跳转面板。"""
@@ -335,7 +337,7 @@ class MainWindowController:
         self.page_router.switch_page(btn_name, page_name, title)
 
     def _handle_theme_button(self):
-        """标题栏“主题配置”按钮：打开/收起右侧主题抽屉。
+        """标题栏色盘按钮：打开/收起右侧外观配置抽屉。
 
         兼容只注入了旧 ``cycle_theme`` 的测试桩/自定义控制器；真实控制器
         始终具备 ``toggle_theme_drawer``。

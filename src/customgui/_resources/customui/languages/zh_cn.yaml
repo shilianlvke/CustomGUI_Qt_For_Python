@@ -128,7 +128,19 @@ UI:
 
   # 标题栏与基座菜单
   ui_SwitchLanguage: 切换语言
-  ui_SwitchTheme: 主题配置
+  ui_SwitchTheme: 外观配置
+  ui_Appearance: 外观配置
+  ui_AppearanceHint: 主题、语言与界面布局
+  ui_Theme: 主题
+  ui_ThemeHint: 选择一套内置配色方案
+  ui_Language: 语言
+  ui_LanguageHint: 选择界面显示语言
+  ui_MenuMode: 菜单模式
+  ui_MenuModeHint: 固定展示在内容区旁，浮层覆盖在当前页面之上
+  ui_DarkMode: 深色模式
+  ui_DarkModeHint: 开启后使用暗色主题
+  ui_ModeStatic: 固定
+  ui_ModeOverlay: 浮层
   ui_SoftwareInfo: 软件信息
 
 TEXT:

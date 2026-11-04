@@ -3,7 +3,7 @@
 覆盖：
 - 遥测写失败不影响主程序（尽力而为语义）；
 - 插件页面/命令错误、插件模块加载汇总均记录遥测事件；
-- UI 主题切换、语言切换（未实现）等交互记录遥测事件。
+- UI 主题切换、外观配置语言选择等交互记录遥测事件。
 """
 
 from types import SimpleNamespace
@@ -111,7 +111,8 @@ class _StubMainFunctions:
         raise AttributeError(name)
 
 
-def test_controller_language_switch_is_recorded(diagnostics_dir):
+def test_controller_language_selection_is_recorded(diagnostics_dir):
+    from customgui.appcore import LANGUAGE_OPTIONS
     from customgui.guis.language_service import apply_language
 
     apply_language("zh_cn")  # 重置语言状态，确保切换方向确定
@@ -123,20 +124,14 @@ def test_controller_language_switch_is_recorded(diagnostics_dir):
         plugin_registry_getter=lambda: PluginRegistry(),
         logger=SimpleNamespace(debug=lambda *_a, **_k: None, warning=lambda *_a, **_k: None),
     )
-    btn = SimpleNamespace(objectName=lambda: "btn_language")
-
-    controller.handle_button(btn)
+    # 外观配置抽屉直接选中目标语言，由控制器统一应用到窗口
+    target = next((code for code in LANGUAGE_OPTIONS if code != "zh_cn"), "en_us")
+    controller._apply_language(target)
 
     names = _event_names()
     assert "ui.language_switch" in names
     switch_events = [e for e in read_recent_events(limit=10) if e["name"] == "ui.language_switch"]
-    # 断言记录的是「切到了某个合法语言」，而不是硬编码的 en_us——
-    # 语言数量增减时这条测试依然成立。
-    from customgui.appcore import LANGUAGE_OPTIONS
-
-    recorded = switch_events[-1]["payload"]["language"]
-    assert recorded in LANGUAGE_OPTIONS
-    assert recorded != "zh_cn"
+    assert switch_events[-1]["payload"]["language"] == target
 
 
 def test_theme_controller_records_theme_switch(diagnostics_dir):

@@ -1,6 +1,6 @@
 """Sakai 壳层组件测试（offscreen）。
 
-覆盖主题配置抽屉的开合与主题信号、顶栏的搜索 / 通知 / 用户菜单信号，
+覆盖外观配置抽屉的开合与主题 / 语言信号、顶栏的搜索 / 通知 / 用户菜单信号，
 以及嵌套侧边菜单的展开与单选激活。
 """
 
@@ -94,6 +94,26 @@ def test_configurator_menu_mode_and_dark_mode(host):
     panel.dark_switch.setChecked(before)
     assert dark[-1] is before
     panel.close()
+
+
+def test_configurator_language_selection_and_retranslate(host):
+    from customgui.appcore import LANGUAGE_OPTIONS, Language
+
+    panel = CAppConfigurator(host)
+    picked = []
+    panel.languageChanged.connect(picked.append)
+
+    current = Language.current()
+    target = next((code for code in LANGUAGE_OPTIONS if code != current), None)
+    assert target is not None
+    # 直接选中目标语言：发出 languageChanged，由宿主应用到窗口
+    panel.language_select.selectionChanged.emit(panel._language_label(target))
+    assert picked == [target]
+
+    Language.apply("en_us")
+    assert panel.header_title.text() == "Appearance"
+    Language.apply(current)
+    panel.deleteLater()
 
 
 # ----------------------------------------------------------------------

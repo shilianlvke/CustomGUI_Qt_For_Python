@@ -128,7 +128,19 @@ UI:
 
   # Title bar & base menus
   ui_SwitchLanguage: Switch Language
-  ui_SwitchTheme: Theme Configuration
+  ui_SwitchTheme: Appearance
+  ui_Appearance: Appearance
+  ui_AppearanceHint: Themes, language and layout
+  ui_Theme: Theme
+  ui_ThemeHint: Choose a built-in color scheme
+  ui_Language: Language
+  ui_LanguageHint: Choose the interface language
+  ui_MenuMode: Menu Mode
+  ui_MenuModeHint: Dock beside the content, or overlay the current page
+  ui_DarkMode: Dark Mode
+  ui_DarkModeHint: Use a dark theme
+  ui_ModeStatic: Docked
+  ui_ModeOverlay: Overlay
   ui_SoftwareInfo: Software Info
 
 TEXT:

@@ -34,7 +34,7 @@ left_column_size: # 左侧菜单页大小
   maximum: 240
 
 # RIGHT MENU
-right_column_size: # 右侧菜单页大小（主题配置页需要更大的可用宽度）
+right_column_size: # 右侧菜单页大小（外观配置页需要更大的可用宽度）
   minimum: 0
   maximum: 340
 right_menu_content_margins: 3 # 左侧菜单边距✅

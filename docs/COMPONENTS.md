@@ -196,7 +196,7 @@ chart.set_data([{"name": "访问量", "values": [3, 5, 8], "labels": ["一", "�
 ```python
 CAppTopbar(title="控制台", logo=icon)      # logo / 菜单开关 / 搜索 / 通知 / 用户菜单
 CAppMenu(items=[...])                      # 嵌套侧边菜单
-CAppConfigurator(window)                   # 右侧主题配置抽屉
+CAppConfigurator(window)                   # 右侧外观配置抽屉（主题 / 语言 / 菜单模式 / 深色模式）
 ```
 
 壳层组件用于「应用内再套一层后台布局」，与基座主窗口的四向栏目互不替代。
@@ -206,7 +206,7 @@ CAppConfigurator(window)                   # 右侧主题配置抽屉
 | 部件 | 说明 |
 | --- | --- |
 | `CWindow` | 无边框圆角窗口容器，`set_stylesheet()` 只切换 `frameStyle` 动态属性 |
-| `CTitleBar` | 自绘标题栏：logo、标题、菜单按钮、搜索、主题/语言切换、最大化/关闭 |
+| `CTitleBar` | 自绘标题栏：logo、标题、菜单按钮、搜索、外观配置、最大化/关闭 |
 | `CLeftMenu` | 左侧图标菜单，单选高亮，可折叠（宽度动画） |
 | `CLeftColumn` / `CTopColumn` / `CBottomColumn` | 三个方向的栏目抽屉，47px 标题条 + `menus` 堆栈 |
 | `CGrips` | 八方向缩放夹点 |

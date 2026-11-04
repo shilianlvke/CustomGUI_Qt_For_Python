@@ -39,22 +39,12 @@ BUILTIN_TITLE_MENU_PLUGINS = [
         },
     ),
     MenuPlugin(
-        plugin_id="builtin.menu.title.language",
+        plugin_id="builtin.menu.title.appearance",
         target="TitleMenu",
         item={
-            "btn_icon": "icon_chinese",
-            "btn_id": "btn_language",
-            "btn_tooltip": "language.UI.ui_SwitchLanguage",
-            "is_active": False,
-        },
-    ),
-    MenuPlugin(
-        plugin_id="builtin.menu.title.theme",
-        target="TitleMenu",
-        item={
-            "btn_icon": "icon_moon",
+            "btn_icon": "icon_palette",
             "btn_id": "btn_themes",
-            "btn_tooltip": "language.UI.ui_SwitchTheme",
+            "btn_tooltip": "language.UI.ui_Appearance",
             "is_active": False,
         },
     ),
