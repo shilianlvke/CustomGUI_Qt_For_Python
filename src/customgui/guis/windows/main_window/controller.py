@@ -89,6 +89,27 @@ class ThemeController:
                 self._logger.warning(f"自定义主题切换失败，回退到基座主题循环: {exc}")
         self._theme_manager.cycle()
 
+    def toggle_theme_drawer(self) -> bool:
+        """打开/收起右侧主题配置抽屉。
+
+        - 抽屉收起：切换到 ``theme_menu`` 并展开；
+        - 抽屉已展开且当前就是主题页：收起（Toggle）；
+        - 抽屉已展开但停在别的右侧页：只切到主题页，不收起。
+        """
+        ui = getattr(self._window, "ui", None)
+        menu = getattr(ui, "theme_menu", None)
+        if menu is None or not hasattr(ui, "right_column"):
+            self._logger.warning("当前窗口没有主题配置抽屉页")
+            return False
+        visible = MainFunctions.right_column_is_visible(self._window)
+        if visible and ui.right_column.menus.currentWidget() is menu:
+            MainFunctions.toggle_right_column(self._window)
+            return True
+        ui.right_column.menus.setCurrentWidget(menu)
+        if not visible:
+            MainFunctions.toggle_right_column(self._window)
+        return True
+
     def _apply_styles(self):
         window_widget = self._window.ui.window
         # 优先委托 CWindow.apply_style（内部重建样式，并保留最大化等框架样式覆盖）
@@ -221,7 +242,7 @@ class MainWindowController:
             "btn_close_bottom_column": lambda: self.column_controller.handle_bottom_column_close(btn_name),
             "btn_top_settings": lambda: self.column_controller.handle_top_settings_button(btn),
             "btn_language": self._handle_language_switch,
-            "btn_themes": self.theme_controller.cycle_theme,
+            "btn_themes": self._handle_theme_button,
         }
 
         action = action_routes.get(action_name)
@@ -235,3 +256,15 @@ class MainWindowController:
         from customgui.guis.language_service import switch_language
 
         switch_language(self._window)
+
+    def _handle_theme_button(self):
+        """标题栏“主题配置”按钮：打开/收起右侧主题抽屉。
+
+        兼容只注入了旧 ``cycle_theme`` 的测试桩/自定义控制器；真实控制器
+        始终具备 ``toggle_theme_drawer``。
+        """
+        toggle = getattr(self.theme_controller, "toggle_theme_drawer", None)
+        if callable(toggle):
+            toggle()
+        else:
+            self.theme_controller.cycle_theme()

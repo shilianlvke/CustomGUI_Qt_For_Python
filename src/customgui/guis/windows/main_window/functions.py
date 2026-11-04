@@ -148,25 +148,22 @@ class MainFunctions:
         else:
             right_width = minimum_right
 
-            # ANIMATION LEFT BOX
-        self.left_box = QPropertyAnimation(self.ui.left_column_frame, b"minimumWidth")
-        self.left_box.setDuration(time_animation)
-        self.left_box.setStartValue(left_box_width)
-        self.left_box.setEndValue(left_width)
-        self.left_box.setEasingCurve(QEasingCurve.InOutQuart)
-
-        # ANIMATION RIGHT BOX
-        self.right_box = QPropertyAnimation(self.ui.right_column_frame, b"minimumWidth")
-        self.right_box.setDuration(time_animation)
-        self.right_box.setStartValue(right_box_width)
-        self.right_box.setEndValue(right_width)
-        self.right_box.setEasingCurve(QEasingCurve.InOutQuart)
-
         # GROUP ANIMATION
+        # min/max 成对动画：左右列初始 maximumWidth 为 0，只动 minimumWidth 会被
+        # 上限夹住、抽屉根本打不开。开 = 两者都到 maximum，关 = 都回 minimum。
         self.group = QParallelAnimationGroup()
         self.group.stop()
-        self.group.addAnimation(self.left_box)
-        self.group.addAnimation(self.right_box)
+        for frame, start, end in (
+            (self.ui.left_column_frame, left_box_width, left_width),
+            (self.ui.right_column_frame, right_box_width, right_width),
+        ):
+            for property_name in (b"minimumWidth", b"maximumWidth"):
+                animation = QPropertyAnimation(frame, property_name)
+                animation.setDuration(time_animation)
+                animation.setStartValue(start)
+                animation.setEndValue(end)
+                animation.setEasingCurve(QEasingCurve.InOutQuart)
+                self.group.addAnimation(animation)
         self.group.start()
 
     def start_box_animation_vertical(self, top_box_height, bottom_box_height, direction):

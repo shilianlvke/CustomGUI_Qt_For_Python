@@ -1,7 +1,17 @@
 from PySide6.QtWidgets import QFrame, QHBoxLayout, QVBoxLayout, QWidget
 
 from customgui.appcore import AppSettings, PathFactory
-from customgui.guicore import CBottomColumn, CCredits, CLeftColumn, CLeftMenu, CTitleBar, CTopColumn, CWindow
+from customgui.guicore import (
+    CAppConfigurator,
+    CBottomColumn,
+    CCredits,
+    CLeftColumn,
+    CLeftMenu,
+    CTitleBar,
+    CTopColumn,
+    CWindow,
+    acrylic_active,
+)
 from customgui.guicore.window import Ui_RightColumn
 from customgui.guis import Ui_MainPages
 
@@ -137,6 +147,16 @@ class UiMainWindow:
         # ADD RIGHT PAGES TO RIGHT COLUMN
         self.right_column = Ui_RightColumn()
         self.right_column.setupUi(self.content_area_right_bg_frame)
+        # 右侧抽屉的“主题配置”页：复用 CAppConfigurator 的配置内容，但以嵌入
+        # 模式运行（无固定宽度、无滑入动画、无自身背景），开合交给右侧栏。
+        self.theme_menu = QWidget()
+        self.theme_menu.setObjectName("themeMenu")
+        self.theme_menu_layout = QVBoxLayout(self.theme_menu)
+        self.theme_menu_layout.setContentsMargins(0, 0, 0, 0)
+        self.theme_menu_layout.setSpacing(0)
+        self.theme_config = CAppConfigurator(self.theme_menu, embedded=True)
+        self.theme_menu_layout.addWidget(self.theme_config)
+        self.right_column.menus.addWidget(self.theme_menu)
         # ADD TO LAYOUTS
         self.content_area_layout.addWidget(self.content_area_left_frame)
         self.content_area_layout.addWidget(self.right_column_frame)
@@ -200,7 +220,12 @@ class UiMainWindow:
         # 添加中心小部件并设置内容边距
         self.parent.setCentralWidget(self.central_widget)
         if AppSettings.custom_title_bar:
-            self.central_widget_layout.setContentsMargins(10, 10, 10, 10)
+            # 10px 外圈原本是给 QGraphicsDropShadowEffect 留的投影空间。
+            # 亚克力模式下阴影关闭，这 10px 只剩一条透出壁纸的"外包装"，
+            # 看起来像在主界面外面又套了一层。此时让 CWindow 直接铺满窗口：
+            # 主界面就是背景，原生材质与主界面边界完全重合。
+            margin = 0 if acrylic_active() else 10
+            self.central_widget_layout.setContentsMargins(margin, margin, margin, margin)
         else:
             self.window.set_stylesheet(border_radius=0, border_size=0)
             self.central_widget_layout.setContentsMargins(0, 0, 0, 0)

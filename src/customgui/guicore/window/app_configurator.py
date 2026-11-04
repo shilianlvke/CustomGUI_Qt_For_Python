@@ -221,9 +221,12 @@ class CAppConfigurator(QFrame):
     #: 配置未就绪时的滑动时长（毫秒）
     FALLBACK_DURATION = 200
 
-    def __init__(self, parent=None, width: int = DEFAULT_WIDTH):
+    def __init__(self, parent=None, width: int = DEFAULT_WIDTH, embedded: bool = False):
         super().__init__(parent)
         self.setObjectName("CAppConfigurator_Frame")
+        #: 嵌入模式：作为右侧抽屉里的普通页面使用，不再做固定宽度、滑入动画与
+        #: 自身背景绘制；标题/关闭按钮也由外层抽屉控制。
+        self._embedded = bool(embedded)
         self._width = max(280, int(width))
         self._open = False
         self._closing = False
@@ -235,16 +238,22 @@ class CAppConfigurator(QFrame):
         self._primary_swatches: list[_Swatch] = []
         self._surface_swatches: list[_Swatch] = []
 
-        self.setFixedWidth(self._width)
-        self.setSizePolicy(QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Expanding)
+        if self._embedded:
+            self.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
+        else:
+            self.setFixedWidth(self._width)
+            self.setSizePolicy(QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Expanding)
         self._setup_ui()
+        if self._embedded:
+            self.close_button.hide()
         self._sync_theme_state()
         self.update_style()
 
         get_theme_manager().subscribe(self._on_theme_applied)
-        if parent is not None:
+        if parent is not None and not self._embedded:
             parent.installEventFilter(self)
-        self.hide()
+        if not self._embedded:
+            self.hide()
 
     # ------------------------------------------------------------------
     # 构建
@@ -450,7 +459,9 @@ class CAppConfigurator(QFrame):
     # 开关
     # ------------------------------------------------------------------
     def open(self) -> None:
-        """从右侧滑入并展开面板。"""
+        """从右侧滑入并展开面板（嵌入模式下无动作，由右侧抽屉负责开合）。"""
+        if self._embedded:
+            return
         self._closing = False
         self._open = True
         self._place(self._start_x())
@@ -459,7 +470,9 @@ class CAppConfigurator(QFrame):
         self._animate_to(QPoint(self._end_x(), 0), None)
 
     def close(self) -> None:
-        """滑出并隐藏面板，动画结束后发出 ``closed``。"""
+        """滑出并隐藏面板，动画结束后发出 ``closed``（嵌入模式下无动作）。"""
+        if self._embedded:
+            return
         if self._closing:
             return
         if not self._open and not self.isVisible():
@@ -526,7 +539,12 @@ class CAppConfigurator(QFrame):
             self._animation = None
 
     def eventFilter(self, obj, event):  # noqa: N802 - 覆写 Qt 命名
-        if obj is self.parentWidget() and event.type() == QEvent.Resize and self._open:
+        if (
+            not self._embedded
+            and obj is self.parentWidget()
+            and event.type() == QEvent.Resize
+            and self._open
+        ):
             self._place(self._end_x())
         return super().eventFilter(obj, event)
 
@@ -549,6 +567,10 @@ class CAppConfigurator(QFrame):
         self.update()
 
     def paintEvent(self, event):  # noqa: N802 - 覆写 Qt 命名
+        if self._embedded:
+            # 嵌入右侧抽屉时背景由抽屉的 CRegion_Card_Frame 提供，这里不再
+            # 画一层自己的面板底色，避免又出现"面板里再套一块背景"。
+            return
         tokens = get_design_tokens()
         colors = tokens.colors
         painter = QPainter(self)

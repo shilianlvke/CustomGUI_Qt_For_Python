@@ -129,7 +129,7 @@ UI:
 
   # 標題列與基座選單
   ui_SwitchLanguage: 切換語言
-  ui_SwitchTheme: 切換主題
+  ui_SwitchTheme: 主題配置
   ui_SoftwareInfo: 軟體資訊
 
 TEXT:

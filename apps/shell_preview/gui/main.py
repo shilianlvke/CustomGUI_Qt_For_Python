@@ -3,7 +3,6 @@
 from PySide6.QtWidgets import QHBoxLayout, QLabel, QVBoxLayout, QWidget
 
 from customgui.guicore import (
-    CAppConfigurator,
     CAppMenu,
     CAppTopbar,
     CButton,
@@ -61,14 +60,9 @@ class ShellPreviewPage(CPreviewPage):
         menu.setMinimumWidth(280)
         menu.itemClicked.connect(lambda item: status.setText(f"{cls.tr('menu_selected')}: {getattr(item, 'label', item)}"))
 
-        # 抽屉以页面为父对象挂在页面上，页面存一份引用便于外部访问
-        configurator = CAppConfigurator(page)
-        configurator.setVisible(False)
-        configurator.themeChanged.connect(lambda name: status.setText(f"{cls.tr('theme')}: {name}"))
-        page._shell_configurator = configurator
-
+        # 主题配置不再以页面浮层出现：改为打开主窗口右侧抽屉里的主题配置页。
         trigger = CButton(cls.tr("open_config"), icon="icon_config", variant="outlined")
-        trigger.clicked.connect(configurator.toggle)
+        trigger.clicked.connect(lambda: cls._toggle_theme_drawer(window))
 
         row = QWidget()
         row_layout = QHBoxLayout(row)
@@ -85,6 +79,26 @@ class ShellPreviewPage(CPreviewPage):
         row_layout.addLayout(right, 3)
 
         return [cls.card(cls.tr("group_topbar"), topbar), row]
+
+    @staticmethod
+    def _toggle_theme_drawer(window) -> None:
+        """打开/收起主窗口右侧的主题配置抽屉（兼容无 controller 的测试宿主）。"""
+        controller = getattr(window, "controller", None)
+        theme_controller = getattr(controller, "theme_controller", None) if controller is not None else None
+        toggle = getattr(theme_controller, "toggle_theme_drawer", None)
+        if callable(toggle):
+            toggle()
+            return
+
+        ui = getattr(window, "ui", None)
+        menu = getattr(ui, "theme_menu", None)
+        if menu is None or not hasattr(ui, "right_column"):
+            return
+        from customgui.guis.windows.main_window.functions import MainFunctions
+
+        ui.right_column.menus.setCurrentWidget(menu)
+        if not MainFunctions.right_column_is_visible(window):
+            MainFunctions.toggle_right_column(window)
 
 
 PAGE = ShellPreviewPage

@@ -6,10 +6,11 @@ from PySide6.QtWidgets import QFrame, QHBoxLayout, QLabel, QVBoxLayout, QWidget
 from customgui.appcore import AppSettings, ColorPalette, Language, PathFactory
 from customgui.guicore.custom_ui.div import CVDiv
 
+from ...acrylic import acrylic_active, glass_tint
 from .title_button import CTitleButton
 
-#: 正常窗口四周留给外阴影的边距（最大化时归零）
-_SAFE_MARGINS = (10, 10, 10, 10)
+#: 非亚克力模式下留给窗口外阴影的边距（最大化时归零）
+_CUSTOM_MARGINS = (10, 10, 10, 10)
 
 
 def fit_logo_size(svg: QSvgWidget, limit: int) -> QSize:
@@ -49,9 +50,10 @@ class CTitleBar(QWidget):
         # 参数
         self._logo_image = AppSettings.logo_title
         self._dark_one = ColorPalette.custom_dark_one
-        self._bg_color = ColorPalette.custom_dark_three
+        # 标题栏在玻璃模式下是半透明面板，按钮常态必须透明才能透出亚克力底
+        self._bg_color = glass_tint(ColorPalette.custom_dark_three, 0.0)
         self._div_color = ColorPalette.custom_bg_three
-        self._btn_bg_color = ColorPalette.custom_dark_three
+        self._btn_bg_color = glass_tint(ColorPalette.custom_dark_three, 0.0)
         self._btn_bg_color_hover = ColorPalette.custom_bg_three
         self._btn_bg_color_pressed = ColorPalette.custom_bg_one
         self._context_color = ColorPalette.custom_context_color
@@ -102,20 +104,14 @@ class CTitleBar(QWidget):
             # if parent_rect.bottom() > screen_rect.bottom():
             #     parent.move(parent.pos().x(), screen_rect.height() - parent_rect.height())
 
-        # 移动应用程序小部件
+        # 移动应用程序小部件。
+        # 除原有的 logo / 标题 / 分割线外，还要覆盖标题栏底板（bg）与标题栏
+        # 自身：它们都是主界面 CWindow 的子控件，事件留在原控件树上，不需要
+        # 任何额外的背景窗口；空白区域同样可以拖动窗口。
         if self._is_custom_title_bar:
-            self.top_logo.mouseMoveEvent = moveWindow
-            self.div_1.mouseMoveEvent = moveWindow
-            self.title_label.mouseMoveEvent = moveWindow
-            self.div_2.mouseMoveEvent = moveWindow
-            self.div_3.mouseMoveEvent = moveWindow
-
-        # 最大化/恢复
-        if self._is_custom_title_bar:
-            self.top_logo.mouseDoubleClickEvent = self.maximize_restore
-            self.div_1.mouseDoubleClickEvent = self.maximize_restore
-            self.title_label.mouseDoubleClickEvent = self.maximize_restore
-            self.div_2.mouseDoubleClickEvent = self.maximize_restore
+            for widget in (self, self.bg, self.top_logo, self.div_1, self.title_label, self.div_2, self.div_3):
+                widget.mouseMoveEvent = moveWindow
+                widget.mouseDoubleClickEvent = self.maximize_restore
 
         # 将小部件添加到标题栏
         # ///////////////////////////////////////////////////////////////
@@ -235,7 +231,9 @@ class CTitleBar(QWidget):
         """按最大化状态刷新窗口框架、阴影、边距与按钮图标（全部为轻量操作）。"""
         ui = getattr(self._parent, "ui", None)
         if ui is not None:
-            ui.central_widget_layout.setContentsMargins(*(0, 0, 0, 0) if maximized else _SAFE_MARGINS)
+            # 最大化/亚克力模式都铺满；只有"非亚克力 + 正常尺寸"才留阴影外圈
+            margins = (0, 0, 0, 0) if (maximized or acrylic_active()) else _CUSTOM_MARGINS
+            ui.central_widget_layout.setContentsMargins(*margins)
             window = getattr(ui, "window", None)
             if window is not None:
                 if maximized:

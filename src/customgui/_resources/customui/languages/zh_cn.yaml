@@ -128,7 +128,7 @@ UI:
 
   # 标题栏与基座菜单
   ui_SwitchLanguage: 切换语言
-  ui_SwitchTheme: 切换主题
+  ui_SwitchTheme: 主题配置
   ui_SoftwareInfo: 软件信息
 
 TEXT:

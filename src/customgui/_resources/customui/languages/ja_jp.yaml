@@ -129,7 +129,7 @@ UI:
 
   # タイトルバーと基盤メニュー
   ui_SwitchLanguage: 言語を切り替える
-  ui_SwitchTheme: テーマを切り替える
+  ui_SwitchTheme: テーマ設定
   ui_SoftwareInfo: ソフトウェア情報
 
 TEXT:

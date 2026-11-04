@@ -128,7 +128,7 @@ UI:
 
   # Title bar & base menus
   ui_SwitchLanguage: Switch Language
-  ui_SwitchTheme: Switch Theme
+  ui_SwitchTheme: Theme Configuration
   ui_SoftwareInfo: Software Info
 
 TEXT:
