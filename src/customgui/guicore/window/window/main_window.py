@@ -52,27 +52,38 @@ class CWindow(QFrame):
     # 样式
     # ------------------------------------------------------------------
     def apply_style(self):
-        """重建全局样式并应用（主题切换时调用；不含最大化这类临时覆盖）。"""
-        style = Styles().style
+        """重建全局样式并应用（主题切换时调用；不含最大化这类临时覆盖）。
+
+        整张样式表统一下发到**应用级**：窗口本身、嵌入控件与无父弹层
+        （QMenu / QToolTip / Qt.Popup）共用同一份，切主题时整棵控件树只
+        polish 一次。窗口级只保留最大化/自定义圆角这一小块覆盖规则；旧实现
+        在窗口级与应用级各设一遍整表，同一棵树被反复 polish，主题切换明显卡顿。
+        """
+        base = Styles().style
         override = self._frame_override
         self._style_has_override = override is not None and override != _FLAT_FRAME
+        override_sheet = ""
         if self._style_has_override:
             radius, size = override
             border_color = get_design_tokens().colors.surface_interactive_pressed
-            style += f"""
-            #CWindow_Frame {{
+            override_sheet = f"""#CWindow_Frame {{
                 border-radius: {radius}px;
                 border: {size}px solid {border_color};
-            }}
-            """
-        self.setStyleSheet(style)
-        # 同步下发到应用级：弹出类组件（QMenu、提示气泡）是独立顶层窗口，
-        # 不经过本控件，只能通过应用级样式表着色。
-        # 内容不变时跳过：setStyleSheet 会触发整棵控件树重新 polish，
-        # 而 apply_style 在主题切换等场景会被调用。
+            }}"""
+
         app = QApplication.instance()
-        if app is not None and app.styleSheet() != style:
-            app.setStyleSheet(style)
+        if app is not None:
+            if app.styleSheet() != base:
+                app.setStyleSheet(base)
+            if override_sheet:
+                self.setStyleSheet(override_sheet)
+            elif self.styleSheet():
+                # 清掉旧版本留下的窗口级整表副本，避免它盖住新主题
+                self.setStyleSheet("")
+        elif override_sheet:
+            self.setStyleSheet(base + override_sheet)
+        else:
+            self.setStyleSheet(base)
         # 主题切换后亚克力色调要跟着重算（该调用约 0.15ms 且幂等）
         self._sync_acrylic()
 

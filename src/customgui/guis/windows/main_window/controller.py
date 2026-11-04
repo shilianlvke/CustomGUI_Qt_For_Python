@@ -1,4 +1,5 @@
-from PySide6.QtWidgets import QWidget
+from PySide6.QtCore import QEvent, QObject
+from PySide6.QtWidgets import QPushButton, QWidget
 
 from customgui.appcore import (
     Language,
@@ -9,10 +10,35 @@ from customgui.appcore import (
     get_theme_manager,
     record_event,
 )
+from customgui.appcore.ui_state import save_ui_state
 from customgui.guicore import Styles
 
 from .functions import MainFunctions
 from .registry import ensure_registered_page, get_page_routes
+
+
+class _WindowStateTracker(QObject):
+    """窗口关闭时保存正常尺寸（最大化/最小化/全屏状态不写入）。"""
+
+    def __init__(self, window):
+        super().__init__(window)
+        self._window = window
+
+    def eventFilter(self, obj, event):  # noqa: N802 - 覆写 Qt 命名
+        if obj is self._window and event.type() == QEvent.Type.Close:
+            self._save_size()
+        return False
+
+    def _save_size(self) -> None:
+        window = self._window
+        try:
+            if window.isMaximized() or window.isMinimized() or window.isFullScreen():
+                return
+            size = window.size()
+        except RuntimeError:
+            return
+        if size.width() > 0 and size.height() > 0:
+            save_ui_state(window_size=[size.width(), size.height()])
 
 
 class PageRouterController:
@@ -104,11 +130,29 @@ class ThemeController:
         visible = MainFunctions.right_column_is_visible(self._window)
         if visible and ui.right_column.menus.currentWidget() is menu:
             MainFunctions.toggle_right_column(self._window)
+            self._sync_theme_button()
             return True
         ui.right_column.menus.setCurrentWidget(menu)
         if not visible:
             MainFunctions.toggle_right_column(self._window)
+        self._sync_theme_button()
         return True
+
+    def _sync_theme_button(self) -> None:
+        """让标题栏“主题配置”按钮始终反映主题抽屉的展开状态。"""
+        ui = getattr(self._window, "ui", None)
+        if ui is None:
+            return
+        button = ui.title_bar.findChild(QPushButton, "btn_themes")
+        if button is None or not hasattr(button, "set_active"):
+            return
+        menu = getattr(ui, "theme_menu", None)
+        active = bool(
+            menu is not None
+            and MainFunctions.right_column_is_visible(self._window)
+            and ui.right_column.menus.currentWidget() is menu
+        )
+        button.set_active(active)
 
     def _apply_styles(self):
         window_widget = self._window.ui.window
@@ -120,6 +164,7 @@ class ThemeController:
             # 旧组件/测试桩：回落到直接设置样式（样式仅在此处构造一次）
             now = self._style_factory()
             window_widget.setStyleSheet(now.style)
+        save_ui_state(theme=self._theme_manager.current())
 
 
 class ColumnController:
@@ -201,6 +246,24 @@ class MainWindowController:
         self.page_router = PageRouterController(window=window, main_functions=main_functions)
         self.theme_controller = ThemeController(window=window)
         self.column_controller = ColumnController(window=window, main_functions=main_functions)
+        config = getattr(getattr(window, "ui", None), "theme_config", None)
+        close_requested = getattr(config, "closeRequested", None)
+        if close_requested is not None:
+            close_requested.connect(self.theme_controller.toggle_theme_drawer)
+        menu_mode_changed = getattr(config, "menuModeChanged", None)
+        if menu_mode_changed is not None:
+            menu_mode_changed.connect(self._apply_menu_mode)
+        # 关闭窗口时把正常尺寸写入 ui_state.json，下次启动恢复
+        # （测试桩可能只提供 SimpleNamespace，不是 QObject，跳过即可）
+        if isinstance(window, QObject):
+            self._window_state_tracker = _WindowStateTracker(window)
+            window.installEventFilter(self._window_state_tracker)
+
+    def _apply_menu_mode(self, mode: str) -> None:
+        """主题配置里的 Static / Overlay 菜单模式，交给宿主改变左菜单布局。"""
+        setter = getattr(self._main_functions, "set_menu_mode", None)
+        if callable(setter):
+            setter(self._window, mode)
 
     def handle_button(self, btn):
         btn_name = btn.objectName()
@@ -209,11 +272,6 @@ class MainWindowController:
 
         if self._button_use_case.should_reset_left_tab(btn_name):
             self._window.ui.left_menu.deselect_all_tab()
-        try:
-            top_settings = self._main_functions.get_title_bar_btn(self._window, "btn_top_settings")
-            top_settings.set_active(False)
-        except AttributeError as exc:
-            self._logger.debug(f"标题栏按钮不可用，跳过状态复位: {exc}")
 
         route = self.page_router.route_for(btn_name)
         self._logger.debug(f"路由解析: {btn_name} -> {route}")
@@ -243,6 +301,7 @@ class MainWindowController:
             "btn_top_settings": lambda: self.column_controller.handle_top_settings_button(btn),
             "btn_language": self._handle_language_switch,
             "btn_themes": self._handle_theme_button,
+            "btn_search": lambda: self._handle_search_button(btn),
         }
 
         action = action_routes.get(action_name)
@@ -256,6 +315,24 @@ class MainWindowController:
         from customgui.guis.language_service import switch_language
 
         switch_language(self._window)
+
+    def _handle_search_button(self, anchor):
+        """标题栏搜索：弹出按页面标题过滤的快速跳转面板。"""
+        from .search_palette import CSearchPalette
+
+        palette = getattr(self, "_search_palette", None)
+        if palette is None:
+            palette = CSearchPalette(self._window)
+            palette.selected.connect(self._open_search_result)
+            self._search_palette = palette
+        palette.show_for(anchor)
+
+    def _open_search_result(self, btn_name: str) -> None:
+        route = self.page_router.route_for(btn_name)
+        if route is None:
+            return
+        page_name, title = route
+        self.page_router.switch_page(btn_name, page_name, title)
 
     def _handle_theme_button(self):
         """标题栏“主题配置”按钮：打开/收起右侧主题抽屉。

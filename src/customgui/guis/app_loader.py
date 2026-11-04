@@ -131,6 +131,7 @@ def register_app(app_dir: Path, registry=None, *, with_handle: bool = False) -> 
                 "btn_icon": icon_path,
                 "btn_id": button_id,
                 "btn_text": text_key,
+                "btn_text_fallback": name,
                 "btn_tooltip": tooltip_key,
                 "show_top": bool(config.get("show_top", True)),
                 "is_active": bool(config.get("is_active", False)),

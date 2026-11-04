@@ -72,7 +72,6 @@ class _Logger:
             just_fix_windows_console()
 
         log_dir = data_root() / "logs"
-        os.makedirs(log_dir, exist_ok=True)
 
         formatter = logging.Formatter(
             "[%(asctime)s] [%(levelname)s] %(message)s",
@@ -88,16 +87,28 @@ class _Logger:
             console_handler = logging.StreamHandler()
             console_handler.setFormatter(color_formatter if use_color else formatter)
 
-            file_handler = RotatingFileHandler(
-                log_dir / "customgui.log",
-                maxBytes=1_048_576,
-                backupCount=5,
-                encoding="utf-8",
-            )
-            file_handler.setFormatter(formatter)
+            # 数据目录可能不可写（例如 ``CUSTOMGUI_DATA_DIR`` 指向一个文件或
+            # 只读盘）：日志系统是启动期最先初始化的模块，这里必须降级为
+            # 「仅控制台」，而不是把 OSError 抛给启动流程。
+            file_handler = None
+            failure = None
+            try:
+                os.makedirs(log_dir, exist_ok=True)
+                file_handler = RotatingFileHandler(
+                    log_dir / "customgui.log",
+                    maxBytes=1_048_576,
+                    backupCount=5,
+                    encoding="utf-8",
+                )
+                file_handler.setFormatter(formatter)
+            except OSError as exc:
+                failure = exc
 
             self._logger.addHandler(console_handler)
-            self._logger.addHandler(file_handler)
+            if file_handler is not None:
+                self._logger.addHandler(file_handler)
+            else:
+                self._logger.warning(f"日志目录不可写，已回退为仅控制台输出: {log_dir} ({failure})")
 
         self.set_level(self._read_level_from_console_config())
         self._configured = True

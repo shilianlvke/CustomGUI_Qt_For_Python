@@ -1,11 +1,39 @@
 import os
 
 from PySide6 import QtCore, QtGui
-from PySide6.QtCore import QEasingCurve, QParallelAnimationGroup, QPropertyAnimation
+from PySide6.QtCore import QEasingCurve, QEvent, QObject, QParallelAnimationGroup, QPropertyAnimation, QRect
 from PySide6.QtWidgets import QFileDialog, QPushButton
 
 from customgui.appcore import AppSettings
 from customgui.guicore import CPageTransition
+
+
+def _overlay_menu_geometry(window, width=None) -> QRect:
+    """Overlay 模式下左菜单的几何：贴窗口左上，随窗口高度伸缩。"""
+    ui = window.ui
+    frame = ui.left_menu_frame
+    margins = ui.window.layout.contentsMargins()
+    width = frame.width() if width is None else width
+    return QRect(
+        margins.left(),
+        margins.top(),
+        max(1, int(width)),
+        max(1, window.height() - margins.top() - margins.bottom()),
+    )
+
+
+class _MenuOverlayTracker(QObject):
+    """Overlay 菜单的尺寸跟随器：窗口缩放时同步浮动菜单的高度。"""
+
+    def __init__(self, window, parent):
+        super().__init__(parent)
+        self._window = window
+
+    def eventFilter(self, obj, event):  # noqa: N802 - 覆写 Qt 命名
+        if obj is self._window and event.type() == QEvent.Type.Resize:
+            frame = self._window.ui.left_menu_frame
+            frame.setGeometry(_overlay_menu_geometry(self._window, frame.width()))
+        return False
 
 
 # FUNCTIONS
@@ -34,6 +62,54 @@ class MainFunctions:
             previous_button_id=previous_button_id,
             stage=getattr(self.ui, "content_area_left_frame", None),
         )
+
+    # SET LEFT MENU MODE
+    # ///////////////////////////////////////////////////////////////
+    def set_menu_mode(self, mode):
+        """切换左菜单模式：``static`` 布局内占位，``overlay`` 浮层覆盖内容区。
+
+        - ``static``：菜单框是窗口水平布局的成员，展开时挤压内容区（默认）；
+        - ``overlay``：菜单框脱离布局、浮在内容之上，展开/收起不改变内容区宽度。
+
+        两种模式共用同一个菜单控件与同一套展开动画，只是容器归属不同；切换
+        模式不会重建菜单按钮，也不影响当前页面。
+        """
+        value = "overlay" if str(mode).lower() == "overlay" else "static"
+        if getattr(self, "_menu_mode", "static") == value:
+            return
+        self._menu_mode = value
+
+        ui = self.ui
+        frame = ui.left_menu_frame
+        layout = ui.window.layout
+        margin = int(AppSettings.left_menu_content_margins)
+        thin = int(AppSettings.lef_menu_size.minimum) + margin * 2
+        wide = int(AppSettings.lef_menu_size.maximum) + margin * 2
+
+        if value == "overlay":
+            layout.removeWidget(frame)
+            frame.setParent(ui.window)
+            frame.setMinimumWidth(thin)
+            frame.setMaximumWidth(wide)
+            frame.setGeometry(_overlay_menu_geometry(self, min(max(frame.width(), thin), wide)))
+            frame.show()
+            frame.raise_()
+            tracker = _MenuOverlayTracker(ui.window, ui.window)
+            ui.window.installEventFilter(tracker)
+            self._menu_overlay_tracker = tracker
+            return
+
+        tracker = getattr(self, "_menu_overlay_tracker", None)
+        if tracker is not None:
+            ui.window.removeEventFilter(tracker)
+            tracker.deleteLater()
+            self._menu_overlay_tracker = None
+        frame.setMinimumWidth(thin)
+        frame.setMaximumWidth(thin)
+        frame.setParent(ui.window)
+        if layout.indexOf(frame) < 0:
+            layout.insertWidget(0, frame)
+        frame.show()
 
     # SET LEFT COLUMN PAGES
     # ///////////////////////////////////////////////////////////////

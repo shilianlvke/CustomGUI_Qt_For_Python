@@ -1,9 +1,20 @@
 import os
 
 from PySide6.QtCore import Qt
+from PySide6.QtGui import QGuiApplication
 from PySide6.QtWidgets import QWidget
 
-from customgui.appcore import AppSettings, Language, Logger, MenuPlugin, get_plugin_registry
+from customgui.appcore import (
+    LANGUAGE_OPTIONS,
+    AppSettings,
+    AppThemes,
+    Language,
+    Logger,
+    MenuPlugin,
+    get_plugin_registry,
+    get_theme_manager,
+)
+from customgui.appcore.ui_state import load_ui_state
 from customgui.guicore import CGrips
 from customgui.guis.app_loader import load_apps
 
@@ -87,6 +98,9 @@ class SetupMainWindow:
 
     def setup_gui(self):
         Logger.debug("开始装配主窗口 UI")
+        # 先恢复用户上次的主题 / 语言 / 窗口尺寸，再装载应用与页面，
+        # 保证菜单文案、页面语言与窗口几何一次到位（避免启动后再重建）。
+        SetupMainWindow.restore_ui_state(self)
         # 装载 Apps 目录下的应用模组（菜单 + 页面 + 语言）
         load_apps()
         # 添加标题描述
@@ -131,6 +145,51 @@ class SetupMainWindow:
         #     icon_path=PathFactory.set_svg_icon("icon_setting"),
         # )
         # MainFunctions.set_right_column_menu(self, self.ui.right_column.menu_1)
+        SetupMainWindow.clamp_to_screen(self)
+
+    @staticmethod
+    def restore_ui_state(window):
+        """恢复上次保存的主题 / 语言 / 窗口尺寸（缺失或非法值时保持默认）。"""
+        state = load_ui_state()
+
+        theme = state.get("theme")
+        if isinstance(theme, str) and theme in AppThemes:
+            get_theme_manager().apply(theme)
+            # 窗口已按配置主题构建过一次，恢复后要立刻重建样式
+            apply_style = getattr(getattr(window.ui, "window", None), "apply_style", None)
+            if callable(apply_style):
+                apply_style()
+
+        language = state.get("language")
+        if isinstance(language, str) and language in LANGUAGE_OPTIONS and language != Language.current():
+            Language.apply(language)
+
+        size = state.get("window_size")
+        if isinstance(size, (list, tuple)) and len(size) == 2:
+            try:
+                width, height = int(size[0]), int(size[1])
+            except (TypeError, ValueError):
+                width = height = 0
+            if width > 0 and height > 0:
+                window.resize(width, height)
+
+    @staticmethod
+    def clamp_to_screen(window):
+        """把启动尺寸夹到当前屏幕的可用逻辑尺寸内。
+
+        高 DPI（如 150%）下 ``startup_size`` 是逻辑像素，但配置文件里的
+        1280×840 可能大于逻辑屏幕 1280×800，窗口底部与右侧会被裁掉。
+        这里只缩小、不放大，正常 DPI 下不改变任何窗口尺寸。
+        """
+        screen = window.screen() or QGuiApplication.primaryScreen()
+        if screen is None:
+            return
+        available = screen.availableGeometry()
+        width = min(window.width(), available.width())
+        height = min(window.height(), available.height())
+        if width != window.width() or height != window.height():
+            window.resize(width, height)
+            Logger.debug(f"启动尺寸已夹到屏幕可用区域: {width}x{height}")
 
     def resize_grips(self):
         self.left_grip.setGeometry(5, 10, 10, self.height())

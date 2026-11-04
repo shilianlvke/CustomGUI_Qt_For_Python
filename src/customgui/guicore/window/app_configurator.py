@@ -215,6 +215,8 @@ class CAppConfigurator(QFrame):
     menuModeChanged = Signal(str)
     darkModeChanged = Signal(bool)
     closed = Signal()
+    #: 嵌入右侧抽屉时，标题栏关闭按钮请求外层收起抽屉。
+    closeRequested = Signal()
 
     #: 抽屉默认宽度
     DEFAULT_WIDTH = 360
@@ -233,7 +235,6 @@ class CAppConfigurator(QFrame):
         self._animation: QPropertyAnimation | None = None
         self._menu_mode = "static"
         self._suppress_dark_sync = False
-        self._color_labels: list[tuple[QLabel, str]] = []
         self._theme_cards: list[_ThemeCard] = []
         self._primary_swatches: list[_Swatch] = []
         self._surface_swatches: list[_Swatch] = []
@@ -244,8 +245,6 @@ class CAppConfigurator(QFrame):
             self.setFixedWidth(self._width)
             self.setSizePolicy(QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Expanding)
         self._setup_ui()
-        if self._embedded:
-            self.close_button.hide()
         self._sync_theme_state()
         self.update_style()
 
@@ -277,11 +276,13 @@ class CAppConfigurator(QFrame):
         header_layout.addWidget(self.header_title, 1)
 
         self.close_button = CCloseButton(QColor(get_design_tokens().colors.text_primary), size=28, radius=6, parent=header)
-        self.close_button.clicked.connect(self.close)
+        self.close_button.clicked.connect(self._request_close)
         header_layout.addWidget(self.close_button, 0, Qt.AlignVCenter)
         root.addWidget(header)
 
         self.content_scroll = CScrollArea(background="transparent", parent=self)
+        # 抽屉高度不足时需要明确的滚动位置提示，否则底部配置项不可发现。
+        self.content_scroll.setVerticalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAsNeeded)
         content = QWidget()
         self.content_layout = QVBoxLayout(content)
         self.content_layout.setContentsMargins(20, 8, 20, 20)
@@ -309,9 +310,9 @@ class CAppConfigurator(QFrame):
             font.setWeight(QFont.Weight.DemiBold)
         else:
             font.setPixelSize(12)
+            label.setProperty("role", "hint")
         label.setFont(font)
         label.setWordWrap(role == "hint")
-        self._color_labels.append((label, role))
         return label
 
     def _section_layout(self, content: QWidget, title: str, hint: str = "") -> QVBoxLayout:
@@ -331,7 +332,11 @@ class CAppConfigurator(QFrame):
         grid.setContentsMargins(0, 0, 0, 0)
         grid.setHorizontalSpacing(8)
         grid.setVerticalSpacing(8)
-        for index, name in enumerate(sorted(AppThemes.keys())):
+        names = sorted(AppThemes.keys())
+        if "default" in names:
+            names.remove("default")
+            names.insert(0, "default")
+        for index, name in enumerate(names):
             card = _ThemeCard(name)
             card.clicked.connect(self.set_theme)
             self._theme_cards.append(card)
@@ -414,18 +419,37 @@ class CAppConfigurator(QFrame):
         return None
 
     @staticmethod
-    def _default_theme() -> str | None:
+    def _light_theme() -> str | None:
+        """关闭深色模式时回退的浅色主题。
+
+        不能直接回 ``AppSettings.theme_name``：默认主题本身是暗色，关掉开关后
+        画面仍是暗色，开关状态与主题就会对不上。这里优先沿用配置里**已经是
+        浅色**的主题，否则按 bright / eye 的顺序挑一套浅色。
+        """
         names = sorted(AppThemes.keys())
         try:
             configured = AppSettings.theme_name
         except Exception:
             configured = None
         if configured in names:
-            return configured
+            try:
+                if QColor(AppThemes[configured].data.custom_bg_one).lightness() >= 128:
+                    return configured
+            except AttributeError:
+                pass
+        for preferred in ("bright", "eye"):
+            if preferred in names:
+                return preferred
+        for name in names:
+            try:
+                if QColor(AppThemes[name].data.custom_bg_one).lightness() >= 128:
+                    return name
+            except AttributeError:
+                continue
         return "default" if "default" in names else (names[0] if names else None)
 
     def _on_dark_toggled(self, checked: bool) -> None:
-        target = self._first_dark_theme() if checked else self._default_theme()
+        target = self._first_dark_theme() if checked else self._light_theme()
         self._suppress_dark_sync = True
         try:
             if target is not None:
@@ -468,6 +492,13 @@ class CAppConfigurator(QFrame):
         self.show()
         self.raise_()
         self._animate_to(QPoint(self._end_x(), 0), None)
+
+    def _request_close(self) -> None:
+        """关闭按钮：独立浮层直接收起，嵌入抽屉时交给外层控制器。"""
+        if self._embedded:
+            self.closeRequested.emit()
+            return
+        self.close()
 
     def close(self) -> None:
         """滑出并隐藏面板，动画结束后发出 ``closed``（嵌入模式下无动作）。"""
@@ -552,12 +583,17 @@ class CAppConfigurator(QFrame):
     # 外观
     # ------------------------------------------------------------------
     def update_style(self) -> None:
-        """主题切换后刷新标签颜色与全部自绘控件（不重建控件树）。"""
+        """主题切换后刷新标签颜色与全部自绘控件（不重建控件树）。
+
+        标签颜色用**一条面板级样式表**统一下发：逐个 ``QLabel.setStyleSheet``
+        会触发每个标签各一次样式重算，主题切换时累计上百毫秒。
+        """
         colors = get_design_tokens().colors
         self.close_button.set_color(QColor(colors.text_primary))
-        for label, role in self._color_labels:
-            color = colors.text_muted if role == "hint" else colors.text_primary
-            label.setStyleSheet(f"color: {color}; background: transparent;")
+        self.setStyleSheet(
+            f"QLabel {{ color: {colors.text_primary}; background: transparent; }}"
+            f'QLabel[role="hint"] {{ color: {colors.text_muted}; }}'
+        )
         for card in self._theme_cards:
             card.update()
         for swatch in (*self._primary_swatches, *self._surface_swatches):

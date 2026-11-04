@@ -13,6 +13,7 @@ from __future__ import annotations
 from PySide6.QtWidgets import QWidget
 
 from customgui.appcore import LANGUAGE_OPTIONS, Language, Logger
+from customgui.appcore.ui_state import save_ui_state
 
 from .windows.main_window.functions import MainFunctions
 
@@ -36,6 +37,8 @@ def apply_language(language: str, window=None) -> str:
             _refresh_window(window)
         except Exception as exc:
             Logger.warning(f"语言刷新部分失败: {exc}")
+    # 3. 记住用户选择，下次启动由 SetupMainWindow.restore_ui_state 恢复
+    save_ui_state(language=language)
     return language
 
 

@@ -17,6 +17,7 @@ class MainWindowButtonUseCase:
         "btn_top_settings": "btn_top_settings",
         "btn_language": "btn_language",
         "btn_themes": "btn_themes",
+        "btn_search": "btn_search",
     }
 
     @staticmethod

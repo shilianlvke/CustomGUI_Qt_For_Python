@@ -1,4 +1,4 @@
-from PySide6.QtCore import QEasingCurve, QPropertyAnimation, Qt, Signal
+from PySide6.QtCore import QEasingCurve, QPropertyAnimation, QRect, Qt, Signal
 from PySide6.QtWidgets import QFrame, QPushButton, QVBoxLayout, QWidget
 
 from customgui.appcore import AppSettings, ColorPalette, Language, PathFactory, get_design_tokens
@@ -77,9 +77,18 @@ class CLeftMenu(QWidget):
     # 添加按钮并设置信号
     # ///////////////////////////////////////////////////////////////
     @staticmethod
-    def _resolve_text(value):
-        """解析 ``language.*`` 资源键；普通字符串原样返回。"""
-        return Language.resolve_key(value) if isinstance(value, str) else value
+    def _resolve_text(value, fallback=None):
+        """解析 ``language.*`` 资源键；普通字符串原样返回。
+
+        缺语言资源时回退到 ``fallback``（应用名），不再把原始 key 直接显示
+        在菜单里——那会被省略号截成 ``language.app.xxx.ap`` 这样的乱码。
+        """
+        if not isinstance(value, str):
+            return value
+        text = Language.resolve_key(value, fallback)
+        if text == value and fallback:
+            return fallback
+        return text
 
     def add_menus(self, parameters):
         if parameters is not None:
@@ -88,14 +97,15 @@ class CLeftMenu(QWidget):
                 _btn_id = parameter["btn_id"]
                 _btn_text_key = parameter["btn_text"]
                 _btn_tooltip_key = parameter["btn_tooltip"]
+                _btn_fallback = parameter.get("btn_text_fallback")
                 _show_top = parameter["show_top"]
                 _is_active = parameter["is_active"]
 
                 self.menu = CLeftMenuButton(
                     self._app_parent,
-                    text=self._resolve_text(_btn_text_key),
+                    text=self._resolve_text(_btn_text_key, _btn_fallback),
                     btn_id=_btn_id,
-                    tooltip_text=self._resolve_text(_btn_tooltip_key),
+                    tooltip_text=self._resolve_text(_btn_tooltip_key, _btn_fallback),
                     icon_path=_btn_icon,
                     is_active=_is_active,
                     font_family=self._font_family,
@@ -103,7 +113,7 @@ class CLeftMenu(QWidget):
                 self.menu.clicked.connect(self.btn_clicked)
                 self.menu.released.connect(self.btn_released)
                 self._menu_buttons[_btn_id] = self.menu
-                self._menu_lang_keys[_btn_id] = (_btn_text_key, _btn_tooltip_key)
+                self._menu_lang_keys[_btn_id] = (_btn_text_key, _btn_tooltip_key, _btn_fallback)
 
                 # 添加到布局
                 if _show_top:
@@ -117,12 +127,12 @@ class CLeftMenu(QWidget):
         resolver = resolver or self._resolve_text
         self.toggle_button.setText(resolver("language.UI.ui_Hide"))
         self.toggle_button.set_tooltip(resolver("language.UI.ui_Show"))
-        for btn_id, (text_key, tooltip_key) in self._menu_lang_keys.items():
+        for btn_id, (text_key, tooltip_key, fallback) in self._menu_lang_keys.items():
             button = self._menu_buttons.get(btn_id)
             if button is None:
                 continue
-            button.setText(resolver(text_key))
-            button.set_tooltip(resolver(tooltip_key))
+            button.setText(resolver(text_key, fallback))
+            button.set_tooltip(resolver(tooltip_key, fallback))
 
     def active_button_id(self):
         """返回当前激活的菜单按钮 ID（无激活按钮时返回 None）。"""
@@ -152,10 +162,21 @@ class CLeftMenu(QWidget):
     def _animate_width(self, target: int, expanded: bool) -> None:
         if self._parent is None:
             return
-        self.animation = QPropertyAnimation(self._parent, b"minimumWidth")
+        # Overlay 模式：菜单框已脱离布局、浮在内容区之上，只能对 geometry 做动画
+        # （改 minimumWidth 不会带动实际宽度）。Static 模式仍是布局内占位，
+        # 动画 minimumWidth 由布局重新分配空间。
+        overlay = getattr(self._parent.window(), "_menu_mode", "static") == "overlay"
+        if overlay:
+            start = self._parent.geometry()
+            end = QRect(start.x(), start.y(), max(1, int(target)), start.height())
+            self.animation = QPropertyAnimation(self._parent, b"geometry")
+            self.animation.setStartValue(start)
+            self.animation.setEndValue(end)
+        else:
+            self.animation = QPropertyAnimation(self._parent, b"minimumWidth")
+            self.animation.setStartValue(self._parent.width())
+            self.animation.setEndValue(target)
         self.animation.stop()
-        self.animation.setStartValue(self._parent.width())
-        self.animation.setEndValue(target)
         self.toggle_button.set_active_toggle(expanded)
         self.toggle_button.set_icon(self._icon_path_close if expanded else self._icon_path)
         self.animation.setEasingCurve(QEasingCurve.InOutCubic)
