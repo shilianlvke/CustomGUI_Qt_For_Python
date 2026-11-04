@@ -85,6 +85,33 @@ def test_tabs_close_removes(qapp):
     assert tabs.tab_text(0) == "Two"
 
 
+def test_tabs_overflow_scrolls_instead_of_squeezing(qapp, host):
+    from PySide6.QtGui import QFontMetrics
+
+    tabs = CTabs(size="sm")
+    for index in range(8):
+        tabs.add_tab(f"Tab-{index}", QLabel(str(index)))
+    tabs.setParent(host)
+    tabs.resize(320, 240)
+    tabs.show()
+    qapp.processEvents()
+
+    bar = tabs.tab_bar()
+    bar.resize(320, bar.height())
+    qapp.processEvents()
+    metrics = QFontMetrics(bar.font())
+    rects = bar._layout_rects()
+    assert bar._max_scroll > 0
+    for index, item in enumerate(bar._items):
+        assert abs(rects[index].width() - bar._content_width(item, metrics)) < 0.5
+
+    tabs.set_current_index(7)
+    qapp.processEvents()
+    rects = bar._layout_rects()
+    current = rects[7]
+    assert current.left() >= -0.5 and current.right() <= bar.width() + 0.5
+
+
 # ----------------------------------------------------------------------
 # CAccordion
 # ----------------------------------------------------------------------

@@ -1,10 +1,11 @@
-from PySide6.QtCore import QEasingCurve, QPropertyAnimation, QRect, Qt, Signal
+from PySide6.QtCore import QEasingCurve, QParallelAnimationGroup, QPropertyAnimation, QRect, Qt, Signal
 from PySide6.QtWidgets import QFrame, QPushButton, QVBoxLayout, QWidget
 
 from customgui.appcore import AppSettings, ColorPalette, Language, PathFactory, get_design_tokens
 from customgui.guicore.custom_ui.div import CHDiv
 
 from .menu_button import CLeftMenuButton
+from .overlay import menu_panel_width, menu_rail_width
 
 
 class CLeftMenu(QWidget):
@@ -157,10 +158,35 @@ class CLeftMenu(QWidget):
     def toggle_animation(self):
         if self._parent is None:
             return
-        if self._parent.width() <= self._minimum_width + 8:
-            self.expand()
-        else:
+        if self.is_expanded():
             self.collapse()
+        else:
+            self.expand()
+
+    def is_expanded(self) -> bool:
+        """当前是否处于展开态（按两种宽度取中值判定，兼容内容边距）。"""
+        if self._parent is None:
+            return False
+        threshold = (menu_rail_width() + menu_panel_width()) // 2
+        return self._parent.width() > threshold
+
+    def set_expanded(self, expanded: bool, animate: bool = True) -> None:
+        """设置展开态；``animate=False`` 时立即到位（启动初始化用）。"""
+        target = menu_panel_width() if expanded else menu_rail_width()
+        if animate:
+            self._animate_width(target, expanded)
+            return
+        if self._parent is None:
+            return
+        overlay = getattr(self._parent.window(), "_menu_mode", "static") == "overlay"
+        if overlay:
+            rect = self._parent.geometry()
+            self._parent.setGeometry(QRect(rect.x(), rect.y(), max(1, int(target)), rect.height()))
+        else:
+            self._parent.setMinimumWidth(target)
+            self._parent.setMaximumWidth(target)
+        self.sync_toggle_appearance(expanded)
+        self._sync_overlay_scrim()
 
     def _animate_width(self, target: int, expanded: bool) -> None:
         if self._parent is None:
@@ -182,13 +208,29 @@ class CLeftMenu(QWidget):
             if expanded:
                 self._show_overlay_scrim()
         else:
-            self.animation = QPropertyAnimation(self._parent, b"minimumWidth")
-            self.animation.setStartValue(self._parent.width())
-            self.animation.setEndValue(target)
+            # Static：菜单框是布局成员，宽度由 minimumWidth 决定；但窗口初始会把
+            # maximumWidth 钉在收起宽度上，只动画 minimumWidth 会被立刻夹回，
+            # 因此两条约束必须同步动画，否则展开无效或中途回弹。
+            current_min = self._parent.minimumWidth()
+            current_max = self._parent.maximumWidth()
+            group = QParallelAnimationGroup(self._parent)
+            for prop, start_value in ((b"minimumWidth", current_min), (b"maximumWidth", current_max)):
+                anim = QPropertyAnimation(self._parent, prop, group)
+                anim.setStartValue(start_value)
+                anim.setEndValue(target)
+                group.addAnimation(anim)
+            self.animation = group
+            self._animation_children = [anim]
         self.animation.stop()
         self.sync_toggle_appearance(expanded)
-        self.animation.setEasingCurve(easing)
-        self.animation.setDuration(duration)
+        if overlay:
+            self.animation.setEasingCurve(easing)
+            self.animation.setDuration(duration)
+        else:
+            # QParallelAnimationGroup 没有时长/曲线设置，需逐个子动画配置。
+            for anim in self._animation_children:
+                anim.setEasingCurve(easing)
+                anim.setDuration(duration)
         self.animation.finished.connect(self._sync_overlay_scrim)
         self.animation.start()
 
@@ -236,7 +278,7 @@ class CLeftMenu(QWidget):
         scrim = getattr(window, "_menu_overlay_scrim", None)
         if scrim is None:
             return
-        if parent.width() > self._minimum_width + 8:
+        if self.is_expanded():
             scrim.fade_in()
             scrim.raise_()
             parent.raise_()
@@ -244,13 +286,13 @@ class CLeftMenu(QWidget):
             scrim.fade_out()
 
     def _overlay_expanded(self) -> bool:
-        return self._parent is not None and self._parent.width() > self._minimum_width + 8
+        return self.is_expanded()
 
     def expand(self) -> None:
-        self._animate_width(self._maximum_width, True)
+        self._animate_width(menu_panel_width(), True)
 
     def collapse(self) -> None:
-        self._animate_width(self._minimum_width, False)
+        self._animate_width(menu_rail_width(), False)
 
     # 仅选择一个BTN
     def select_only_one(self, widget: str):

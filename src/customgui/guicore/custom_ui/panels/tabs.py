@@ -66,6 +66,9 @@ class _TabBar(QWidget):
         self._from = QRectF()
         self._to = QRectF()
         self._animation: QVariantAnimation | None = None
+        # 超出可用宽度时改为横向滚动，而不是把每个标签压到无法阅读
+        self._scroll = 0.0
+        self._max_scroll = 0.0
 
         self.setMouseTracking(True)
         self.setFocusPolicy(Qt.StrongFocus)
@@ -96,6 +99,8 @@ class _TabBar(QWidget):
 
     def set_items(self, items: list[_TabItem]) -> None:
         self._items = items
+        self._scroll = 0.0
+        self._max_scroll = 0.0
         self._reset_indicator()
 
     def refresh(self) -> None:
@@ -125,7 +130,40 @@ class _TabBar(QWidget):
         self.ensureVisible(index)
 
     def ensureVisible(self, index: int) -> None:
-        """标签压缩后始终可见（当前不滚动，仅保证选中项不被挤没）。"""
+        """保证指定标签完整可见：超出宽度时横向滚动到该标签。"""
+        rects = self._layout_rects()
+        rect = rects.get(index)
+        if rect is None or self._max_scroll <= 0:
+            return
+        target = self._scroll
+        if rect.left() < 0:
+            target += rect.left()
+        elif rect.right() > self.width():
+            target += rect.right() - self.width()
+        self._scroll_to(target)
+
+    # ------------------------------------------------------------------
+    # 横向滚动
+    # ------------------------------------------------------------------
+    def _scroll_to(self, value: float) -> None:
+        value = max(0.0, min(float(value), self._max_scroll))
+        if abs(value - self._scroll) < 0.5:
+            return
+        self._scroll = value
+        self._hover = -1
+        self._hover_close = -1
+        self.update()
+
+    def wheelEvent(self, event):  # noqa: N802 - 覆写 Qt 命名
+        if self._max_scroll <= 0:
+            super().wheelEvent(event)
+            return
+        delta = event.angleDelta().y() or event.angleDelta().x()
+        if delta == 0:
+            super().wheelEvent(event)
+            return
+        self._scroll_to(self._scroll - (48 if delta > 0 else -48))
+        event.accept()
 
     # ------------------------------------------------------------------
     # 布局
@@ -146,6 +184,8 @@ class _TabBar(QWidget):
     def _layout_rects(self) -> dict[int, QRectF]:
         visible = [index for index, item in enumerate(self._items) if item.visible]
         if not visible:
+            self._max_scroll = 0.0
+            self._scroll = 0.0
             return {}
 
         metrics = QFontMetrics(self._tab_font())
@@ -153,16 +193,17 @@ class _TabBar(QWidget):
         total = sum(widths.values())
         available = max(0, self.width())
 
-        if total > available and total > 0:
-            scale = available / total
-            widths = {index: max(36, int(width * scale)) for index, width in widths.items()}
-            total = sum(widths.values())
-            if total > available:
-                each = max(28, available // len(visible))
-                widths = {index: min(width, each) for index, width in widths.items()}
+        # 放得下就保持自然宽度；放不下时保留可读宽度并允许横向滚动。
+        # 旧实现按比例压缩所有标签，8 个标签时文字会被截成省略号甚至只剩图标。
+        if total > available:
+            self._max_scroll = float(total - available)
+            self._scroll = min(max(0.0, self._scroll), self._max_scroll)
+        else:
+            self._max_scroll = 0.0
+            self._scroll = 0.0
 
         rects: dict[int, QRectF] = {}
-        x = 0.0
+        x = -self._scroll
         for index in visible:
             width = float(widths[index])
             rects[index] = QRectF(x, 0, width, float(self.height()))
@@ -228,6 +269,7 @@ class _TabBar(QWidget):
     def resizeEvent(self, event):  # noqa: N802 - 覆写 Qt 命名
         super().resizeEvent(event)
         self._stop_animation()
+        self.ensureVisible(self._current)
         target = self._indicator_rect(self._current)
         self._indicator = target or QRectF()
         self.update()
@@ -309,7 +351,34 @@ class _TabBar(QWidget):
             painter.setBrush(QColor(colors["accent"]))
             painter.drawRoundedRect(self._indicator, 1, 1)
 
+        self._paint_scroll_hint(painter, colors)
         painter.end()
+
+    def _paint_scroll_hint(self, painter: QPainter, colors: dict) -> None:
+        """横向溢出时在两端画 ‹ / ›，提示还可以继续滚动。"""
+        if self._max_scroll <= 0:
+            return
+        height = float(self.height())
+        chip = QColor(colors["text"])
+        chip.setAlpha(24)
+        glyph_color = QColor(colors["muted"])
+        glyph_color.setAlpha(200)
+        for visible, rect, glyph, align in (
+            (self._scroll > 0, QRectF(2, (height - 18) / 2, 15, 18), "‹", Qt.AlignVCenter | Qt.AlignLeft),
+            (
+                self._scroll < self._max_scroll,
+                QRectF(self.width() - 17, (height - 18) / 2, 15, 18),
+                "›",
+                Qt.AlignVCenter | Qt.AlignRight,
+            ),
+        ):
+            if not visible:
+                continue
+            painter.setPen(Qt.NoPen)
+            painter.setBrush(chip)
+            painter.drawRoundedRect(rect, 6, 6)
+            painter.setPen(glyph_color)
+            painter.drawText(rect, align, glyph)
 
     def _paint_close(self, painter: QPainter, rect: QRectF, index: int, colors: dict) -> None:
         close = self._close_rect(rect)

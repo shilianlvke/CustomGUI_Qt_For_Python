@@ -60,6 +60,9 @@ from .display import (
 from .display import (
     CTag as CTag,
 )
+from .display import (
+    CText as CText,
+)
 from .div import CHDiv as CHDiv
 from .div import CVDiv as CVDiv
 from .feedback import CMessage as CMessage
@@ -263,6 +266,7 @@ __all__ = [
     "CToolTip",
     "CPageTransition",
     "CTag",
+    "CText",
     "CBadge",
     "CChip",
     "CAvatar",

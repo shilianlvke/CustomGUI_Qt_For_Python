@@ -6,6 +6,7 @@ from .divider import CDivider as CDivider
 from .progress import CProgressBar as CProgressBar
 from .skeleton import CSkeleton as CSkeleton
 from .tag import CTag as CTag
+from .text import CText as CText
 
 __all__ = [
     "CTag",
@@ -16,4 +17,5 @@ __all__ = [
     "CSkeleton",
     "CProgressBar",
     "CDivider",
+    "CText",
 ]

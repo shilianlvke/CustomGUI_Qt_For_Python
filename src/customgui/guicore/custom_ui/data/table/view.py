@@ -226,6 +226,24 @@ class CDataTable(QWidget):
         index = self._main.currentIndex()
         return self._model.record_at(index.row()) if index.isValid() else None
 
+    def current_row(self) -> int:
+        """当前行号；无选中行时返回 -1。"""
+        index = self._main.currentIndex()
+        return index.row() if index.isValid() else -1
+
+    def select_row(self, row: int, clear: bool = True) -> bool:
+        """按行号选中整行并滚动到可见位置（供宿主像列表一样驱动选中态）。"""
+        if not (0 <= row < self._model.rowCount()):
+            return False
+        column = self._main.currentIndex().column() if self._main.currentIndex().isValid() else 0
+        index = self._model.index(row, max(0, column))
+        if clear:
+            self._main.clearSelection()
+        self._main.setCurrentIndex(index)
+        self._main.selectRow(row)
+        self._main.scrollTo(index, QAbstractItemView.ScrollHint.PositionAtCenter)
+        return True
+
     def _on_selection_changed(self, *_args) -> None:
         records = self.selected_records()
         if records:
