@@ -15,12 +15,10 @@ from types import SimpleNamespace
 
 import pytest
 from PySide6.QtCore import QCoreApplication, QEasingCurve, QEvent
-from PySide6.QtGui import QColor
 from PySide6.QtTest import QTest
 from PySide6.QtWidgets import QApplication, QFrame, QStackedWidget, QWidget
 
 from customgui.guicore import CPageTransition
-from customgui.guicore.styles import region_card_background
 from customgui.guis.windows.main_window.functions import MainFunctions
 
 LAYER_NAME = "CPageTransition_Layer"
@@ -256,9 +254,8 @@ def test_set_page_honours_animate_flag(stack, fast_timing):
 # 区域背景卡片参与过场
 # ----------------------------------------------------------------------
 def test_stage_card_is_part_of_the_transition(stage, fast_timing):
-    """遮罩铺满整张卡片，卡片底色随过场一起出现在画面上（不跳色）。"""
+    """遮罩铺满整张卡片；擦除到底露出卡片自身的玻璃背景（无实色闪帧）。"""
     container, card, stack = stage
-    surface = QColor(region_card_background())
 
     assert CPageTransition.switch(stack, stack.widget(1), stage=card) is True
     state = getattr(stack, CPageTransition._STATE_ATTR)
@@ -268,18 +265,24 @@ def test_stage_card_is_part_of_the_transition(stage, fast_timing):
     assert state.layer.parentWidget() is container
     assert state.layer.geometry() == card.geometry()
 
-    # 首帧：整张卡片可见，卡片边缘那一圈已经是卡片底色，而非内容区底色
+    # 首帧仍是完整旧页，不会先闪成底色
     state.layer.repaint()
-    ring = container.grab().toImage().pixelColor(card.x() + 2, card.y() + card.height() // 2)
-    assert ring.name().lower() == surface.name().lower()
+    first = state.layer.grab().toImage().pixelColor(state.layer.width() // 2, state.layer.height() // 2)
+    assert first.name().lower() == "#101010"
 
-    # 擦除到底：整张卡片都是卡片底色，擦除阶段结束时颜色不跳变
+    # 擦除到底：遮罩完全透明（不铺 region_card_background 实色），
+    # 空白区由卡片自己的背景填充；同时堆叠被临时隐藏，避免新页透出
     state.layer.set_out_progress(1.0)
     state.layer.repaint()
-    center = container.grab().toImage().pixelColor(
-        card.x() + card.width() // 2, card.y() + card.height() // 2
-    )
-    assert center.name().lower() == surface.name().lower()
+    empty = state.layer.grab().toImage().pixelColor(state.layer.width() // 2, state.layer.height() // 2)
+    assert empty.alpha() == 0
+    assert stack.isHidden()
+
+    # 收尾必须恢复堆叠，否则下一个页面切过来时是空白
+    CPageTransition.cancel(stack)
+    _flush_deletes()
+    assert stack.isVisible()
+    assert container.findChild(QWidget, LAYER_NAME) is None
 
 
 def test_switch_without_stage_keeps_page_rect(stack, fast_timing):

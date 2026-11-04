@@ -8,13 +8,17 @@
 4. 新页面从**左侧向右侧**展开（可见宽度 0 → 100%）。
 
 为什么不用交叉淡化：两页同时半透明叠加会让整体亮度先变暗再变亮，
-视觉上就是"闪一下"。这里全程由一块不透明遮罩盖住内容区，
-不存在两页半透明叠加的帧，过渡是"擦掉再画出"。
+视觉上就是"闪一下"。这里全程只画一页快照，不存在两页叠加的帧，
+过渡是"擦掉再画出"。
 
 **过场的画布是整张区域背景卡片**（``stage``），不是内缩后的页面矩形：
-遮罩铺满卡片、按卡片圆角裁剪、以卡片底色打底，于是卡片表面和页面内容
-一起被擦掉、一起展开，不会出现"内容在动、卡片边框静止"的割裂感；底色又
-与样式表同源（``region_card_background``），擦除过程不会跳色。
+遮罩铺满卡片、按卡片圆角裁剪，于是卡片表面和页面内容一起被擦掉、一起
+展开，不会出现"内容在动、卡片边框静止"的割裂感。
+
+透明擦除（``stage`` 路径）：遮罩**不铺底色**，只画带 alpha 的页面快照；
+擦除/展开时露出的空白直接是卡片自己的玻璃背景（含亚克力与壁纸色调）。
+为此过渡期间会临时隐藏 ``QStackedWidget``，避免底下的新页透过空白区。
+不传 ``stage`` 的独立用法保留旧的实色打底模型，行为不变。
 
 三条设计约束：
 
@@ -40,10 +44,15 @@ class _WipeLayer(QWidget):
     表面之内——卡片不需要另画一圈静止的外框。
     """
 
-    def __init__(self, parent, backdrop: QColor, radius: float = 0.0):
+    def __init__(self, parent, backdrop: QColor | None, radius: float = 0.0):
         super().__init__(parent)
         self.setObjectName("CPageTransition_Layer")
         self.setAttribute(Qt.WA_TransparentForMouseEvents, True)
+        # 无底色模式必须真正透明：默认子控件在 grab()/重绘时可能带上父级底色，
+        # 那会变成白色/灰色闪帧。关掉系统背景并显式关闭自动填充。
+        self.setAttribute(Qt.WA_NoSystemBackground, True)
+        self.setAutoFillBackground(False)
+        #: 遮罩底色；``None`` 表示不铺底色，让舞台自身的玻璃背景透出来
         self._backdrop = backdrop
         #: 卡片圆角：0 表示直角舞台（独立使用 ``QStackedWidget`` 时）
         self._radius = max(0.0, float(radius))
@@ -79,7 +88,8 @@ class _WipeLayer(QWidget):
             path = QPainterPath()
             path.addRoundedRect(QRectF(self.rect()), self._radius, self._radius)
             painter.setClipPath(path)
-        painter.fillRect(self.rect(), self._backdrop)
+        if self._backdrop is not None:
+            painter.fillRect(self.rect(), self._backdrop)
         if self._in_progress > 0 and not self._new_pixmap.isNull():
             self._draw_reveal(painter, self._new_pixmap, self._in_progress)
         elif not self._old_pixmap.isNull():
@@ -99,15 +109,26 @@ class _WipeLayer(QWidget):
 class _TransitionState:
     """一次过场的运行时状态：遮罩、时间线、参与联动的两个按钮。"""
 
-    __slots__ = ("layer", "animation", "old_button", "new_button", "timing", "total")
+    __slots__ = (
+        "layer",
+        "animation",
+        "old_button",
+        "new_button",
+        "timing",
+        "total",
+        "stack",
+        "stack_hidden",
+    )
 
-    def __init__(self, layer, animation, old_button, new_button, timing, total):
+    def __init__(self, layer, animation, old_button, new_button, timing, total, stack=None, stack_hidden=False):
         self.layer = layer
         self.animation = animation
         self.old_button = old_button
         self.new_button = new_button
         self.timing = timing
         self.total = total
+        self.stack = stack
+        self.stack_hidden = stack_hidden
 
 
 class CPageTransition:
@@ -135,23 +156,30 @@ class CPageTransition:
         if stack.currentWidget() is page:
             return False
 
+        # 先收尾上一次过场：透明擦除期间堆叠被隐藏，若此时直接取快照会拿到
+        # 一张空白卡片（中断切换时会闪一下）。cancel 会恢复堆叠并撤掉旧遮罩。
+        cls.cancel(stack)
+
         previous = stack.currentWidget()
         timing = cls._timing()
         total = sum(timing[:4])
         if previous is None or total <= 0 or not stack.isVisible():
-            cls.cancel(stack)
             stack.setCurrentWidget(page)
             return False
 
-        backdrop = cls._surface_color(stage)
+        # 舞台（区域卡片）路径使用**透明擦除**：遮罩不铺任何底色，擦除后的空白
+        # 区域直接露出卡片自身的玻璃背景；快照只含内容，卡片原来的透明部分保持
+        # alpha=0。这样擦除时不会用一个近似的实色顶替真实玻璃色（壁纸、亚克力
+        # 色调都会影响卡片最终颜色），从根上消除切换首帧/末帧的闪色。
+        # 不传 stage 的独立用法仍走旧模型（实色打底），保持向后兼容。
+        transparent = stage is not None
+        backdrop = None if transparent else cls._surface_color(stage)
+        snapshot_fill = QColor(Qt.transparent) if transparent else backdrop
         surface = previous if stage is None else stage
-        snapshot = cls._snapshot(surface, backdrop)
+        snapshot = cls._snapshot(surface, snapshot_fill)
         if snapshot is None:
-            cls.cancel(stack)
             stack.setCurrentWidget(page)
             return False
-
-        cls.cancel(stack)
 
         old_button = cls._find_button(menu, previous_button_id)
         new_button = cls._find_button(menu, button_id)
@@ -166,16 +194,30 @@ class CPageTransition:
         # 先把旧页画面同步画到屏幕上，再切底层页面，避免切换瞬间透出底色
         layer.repaint()
 
-        # 切换后新页已在布局中，再抓一张用于最后一段展开
+        # 切换后新页已在布局中，再抓一张用于最后一段展开（此时堆叠仍可见，
+        # 新页才能被渲染进快照）
         stack.setCurrentWidget(page)
         layer.raise_()
-        layer.set_new_pixmap(cls._snapshot(surface, backdrop) or QPixmap())
+        layer.set_new_pixmap(cls._snapshot(surface, snapshot_fill) or QPixmap())
+        if transparent:
+            # 两张快照都拿到后再隐藏堆叠：舞台只剩自己的玻璃背景，擦除/展开的
+            # 空白区与卡片完全同色，不会出现"实色板"或"透明黑洞"。
+            stack.hide()
 
         animation = QVariantAnimation(layer)
         animation.setStartValue(0.0)
         animation.setEndValue(1.0)
         animation.setDuration(total)
-        state = _TransitionState(layer, animation, old_button, new_button, timing, total)
+        state = _TransitionState(
+            layer,
+            animation,
+            old_button,
+            new_button,
+            timing,
+            total,
+            stack=stack,
+            stack_hidden=transparent,
+        )
         animation.valueChanged.connect(lambda value: cls._apply_frame(state, float(value)))
         # 推迟一帧再收尾：不要在自己的 finished 回调里销毁正在派发信号的动画对象
         animation.finished.connect(lambda: QTimer.singleShot(0, lambda: cls._finish(stack, state)))
@@ -234,6 +276,15 @@ class CPageTransition:
     @classmethod
     def _teardown(cls, state) -> None:
         """停时间线、撤遮罩、把按钮高亮落到终态（对象可能已随窗口销毁）。"""
+        # 先恢复堆叠：透明擦除期间它被隐藏，若先删遮罩会在卡片上留一帧空白。
+        # 同步 repaint 让新页在遮罩还盖着时就画好，再撤遮罩即无缝衔接。
+        stack = getattr(state, "stack", None)
+        if getattr(state, "stack_hidden", False) and stack is not None:
+            try:
+                stack.show()
+                stack.repaint()
+            except RuntimeError:
+                pass
         try:
             state.animation.stop()
             state.animation.deleteLater()
@@ -250,7 +301,7 @@ class CPageTransition:
     # 配置与外部对象
     # ///////////////////////////////////////////////////////////////
     @staticmethod
-    def _build_layer(stack, stage, backdrop: QColor, radius: float) -> _WipeLayer:
+    def _build_layer(stack, stage, backdrop: QColor | None, radius: float) -> _WipeLayer:
         """遮罩挂在舞台（区域背景卡片）的上一层，并**铺满整张卡片**。
 
         ``QStackedWidget`` 切换 current 时会把新页 ``raise()``；遮罩若挂在它内部
@@ -266,10 +317,10 @@ class CPageTransition:
 
     @staticmethod
     def _surface_color(stage) -> QColor:
-        """过场底色：舞台是区域背景卡片时取卡片底色，否则退回内容区底色。
+        """旧模型（不传 ``stage``）的过场底色：退回内容区底色。
 
-        底色必须与卡片自身一致，否则擦除阶段露出的就是另一种颜色（跳变）。
-        ``region_card_background`` 与样式表同源，主题切换后自动跟着变。
+        主窗口的 stage 路径已改为透明擦除，不再经过这里；此函数只服务独立
+        堆叠控件的向后兼容行为。
         """
         if stage is None:
             return QColor(ColorPalette.custom_bg_one)
@@ -328,11 +379,12 @@ class CPageTransition:
 
     @staticmethod
     def _snapshot(widget, surface: QColor):
-        """抓舞台快照：先铺卡片底色再渲染子控件。
+        """抓舞台快照：先铺底色再渲染子控件。
 
         ``DrawChildren`` 只画子控件、不画控件自身的 QSS 背景，所以先用 ``surface``
-        打底——快照里必须有卡片表面，否则遮罩盖上去的那一瞬间卡片会"空"成
-        另一种颜色。舞台是页面矩形（无卡片）时，铺的仍是内容区底色，行为不变。
+        打底。舞台路径传 ``QColor(Qt.transparent)``：快照保持 alpha，透明区域
+        让卡片自身的玻璃背景透出来；独立的堆叠控件路径仍铺实色内容区底色，
+        行为不变。
         """
         if widget is None:
             return None
