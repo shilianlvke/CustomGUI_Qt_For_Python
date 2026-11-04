@@ -1,8 +1,10 @@
+from PySide6.QtCore import QEasingCurve, QPropertyAnimation, Qt, QTimer
 from PySide6.QtGui import QColor
 from PySide6.QtWidgets import QApplication, QFrame, QGraphicsDropShadowEffect, QHBoxLayout, QVBoxLayout
 
 from customgui.appcore import AppSettings, get_design_tokens
 
+from ...acrylic import acrylic_active, apply_acrylic, remove_acrylic
 from ...styles import Styles
 
 #: 无圆角、无边框的框架状态（最大化 / 贴边时使用），对应样式表里的属性选择器
@@ -38,6 +40,11 @@ class CWindow(QFrame):
         self._style_has_override = False
         #: 阴影效果对象（关闭时置 None，Qt 会随 ``setGraphicsEffect(None)`` 销毁它）
         self.shadow: QGraphicsDropShadowEffect | None = None
+        #: 当前顶层窗口是否已挂上亚克力材质
+        self._acrylic_applied = False
+        #: 首次显示淡入只播放一次（最大化/还原不重复）
+        self._fade_played = False
+        self._fade_animation: QPropertyAnimation | None = None
         self.apply_style()
         self.set_shadow_enabled(AppSettings.custom_title_bar and AppSettings.window_shadow)
 
@@ -66,6 +73,8 @@ class CWindow(QFrame):
         app = QApplication.instance()
         if app is not None and app.styleSheet() != style:
             app.setStyleSheet(style)
+        # 主题切换后亚克力色调要跟着重算（该调用约 0.15ms 且幂等）
+        self._sync_acrylic()
 
     def set_stylesheet(self, border_radius=None, border_size=None):
         """覆盖框架圆角/边框；两个参数均为 None 时清除覆盖（恢复主题默认）。
@@ -102,6 +111,56 @@ class CWindow(QFrame):
         self.update()
 
     # ------------------------------------------------------------------
+    # 亚克力材质与入场动效
+    # ------------------------------------------------------------------
+    def showEvent(self, event):
+        """窗口首次显示：挂上系统级亚克力材质并播放淡入。"""
+        super().showEvent(event)
+        # 顶层 HWND 在 show 之后才稳定，延后一轮事件循环再挂材质
+        # 带 context 的重载：控件先一步销毁时回调不会打到已删除的 C++ 对象
+        QTimer.singleShot(0, self, self._sync_acrylic)
+        self._play_fade_in()
+
+    def _sync_acrylic(self) -> None:
+        """按当前主题与配置同步顶层窗口的亚克力材质。
+
+        只在「顶层窗口已显示 + 启用了无边框半透明窗口」时执行；组件嵌入普通
+        QWidget（示例、测试）时静默跳过，不影响既有用法。
+        """
+        target = self.window()
+        if target is None or target is self:
+            return
+        if not acrylic_active():
+            if self._acrylic_applied:
+                remove_acrylic(target)
+                self._acrylic_applied = False
+            return
+        if not target.isVisible() or not target.testAttribute(Qt.WA_TranslucentBackground):
+            return
+        self._acrylic_applied = apply_acrylic(target)
+
+    def _play_fade_in(self) -> None:
+        """首次显示时对顶层窗口做一次短淡入（亚克力灯光晕的"凝聚"感）。
+
+        只在原生亚克力可用时播放；``acrylic.fade_in`` 为 0 或非 Windows
+        环境直接跳过，保证离屏测试与截图拿到的是不透明终态。
+        """
+        if self._fade_played or not acrylic_active():
+            return
+        self._fade_played = True
+        duration = int(AppSettings.acrylic.fade_in)
+        target = self.window()
+        if duration <= 0 or target is None or target is self:
+            return
+        animation = QPropertyAnimation(target, b"windowOpacity", self)
+        animation.setDuration(duration)
+        animation.setStartValue(0.0)
+        animation.setEndValue(1.0)
+        animation.setEasingCurve(QEasingCurve.OutCubic)
+        animation.start()
+        self._fade_animation = animation
+
+    # ------------------------------------------------------------------
     # 阴影
     # ------------------------------------------------------------------
     def set_shadow_enabled(self, enabled: bool) -> None:
@@ -109,8 +168,13 @@ class CWindow(QFrame):
 
         最大化时关掉：窗口铺满屏幕后阴影本来就看不见，而
         ``QGraphicsDropShadowEffect`` 会让整窗改走离屏合成，拖慢还原后的首帧。
+
+        亚克力模式同样必须关闭：效果会把整棵内容树（图标、文字、卡片）先渲染
+        到离屏位图再画它们的投影，而玻璃窗口本身是半透明的，这层"内容阴影"
+        会从窗口内部透出来，表现为图标/文字周围一圈灰绿色残影。窗口外轮廓
+        交给系统材质与 2px 边框表达。
         """
-        enabled = bool(enabled) and bool(AppSettings.window_shadow)
+        enabled = bool(enabled) and bool(AppSettings.window_shadow) and not acrylic_active()
         if enabled:
             if self.graphicsEffect() is not None:
                 return

@@ -3,6 +3,29 @@ from PySide6.QtGui import QColor
 
 from customgui.appcore import Logger, PathFactory, get_design_tokens
 
+from .acrylic import acrylic_active
+
+# ----------------------------------------------------------------------
+# 亚克力玻璃层的不透明度（0-1）
+# ----------------------------------------------------------------------
+# 仅在原生亚克力可用时生效；叠加顺序为
+# 桌面 -> 亚克力色调（acrylic.opacity）-> 窗口 -> 侧栏/面板 -> 区域卡片 -> 卡片。
+# 数值越大越接近实色：太大看不到模糊，太小会牺牲文字可读性。
+# 主界面（CWindow）本身就是背景层：由它铺这层玻璃，标题栏、侧栏、内容卡片
+# 都是它的子控件，不再额外引入任何"背景窗口/背景控件"。这样标题栏的鼠标
+# 命中区域、拖动与双击最大化等原生交互都留在原来的控件树上。
+GLASS_WINDOW = 0.24
+# 侧栏 / 标题栏 / 版权栏不再叠自己的底色：它们与窗口四周的留白共用同一层
+# 玻璃，任何暴露在布局间隙里的窗口底色都与侧栏完全同色，不会出现「竖条
+# 比旁边面板更粉/更绿」的拼色接缝。
+GLASS_SIDEBAR = 0.0
+GLASS_PANEL = 0.0
+# 内容区是压在玻璃上的一整张「纸」，比外壳更实，保证正文可读性
+GLASS_REGION = 0.34
+GLASS_CARD = 0.34
+GLASS_CONTROL = 0.22
+GLASS_MENU = 0.92
+
 
 def _mix(start: str, end: str, ratio: float) -> str:
     """两个颜色按比例混合（``ratio``=0 取 start，=1 取 end）。"""
@@ -14,18 +37,46 @@ def _mix(start: str, end: str, ratio: float) -> str:
     ).name()
 
 
-def region_card_background() -> str:
-    """区域背景卡片（主内容区 + 四向抽屉）的底色。
+def _rgba(value: str, alpha: float) -> str:
+    """把颜色转成带透明度的 ``rgba()`` 写法（Qt QSS 不支持 ``#RRGGBBAA``）。"""
+    color = QColor(value)
+    if not color.isValid():
+        return value
+    channel = max(0, min(255, round(color.alpha() * max(0.0, min(1.0, alpha)))))
+    return f"rgba({color.red()}, {color.green()}, {color.blue()}, {channel})"
 
-    取 ``surface_app`` 与 ``surface_panel`` 的中间调：既区别于窗口底色
-    （否则整块卡片会看不见），也不与页面里的 ``surface_card`` 卡片撞色
-    （否则插件页面自己的卡片会融进背景）。
 
-    本函数是**唯一**取色处：样式表与页面过场遮罩共用它，过场擦除时才不会
-    在卡片表面留下一条异色带（颜色跳变）。
-    """
+def _composite(front: str, alpha: float, back: str) -> str:
+    """把半透明前景压到不透明背景上，返回合成的实色（过场遮罩打底用）。"""
+    top, bottom = QColor(front), QColor(back)
+    alpha = max(0.0, min(1.0, alpha))
+    return QColor(
+        round(top.red() * alpha + bottom.red() * (1 - alpha)),
+        round(top.green() * alpha + bottom.green() * (1 - alpha)),
+        round(top.blue() * alpha + bottom.blue() * (1 - alpha)),
+    ).name()
+
+
+def region_card_tint() -> str:
+    """区域背景卡片的玻璃色调（未叠加透明度）。"""
     colors = get_design_tokens().colors
     return _mix(colors.surface_app, colors.surface_panel, 0.5)
+
+
+def region_card_background() -> str:
+    """区域背景卡片的**等效不透明底色**（兼容入口）。
+
+    主窗口的栏目过场已改为「透明擦除」：遮罩不铺底色，擦除后的空白直接露出
+    卡片自身的玻璃层（见 ``CPageTransition``），因此不再需要这个实色近似。
+    本函数保留给不传 ``stage`` 的独立堆叠控件、自定义动画与外部调用，结果
+    仍随主题更新。
+    """
+    tint = region_card_tint()
+    if not acrylic_active():
+        return tint
+    colors = get_design_tokens().colors
+    window = _composite(colors.surface_app, GLASS_WINDOW, colors.surface_app)
+    return _composite(tint, GLASS_REGION, window)
 
 
 class Styles:
@@ -42,6 +93,11 @@ class Styles:
        （见 ``CStatusButton._apply_geometry``）；这些尺寸的取值**全部来自设计
        令牌**（``customgui.appcore.sysx.modules.token_module``），组件暴露的几何参数默认取
        ``None`` 并回落到对应令牌，显式传参即可覆盖。
+
+    亚克力材质：``acrylic_active()`` 为真时，各层底色改用半透明 ``rgba()``，
+    透出系统级模糊背景；不可用时保持原有的不透明主题色，避免「半透明但
+    没有模糊」的脏画面。悬浮/按下等状态色同样按透明度分档，保证玻璃上仍然
+    有清晰的层次。
     """
 
     def __init__(self):
@@ -50,11 +106,44 @@ class Styles:
         # 资源以绝对路径注入 QSS，避免相对路径依赖工作目录（跨平台路径统一为正斜杠）
         self._icon_arrow_right = PathFactory.set_svg_icon("icon_arrow_right").replace("\\", "/")
         self._icon_arrow_down = PathFactory.set_svg_icon("icon_arrow_down").replace("\\", "/")
+
+        colors = self.tokens.colors
+        glass = acrylic_active()
+        self.glass = glass
+
+        # 各层表面：玻璃模式下使用半透明写法，否则保持不透明主题色
+        self._window_bg = _rgba(colors.surface_app, GLASS_WINDOW) if glass else colors.surface_app
+        self._sidebar_bg = _rgba(colors.surface_sidebar, GLASS_SIDEBAR) if glass else colors.surface_sidebar
+        self._panel_bg = _rgba(colors.surface_panel, GLASS_PANEL) if glass else colors.surface_panel
+        self._card_bg = _rgba(colors.surface_card, GLASS_CARD) if glass else colors.surface_card
+        self._region_bg = _rgba(region_card_tint(), GLASS_REGION) if glass else region_card_tint()
+        self._control_bg = _rgba(colors.surface_sidebar, GLASS_CONTROL) if glass else colors.surface_sidebar
+        self._menu_bg = _rgba(colors.surface_interactive, GLASS_MENU) if glass else colors.surface_interactive
+        self._tooltip_bg = _rgba(colors.surface_sidebar, GLASS_MENU) if glass else colors.surface_sidebar
+
+        # 描边与状态层：玻璃模式用正文色的低透明度，深浅主题都会得到
+        # 「深色上是白色高光、浅色上是灰色阴影」的 Fluent 分层效果
+        self._hairline = _rgba(colors.text_primary, 0.10) if glass else colors.surface_app
+        self._stroke = _rgba(colors.text_primary, 0.14) if glass else colors.border_transparent
+        self._stroke_strong = _rgba(colors.text_primary, 0.24) if glass else colors.surface_interactive_pressed
+        self._fill_rest = _rgba(colors.text_primary, 0.045) if glass else colors.surface_interactive
+        self._fill_hover = _rgba(colors.text_primary, 0.09) if glass else colors.surface_interactive_hover
+        self._fill_pressed = _rgba(colors.text_primary, 0.14) if glass else colors.surface_interactive_pressed
+        self._accent_soft = _rgba(colors.border_context, 0.18) if glass else colors.surface_interactive_hover
+        self._accent_border = _rgba(colors.border_context, 0.70) if glass else colors.border_context
+        self._gridline = _rgba(colors.text_primary, 0.07) if glass else colors.surface_interactive_pressed
+        self._scroll_handle = _rgba(colors.text_primary, 0.22) if glass else colors.surface_interactive_pressed
+
+        # 每种模式下的具体描边
+        self._window_border = self._stroke if glass else colors.surface_interactive_pressed
+        self._input_border = self._stroke if glass else colors.surface_interactive_pressed
+        self._card_border = self._stroke if glass else colors.border_transparent
+
         self.style = f"""
             #CWindow_Frame {{
-                background-color: {self.tokens.colors.surface_app};
-                border-radius: {self.tokens.radius.window};
-                border: {self.tokens.border.width}px solid {self.tokens.colors.surface_interactive_pressed};
+                background-color: {self._window_bg};
+                border-radius: {self.tokens.radius.window}px;
+                border: {self.tokens.border.width}px solid {self._window_border};
             }}
             /* 最大化/贴边：由 CWindow 改这条动态属性即可，无需重建整张样式表 */
             #CWindow_Frame[frameStyle="flat"] {{
@@ -62,15 +151,15 @@ class Styles:
                 border: 0px solid transparent;
             }}
             #CLeftMenu_Bg_Frame {{
-                background: {self.tokens.colors.surface_sidebar};
+                background-color: {self._sidebar_bg};
             }}
             #CTitleBar_Bg_Frame {{
-                background: {self.tokens.colors.surface_panel};
-                border-radius: {self.tokens.radius.window};
+                background-color: {self._panel_bg};
+                border-radius: {self.tokens.radius.window}px;
             }}
             #CCredits_Bg_Frame {{
-                background: {self.tokens.colors.surface_panel};
-                border-radius: {self.tokens.radius.window};
+                background-color: {self._panel_bg};
+                border-radius: {self.tokens.radius.window}px;
             }}
             #CCredits_Bg_Frame QLabel {{
                 font: {self.tokens.typography.size_text}pt "{self.tokens.typography.family}";
@@ -79,16 +168,15 @@ class Styles:
                 padding-right: {self.tokens.spacing.padding_md}px;
             }}
             #CCard_Frame {{
-                border: {self.tokens.border.width}px solid transparent;
+                border: {self.tokens.border.width}px solid {self._card_border};
                 border-radius: {self.tokens.radius.window}px;
-                border-color: transparent;
-                background-color: {self.tokens.colors.surface_card};
+                background-color: {self._card_bg};
             }}
             #CHDiv_Frame {{
-                background: {self.tokens.colors.surface_app};
+                background-color: {self._hairline};
             }}
             #CVDiv_Frame {{
-                background: {self.tokens.colors.surface_app};
+                background-color: {self._hairline};
             }}
             QFrame {{
                 color: {self.tokens.colors.text_primary};
@@ -113,16 +201,17 @@ class Styles:
 
         卡片只提供**底色 + 圆角**，不再描边：描边会在卡片与内部内容之间夹出
         一圈异色窄环，内容也就不可能和卡片"无缝拼接"。底色见
-        :func:`region_card_background`（页面过场遮罩复用同一函数取色，切换时
-        不跳色），圆角取 ``radius.window``，五个区域完全同一套规则，深浅主题
-        自动跟随。
+        :func:`region_card_tint`，圆角取 ``radius.window``，五个区域完全同一
+        套规则，深浅主题自动跟随。
 
-        内容与卡片齐平由挂载处保证（``ui_main`` 的内容区布局、三向栏目的标题
-        条布局边距均为 0），本文件只负责颜色，几何留在实例侧。
+        亚克力模式下底色是半透明玻璃层，与上方的标题栏/侧栏形成层次；页面
+        过场采用透明擦除，擦除空白直接露出这层玻璃，不再用实色近似。内容与
+        卡片齐平由挂载处保证（``ui_main`` 的内容区布局、三向栏目的标题条布局
+        边距均为 0），本文件只负责颜色，几何留在实例侧。
         """
         self.style += f"""
             #CRegion_Card_Frame {{
-                background-color: {region_card_background()};
+                background-color: {self._region_bg};
                 border: 0px solid transparent;
                 border-radius: {self.tokens.radius.window}px;
             }}
@@ -137,16 +226,17 @@ class Styles:
         self.style += f"""
             #CMenuButton_PushButton {{
                 border-style: solid;
-                border-color: {self.tokens.colors.surface_interactive};
-                background-color: {self.tokens.colors.surface_interactive};
+                border-color: {self._stroke};
+                background-color: {self._fill_rest};
                 color: {self.tokens.colors.text_primary};
                 padding-left: {self.tokens.spacing.padding_md}px;
             }}
             #CMenuButton_PushButton:hover {{
-                background-color: {self.tokens.colors.surface_interactive_hover};
+                background-color: {self._fill_hover};
+                border-color: {self._stroke_strong};
             }}
             #CMenuButton_PushButton:pressed {{
-                background-color: {self.tokens.colors.surface_interactive_pressed};
+                background-color: {self._fill_pressed};
             }}
             #CMenuButton_PushButton::menu-indicator {{
                 image: url({self._icon_arrow_right});
@@ -162,17 +252,17 @@ class Styles:
         """
         self.style += f"""
             #CPushButton_PushButton {{
-                border: {self.tokens.border.width}px solid transparent;
+                border: {self.tokens.border.width}px solid {self._stroke};
                 border-radius: {self.tokens.radius.window}px;
-                background-color: {self.tokens.colors.surface_interactive};
+                background-color: {self._fill_rest};
                 color: {self.tokens.colors.text_primary};
             }}
             #CPushButton_PushButton:hover {{
-                background-color: {self.tokens.colors.surface_interactive_hover};
-                border-color: {self.tokens.colors.surface_interactive_hover};
+                background-color: {self._fill_hover};
+                border-color: {self._stroke_strong};
             }}
             #CPushButton_PushButton:pressed {{
-                background-color: {self.tokens.colors.surface_interactive_pressed};
+                background-color: {self._fill_pressed};
             }}
             #CPushButton_PushButton:flat {{
                 border: {self.tokens.border.width}px solid {self.tokens.colors.text_primary};
@@ -183,41 +273,43 @@ class Styles:
         """输入框族：颜色与状态（高度/圆角/内边距/字号由组件本地覆盖）。
 
         hover 描边取「常态描边 → 正文色」的 35% 混合：深色主题变亮、浅色主题变深，
-        两个方向都更醒目；直接用 ``surface_interactive_hover`` 会让深色主题的描边
-        反而变淡。文字色用 ``text_active`` 保证输入内容的可读性。
+        两个方向都更醒目；玻璃模式下描边本身已是低透明度正文色，混合后仍是
+        同一色相，不会出现"浮在玻璃上的另一个色块"。文字色用 ``text_active``
+        保证输入内容的可读性。
         """
-        border = self.tokens.colors.surface_interactive_pressed
-        hover_border = _mix(border, self.tokens.colors.text_primary, 0.35)
+        border = self._input_border
+        hover_border = _mix(border, self.tokens.colors.text_primary, 0.35) if self.glass else border
+        selection_bg = self._accent_soft
         self.style += f"""
             #CInputText_LineEdit, #CTextarea_PlainTextEdit {{
-                background-color: {self.tokens.colors.surface_sidebar};
+                background-color: {self._control_bg};
                 border: 1px solid {border};
                 color: {self.tokens.colors.text_active};
                 placeholder-text-color: {self.tokens.colors.text_muted};
                 selection-color: {self.tokens.colors.text_active};
-                selection-background-color: {self.tokens.colors.surface_interactive_hover};
+                selection-background-color: {selection_bg};
             }}
             #CInputText_LineEdit:hover, #CTextarea_PlainTextEdit:hover {{
                 border-color: {hover_border};
             }}
             #CInputText_LineEdit:focus, #CTextarea_PlainTextEdit:focus {{
-                border-color: {self.tokens.colors.border_context};
+                border-color: {self._accent_border};
             }}
             #CInputText_LineEdit[invalid="true"], #CTextarea_PlainTextEdit[invalid="true"] {{
                 border-color: #f87171;
             }}
             #CInputText_LineEdit:disabled, #CTextarea_PlainTextEdit:disabled {{
-                background-color: {self.tokens.colors.surface_app};
+                background-color: {self._fill_rest};
                 color: {self.tokens.colors.text_muted};
             }}
             #CLineEdit_LineEdit {{
-                background-color: {self.tokens.colors.surface_interactive};
+                background-color: {self._fill_rest};
                 border-radius: {self.tokens.radius.window}px;
-                border: {self.tokens.border.width}px solid transparent;
+                border: {self.tokens.border.width}px solid {self._stroke};
                 padding-left: {self.tokens.spacing.padding_sm}px;
                 padding-right: {self.tokens.spacing.padding_sm}px;
-                selection-color: {self.tokens.colors.surface_interactive_pressed};
-                selection-background-color: {self.tokens.colors.surface_interactive_hover};
+                selection-color: {self.tokens.colors.text_active};
+                selection-background-color: {self._accent_soft};
                 color: {self.tokens.colors.text_primary};
             }}
         """
@@ -232,21 +324,21 @@ class Styles:
         """
         self.style += f"""
             #CComboBox_Field {{
-                border: {self.tokens.border.width}px solid {self.tokens.colors.border_transparent};
+                border: {self.tokens.border.width}px solid {self._stroke};
                 border-radius: {self.tokens.radius.window}px;
-                background-color: {self.tokens.colors.surface_interactive};
+                background-color: {self._fill_rest};
                 color: {self.tokens.colors.text_primary};
             }}
             #CComboBox_Field[hovered="true"] {{
-                border-color: {self.tokens.colors.border_context};
-                background-color: {self.tokens.colors.surface_interactive_hover};
+                border-color: {self._stroke_strong};
+                background-color: {self._fill_hover};
             }}
             #CComboBox_Field[focused="true"] {{
-                border-color: {self.tokens.colors.text_active};
-                background-color: {self.tokens.colors.surface_interactive_hover};
+                border-color: {self._accent_border};
+                background-color: {self._fill_hover};
             }}
             #CComboBox_Field:disabled {{
-                background-color: {self.tokens.colors.surface_app};
+                background-color: {self._fill_rest};
                 color: {self.tokens.colors.text_muted};
             }}
         """
@@ -260,18 +352,20 @@ class Styles:
         self.style += f"""
             #CStatusButton_PushButton {{
                 border-style: solid;
-                border-color: {self.tokens.colors.border_transparent};
-                background-color: {self.tokens.colors.surface_interactive};
+                border-color: {self._stroke};
+                background-color: {self._fill_rest};
                 color: {self.tokens.colors.text_primary};
             }}
             #CStatusButton_PushButton:hover {{
-                background-color: {self.tokens.colors.surface_interactive_hover};
+                background-color: {self._fill_hover};
+                border-color: {self._stroke_strong};
             }}
             #CStatusButton_PushButton:pressed {{
-                background-color: {self.tokens.colors.surface_interactive_pressed};
+                background-color: {self._fill_pressed};
             }}
             #CStatusButton_PushButton[status="1"] {{
-                border-color: {self.tokens.colors.border_context};
+                border-color: {self._accent_border};
+                background-color: {self._accent_soft};
             }}
             #CStatusButton_PushButton[status="-1"] {{
                 border-color: {self.tokens.colors.state_active};
@@ -284,12 +378,15 @@ class Styles:
         弹出菜单是独立顶层窗口，不经过 CWindow，故依赖 ``CWindow.apply_style``
         下发的应用级样式表着色。圆角/边框宽度/菜单项内边距为实例级几何，由组件
         本地覆盖；``is_transparent`` 经动态属性 ``transparent`` 选择。
+
+        玻璃模式下菜单保持高不透明度（``GLASS_MENU``）：弹层背后没有应用窗口
+        的玻璃层可透，过低会直接看到未模糊的桌面。
         """
         self.style += f"""
             #CMenu_Menu {{
                 border-style: solid;
-                border-color: {self.tokens.colors.border_transparent};
-                background-color: {self.tokens.colors.surface_interactive};
+                border-color: {self._stroke};
+                background-color: {self._menu_bg};
                 color: {self.tokens.colors.text_primary};
             }}
             #CMenu_Menu[transparent="true"] {{
@@ -301,7 +398,7 @@ class Styles:
                 background-color: transparent;
             }}
             #CMenu_Menu::item:selected {{
-                background-color: {self.tokens.colors.surface_interactive_hover};
+                background-color: {self._accent_soft};
             }}
         """
 
@@ -309,17 +406,17 @@ class Styles:
         """CShowCard：上下分区配色（颜色随主题；圆角由组件按实例覆盖）。"""
         self.style += f"""
             #CShowCard #topArea {{
-                background-color: {self.tokens.colors.surface_interactive_pressed};
+                background-color: {self._fill_pressed};
             }}
             #CShowCard #bottomArea {{
-                background-color: {self.tokens.colors.surface_interactive_hover};
+                background-color: {self._fill_hover};
             }}
             #CShowCard #SourceLabel {{
                 color: {self.tokens.colors.text_primary};
-                background-color: {self.tokens.colors.surface_interactive_hover};
+                background-color: {self._fill_hover};
             }}
             #CShowCard #IconLabel {{
-                background-color: {self.tokens.colors.surface_interactive_hover};
+                background-color: {self._fill_hover};
             }}
         """
 
@@ -329,22 +426,24 @@ class Styles:
         提示气泡挂在主窗口下（不经过 CWindow），故依赖应用级样式表；强调边方向
         通过动态属性 ``accent`` 选择（left / top / right）。圆角与左右内边距是
         实例级几何，由组件本地覆盖。
+
+        气泡是顶层弹窗，与菜单同理保持较高不透明度，保证浮在任意背景上可读。
         """
         self.style += f"""
             #label_tooltip {{
-                background-color: {self.tokens.colors.surface_sidebar};
+                background-color: {self._tooltip_bg};
                 color: {self.tokens.colors.text_primary};
                 border: 0px solid {self.tokens.colors.border_transparent};
                 font: {self.tokens.typography.weight_tooltip} {self.tokens.typography.size_text}pt "{self.tokens.typography.family}";
             }}
             #label_tooltip[accent="left"] {{
-                border-left: {self.tokens.border.accent_width}px solid {self.tokens.colors.border_context};
+                border-left: {self.tokens.border.accent_width}px solid {self._accent_border};
             }}
             #label_tooltip[accent="top"] {{
-                border-top: {self.tokens.border.accent_width}px solid {self.tokens.colors.border_context};
+                border-top: {self.tokens.border.accent_width}px solid {self._accent_border};
             }}
             #label_tooltip[accent="right"] {{
-                border-right: {self.tokens.border.accent_width}px solid {self.tokens.colors.border_context};
+                border-right: {self.tokens.border.accent_width}px solid {self._accent_border};
             }}
         """
 
@@ -365,7 +464,7 @@ class Styles:
         """
         self.style += f"""
             #CLeftColumnTitle_Frame {{
-                background-color: {self.tokens.colors.surface_interactive_pressed};
+                background-color: {self._fill_pressed};
             }}
             #CLeftColumnTitle_Label {{
                 color: {self.tokens.colors.text_primary};
@@ -375,7 +474,7 @@ class Styles:
                 background: none;
             }}
             #CTopColumnTitle_Frame {{
-                background-color: {self.tokens.colors.surface_interactive_pressed};
+                background-color: {self._fill_pressed};
             }}
             #CTopColumnTitle_Label {{
                 color: {self.tokens.colors.text_primary};
@@ -385,7 +484,7 @@ class Styles:
                 background: none;
             }}
             #CBottomColumnTitle_Frame {{
-                background-color: {self.tokens.colors.surface_interactive_pressed};
+                background-color: {self._fill_pressed};
             }}
             #CBottomColumnTitle_Label {{
                 color: {self.tokens.colors.text_primary};
@@ -438,16 +537,21 @@ class Styles:
         """
 
     def update_table_style(self):
-        """数据表格与分页条：表头、行、选中态、网格线、滚动条。"""
-        selection = self.tokens.colors.surface_interactive_hover
+        """数据表格与分页条：表头、行、选中态、网格线、滚动条。
+
+        玻璃模式下整张表是低透明度玻璃板，表头再叠一层更实的底色；网格线
+        与选中态全部改用正文色/强调色的低透明度写法，避免在玻璃上出现
+        与主题无关的硬色块。
+        """
+        selection = self._accent_soft
         self.style += f"""
             #CDataTable_View, #CDataTable_FrozenView {{
-                background-color: {self.tokens.colors.surface_card};
-                alternate-background-color: {self.tokens.colors.surface_panel};
+                background-color: {self._card_bg};
+                alternate-background-color: {self._fill_rest};
                 color: {self.tokens.colors.text_primary};
-                border: 1px solid {self.tokens.colors.surface_interactive_pressed};
+                border: 1px solid {self._stroke};
                 border-radius: 8px;
-                gridline-color: {self.tokens.colors.surface_interactive_pressed};
+                gridline-color: {self._gridline};
                 selection-background-color: {selection};
                 selection-color: {self.tokens.colors.text_active};
                 outline: 0;
@@ -456,23 +560,23 @@ class Styles:
                 padding-left: 10px;
                 padding-right: 10px;
                 border: none;
-                border-bottom: 1px solid {self.tokens.colors.surface_interactive_pressed};
+                border-bottom: 1px solid {self._gridline};
             }}
             #CDataTable_View::item:hover, #CDataTable_FrozenView::item:hover {{
-                background-color: {self.tokens.colors.surface_interactive};
+                background-color: {self._fill_hover};
             }}
             #CDataTable_View QHeaderView::section,
             #CDataTable_FrozenView QHeaderView::section {{
-                background-color: {self.tokens.colors.surface_panel};
+                background-color: {self._fill_hover};
                 color: {self.tokens.colors.text_primary};
                 border: none;
-                border-bottom: 1px solid {self.tokens.colors.surface_interactive_pressed};
+                border-bottom: 1px solid {self._stroke};
                 padding: 8px 10px;
                 font-weight: 600;
             }}
             #CDataTable_View QTableCornerButton::section,
             #CDataTable_FrozenView QTableCornerButton::section {{
-                background-color: {self.tokens.colors.surface_panel};
+                background-color: {self._fill_hover};
                 border: none;
             }}
             #CDataTable_View QScrollBar:vertical,
@@ -483,7 +587,7 @@ class Styles:
             }}
             #CDataTable_View QScrollBar::handle:vertical,
             #CDataTable_FrozenView QScrollBar::handle:vertical {{
-                background: {self.tokens.colors.surface_interactive_pressed};
+                background: {self._scroll_handle};
                 min-height: 24px;
                 border-radius: 4px;
             }}
@@ -499,7 +603,7 @@ class Styles:
             }}
             #CDataTable_View QScrollBar::handle:horizontal,
             #CDataTable_FrozenView QScrollBar::handle:horizontal {{
-                background: {self.tokens.colors.surface_interactive_pressed};
+                background: {self._scroll_handle};
                 min-width: 24px;
                 border-radius: 4px;
             }}
@@ -520,7 +624,7 @@ class Styles:
                 margin: 0px;
             }}
             #CFileUpload_ListScroll QScrollBar::handle:vertical {{
-                background: {self.tokens.colors.surface_interactive_pressed};
+                background: {self._scroll_handle};
                 min-height: 24px;
                 border-radius: 4px;
             }}
@@ -529,14 +633,14 @@ class Styles:
                 height: 0px;
             }}
             #CDataTable_Empty, #CDataTable_Loading {{
-                background-color: {self.tokens.colors.surface_card};
+                background-color: {self._card_bg};
                 color: {self.tokens.colors.text_muted};
-                border: 1px solid {self.tokens.colors.surface_interactive_pressed};
+                border: 1px solid {self._stroke};
                 border-radius: 8px;
             }}
             #CDataTable_Detail {{
-                background-color: {self.tokens.colors.surface_panel};
-                border: 1px solid {self.tokens.colors.surface_interactive_pressed};
+                background-color: {self._fill_rest};
+                border: 1px solid {self._stroke};
                 border-radius: 8px;
             }}
             #CPaginator_Label {{

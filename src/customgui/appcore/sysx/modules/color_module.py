@@ -3,43 +3,43 @@ from dataclasses import dataclass
 
 @dataclass
 class ColorHandler:
-    # 默认暗色系
-    custom_dark_one: str = "#1b1e23"
-    custom_dark_two: str = "#1e2229"
-    custom_dark_three: str = "#21252d"
-    custom_dark_four: str = "#272c36"
+    # 默认暗色系（Fluent 中性色阶）
+    custom_dark_one: str = "#1c1c1c"
+    custom_dark_two: str = "#202020"
+    custom_dark_three: str = "#242424"
+    custom_dark_four: str = "#2d2d2d"
 
     # 背景色
-    custom_bg_one: str = "#2c313c"
-    custom_bg_two: str = "#343b48"
-    custom_bg_three: str = "#3c4454"
-    custom_bg_active_one: str = "#57965c"
-    custom_bg_active_two: str = "#ffcf49"
-    custom_bg_active_three: str = "#c94f4f"
+    custom_bg_one: str = "#202020"
+    custom_bg_two: str = "#2b2b2b"
+    custom_bg_three: str = "#323232"
+    custom_bg_active_one: str = "#6ccb5f"
+    custom_bg_active_two: str = "#fce100"
+    custom_bg_active_three: str = "#ff99a4"
 
     # 图标颜色
-    custom_icon_color: str = "#c3ccdf"
-    custom_icon_hover: str = "#dce1ec"
-    custom_icon_pressed: str = "#6c99f4"
-    custom_icon_active: str = "#f5f6f9"
+    custom_icon_color: str = "#c5c5c5"
+    custom_icon_hover: str = "#ffffff"
+    custom_icon_pressed: str = "#4cc2ff"
+    custom_icon_active: str = "#ffffff"
 
     # 上下文颜色
-    custom_context_color: str = "#568af2"
-    custom_context_hover: str = "#6c99f4"
-    custom_context_pressed: str = "#3f6fd1"
+    custom_context_color: str = "#4cc2ff"
+    custom_context_hover: str = "#6fd0ff"
+    custom_context_pressed: str = "#3aa7e0"
 
     # 文本颜色
-    custom_text_title: str = "#dce1ec"
-    custom_text_foreground: str = "#8a95aa"
-    custom_text_description: str = "#4f5b6e"
-    custom_text_active: str = "#dce1ec"
+    custom_text_title: str = "#ffffff"
+    custom_text_foreground: str = "#cfcfcf"
+    custom_text_description: str = "#919191"
+    custom_text_active: str = "#ffffff"
 
     # 基础颜色
-    custom_white: str = "#f5f6f9"
-    custom_pink: str = "#ff007f"
-    custom_green: str = "#57965c"
-    custom_red: str = "#c94f4f"
-    custom_yellow: str = "#ffcf49"
+    custom_white: str = "#ffffff"
+    custom_pink: str = "#ff99a4"
+    custom_green: str = "#6ccb5f"
+    custom_red: str = "#ff99a4"
+    custom_yellow: str = "#fce100"
     custom_transparent: str = "transparent"
 
     def update(self, new_colors: dict) -> None:

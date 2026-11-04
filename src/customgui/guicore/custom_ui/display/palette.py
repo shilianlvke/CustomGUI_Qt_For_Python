@@ -18,19 +18,19 @@ def tokens() -> dict[str, str]:
         return {
             "surface": ColorPalette.custom_dark_four,
             "surface_strong": ColorPalette.custom_bg_two,
-            "skeleton": "#2f3541",
+            "skeleton": ColorPalette.custom_dark_four,
             "border": ColorPalette.custom_dark_four,
             "text": ColorPalette.custom_text_title,
             "muted": ColorPalette.custom_text_description,
             "accent": ColorPalette.custom_context_color,
         }
     return {
-        "surface": "#f8fafc",
-        "surface_strong": "#cbd5e1",
-        "skeleton": "#dbe3ec",
-        "border": "#cbd5e1",
-        "text": "#334155",
-        "muted": "#64748b",
+        "surface": "#f7f7f7",
+        "surface_strong": "#d6d6d6",
+        "skeleton": ColorPalette.custom_dark_four,
+        "border": "#e0e0e0",
+        "text": ColorPalette.custom_text_title,
+        "muted": ColorPalette.custom_text_description,
         "accent": ColorPalette.custom_context_color,
     }
 

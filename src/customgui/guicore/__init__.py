@@ -1,3 +1,10 @@
+from .acrylic import acrylic_active as acrylic_active
+from .acrylic import acrylic_opacity as acrylic_opacity
+from .acrylic import acrylic_supported as acrylic_supported
+from .acrylic import acrylic_tint as acrylic_tint
+from .acrylic import apply_acrylic as apply_acrylic
+from .acrylic import glass_tint as glass_tint
+from .acrylic import remove_acrylic as remove_acrylic
 from .app_ui import CPreviewPage as CPreviewPage
 from .callbacks import is_deleted_qt_error as is_deleted_qt_error
 from .callbacks import safe_callback as safe_callback
@@ -231,6 +238,13 @@ __all__ = [
     "CConfirmPopup",
     "COverlayPanel",
     "Styles",
+    "apply_acrylic",
+    "remove_acrylic",
+    "acrylic_active",
+    "acrylic_opacity",
+    "acrylic_supported",
+    "acrylic_tint",
+    "glass_tint",
     "install_fonts",
     "install_system_fonts",
     "is_deleted_qt_error",

@@ -9,6 +9,9 @@ from PySide6.QtGui import QColor, QFont, QPainterPath
 
 from customgui.appcore import AppSettings, ColorPalette, get_design_tokens
 
+from ...acrylic import acrylic_active, glass_tint
+from ...styles import GLASS_CONTROL
+
 
 @dataclass(frozen=True)
 class InputSize:
@@ -47,7 +50,7 @@ def _mix(start: str, end: str, ratio: float) -> str:
     ).name()
 
 
-def colors() -> dict[str, str]:
+def colors() -> dict[str, str | QColor]:
     """当前主题下的输入组件配色。
 
     输入框没有 severity 维度，底色/描边/文字全部取设计令牌，与 ``styles.py`` 里
@@ -56,23 +59,40 @@ def colors() -> dict[str, str]:
 
     hover 描边取「常态描边 → 正文色」的 35% 混合：深色主题变亮、浅色主题变深，
     两个方向都是「更醒目」，不会像直接用 surface_interactive_hover 那样反向变淡。
+
+    亚克力模式下底色/描边改成与 ``#CInputText_LineEdit`` 完全同一套半透明
+    写法（``GLASS_CONTROL``）：自绘输入框（下拉框、数字框、日期框等）与
+    原生 QLineEdit 并排时不会一实一透。
     """
     tokens = get_design_tokens().colors
     dark = is_dark_theme()
-    border = tokens.surface_interactive_pressed
+    if acrylic_active():
+        background = glass_tint(tokens.surface_sidebar, GLASS_CONTROL)
+        disabled_background = glass_tint(tokens.surface_app, 0.10)
+        border = glass_tint(tokens.text_primary, 0.14)
+        hover_border = glass_tint(tokens.text_primary, 0.28)
+        addon_background = background
+        control_border = glass_tint(tokens.text_primary, 0.24)
+    else:
+        background = tokens.surface_sidebar
+        disabled_background = tokens.surface_app
+        border = tokens.surface_interactive_pressed
+        hover_border = _mix(border, tokens.text_primary, 0.35)
+        addon_background = tokens.surface_sidebar
+        control_border = border
     return {
-        "background": tokens.surface_sidebar,
-        "disabled_background": tokens.surface_app,
+        "background": background,
+        "disabled_background": disabled_background,
         "border": border,
-        "hover_border": _mix(border, tokens.text_primary, 0.35),
+        "hover_border": hover_border,
         "focus_border": tokens.border_context,
         "invalid_border": "#f87171",
         "text": tokens.text_active,
         "placeholder": tokens.text_muted,
         # Aura 的 addon 底色与输入框同色，靠边框区分，不做深浅对比
-        "addon_background": tokens.surface_sidebar,
+        "addon_background": addon_background,
         "icon": tokens.text_primary if dark else tokens.text_muted,
-        "control_border": border,
+        "control_border": control_border,
     }
 
 

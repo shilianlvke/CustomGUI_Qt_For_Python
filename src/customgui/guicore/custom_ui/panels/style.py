@@ -7,6 +7,7 @@ from PySide6.QtGui import QColor, QFont, QPainter, QPainterPath, QPen
 
 from customgui.appcore import AppSettings, ColorPalette
 
+from ...acrylic import acrylic_active, glass_tint
 from ..display.palette import is_dark_theme, tokens
 
 #: 面板圆角（对齐 Aura 的 6px，桌面端略放大一档）
@@ -27,32 +28,38 @@ def panel_settings() -> tuple[int, int, int, int]:
         return 180, 180, 8, 28
 
 
-def panel_colors() -> dict[str, str]:
-    """当前主题下的面板族配色（切主题重绘即生效）。"""
+def panel_colors() -> dict[str, str | QColor]:
+    """当前主题下的面板族配色（切主题重绘即生效）。
+
+    亚克力模式下背景/描边与 ``#CCard_Frame`` 同一套半透明写法：面板是画在
+    卡片上的自绘表面，若继续用不透明底色，会在玻璃卡片上留下实色补丁。
+    文字色仍返回字符串（部分调用点直接拼进 ``setStyleSheet``）。
+    """
     base = tokens()
+    glass = acrylic_active()
     if is_dark_theme():
         return {
-            "background": ColorPalette.custom_bg_one,
-            "header": ColorPalette.custom_dark_one,
-            "hover": ColorPalette.custom_dark_three,
-            "border": base["border"],
-            "divider": base["border"],
+            "background": glass_tint(ColorPalette.custom_bg_one, 0.34) if glass else ColorPalette.custom_bg_one,
+            "header": glass_tint(ColorPalette.custom_dark_one, 0.10) if glass else ColorPalette.custom_dark_one,
+            "hover": glass_tint(ColorPalette.custom_dark_three, 0.14) if glass else ColorPalette.custom_dark_three,
+            "border": glass_tint(base["border"], 0.55) if glass else base["border"],
+            "divider": glass_tint(base["border"], 0.35) if glass else base["border"],
             "text": base["text"],
             "muted": base["muted"],
             "accent": base["accent"],
-            "track": "#3f3f46",
+            "track": glass_tint(ColorPalette.custom_dark_four, 0.55) if glass else ColorPalette.custom_dark_four,
             "on_accent": "#ffffff",
         }
     return {
-        "background": "#ffffff",
-        "header": "#f8fafc",
-        "hover": "#f1f5f9",
-        "border": "#e2e8f0",
-        "divider": "#e2e8f0",
-        "text": "#334155",
-        "muted": "#64748b",
+        "background": glass_tint("#ffffff", 0.34) if glass else "#ffffff",
+        "header": glass_tint("#f8f8f8", 0.10) if glass else "#f8f8f8",
+        "hover": glass_tint("#f0f0f0", 0.14) if glass else "#f0f0f0",
+        "border": glass_tint("#e5e5e5", 0.55) if glass else "#e5e5e5",
+        "divider": glass_tint("#ececec", 0.35) if glass else "#ececec",
+        "text": ColorPalette.custom_text_title,
+        "muted": ColorPalette.custom_text_description,
         "accent": ColorPalette.custom_context_color,
-        "track": "#cbd5e1",
+        "track": glass_tint("#d6d6d6", 0.55) if glass else "#d6d6d6",
         "on_accent": "#ffffff",
     }
 

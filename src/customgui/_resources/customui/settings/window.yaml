@@ -18,6 +18,12 @@ window_border_size: 2
 window_border_radius: 10
 window_shadow: True
 
+# ACRYLIC 亚克力材质（Windows 11 Fluent Design；其它平台自动回落为不透明主题底色）
+acrylic:
+  enabled: True # 是否启用系统级背景模糊
+  opacity: 60 # 色调不透明度（0-100，越小越通透）
+  fade_in: 160 # 窗口首次显示淡入时长（毫秒，0 为关闭）
+
 # LEFT MENU
 lef_menu_size: # 左侧菜单大小✅
   minimum: 50
@@ -28,9 +34,9 @@ left_column_size: # 左侧菜单页大小
   maximum: 240
 
 # RIGHT MENU
-right_column_size: # 右侧菜单页大小
+right_column_size: # 右侧菜单页大小（主题配置页需要更大的可用宽度）
   minimum: 0
-  maximum: 240
+  maximum: 340
 right_menu_content_margins: 3 # 左侧菜单边距✅
 right_title_bar_height: 40
 right_content_space: 6

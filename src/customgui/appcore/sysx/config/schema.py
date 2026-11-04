@@ -273,6 +273,26 @@ class ButtonSettings:
 
 
 @dataclass(frozen=True)
+class AcrylicSettings:
+    """亚克力材质参数（Windows 11 Fluent Design）。
+
+    ``enabled`` 只表达使用意愿：平台不支持时样式表会自动回落到不透明
+    主题底色（见 ``customgui.guicore.acrylic.acrylic_active``）。
+    """
+
+    #: 是否启用系统级亚克力背景
+    enabled: bool = True
+    #: 亚克力色调不透明度（0-100）；越大越接近实色，越小越透明
+    opacity: NonNegativeInt = 60
+    #: 窗口首次显示的淡入时长（毫秒，0 表示关闭）
+    fade_in: NonNegativeInt = 160
+
+    def __post_init__(self):
+        if self.opacity > 100:
+            raise ValueError(f"acrylic.opacity 必须在 0-100 之间 (当前 {self.opacity})")
+
+
+@dataclass(frozen=True)
 class AppSettingsModel:
     """系统设置模型：``settings`` 目录下所有 YAML 合并后的强类型视图。
 
@@ -327,6 +347,8 @@ class AppSettingsModel:
     overlay: OverlaySettings = dataclass_field(default_factory=OverlaySettings)
     panels: PanelSettings = dataclass_field(default_factory=PanelSettings)
     button: ButtonSettings = dataclass_field(default_factory=ButtonSettings)
+    # ---- window.yaml（亚克力材质） ----
+    acrylic: AcrylicSettings = dataclass_field(default_factory=AcrylicSettings)
 
     @classmethod
     def from_mapping(cls, data: Mapping, label: str = "AppSettings") -> AppSettingsModel:
@@ -438,6 +460,7 @@ def validate_language_data(language_data: Any, language_name: str = "unknown") -
 __all__ = [
     "Attrs",
     "SizeRange",
+    "AcrylicSettings",
     "AppSettingsModel",
     "ThemeModel",
     "NonNegativeInt",

@@ -4,6 +4,7 @@ from PySide6.QtWidgets import QPushButton
 
 from customgui.appcore import ColorPalette
 
+from ...acrylic import glass_tint
 from ...custom_ui import CToolTip
 
 
@@ -79,7 +80,8 @@ class CTitleButton(QPushButton):
         else:
             if not self._icon_enter:
                 self._set_icon_color = ColorPalette.custom_icon_color  # Set icon color
-                self._set_bg_color = ColorPalette.custom_dark_three  # Set BG color
+                # 常态透明：标题栏的玻璃底直接透出，只在悬停/按下时叠色块
+                self._set_bg_color = glass_tint(ColorPalette.custom_dark_three, 0.0)
             # BRUSH
             brush = QBrush(QColor(self._set_bg_color))
 
@@ -100,16 +102,16 @@ class CTitleButton(QPushButton):
     # ///////////////////////////////////////////////////////////////
     def change_style(self, event):
         if event == QEvent.Enter:
-            self._set_bg_color = ColorPalette.custom_bg_three
+            self._set_bg_color = glass_tint(ColorPalette.custom_bg_three, 0.24)
             self._set_icon_color = ColorPalette.custom_icon_hover
         elif event == QEvent.Leave:
-            self._set_bg_color = ColorPalette.custom_dark_three
+            self._set_bg_color = glass_tint(ColorPalette.custom_dark_three, 0.0)
             self._set_icon_color = ColorPalette.custom_icon_color
         elif event == QEvent.MouseButtonPress:
-            self._set_bg_color = ColorPalette.custom_bg_one
+            self._set_bg_color = glass_tint(ColorPalette.custom_bg_one, 0.34)
             self._set_icon_color = ColorPalette.custom_icon_pressed
         elif event == QEvent.MouseButtonRelease:
-            self._set_bg_color = ColorPalette.custom_bg_three
+            self._set_bg_color = glass_tint(ColorPalette.custom_bg_three, 0.24)
             self._set_icon_color = ColorPalette.custom_icon_hover
 
     # MOUSE OVER
