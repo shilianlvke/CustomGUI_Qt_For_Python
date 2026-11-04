@@ -132,7 +132,11 @@ class Styles:
         self._accent_soft = _rgba(colors.border_context, 0.18) if glass else colors.surface_interactive_hover
         self._accent_border = _rgba(colors.border_context, 0.70) if glass else colors.border_context
         self._gridline = _rgba(colors.text_primary, 0.07) if glass else colors.surface_interactive_pressed
-        self._scroll_handle = _rgba(colors.text_primary, 0.42) if glass else colors.surface_interactive_pressed
+        # 滚动条把手：玻璃模式与实色模式都用正文色 + 透明度，保证在卡片底色上
+        # 始终可辨；之前实色模式取 surface_interactive_pressed，与卡片底色几乎同值。
+        self._scroll_handle = _rgba(colors.text_primary, 0.42 if glass else 0.34)
+        self._scroll_handle_hover = _rgba(colors.text_primary, 0.62 if glass else 0.52)
+        self._scroll_handle_pressed = _rgba(colors.text_primary, 0.78 if glass else 0.66)
 
         # 每种模式下的具体描边
         self._window_border = self._stroke if glass else colors.surface_interactive_pressed
@@ -195,6 +199,7 @@ class Styles:
         self.update_region_card_style()
         self.update_grips_style()
         self.update_table_style()
+        self.update_scrollbar_style()
 
     def update_region_card_style(self):
         """内容区与四向抽屉共用的区域背景卡片。
@@ -579,59 +584,6 @@ class Styles:
                 background-color: {self._fill_hover};
                 border: none;
             }}
-            #CDataTable_View QScrollBar:vertical,
-            #CDataTable_FrozenView QScrollBar:vertical {{
-                background: transparent;
-                width: 12px;
-                margin: 0px;
-            }}
-            #CDataTable_View QScrollBar::handle:vertical,
-            #CDataTable_FrozenView QScrollBar::handle:vertical {{
-                background: {self._scroll_handle};
-                min-height: 24px;
-                border-radius: 4px;
-            }}
-            #CDataTable_View QScrollBar:pressed,
-            #CDataTable_FrozenView QScrollBar:pressed {{
-                background: transparent;
-            }}
-            #CDataTable_View QScrollBar:horizontal,
-            #CDataTable_FrozenView QScrollBar:horizontal {{
-                background: transparent;
-                height: 12px;
-                margin: 0px;
-            }}
-            #CDataTable_View QScrollBar::handle:horizontal,
-            #CDataTable_FrozenView QScrollBar::handle:horizontal {{
-                background: {self._scroll_handle};
-                min-width: 24px;
-                border-radius: 4px;
-            }}
-            #CDataTable_View QScrollBar::add-line:vertical,
-            #CDataTable_View QScrollBar::sub-line:vertical,
-            #CDataTable_FrozenView QScrollBar::add-line:vertical,
-            #CDataTable_FrozenView QScrollBar::sub-line:vertical,
-            #CDataTable_View QScrollBar::add-line:horizontal,
-            #CDataTable_View QScrollBar::sub-line:horizontal,
-            #CDataTable_FrozenView QScrollBar::add-line:horizontal,
-            #CDataTable_FrozenView QScrollBar::sub-line:horizontal {{
-                height: 0px;
-                width: 0px;
-            }}
-            #CFileUpload_ListScroll QScrollBar:vertical {{
-                background: transparent;
-                width: 10px;
-                margin: 0px;
-            }}
-            #CFileUpload_ListScroll QScrollBar::handle:vertical {{
-                background: {self._scroll_handle};
-                min-height: 24px;
-                border-radius: 4px;
-            }}
-            #CFileUpload_ListScroll QScrollBar::add-line:vertical,
-            #CFileUpload_ListScroll QScrollBar::sub-line:vertical {{
-                height: 0px;
-            }}
             #CDataTable_Empty, #CDataTable_Loading {{
                 background-color: {self._card_bg};
                 color: {self.tokens.colors.text_muted};
@@ -647,5 +599,72 @@ class Styles:
                 color: {self.tokens.colors.text_muted};
                 font: {self.tokens.typography.size_text}pt "{self.tokens.typography.family}";
                 padding-left: 8px;
+            }}
+        """
+
+    def update_scrollbar_style(self):
+        """全局滚动条：透明轨道 + 细圆角把手，横纵一致，无原生箭头。
+
+        历史实现只在表格与文件上传列表里各写了一份滚动条规则，
+        ``CScrollArea``、``CTextarea`` 等可滚动控件没有规则，仍由平台样式
+        绘制（带上下箭头、方形深色轨道）。此前 ``CScrollArea`` 一直隐藏滚动条
+        所以看不出来；启用“按需显示”后，原生滚动条就与 Fluent 卡片格格不入。
+        这里改为一条**全局规则**统一横/纵滚动条，各组件不再各写一份：
+
+        - 轨道透明、无边框、无箭头（``add-line``/``sub-line`` 归零）；
+        - 把手 12px 轨道内缩 3px，得到 6px 宽的胶囊形（圆角 3px）；
+        - 常态/悬停/按下三档透明度，深浅主题与亚克力开关下都保持可辨。
+        """
+        thickness = 12
+        inset = 3
+        min_length = 32
+        radius = 3
+        self.style += f"""
+            QScrollBar:vertical {{
+                background: transparent;
+                width: {thickness}px;
+                margin: 0px;
+                border: none;
+            }}
+            QScrollBar:horizontal {{
+                background: transparent;
+                height: {thickness}px;
+                margin: 0px;
+                border: none;
+            }}
+            QScrollBar::handle:vertical {{
+                background: {self._scroll_handle};
+                min-height: {min_length}px;
+                margin: {inset}px;
+                border-radius: {radius}px;
+            }}
+            QScrollBar::handle:horizontal {{
+                background: {self._scroll_handle};
+                min-width: {min_length}px;
+                margin: {inset}px;
+                border-radius: {radius}px;
+            }}
+            QScrollBar::handle:vertical:hover,
+            QScrollBar::handle:horizontal:hover {{
+                background: {self._scroll_handle_hover};
+            }}
+            QScrollBar::handle:vertical:pressed,
+            QScrollBar::handle:horizontal:pressed {{
+                background: {self._scroll_handle_pressed};
+            }}
+            QScrollBar::add-line:vertical, QScrollBar::sub-line:vertical,
+            QScrollBar::add-line:horizontal, QScrollBar::sub-line:horizontal {{
+                width: 0px;
+                height: 0px;
+                border: none;
+                background: transparent;
+            }}
+            QScrollBar::add-page:vertical, QScrollBar::sub-page:vertical,
+            QScrollBar::add-page:horizontal, QScrollBar::sub-page:horizontal {{
+                background: transparent;
+            }}
+            QAbstractScrollArea::corner {{
+                background: transparent;
+                border: none;
             }}
         """
