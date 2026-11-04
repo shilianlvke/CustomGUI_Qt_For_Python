@@ -1,23 +1,26 @@
-custom_dark_one: '#282a36'
-custom_dark_two: '#2B2E3B'
-custom_dark_three: '#333645'
-custom_dark_four: '#3C4052'
-custom_bg_one: '#44475a'
+custom_dark_one: '#282a36'  # 侧栏 / 最深背景
+custom_dark_two: '#2B2E3B'  # 次级背景
+custom_dark_three: '#44475a' # 面板 / 卡片层（比窗口更亮，保持与其它主题一致的层级）
+custom_dark_four: '#3C4052'  # 悬浮层 / 选中块
+custom_bg_one: '#333645'    # 窗口主背景
 custom_bg_two: '#4D5066'
 custom_bg_three: '#595D75'
 custom_icon_color: '#c3ccdf'
 custom_icon_hover: '#dce1ec'
-custom_icon_pressed: '#ff79c6'
+custom_icon_pressed: '#ff9ad5'
 custom_icon_active: '#f5f6f9'
-custom_context_color: '#ff79c6'
-custom_context_hover: '#FF84D7'
-custom_context_pressed: '#FF90DD'
+custom_context_color: '#ff9ad5' # 提亮后的 Dracula 粉，卡片上正文对比度 ≥ 4.5
+custom_context_hover: '#ffb3e2'
+custom_context_pressed: '#f582c6'
 custom_text_title: '#dce1ec'
 custom_text_foreground: '#f8f8f2'
-custom_text_description: '#979EC7'
+custom_text_description: '#b4badf' # 原 #979EC7 在卡片上仅 3.5:1，提亮到 ≥ 4.5
 custom_text_active: '#dce1ec'
 custom_white: '#f5f6f9'
 custom_pink: '#ff79c6'
-custom_green: '#00ff7f'
+custom_green: '#50fa7b'
 custom_red: '#ff5555'
 custom_yellow: '#f1fa8c'
+custom_bg_active_one: '#50fa7b'
+custom_bg_active_two: '#f1fa8c'
+custom_bg_active_three: '#ff5555'

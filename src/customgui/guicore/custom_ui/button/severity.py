@@ -216,13 +216,22 @@ def _luminance(color: QColor) -> float:
     return 0.2126 * channel(color.red()) + 0.7152 * channel(color.green()) + 0.0722 * channel(color.blue())
 
 
+def _contrast_ratio(first: QColor, second: QColor) -> float:
+    """两种颜色的 WCAG 对比度（1 ~ 21）。"""
+    high, low = sorted((_luminance(first), _luminance(second)), reverse=True)
+    return (high + 0.05) / (low + 0.05)
+
+
 def _contrast_text(color: QColor) -> QColor:
     """在给定底色上挑一个可读的文字色。
 
-    Aura 的 ``primary.contrast.color`` 对 500 档主色一律取白字，只有真正的浅色
-    （黄、白一类）才翻成近黑——用相对亮度卡在 0.5 比看 HSL 亮度更接近这个行为。
+    之前用「相对亮度 > 0.5 才翻黑字」的固定阈值，导致大批 400/500 档语义色
+    （绿、橙、红、蓝）都配了白字，实测对比度只有 2.0~2.8，低于 WCAG 3:1；
+    改为白字与近黑字两个候选按实际对比度取高者。
     """
-    return QColor("#09090b") if _luminance(color) > 0.5 else QColor("#ffffff")
+    black = QColor("#09090b")
+    white = QColor("#ffffff")
+    return black if _contrast_ratio(black, color) >= _contrast_ratio(white, color) else white
 
 
 def _solid(
