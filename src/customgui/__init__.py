@@ -22,7 +22,7 @@ def _read_version() -> str:
     """版本以 ``_version.py`` 为**唯一来源**，缺失时才回落到已安装元数据。
 
     顺序不能反：以前优先读 ``importlib.metadata``，结果是源码树里改了
-    ``_version.py``（或 ``git tag`` 已到 0.5.1）却还显示装进 site-packages
+    ``_version.py``（或 ``git tag`` 已到 0.6.0）却还显示装进 site-packages
     那个旧 wheel 的版本号，``doctor`` 与 ``CHANGELOG`` 对不上。
     ``_version.py`` 会随包一起分发，因此 wheel 形态下两种来源本来就一致。
     """

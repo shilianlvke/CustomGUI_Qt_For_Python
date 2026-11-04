@@ -2,7 +2,7 @@
 # 譯自 CustomGUI 術語表（MulanPSL-2.0），與 zh_cn.yaml 逐鍵對齊
 custom_ui:
   sys_name: CustomGUI
-  sys_version: 0.3.0
+  sys_version: 0.6.0
   sys_author: shilianlvke
   sys_author_email: 1352161062@qq.com
   sys_copyright: CustomGUI · 基於 PySide6 的開源 UI 基座

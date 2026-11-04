@@ -1,7 +1,7 @@
 # 系统信息
 custom_ui:
   sys_name: CustomGUI
-  sys_version: 0.3.0
+  sys_version: 0.6.0
   sys_author: shilianlvke
   sys_author_email: 1352161062@qq.com
   sys_copyright: CustomGUI · 基于 PySide6 的开源 UI 基座
