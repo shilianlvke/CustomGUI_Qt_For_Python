@@ -3,16 +3,42 @@
 项目处于**内测阶段**（`0.x`），遵循[语义化版本](https://semver.org/lang/zh-CN/)的 `0.x` 约定：
 minor 版本可能包含破坏性变更，均在本文件显式列出；patch 只做修复。
 
-当前版本：`0.5.1`（见 `src/customgui/_version.py`）。main 分支已包含尚未单独发版的组件扩充，
-在下一节标注为「未发版」。
+当前版本：`0.6.0`（见 `src/customgui/_version.py`），对应 tag `base-v0.6.0`。
 
 ---
 
-## 内测版 0.5.1
+## 内测版 0.6.0（2026-11-04）
 
-### 未发版（main 分支已包含）
+本次发布把窗口外观升级为 Windows 11 Fluent 亚克力风格，并将主题配置迁入右侧抽屉；
+同时包含 `main` 分支此前积累、尚未单独发版的组件扩充。
 
-#### 新增组件
+### 界面与材质
+
+- 新增 `guicore.acrylic`：通过 `SetWindowCompositionAttribute` 启用原生亚克力，附带 Win11
+  圆角偏好与深色边框；非 Windows、Windows 10、RDP 与部分虚拟机自动回退为不透明。
+- `CWindow` 在显示与主题切换时同步材质与色调，首次显示可淡入；新增
+  `window.acrylic`（`enabled` / `opacity` / `fade_in`）配置段。
+- 全局 QSS 改为分层玻璃表面（窗口 / 侧栏 / 面板 / 区域 / 卡片 / 控件 / 菜单），
+  `default` / `bright` / `eye` 色板对齐 Fluent 中性色阶，`dracula` 保留原有紫色调。
+- 自绘控件跟随玻璃材质：菜单按钮、标题栏按钮、输入族、面板/工具栏与骨架屏不再使用
+  与 QSS 不一致的不透明底色；滑轨、骨架等写死颜色改为取调色板。
+- 亚克力模式下禁用整窗 `QGraphicsDropShadowEffect`，主界面铺满窗口，去掉原本为投影
+  预留的 10px 透明外圈；非亚克力环境仍保留外圈与窗口阴影。
+
+### 主题配置与右侧抽屉
+
+- `CAppConfigurator` 新增 `embedded=True` 模式：复用主题卡片、主色/表面色、菜单模式与
+  深色模式内容，但不做固定宽度、滑入动画与自身背景绘制。
+- 右侧抽屉新增 `themeMenu` 页，右侧栏最大宽度由 240 调整为 340；左右抽屉动画改为
+  `minimumWidth` / `maximumWidth` 成对变化，修复只动 `minimumWidth` 时被上限夹住、
+  抽屉打不开的问题。
+- 标题栏与壳层预览页按钮统一为“主题配置”，共用
+  `ThemeController.toggle_theme_drawer()`：收起则展开，停在主题页则收起，停在其它
+  右侧页时切换到主题页。
+- 标题栏整区（底板、logo、标题、分割线）恢复拖动与双击最大化；悬浮高亮不再使用
+  实色块，避免盖住玻璃背景。
+
+### 新增组件（此前 main 分支未发版）
 
 - **数据展示族**：`CDataTable` + `CTableColumn` + `CTableModel` + `CPaginator`（列定义、过滤、排序、
   分页、多选、冻结列、分组行、行内展开详情）；`CDataView` / `CPickList` / `COrderList`；
@@ -24,26 +50,39 @@ minor 版本可能包含破坏性变更，均在本文件显式列出；patch �
 - **杂项**：`CAvatarGroup`、`CScrollTop`、`CFluid`、`CIconField`、`CInputIcon`、`CConfirmPopup`。
 - **壳层**：`CAppTopbar`、`CAppMenu` / `CAppMenuItem`、`CAppConfigurator`。
 
-#### 新增示例应用
+### 新增示例应用
 
 `table_preview`、`data_preview`、`menu_preview`、`media_preview`、`shell_preview`，
 内置示例应用达到 10 个。
 
-#### 修复要点
+### 修复
 
+- **栏目切换闪色**：舞台过场不再铺 `region_card_background` 实色底，页面快照保留 alpha；
+  过渡期间临时隐藏页面栈，收尾先恢复栈再撤遮罩，遮罩关闭系统背景。
+- **图标/文字阴影残影**：亚克力窗口不再挂整窗 `QGraphicsDropShadowEffect`，避免半透明
+  窗口把内容投影透成侧栏图标周围的灰绿色残影。
+- **选中菜单项右侧亮条**：选中高亮右侧内缩 4px，玻璃模式下不再绘制 `active_menu.svg`
+  缺口标记，消除侧栏与内容区之间的亮竖边。
+- **自绘输入/面板色差**：`CSelect`、`CInputNumber`、`CDatePicker`、`CPanel`、`CToolbar`
+  等改为与 QSS 同源的玻璃底色与描边；骨架屏与滑轨颜色改取 `ColorPalette`。
+- **卡片边框几何**：`#CCard_Frame` 恢复设计令牌 `border.width`，`#CRegion_Card_Frame`
+  保持无描边，避免卡片与内容之间夹出异色窄环。
+- **窗口外圈与标题栏**：亚克力模式去掉 10px 透明外圈，主界面与窗口边界重合；
+  标题栏底板与自身补上拖动/双击处理，整条标题栏可移动窗口。
+- **右侧抽屉打不开**：水平抽屉动画补齐 `maximumWidth` 动画，初始 `maximumWidth=0`
+  不再夹住展开过程。
 - **表格与分页闪退**：页码按钮不再在信号栈内被同步析构，改为复用 + 延迟重建；状态列回调签名对齐
   `(value, record)`；排序改用模型重置。
 - **Toast 不消失**：`show_message` / `_reflow` 补启动倒计时，并加淡出兜底定时器。
-- **区域背景卡片**：去掉描边、内容与卡片齐平，栏目切换过场以整张卡片为画布。
 - **文字截断与主题刷新**：表格/树/菜单/时间线/顶栏补省略与最小宽度；图表与树类补主题变更刷新入口。
 
-#### 重构与清理
+### 重构与清理
 
 - **相对路径**：`--apps-dir` / `--data-dir` 在 CLI 入口统一 `Path(...).resolve()`，
   应用清单不再被当成包内资源路径解析；`install-demo` / `examples --copy` 在源码树回落到仓库
   `apps/` 与 `examples/`。
 - **版本号**：`customgui.__version__` 改为以 `_version.py` 为唯一来源，源码树不再显示
-  site-packages 里旧 wheel 的版本。
+  site-packages 里旧 wheel 的版本；0.6.0 同时更新四套语言包中的 `sys_version`。
 - **模块拆分**：`custom_ui/data/tree.py` / `data/table.py` 按角色常量、列定义、模型、委托、视图拆分；
   `guis/app_loader.py` 拆成编排、清单、命名空间、上下文、协议 v2、状态六个模块。对外导出面不变。
 - **新增 `guicore.CPreviewPage`**：预览应用的页面外壳、分区卡片与语言入口收进基类，
@@ -56,6 +95,30 @@ minor 版本可能包含破坏性变更，均在本文件显式列出；patch �
 - **CI**：新增 `.workflow/QualityGate.yml`，`main` 的 PR 与推送即跑 ruff + pytest；
   发布流水线的 ruff 由 `--select E9,F63,F7,F82` 改为项目规则集。
 - **代码风格**：`ruff check src tests` 清零（原 6 条存量告警），规则集 `E/F/W/I/UP/B`。
+
+### 破坏性变更与迁移
+
+| 变更 | 迁移方式 |
+| --- | --- |
+| 标题栏主题按钮不再循环主题 | 点击改为打开右侧“主题配置”抽屉；需要旧行为请显式调用 `ThemeController.cycle_theme()` |
+| `ui_SwitchTheme` 显示文案改为“主题配置” | 键名保留以兼容旧品牌包；自定义语言包若覆盖该键，请同步文案 |
+| `right_column_size.maximum` 默认 240 → 340 | 品牌层若覆盖该值，请给主题配置页留出足够宽度，否则内容会被压缩 |
+| 亚克力默认开启（Windows 11） | 窗口不再绘制整体外投影、也不再保留 10px 外圈；需要旧外观可设 `window.acrylic.enabled: false` |
+| 主界面铺满窗口 | 不再为整窗外阴影预留边距；依赖 10px 外边距的自定义绘制需改为窗口内绘制 |
+
+### 已知问题
+
+- 原生亚克力仅 Windows 11 22H2+ 且系统开启「透明效果」时生效；Windows 10、Linux、macOS、
+  RDP 与部分虚拟机回退为不透明主题色，属预期行为。
+- 亚克力模式下没有窗口外投影；菜单、Tooltip、对话框刻意不启用亚克力，避免浮层透出
+  桌面内容影响可读性。
+- 低端 GPU 或远程桌面下拖动亚克力窗口可能有轻微延迟，由 DWM 合成决定，基座未做额外补偿。
+- 右侧主题配置按 340px 设计；品牌层把 `right_column_size.maximum` 改小时，主题卡片会压缩。
+- `ui_SwitchTheme` 键名与“主题配置”语义不一致，为兼容旧品牌包暂未改名，将在下一个
+  minor 版本评估。
+- 未上 PyPI；`CLineEdit` / `CPushButton` 是兼容壳；文档为手工维护，以 `__all__` 与源码为准。
+
+## 内测版 0.5.1
 
 ### 0.5.1 已发布内容
 
