@@ -119,18 +119,24 @@ class CPaginator(QWidget):
     def set_state(self, page: int, page_count: int, page_size: int, total: int) -> None:
         """整体刷新分页状态（不触发信号）。"""
         self._updating = True
-        self._page_count = max(1, int(page_count))
-        self._page = max(0, min(int(page), self._page_count - 1))
-        self._page_size = max(1, int(page_size))
         self._total = max(0, int(total))
+        if self._total == 0:
+            # 空结果时没有“第 1 页”可高亮，也不应允许翻页。
+            self._page_count = 0
+            self._page = 0
+        else:
+            self._page_count = max(1, int(page_count))
+            self._page = max(0, min(int(page), self._page_count - 1))
+        self._page_size = max(1, int(page_size))
         if str(self._page_size) not in self._page_size_select.options():
             self._page_sizes = tuple(sorted({*self._page_sizes, self._page_size}))
             self._page_size_select.set_options([str(size) for size in self._page_sizes], keep_value=False)
         self._page_size_select.set_value(str(self._page_size), emit=False)
-        self._first.setEnabled(self._page > 0)
-        self._prev.setEnabled(self._page > 0)
-        self._next.setEnabled(self._page < self._page_count - 1)
-        self._last.setEnabled(self._page < self._page_count - 1)
+        has_pages = self._total > 0 and self._page_count > 0
+        self._first.setEnabled(has_pages and self._page > 0)
+        self._prev.setEnabled(has_pages and self._page > 0)
+        self._next.setEnabled(has_pages and self._page < self._page_count - 1)
+        self._last.setEnabled(has_pages and self._page < self._page_count - 1)
         self._schedule_rebuild()
         start = self._page * self._page_size + 1 if self._total else 0
         end = min(self._total, (self._page + 1) * self._page_size)
@@ -138,6 +144,8 @@ class CPaginator(QWidget):
         self._updating = False
 
     def set_page(self, page: int, emit: bool = True) -> None:
+        if self._page_count <= 0:
+            return
         page = max(0, min(int(page), self._page_count - 1))
         if page == self._page:
             return
@@ -186,8 +194,10 @@ class CPaginator(QWidget):
     def _rebuild_page_buttons(self) -> None:
         self._rebuild_pending = False
         self._rebuild_timer.stop()
-        # 页码窗口：当前页保持在中间，最多 5 个
-        if self._page_count <= 7:
+        # 页码窗口：当前页保持在中间，最多 5 个；空结果不显示页码。
+        if self._page_count <= 0:
+            pages = []
+        elif self._page_count <= 7:
             pages = list(range(self._page_count))
         else:
             start = max(0, min(self._page - 2, self._page_count - 5))

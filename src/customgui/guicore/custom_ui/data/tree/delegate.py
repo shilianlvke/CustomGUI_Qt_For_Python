@@ -94,11 +94,13 @@ class _TreeTableDelegate(QStyledItemDelegate):
     def paint(self, painter: QPainter, option: QStyleOptionViewItem, index: QModelIndex):  # noqa: N802
         painter.save()
         painter.setRenderHint(QPainter.Antialiasing, True)
-        _paint_row_background(painter, option)
+        styled = QStyleOptionViewItem(option)
+        self.initStyleOption(styled, index)
+        _paint_row_background(painter, styled)
         if index.column() == 0:
-            self._paint_tree_cell(painter, option, index)
+            self._paint_tree_cell(painter, styled, index)
         else:
-            self._paint_content_cell(painter, option, index)
+            self._paint_content_cell(painter, styled, index)
         painter.restore()
 
     def _paint_tree_cell(self, painter: QPainter, option: QStyleOptionViewItem, index: QModelIndex) -> None:

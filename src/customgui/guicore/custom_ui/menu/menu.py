@@ -34,6 +34,18 @@ class CMenu(QMenu):
         self._apply_geometry()
         self.setProperty("transparent", "true" if is_transparent else "false")
 
+    def showEvent(self, event):  # noqa: N802 - 覆写 Qt 命名
+        """按最长菜单项扩展宽度，避免固定窄宽度把长标签直接裁断。"""
+        metrics = self.fontMetrics()
+        needed = 0
+        for action in self.actions():
+            if action.isSeparator():
+                continue
+            needed = max(needed, metrics.horizontalAdvance(action.text()))
+        if needed:
+            self.setFixedWidth(max(self.width(), needed + 56))
+        super().showEvent(event)
+
     def _apply_geometry(self):
         """实例级几何：圆角、边框宽度与菜单项内边距（与主题无关，故不放进全局样式表）。"""
         tokens = get_design_tokens()

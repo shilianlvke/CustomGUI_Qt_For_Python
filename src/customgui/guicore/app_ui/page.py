@@ -30,7 +30,7 @@ from typing import Any, ClassVar
 
 from PySide6.QtCore import QMargins, Qt
 from PySide6.QtGui import QFont
-from PySide6.QtWidgets import QHBoxLayout, QLabel, QVBoxLayout, QWidget
+from PySide6.QtWidgets import QHBoxLayout, QLabel, QSizePolicy, QVBoxLayout, QWidget
 
 from customgui.appcore import AppSettings, Language
 from customgui.guicore.custom_ui import CCard, CScrollArea, CScrollTop
@@ -119,8 +119,11 @@ class CPreviewPage:
         layout = QVBoxLayout(card)
         layout.setContentsMargins(QMargins(*_CARD_MARGINS))
         layout.setSpacing(_CARD_SPACING)
-        layout.addWidget(cls.title_label(title))
-        layout.addWidget(content)
+        title_label = cls.title_label(title)
+        # 卡片被同行拉高时，标题不能跟着纵向膨胀，否则内容被推到底部。
+        title_label.setSizePolicy(QSizePolicy.Policy.Preferred, QSizePolicy.Policy.Fixed)
+        layout.addWidget(title_label)
+        layout.addWidget(content, 1)
         return card
 
     @classmethod
@@ -130,7 +133,9 @@ class CPreviewPage:
         layout = QVBoxLayout(card)
         layout.setContentsMargins(QMargins(*_CARD_MARGINS))
         layout.setSpacing(_CARD_SPACING)
-        layout.addWidget(cls.title_label(title))
+        title_label = cls.title_label(title)
+        title_label.setSizePolicy(QSizePolicy.Policy.Preferred, QSizePolicy.Policy.Fixed)
+        layout.addWidget(title_label)
 
         step = max(1, int(columns or cls.columns))
         for start in range(0, len(widgets), step):
@@ -140,6 +145,7 @@ class CPreviewPage:
                 row.addWidget(widget, 0, Qt.AlignLeft | Qt.AlignVCenter)
             row.addStretch()
             layout.addLayout(row)
+        layout.addStretch(1)
         return card
 
     # ------------------------------------------------------------------

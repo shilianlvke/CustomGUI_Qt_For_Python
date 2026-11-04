@@ -68,7 +68,23 @@ class CTextarea(QPlainTextEdit):
     def _adjust_height(self, *_args) -> None:
         if not self._auto_resize:
             return
-        height = int(self.document().size().height()) + 2 * self.frameWidth() + 10
+        # QPlainTextEdit 的 document().size() 高度是「行数」而不是像素，
+        # 直接拿来做固定高度永远只有几十像素、内部视口一直滚动。
+        # 这里按实际行高与段数计算内容高度，再补上内边距与边框。
+        spec = size_spec(self._size)
+        padding = max(4, spec.padding_x - 4)
+        document = self.document()
+        # 自动换行的长行不会新增文本段，必须按每个文本段实际排出的视觉行数
+        # 累加，否则单行长文本的高度会一直停在最小高度、只能内部滚动。
+        lines = 0
+        block = document.begin()
+        while block.isValid():
+            text_layout = block.layout()
+            lines += max(1, text_layout.lineCount()) if text_layout is not None else 1
+            block = block.next()
+        content = max(1, lines) * self.fontMetrics().lineSpacing()
+        content += int(document.documentMargin()) * 2
+        height = content + padding * 2 + self.frameWidth() * 2 + 2
         self.setFixedHeight(max(self._min_height, min(self._max_height, height)))
 
 

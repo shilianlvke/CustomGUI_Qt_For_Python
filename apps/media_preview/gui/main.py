@@ -66,11 +66,14 @@ class MediaPreviewPage(CPreviewPage):
         advanced = CFileUpload(mode="advanced", accept=".jpg,.png,.svg,.pdf", max_file_size=5 * 1024 * 1024)
         basic = CFileUpload(mode="basic", accept=".jpg,.png,.svg,.pdf", multiple=False)
         status = QLabel(cls.tr("file_hint"))
-        status.setStyleSheet("color: palette(mid);")
+        status.setStyleSheet("color: palette(midlight);")
         advanced.filesSelected.connect(lambda files: status.setText(f"{len(files)} {cls.tr('files')}"))
         basic.filesSelected.connect(lambda files: status.setText(f"{len(files)} {cls.tr('files')}"))
-        layout.addWidget(advanced)
-        layout.addWidget(basic)
+        for title_key, widget in (("file_advanced", advanced), ("file_basic", basic)):
+            title = QLabel(cls.tr(title_key))
+            title.setStyleSheet("color: palette(midlight); font-weight: 600;")
+            layout.addWidget(title)
+            layout.addWidget(widget)
         layout.addWidget(status)
         return box
 

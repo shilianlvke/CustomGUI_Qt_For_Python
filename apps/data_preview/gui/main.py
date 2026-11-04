@@ -53,7 +53,7 @@ class DataPreviewPage(CPreviewPage):
         font.setWeight(QFont.Weight.DemiBold)
         name.setFont(font)
         category = QLabel(str(row.get("category") or ""))
-        category.setStyleSheet("color: palette(mid);")
+        category.setStyleSheet("color: palette(midlight);")
         text.addWidget(name)
         text.addWidget(category)
         layout.addLayout(text, 1)

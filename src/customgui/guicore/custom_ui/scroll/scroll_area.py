@@ -29,7 +29,9 @@ class CScrollArea(QScrollArea):
     def __init__(self, parent=None, background=None, object_name=None):
         super().__init__(parent)
         self.setWidgetResizable(True)
-        self.setVerticalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
+        # 垂直滚动条按需显示，避免长内容没有位置提示；横向仍保持隐藏，
+        # 内容应通过布局自适应而不是横向滚动。
+        self.setVerticalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAsNeeded)
         self.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
         if object_name is not None:
             self.setObjectName(object_name)

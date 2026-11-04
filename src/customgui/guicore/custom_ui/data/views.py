@@ -384,6 +384,10 @@ class CDataView(QWidget):
     def _build_item(self, record: dict, parent: QWidget) -> _DataViewItem:
         template = self._item_template(record) if self._item_template is not None else QLabel(str(record))
         item = _DataViewItem(record, template, parent)
+        if self._layout_mode == "list":
+            # 列表模式使用两行模板；条目高度必须跟随模板的实际 sizeHint，
+            # 否则 QScrollArea 会按 56px 最小高度压缩标签（文字被裁切）。
+            item.setMinimumHeight(item.sizeHint().height())
         item.clicked.connect(self.itemClicked.emit)
         return item
 

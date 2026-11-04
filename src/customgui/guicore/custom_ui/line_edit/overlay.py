@@ -7,12 +7,13 @@
 
 from __future__ import annotations
 
-from PySide6.QtCore import QPoint, QPointF, QRectF, Qt, Signal
+from PySide6.QtCore import QPoint, QPointF, QRect, QRectF, Qt, Signal
 from PySide6.QtGui import QColor, QFont, QFontMetrics, QGuiApplication, QPainter, QPen
 from PySide6.QtWidgets import QFrame, QVBoxLayout, QWidget
 
 from customgui.appcore import AppSettings
 
+from ..menu.menu_list import menu_colors
 from ..paint_utils import draw_check, draw_chevron, draw_shadow
 from .input_style import colors, rounded_path
 
@@ -85,7 +86,9 @@ class CPopover(QFrame):
     def paintEvent(self, event):  # noqa: N802 - 覆写 Qt 命名
         painter = QPainter(self)
         painter.setRenderHint(QPainter.Antialiasing)
-        palette = colors()
+        # 浮层必须使用菜单级不透明底色；输入控件的 22% 玻璃底会让
+        # 页面正文透出，导致弹层文字与底层内容互相干扰。
+        palette = menu_colors()
         body = self._body_rect()
         path = rounded_path(body, self._radius)
 
@@ -97,19 +100,33 @@ class CPopover(QFrame):
         painter.end()
 
     def show_at(self, anchor: QWidget) -> None:
-        """贴住控件下方展开；下方空间不足时翻到上方。"""
+        """贴住控件下方展开；空间不足时翻到上方，并同时受屏幕与宿主窗口约束。"""
         self.adjustSize()
         left, top, right, bottom = POPOVER_SHADOW
         body_width = self.width() - left - right
         body_height = self.height() - top - bottom
         origin = anchor.mapToGlobal(QPoint(0, 0))
         position = QPoint(origin.x(), origin.y() + anchor.height() + 6)
+
         screen = QGuiApplication.screenAt(origin)
-        if screen is not None:
-            area = screen.availableGeometry()
-            if position.y() + body_height > area.bottom():
-                position.setY(origin.y() - body_height - 6)
-            position.setX(max(area.left(), min(position.x(), area.right() - body_width)))
+        bounds = screen.availableGeometry() if screen is not None else None
+        # 弹层是 Qt.Popup 顶层窗口，只按屏幕夹紧会盖住版权栏甚至伸出宿主窗口；
+        # 这里把可用范围再与宿主窗口求交，保证气泡完整落在窗口内。
+        host = anchor.window()
+        if host is not None and host.isVisible():
+            host_rect = QRect(host.mapToGlobal(QPoint(0, 0)), host.size())
+            bounds = host_rect if bounds is None else bounds.intersected(host_rect)
+
+        if bounds is not None:
+            if position.y() + body_height > bounds.bottom() + 1:
+                flipped = origin.y() - body_height - 6
+                if flipped >= bounds.top():
+                    position.setY(flipped)
+                else:
+                    position.setY(bounds.bottom() + 1 - body_height)
+            if position.y() < bounds.top():
+                position.setY(bounds.top())
+            position.setX(max(bounds.left(), min(position.x(), bounds.right() + 1 - body_width)))
         # 定位以「本体」左上角为准，阴影边距要减掉
         self.move(position - QPoint(left, top))
         self.show()

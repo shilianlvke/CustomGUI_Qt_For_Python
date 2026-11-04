@@ -44,6 +44,7 @@ class Ui_RightColumn:
         self.label_1.setAlignment(Qt.AlignCenter)
 
         self.verticalLayout.addWidget(self.label_1)
+        self.verticalLayout.addStretch(1)
 
         self.menus.addWidget(self.menu_1)
         self.menu_2 = QWidget()
@@ -59,6 +60,7 @@ class Ui_RightColumn:
         self.label_2.setAlignment(Qt.AlignCenter)
 
         self.verticalLayout_2.addWidget(self.label_2)
+        self.verticalLayout_2.addStretch(1)
 
         self.menus.addWidget(self.menu_2)
 

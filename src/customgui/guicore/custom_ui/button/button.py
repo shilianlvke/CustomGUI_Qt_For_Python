@@ -403,6 +403,12 @@ class CButton(QPushButton):
         metrics = QFontMetrics(self.font())
         text_width = metrics.horizontalAdvance(text) if text else 0
         gap = _ICON_GAP if (text_width and (leading or trailing)) else 0
+        display_text = text
+        available = max(0, int(body.width() - leading - trailing - gap))
+        if text_width > available:
+            # 固定宽度/窄窗口下必须省略，否则文字会从按钮两侧被裁切。
+            display_text = metrics.elidedText(text, Qt.ElideRight, available)
+            text_width = metrics.horizontalAdvance(display_text)
         total = leading + trailing + text_width + (gap if text_width else 0)
         x = body.left() + (body.width() - total) / 2
         center_y = body.center().y()
@@ -416,12 +422,12 @@ class CButton(QPushButton):
                 painter.drawPixmap(int(x), int(center_y - pixmap.height() / 2), pixmap)
             x += leading + gap
 
-        if text:
+        if display_text:
             painter.setPen(color)
             painter.drawText(
                 QRectF(x, body.top(), text_width + 2, body.height()),
                 Qt.AlignVCenter | Qt.AlignLeft,
-                text,
+                display_text,
             )
             x += text_width + gap
 

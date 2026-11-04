@@ -79,10 +79,19 @@ class TablePreviewPage(CPreviewPage):
                 f"{cls.tr('rating')} {record.get('rating')}"
             )
             label.setWordWrap(True)
+            label.setStyleSheet("padding: 6px 12px; color: palette(text); background: transparent;")
             return label
 
         table.set_row_detail_provider(detail)
-        return table
+        box = QWidget()
+        layout = QVBoxLayout(box)
+        layout.setContentsMargins(0, 0, 0, 0)
+        layout.setSpacing(4)
+        hint = QLabel(cls.tr("hint_expand"))
+        hint.setStyleSheet("color: palette(midlight);")
+        layout.addWidget(hint)
+        layout.addWidget(table, 1)
+        return box
 
     @classmethod
     def _group_demo(cls) -> QWidget:

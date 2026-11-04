@@ -47,7 +47,9 @@ class _WipeLayer(QWidget):
     def __init__(self, parent, backdrop: QColor | None, radius: float = 0.0):
         super().__init__(parent)
         self.setObjectName("CPageTransition_Layer")
-        self.setAttribute(Qt.WA_TransparentForMouseEvents, True)
+        # 过场期间必须吃掉滚轮/点击：遮罩是最上层，若对鼠标透明，滚轮会直接
+        # 作用到下层页面（实测切换开始约 120ms 仍能把旧页滚动 0→50）。
+        self.setAttribute(Qt.WA_TransparentForMouseEvents, False)
         # 无底色模式必须真正透明：默认子控件在 grab()/重绘时可能带上父级底色，
         # 那会变成白色/灰色闪帧。关掉系统背景并显式关闭自动填充。
         self.setAttribute(Qt.WA_NoSystemBackground, True)
@@ -104,6 +106,22 @@ class _WipeLayer(QWidget):
         # 源矩形按比例取左侧一段（兼容高 DPI 截图），目标矩形按逻辑像素绘制
         source = QRectF(0, 0, pixmap.width() * width / max(1, self.width()), pixmap.height())
         painter.drawPixmap(QRectF(0, 0, width, self.height()), pixmap, source)
+
+    # ------------------------------------------------------------------
+    # 输入拦截
+    # ------------------------------------------------------------------
+    def wheelEvent(self, event):  # noqa: N802 - 覆写 Qt 命名
+        """过场期间吞掉滚轮，不让滚动穿透到下层的旧页面。"""
+        event.accept()
+
+    def mousePressEvent(self, event):  # noqa: N802 - 覆写 Qt 命名
+        event.accept()
+
+    def mouseReleaseEvent(self, event):  # noqa: N802 - 覆写 Qt 命名
+        event.accept()
+
+    def mouseDoubleClickEvent(self, event):  # noqa: N802 - 覆写 Qt 命名
+        event.accept()
 
 
 class _TransitionState:

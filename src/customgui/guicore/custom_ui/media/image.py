@@ -42,15 +42,15 @@ class _PreviewButton(QAbstractButton):
     def paintEvent(self, event):  # noqa: N802 - 覆写 Qt 命名
         painter = QPainter(self)
         painter.setRenderHint(QPainter.Antialiasing)
-        palette = tokens()
-        if self._hover:
-            fill = QColor(palette["surface_strong"])
-            fill.setAlpha(150)
-            painter.setPen(Qt.NoPen)
-            painter.setBrush(fill)
-            painter.drawEllipse(QRectF(self.rect()).adjusted(1, 1, -1, -1))
+        # 预览遮罩恒为暗色，工具按钮固定使用高对比浅色前景；跟随主题正文色
+        # 时，浅色主题的深色图标会淹没在遮罩里几乎看不见。常态再垫一层淡
+        # 白色底片，保证压在深色图片上也始终可辨认。
+        fill = QColor(255, 255, 255, 60 if self._hover else 28)
+        painter.setPen(Qt.NoPen)
+        painter.setBrush(fill)
+        painter.drawEllipse(QRectF(self.rect()).adjusted(1, 1, -1, -1))
 
-        pen = QPen(QColor(palette["text"]), 1.8, Qt.SolidLine, Qt.RoundCap)
+        pen = QPen(QColor(ColorPalette.custom_white), 1.8, Qt.SolidLine, Qt.RoundCap)
         painter.setPen(pen)
         cx, cy = self.width() / 2, self.height() / 2
         if self._kind == "zoom":
@@ -187,14 +187,14 @@ class _ImagePreview(QWidget):
         target = self._image_rect()
         if not target.isEmpty():
             painter.drawPixmap(target, self._pixmap, QRectF(self._pixmap.rect()))
-            painter.setPen(QPen(QColor(tokens()["border"]), 1))
+            painter.setPen(QPen(QColor(ColorPalette.custom_white), 1))
             painter.drawRect(target.adjusted(0.5, 0.5, -0.5, -0.5))
 
         if self._caption:
             font = QFont(self.font())
             font.setPixelSize(14)
             painter.setFont(font)
-            painter.setPen(QColor(tokens()["text"]))
+            painter.setPen(QColor(ColorPalette.custom_white))
             painter.drawText(
                 QRectF(24, self.height() - 42, self.width() - 48, 26),
                 Qt.AlignCenter,

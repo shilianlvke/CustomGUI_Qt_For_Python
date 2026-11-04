@@ -11,7 +11,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 
 from PySide6.QtCore import QPoint, QPointF, QRectF, QSize, Qt, Signal
-from PySide6.QtGui import QColor, QFont, QFontMetrics, QPainter, QPainterPath, QPen
+from PySide6.QtGui import QColor, QFont, QFontMetrics, QGuiApplication, QPainter, QPainterPath, QPen
 from PySide6.QtWidgets import QWidget
 
 from customgui.appcore import AppSettings, ColorPalette, get_design_tokens
@@ -348,7 +348,15 @@ class CMenuListPopup(CMenuList):
         self._child_popup: CMenuListPopup | None = None
 
     def show_at_global(self, position: QPoint) -> None:
-        """在全局坐标处展开。"""
+        """在全局坐标处展开；贴近屏幕边缘时向内夹紧，避免越出屏幕。"""
+        screen = QGuiApplication.screenAt(position) or QGuiApplication.primaryScreen()
+        if screen is not None:
+            area = screen.availableGeometry()
+            width = self.width() or self.sizeHint().width()
+            height = self.height()
+            x = max(area.left(), min(position.x(), area.right() + 1 - width))
+            y = max(area.top(), min(position.y(), area.bottom() + 1 - height))
+            position = QPoint(x, y)
         self.move(position)
         self.show()
         self.raise_()

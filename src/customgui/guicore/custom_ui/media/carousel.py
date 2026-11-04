@@ -95,7 +95,7 @@ class _IndicatorDots(QWidget):
         painter.setRenderHint(QPainter.Antialiasing)
         palette = tokens()
         for index in range(self._count):
-            color = QColor(palette["accent"] if index == self._current else palette["border"])
+            color = QColor(palette["accent"] if index == self._current else palette["muted"])
             painter.setPen(Qt.NoPen)
             painter.setBrush(color)
             painter.drawEllipse(QRectF(index * _DOT_STEP + 3, 2, 8, 8))

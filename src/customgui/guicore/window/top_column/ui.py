@@ -62,6 +62,7 @@ class Ui_TopColumn:
         self.horizontalLayout.setSpacing(8)
         self.horizontalLayout.setObjectName("horizontalLayout")
         self.horizontalLayout.setContentsMargins(0, 0, 0, 0)
+        self.horizontalLayout.setAlignment(Qt.AlignTop)
         self.label_1 = QLabel(self.top_column_info)
         self.label_1.setObjectName("label_1")
         self.label_1.setMaximumSize(QSize(16777215, 30))

@@ -132,7 +132,7 @@ class Styles:
         self._accent_soft = _rgba(colors.border_context, 0.18) if glass else colors.surface_interactive_hover
         self._accent_border = _rgba(colors.border_context, 0.70) if glass else colors.border_context
         self._gridline = _rgba(colors.text_primary, 0.07) if glass else colors.surface_interactive_pressed
-        self._scroll_handle = _rgba(colors.text_primary, 0.22) if glass else colors.surface_interactive_pressed
+        self._scroll_handle = _rgba(colors.text_primary, 0.42) if glass else colors.surface_interactive_pressed
 
         # 每种模式下的具体描边
         self._window_border = self._stroke if glass else colors.surface_interactive_pressed
@@ -582,7 +582,7 @@ class Styles:
             #CDataTable_View QScrollBar:vertical,
             #CDataTable_FrozenView QScrollBar:vertical {{
                 background: transparent;
-                width: 10px;
+                width: 12px;
                 margin: 0px;
             }}
             #CDataTable_View QScrollBar::handle:vertical,
@@ -598,7 +598,7 @@ class Styles:
             #CDataTable_View QScrollBar:horizontal,
             #CDataTable_FrozenView QScrollBar:horizontal {{
                 background: transparent;
-                height: 10px;
+                height: 12px;
                 margin: 0px;
             }}
             #CDataTable_View QScrollBar::handle:horizontal,

@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from collections.abc import Callable
 
-from PySide6.QtCore import QPoint, QSize, Qt, QTimer, Signal
+from PySide6.QtCore import QItemSelectionModel, QPoint, QSize, Qt, QTimer, Signal
 from PySide6.QtGui import QPainter
 from PySide6.QtWidgets import (
     QAbstractItemView,
@@ -254,6 +254,7 @@ class CDataTable(QWidget):
             self._frozen.setVerticalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
             self._frozen.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
             self._frozen.horizontalHeader().setStretchLastSection(False)
+            self._frozen.horizontalHeader().sectionClicked.connect(self._on_header_clicked)
             self._frozen.verticalScrollBar().valueChanged.connect(self._sync_frozen_scroll)
             self._main.verticalScrollBar().valueChanged.connect(self._sync_main_scroll)
             self._main.verticalScrollBar().valueChanged.connect(lambda _value: self._position_detail_overlay())
@@ -303,8 +304,29 @@ class CDataTable(QWidget):
             )
         else:
             order = Qt.AscendingOrder
+        # 排序会走模型 reset，selectionModel 随之清空；先记住选中记录，
+        # 排序完成后再按记录本体恢复选中，避免「点一下表头选中就没了」。
+        selected = self.selected_records()
         self._model.sort(column, order)
         self._sync_sort_indicator(column, order)
+        self._restore_selection(selected)
+
+    def _restore_selection(self, records: list[dict]) -> None:
+        if not records or self._selection_mode == "none":
+            return
+        model = self._model
+        selection = self._main.selectionModel()
+        wanted = {id(record) for record in records}
+        selection.blockSignals(True)
+        for row in range(model.rowCount()):
+            record = model.record_at(row)
+            if record is not None and id(record) in wanted:
+                selection.select(
+                    model.index(row, 0),
+                    QItemSelectionModel.SelectionFlag.Select | QItemSelectionModel.SelectionFlag.Rows,
+                )
+        selection.blockSignals(False)
+        self._on_selection_changed()
 
     def _sync_sort_indicator(self, column: int, order) -> None:
         for view in (self._main, self._frozen):

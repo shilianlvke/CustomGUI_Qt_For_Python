@@ -42,10 +42,11 @@ class CTableDelegate(QStyledItemDelegate):
         painter.drawText(rect.adjusted(12, 0, -12, 0), Qt.AlignLeft | Qt.AlignVCenter, text)
         painter.restore()
 
-    @staticmethod
-    def _paint_tag(painter: QPainter, option: QStyleOptionViewItem, index: QModelIndex, tag) -> None:
-        # 先让样式系统画选中/悬停底色（文字置空）
+    def _paint_tag(self, painter: QPainter, option: QStyleOptionViewItem, index: QModelIndex, tag) -> None:
+        # 先取模型的 TextAlignmentRole，再让样式系统画选中/悬停底色（文字置空）。
+        # 否则 option.displayAlignment 恒为默认左对齐，拉伸后的状态列会与表头错位。
         styled = QStyleOptionViewItem(option)
+        self.initStyleOption(styled, index)
         styled.text = ""
         widget = styled.widget
         style = widget.style() if widget is not None else QApplication.style()
@@ -65,9 +66,9 @@ class CTableDelegate(QStyledItemDelegate):
         width = min(max_width, max(24, metrics.horizontalAdvance(text) + 16))
         height = 22
         x = rect.left() + 10
-        if option.displayAlignment & Qt.AlignRight:
+        if styled.displayAlignment & Qt.AlignRight:
             x = rect.right() - width - 10
-        elif option.displayAlignment & Qt.AlignHCenter:
+        elif styled.displayAlignment & Qt.AlignHCenter:
             x = rect.center().x() - width / 2
         y = rect.center().y() - height / 2
         path = QPainterPath()

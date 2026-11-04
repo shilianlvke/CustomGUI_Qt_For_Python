@@ -47,7 +47,7 @@ class ShellPreviewPage(CPreviewPage):
     def sections(cls, page, window):
         # 状态条串起顶栏、菜单与配置抽屉的反馈，所有回调都写到这里
         status = QLabel(cls.tr("hint"))
-        status.setStyleSheet("color: palette(mid);")
+        status.setStyleSheet("color: palette(midlight);")
 
         topbar = CAppTopbar(title="Sakai Shell", logo="mihoutao")
         topbar.set_user("Y")
