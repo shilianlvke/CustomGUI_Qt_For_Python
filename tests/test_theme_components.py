@@ -202,13 +202,15 @@ def test_window_frame_override(qapp):
     from customgui.guicore import CWindow
 
     window = CWindow()
-    default_style = window.styleSheet()
+    # 中央样式表统一下发到应用级（窗口级只保留最大化/自定义圆角覆盖），
+    # 因此默认表从 QApplication 读取。
+    default_style = qapp.styleSheet()
 
     # 最大化：走 frameStyle 动态属性，只重刷框架，不重建整张样式表
     window.set_stylesheet(border_radius=0, border_size=0)
     assert window.property("frameStyle") == "flat"
     assert '#CWindow_Frame[frameStyle="flat"]' in default_style
-    assert window.styleSheet() == default_style
+    assert window.styleSheet() == ""
 
     # 主题重建后覆盖保持
     get_theme_manager().apply("eye")
@@ -220,7 +222,8 @@ def test_window_frame_override(qapp):
     window.apply_style()
     window.set_stylesheet()
     assert window.property("frameStyle") == "default"
-    assert window.styleSheet() == default_style
+    assert window.styleSheet() == ""
+    assert qapp.styleSheet() == default_style
 
 
 # --------------------------------------------------------------------------
