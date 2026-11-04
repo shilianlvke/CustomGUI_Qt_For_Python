@@ -21,7 +21,7 @@
 
 > **内测状态（0.x）**
 >
-> 本仓库处于**内测阶段**，版本号 `0.5.1`，尚未发布到 PyPI，只通过源码、wheel 与 git tag 分发。
+> 本仓库处于**内测阶段**，版本号 `0.6.0`，尚未发布到 PyPI，只通过源码、wheel 与 git tag 分发。
 > 内测期间的约束：
 >
 > - 公开 API 仍可能调整，`0.x` 的 minor 版本允许破坏性变更，均记录在 [CHANGELOG](CHANGELOG.md)。
@@ -34,12 +34,21 @@
 
 一个**能被别的项目当依赖装进去**的桌面 UI 基座，而不是脚手架或组件库 demo。它提供：
 
-- **窗口骨架**：无边框圆角窗口、自绘标题栏、可折叠左菜单、左右/顶底四向栏目抽屉、底部版权栏、拖拽缩放。
+- **窗口骨架**：无边框圆角窗口、Windows 11 亚克力材质（不可用时自动回退不透明）、自绘标题栏、可折叠左菜单、左右/顶底四向栏目抽屉、底部版权栏、拖拽缩放。
 - **设计令牌**：颜色/字体/间距/圆角/尺寸集中在 `DesignTokens`，QSS 与自绘组件共用同一套值，切换主题即时生效。
-- **组件库**：`customgui.guicore` 导出 118 个公开名，其中 `custom_ui` 91 个组件 + 3 个模型/枚举、`window` 12 个窗口部件。
-- **主题与语言**：内置 4 套主题（default / bright / eye / dracula）、4 种语言（zh_cn / zh_tw / en_us / ja_jp），支持应用级品牌覆盖。
+- **组件库**：`customgui.guicore` 导出 126 个公开名，其中 `custom_ui` 91 个组件 + 3 个模型/枚举、`window` 12 个窗口部件、`acrylic` 7 个材质工具。
+- **主题与语言**：内置 4 套主题（default / bright / eye / dracula）、4 种语言（zh_cn / zh_tw / en_us / ja_jp），主题配置内嵌右侧抽屉，支持应用级品牌覆盖。
 - **目录即插件**：把页面放进 `apps/<name>/`，启动时自动发现、注册左侧菜单、懒加载页面；应用自带图标、语言与品牌资源。
 - **可诊断**：分层错误边界、结构化遥测事件、`customgui doctor` 一条命令打印全部路径与发现结果。
+
+## 联动与集成项目
+
+| 项目 | 说明 |
+| --- | --- |
+| [PyCL2](https://gitee.com/shilianlvke/py-cl2) | 基于 CustomGUI 的 Minecraft: Java Edition 启动器（GPL-3.0，独立仓库）。使用基座窗口、组件、主题与插件协议；当前固定 0.5.1，0.6.0 适配后升级。 |
+| CustomGUI Preview Apps | 仓库内置的 10 个示例应用，覆盖组件、壳层、数据表、输入、浮层等场景，可作为集成参考。 |
+
+欢迎通过 issue/PR 补充更多基于 CustomGUI 的项目。
 
 ## 环境要求
 
@@ -57,7 +66,7 @@
 ### 装进你自己的项目（固定 tag）
 
 ```powershell
-uv add "customgui @ git+https://gitee.com/shilianlvke/CustomGUI_Qt_For_Python.git@base-v0.5.1"
+uv add "customgui @ git+https://gitee.com/shilianlvke/CustomGUI_Qt_For_Python.git@base-v0.6.0"
 ```
 
 固定到 tag 而不是分支，避免上游改动把你的构建搞红。
@@ -101,7 +110,7 @@ customgui doctor
 ```text
 CustomGUI doctor
 ========================================================
-✓ 版本          : 0.5.1
+✓ 版本          : 0.6.0
 ✓ 包目录        : ...\site-packages\customgui
 ✓ 资源根 #0     : ...\site-packages\customgui\_resources
 ✓ 数据根        : C:\Users\<你>\AppData\Roaming\CustomGUI
@@ -300,8 +309,8 @@ customgui.configure(
 
 ## 组件与主题
 
-`customgui.guicore` 共导出 118 个公开名：`custom_ui` 94 个（91 个组件 + `MenuItem` / `Severity` / `Variant`）、
-`window` 12 个窗口部件，以及 `Styles`、字体、任务与回调工具：
+`customgui.guicore` 共导出 126 个公开名：`custom_ui` 94 个（91 个组件 + `MenuItem` / `Severity` / `Variant`）、
+`window` 12 个窗口部件、`acrylic` 7 个材质工具，以及 `Styles`、字体、任务与回调工具：
 
 | 分类 | 组件 |
 | --- | --- |
@@ -316,6 +325,17 @@ customgui.configure(
 | 文件/图表 | `CFileUpload` `CChart` |
 | 布局 | `CFluid` `CTabs` `CAccordion` `CAccordionPanel` `CFieldset` `CFormField` `CFormGrid` `CScrollArea` `CScrollTop` `CSplitter` `CSplitterHandle` `CToolbar` |
 | 窗口部件 | `CWindow` `CTitleBar` `CLeftMenu` `CLeftColumn` `CTopColumn` `CBottomColumn` `CGrips` `CCredits` `CAppTopbar` `CAppMenu` `CAppMenuItem` `CAppConfigurator` |
+| 材质 | `apply_acrylic` `remove_acrylic` `acrylic_active` `acrylic_opacity` `acrylic_supported` `acrylic_tint` `glass_tint` |
+
+### 主题预览
+
+四套主题使用同一页面和窗口尺寸截取；截图背景为渐变壁纸，用于展示亚克力透色，实际效果随桌面壁纸与系统「透明效果」设置变化。
+
+| 默认（深色） | 明亮 |
+| --- | --- |
+| <img src="docs/assets/默认主题.png" width="420"> | <img src="docs/assets/明亮主题.png" width="420"> |
+| **护眼** | **梦幻（Dracula）** |
+| <img src="docs/assets/护眼主题.png" width="420"> | <img src="docs/assets/梦幻主题.png" width="420"> |
 
 主题与令牌：
 
@@ -363,6 +383,8 @@ uv run twine check dist/*.whl
 
 ## 内测已知限制
 
+- **亚克力材质仅 Windows 11 22H2+ 且系统开启「透明效果」时生效**；Windows 10、Linux、macOS、RDP 与部分虚拟机回退为不透明主题色。可通过 `window.acrylic.enabled: false` 关闭原生材质。
+- 亚克力模式下窗口不绘制整体外投影；菜单、Tooltip、对话框不启用亚克力，保持高不透明度以保证可读性。
 - **未上 PyPI**：PyPI 上的 `customgui` 已被另一个无关项目占用（`customGUI` 1.0.7），
   本项目只通过 git tag / wheel 分发；正式发布前需要另选分发名。
 - `CLineEdit` / `CPushButton` 是 `CInputText` / `CButton` 的兼容壳，新代码不要再用。

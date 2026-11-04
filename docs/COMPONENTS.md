@@ -1,7 +1,7 @@
 # 组件速查
 
-`customgui.guicore` 共导出 118 个公开名：`custom_ui` 94 个（91 个组件 + `MenuItem` / `Severity` / `Variant`）、
-`window` 12 个窗口部件，以及 `Styles`、字体、任务与回调工具。
+`customgui.guicore` 共导出 126 个公开名：`custom_ui` 94 个（91 个组件 + `MenuItem` / `Severity` / `Variant`）、
+`window` 12 个窗口部件、`acrylic` 7 个材质工具，以及 `Styles`、字体、任务与回调工具。
 全部组件由设计令牌驱动，主题切换后重绘即生效。
 
 ## 1. 分类总览
@@ -19,6 +19,7 @@
 | 文件/图表 | `CFileUpload` `CChart` |
 | 布局 | `CFluid` `CTabs` `CAccordion` `CAccordionPanel` `CFieldset` `CFormField` `CFormGrid` `CScrollArea` `CScrollTop` `CSplitter` `CSplitterHandle` `CToolbar` |
 | 窗口部件 | `CWindow` `CTitleBar` `CLeftMenu` `CLeftColumn` `CTopColumn` `CBottomColumn` `CGrips` `CCredits` `CAppTopbar` `CAppMenu` `CAppMenuItem` `CAppConfigurator` |
+| 材质 | `apply_acrylic` `remove_acrylic` `acrylic_active` `acrylic_opacity` `acrylic_supported` `acrylic_tint` `glass_tint` |
 
 分类只是导航；同名对象都从 `customgui.guicore` 顶层导入。
 
