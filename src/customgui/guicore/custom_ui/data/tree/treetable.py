@@ -13,7 +13,7 @@ from PySide6.QtWidgets import (
 )
 
 from ...display.palette import tokens
-from ...panels.style import panel_colors
+from ...panels.style import panel_colors, qss_color
 from ..table import CTableColumn
 from .delegate import _TreeTableDelegate
 from .paint import _alignment, _check_state, _node_key, _row_metrics
@@ -415,20 +415,23 @@ class CTreeTable(QWidget):
         view.setStyleSheet(
             f"""
             QTreeView#CTreeTable_View {{
-                background-color: {colors["background"]};
-                border: 1px solid {base["border"]};
+                background-color: {qss_color(colors["background"])};
+                border: 1px solid {qss_color(colors["border"])};
                 border-radius: 6px;
                 outline: 0;
-                alternate-background-color: {base["surface"]};
+                alternate-background-color: {qss_color(colors["hover"])};
             }}
             QTreeView#CTreeTable_View::item {{
                 border: none;
             }}
+            QTreeView#CTreeTable_View QHeaderView {{
+                background-color: {qss_color(colors["header_solid"])};
+            }}
             QTreeView#CTreeTable_View QHeaderView::section {{
-                background-color: {colors["header"]};
-                color: {base["text"]};
+                background-color: {qss_color(colors["header_solid"])};
+                color: {colors["text"]};
                 border: none;
-                border-bottom: 1px solid {base["border"]};
+                border-bottom: 1px solid {qss_color(colors["border"])};
                 padding: 6px 10px;
                 font-weight: 600;
             }}

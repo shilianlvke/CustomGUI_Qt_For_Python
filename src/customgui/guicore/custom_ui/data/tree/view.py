@@ -12,7 +12,7 @@ from PySide6.QtWidgets import (
 )
 
 from ...display.palette import tokens
-from ...panels.style import panel_colors
+from ...panels.style import panel_colors, qss_color
 from .delegate import _CTreeDelegate
 from .paint import _check_state, _node_key, _node_label, _row_metrics
 from .roles import KEY_ROLE, NODE_ROLE
@@ -328,8 +328,8 @@ class CTree(QWidget):
         tree.setStyleSheet(
             f"""
             QTreeWidget#CTree_TreeWidget {{
-                background-color: {colors["background"]};
-                border: 1px solid {base["border"]};
+                background-color: {qss_color(colors["background"])};
+                border: 1px solid {qss_color(colors["border"])};
                 border-radius: 6px;
                 outline: 0;
             }}

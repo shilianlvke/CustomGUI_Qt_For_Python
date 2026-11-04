@@ -100,7 +100,8 @@ def _paint_row_background(painter: QPainter, option: QStyleOptionViewItem) -> No
     """按选中 / 悬停状态铺一层令牌色底。"""
     rect = QRectF(option.rect)
     if option.state & QStyle.StateFlag.State_Selected:
-        painter.fillRect(rect, with_alpha(tokens()["accent"], 36))
+        # 与表格选中底色保持同一档（accent 18%），比原来的 14% 更容易识别
+        painter.fillRect(rect, with_alpha(tokens()["accent"], 46))
     elif option.state & QStyle.StateFlag.State_MouseOver:
         painter.fillRect(rect, QColor(panel_colors()["hover"]))
 
@@ -128,7 +129,9 @@ def _paint_checkbox(painter: QPainter, box: QRectF, state: Qt.CheckState) -> Non
         return
     painter.fillPath(path, QColor(colors["surface"]))
     painter.setBrush(Qt.NoBrush)
-    painter.setPen(QPen(QColor(colors["border"]), 1))
+    # 未勾选框的描边不能和填充同色（深色主题下两者都取 dark_four，
+    # 框会直接“消失”在树底色里）；用正文色的低透明度描边保证可辨。
+    painter.setPen(QPen(with_alpha(colors["text"], 110), 1))
     painter.drawPath(path)
 
 

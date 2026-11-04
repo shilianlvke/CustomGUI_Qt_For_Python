@@ -41,6 +41,7 @@ def panel_colors() -> dict[str, str | QColor]:
         return {
             "background": glass_tint(ColorPalette.custom_bg_one, 0.34) if glass else ColorPalette.custom_bg_one,
             "header": glass_tint(ColorPalette.custom_dark_one, 0.10) if glass else ColorPalette.custom_dark_one,
+            "header_solid": ColorPalette.custom_dark_one,
             "hover": glass_tint(ColorPalette.custom_dark_three, 0.14) if glass else ColorPalette.custom_dark_three,
             "border": glass_tint(base["border"], 0.55) if glass else base["border"],
             "divider": glass_tint(base["border"], 0.35) if glass else base["border"],
@@ -51,17 +52,32 @@ def panel_colors() -> dict[str, str | QColor]:
             "on_accent": "#ffffff",
         }
     return {
-        "background": glass_tint("#ffffff", 0.34) if glass else "#ffffff",
-        "header": glass_tint("#f8f8f8", 0.10) if glass else "#f8f8f8",
-        "hover": glass_tint("#f0f0f0", 0.14) if glass else "#f0f0f0",
-        "border": glass_tint("#e5e5e5", 0.55) if glass else "#e5e5e5",
-        "divider": glass_tint("#ececec", 0.35) if glass else "#ececec",
+        "background": glass_tint(ColorPalette.custom_dark_three, 0.34) if glass else ColorPalette.custom_dark_three,
+        "header": glass_tint(ColorPalette.custom_dark_two, 0.10) if glass else ColorPalette.custom_dark_two,
+        "header_solid": ColorPalette.custom_dark_two,
+        "hover": glass_tint(ColorPalette.custom_dark_four, 0.14) if glass else ColorPalette.custom_dark_four,
+        "border": glass_tint(ColorPalette.custom_bg_two, 0.55) if glass else ColorPalette.custom_bg_two,
+        "divider": glass_tint(ColorPalette.custom_bg_two, 0.35) if glass else ColorPalette.custom_bg_two,
         "text": ColorPalette.custom_text_title,
         "muted": ColorPalette.custom_text_description,
         "accent": ColorPalette.custom_context_color,
-        "track": glass_tint("#d6d6d6", 0.55) if glass else "#d6d6d6",
+        "track": glass_tint(ColorPalette.custom_bg_three, 0.55) if glass else ColorPalette.custom_bg_three,
         "on_accent": "#ffffff",
     }
+
+
+def qss_color(value: str | QColor) -> str:
+    """把配色值转成 QSS 可解析的颜色字符串。
+
+    ``panel_colors()`` 在亚克力模式下返回带 alpha 的 :class:`QColor`（自绘
+    ``fillRect`` 需要它），但 Qt 样式表不认 ``QColor`` 的 Python 字符串形式，
+    直接插进 QSS 会得到无效颜色、整条规则被丢弃。QSS 侧统一走这里转成
+    ``rgba(r, g, b, a)`` 写法（alpha 取 0-255，与 ``Styles._rgba`` 一致）。
+    """
+    color = value if isinstance(value, QColor) else QColor(value)
+    if not color.isValid():
+        return "transparent"
+    return f"rgba({color.red()}, {color.green()}, {color.blue()}, {color.alpha()})"
 
 
 def with_alpha(color: QColor | str, alpha: int) -> QColor:
@@ -107,6 +123,7 @@ __all__ = [
     "panel_font",
     "panel_settings",
     "paint_surface",
+    "qss_color",
     "rounded_path",
     "with_alpha",
 ]

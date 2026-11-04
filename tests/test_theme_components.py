@@ -16,7 +16,7 @@ import re
 os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
 
 import pytest
-from PySide6.QtGui import QPalette
+from PySide6.QtGui import QColor, QPalette
 from PySide6.QtWidgets import QApplication, QWidget
 
 from customgui.appcore import ColorPalette, get_design_tokens, get_theme_manager
@@ -386,6 +386,19 @@ def test_left_column_geometry_follows_token(qapp):
         radius=3,
     )
     assert "border-top-left-radius: 3px" in custom.title_bg_frame.styleSheet()
+
+
+def test_qss_color_serializes_qcolor_with_alpha(qapp):
+    """带 alpha 的 QColor 必须转成 QSS 的 rgba() 写法。
+
+    亚克力模式下 ``panel_colors()`` 返回 QColor；直接 f-string 插进样式表会得到
+    ``PySide6.QtGui.QColor...``，Qt 判定为无效颜色并丢弃整条规则（Tree/TreeTable
+    因此在浅色主题下回退成系统深色底）。
+    """
+    from customgui.guicore.custom_ui.panels.style import qss_color
+
+    assert qss_color(QColor(255, 255, 255, 87)) == "rgba(255, 255, 255, 87)"
+    assert qss_color("#202020") == "rgba(32, 32, 32, 255)"
 
 
 def test_line_edit_height_follows_token(qapp):
