@@ -23,6 +23,7 @@ from ..close_button import CCloseButton as _CloseButton
 from ..display.palette import tokens
 from .message import _MessageIcon
 
+#: 单条通知宽度 / 外阴影边距（配置不可用时的兜底默认）
 _WIDTH = 340
 _SHADOW = 5
 
@@ -65,14 +66,25 @@ class CToast(QFrame):
         self._closing = False
         self._offset_top = max(0, int(offset_top))
         self._life, _, self._duration, self._margin, self._spacing = _settings()
+        # 宽度与外阴影边距来自 settings（构造时读取，避免导入期触发配置加载）
+        try:
+            from customgui.appcore import AppSettings
+
+            feedback = AppSettings.feedback
+            self._width = int(feedback.toast_width)
+            self._shadow = int(feedback.toast_shadow)
+        except Exception:
+            self._width, self._shadow = _WIDTH, _SHADOW
         if life is not None:
             self._life = max(0, int(life))
 
-        self.setFixedWidth(_WIDTH + _SHADOW * 2)
+        self.setFixedWidth(self._width + self._shadow * 2)
         self.setAttribute(Qt.WA_StyledBackground, False)
 
         layout = QHBoxLayout(self)
-        layout.setContentsMargins(14 + _SHADOW, 12 + _SHADOW // 2, 10 + _SHADOW, 12 + _SHADOW)
+        layout.setContentsMargins(
+            14 + self._shadow, 12 + self._shadow // 2, 10 + self._shadow, 12 + self._shadow
+        )
         layout.setSpacing(10)
 
         self._icon = _MessageIcon(self._severity, parent=self)
@@ -148,7 +160,12 @@ class CToast(QFrame):
     def paintEvent(self, event):  # noqa: N802 - 覆写 Qt 命名
         painter = QPainter(self)
         painter.setRenderHint(QPainter.Antialiasing)
-        card = QRectF(_SHADOW, _SHADOW // 2, _WIDTH, self.height() - _SHADOW * 2)
+        card = QRectF(
+            self._shadow,
+            self._shadow // 2,
+            self._width,
+            self.height() - self._shadow * 2,
+        )
 
         for offset, alpha in ((4, 18), (2, 26), (1, 34)):
             shadow = QPainterPath()

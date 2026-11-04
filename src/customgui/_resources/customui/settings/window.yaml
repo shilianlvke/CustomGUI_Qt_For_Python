@@ -17,6 +17,50 @@ window_space: 2
 window_border_size: 2
 window_border_radius: 10
 window_shadow: True
+title_bar_margin: 10 # 非亚克力模式下标题栏外圈留白
+content_margin: 10 # 非亚克力模式下主界面外圈留白
+
+# GRIPS 窗口缩放夹点
+grips:
+  corner_size: 15 # 四角夹点尺寸
+  corner_offset: 5 # 四角夹点内边距
+  corner_inset: 20 # 右/下夹点相对边缘的缩进
+  edge_size: 10 # 四边夹点厚度
+
+# SHADOW 窗口外阴影
+shadow:
+  blur_radius: 20 # 模糊半径
+  alpha: 160 # 阴影不透明度（0-255）
+  offset_x: 0 # 水平偏移
+  offset_y: 0 # 垂直偏移
+
+# GLASS 玻璃层不透明度（0-1，仅在原生亚克力可用时生效）
+# 数值越大越接近实色：太大看不到模糊，太小会牺牲文字可读性。
+glass:
+  window: 0.24 # 窗口底色
+  sidebar: 0.0 # 侧栏底色
+  panel: 0.0 # 面板底色
+  region: 0.34 # 内容区域
+  card: 0.34 # 卡片
+  control: 0.22 # 输入类控件
+  menu: 0.92 # 菜单/浮层
+  overlay_panel: 0.96 # 抽屉面板
+  tooltip: 0.92 # 工具提示
+
+# MENU OVERLAY 左菜单浮层遮罩
+menu_overlay:
+  scrim_alpha_dark: 80 # 深色主题遮罩不透明度（0-255）
+  scrim_alpha_light: 52 # 浅色主题遮罩不透明度（0-255）
+  duration: 160 # 遮罩淡入淡出时长（毫秒）
+
+# SCROLL TOP 滚动回顶按钮
+scroll_top:
+  size: 36 # 按钮直径
+  margin: 16 # 距视口右下角间距
+  threshold: 32 # 滚动超过该值后显示
+  fade_duration: 160 # 淡入淡出时长（毫秒）
+  scroll_duration: 320 # 回顶滚动时长（毫秒）
+
 
 # ACRYLIC 亚克力材质（Windows 11 Fluent Design；其它平台自动回落为不透明主题底色）
 acrylic:
@@ -75,6 +119,9 @@ feedback:
   toast_duration: 180 # 进出动画时长
   toast_margin: 20 # 距窗口边缘距离
   toast_spacing: 8 # 通知之间的间距
+  toast_width: 340 # 单条通知宽度
+  toast_shadow: 5 # 通知外阴影占用的边距
+  message_icon_size: 20 # 消息条图标尺寸
   skeleton_duration: 1400 # 骨架微光扫过一圈的时长
 
 # OVERLAY 对话框与抽屉（毫秒 / 0-255）
@@ -89,10 +136,22 @@ panels:
   collapse_duration: 180 # 手风琴/面板展开收起
   splitter_handle: 8 # 分隔条宽度
   splitter_grip: 28 # 分隔条握把长度
+  radius: 8 # 面板圆角半径
+  accordion_header_height: 44 # 手风琴标题栏高度
+  fieldset_border_top: 10 # Fieldset 顶部留白
+  fieldset_legend_height: 20 # Fieldset 图例高度
+  fieldset_legend_gap: 6 # Fieldset 图例与内容间距
+  tabs_close_width: 20 # 标签页关闭按钮宽度
+  tabs_icon_gap: 7 # 标签页图标与文字间距
 
-# BUTTON 按钮交互（毫秒）
+# BUTTON 按钮交互（毫秒 / 像素 / 0-1）
 button:
   hover_duration: 160 # 悬停/按下颜色过渡
+  radius: 6 # 圆角半径
+  icon_gap: 8 # 图标与文字间距
+  spin_period: 2000 # 加载指示器旋转一圈时长
+  spin_interval: 16 # 加载指示器刷新间隔
+  disabled_opacity: 0.6 # 禁用态整体透明度
 
 # FONT
 family: 微软雅黑

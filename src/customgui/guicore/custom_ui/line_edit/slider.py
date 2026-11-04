@@ -6,10 +6,15 @@ from PySide6.QtCore import QPointF, QRectF, QSize, Qt, Signal
 from PySide6.QtGui import QColor, QPainter, QPen
 from PySide6.QtWidgets import QSizePolicy, QWidget
 
+from customgui.appcore import AppSettings
+
 from .input_style import colors
 
+#: 轨道高度的兼容兜底值（运行时以配置为准）
 TRACK_HEIGHT = 4
+#: 手柄半径的兼容兜底值（运行时以配置为准）
 HANDLE_RADIUS = 9
+#: 左右留白的兼容兜底值（运行时以配置为准）
 MARGIN = 12
 
 
@@ -26,6 +31,9 @@ class CSlider(QWidget):
         self._value = self._clamp(value)
         self._dragging = False
         self._hover = False
+        self._track_height = int(AppSettings.input.slider_track_height)
+        self._handle_radius = int(AppSettings.input.slider_handle_radius)
+        self._margin = int(AppSettings.input.slider_margin)
         self.setFixedHeight(32)
         self.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed)
         self.setCursor(Qt.PointingHandCursor)
@@ -70,7 +78,12 @@ class CSlider(QWidget):
         return 0.0 if span <= 0 else (self._value - self._minimum) / span
 
     def _track_rect(self) -> QRectF:
-        return QRectF(MARGIN, (self.height() - TRACK_HEIGHT) / 2, self.width() - MARGIN * 2, TRACK_HEIGHT)
+        return QRectF(
+            self._margin,
+            (self.height() - self._track_height) / 2,
+            self.width() - self._margin * 2,
+            self._track_height,
+        )
 
     def _handle_center(self) -> QPointF:
         track = self._track_rect()
@@ -88,14 +101,14 @@ class CSlider(QWidget):
 
         painter.setPen(Qt.NoPen)
         painter.setBrush(QColor(palette["control_border"]))
-        painter.drawRoundedRect(track, TRACK_HEIGHT / 2, TRACK_HEIGHT / 2)
+        painter.drawRoundedRect(track, self._track_height / 2, self._track_height / 2)
 
         filled = QRectF(track.left(), track.top(), track.width() * self._ratio(), track.height())
         painter.setBrush(accent)
-        painter.drawRoundedRect(filled, TRACK_HEIGHT / 2, TRACK_HEIGHT / 2)
+        painter.drawRoundedRect(filled, self._track_height / 2, self._track_height / 2)
 
         center = self._handle_center()
-        radius = HANDLE_RADIUS + (1 if (self._hover or self._dragging) else 0)
+        radius = self._handle_radius + (1 if (self._hover or self._dragging) else 0)
         painter.setBrush(QColor(palette["background"]))
         painter.setPen(QPen(accent, 2))
         painter.drawEllipse(center, radius, radius)

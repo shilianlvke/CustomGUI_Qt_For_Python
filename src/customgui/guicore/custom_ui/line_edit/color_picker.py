@@ -6,6 +6,8 @@ from PySide6.QtCore import QRectF, Qt, Signal
 from PySide6.QtGui import QColor, QPainter, QPen
 from PySide6.QtWidgets import QAbstractButton, QGridLayout, QLabel, QVBoxLayout, QWidget
 
+from customgui.appcore import AppSettings
+
 from .input_style import colors, rounded_path
 from .overlay import CPopover
 
@@ -37,7 +39,9 @@ PALETTE = (
     "#000000",
 )
 
+#: 色块按钮尺寸的兼容兜底值（运行时以配置为准）
 SWATCH = 40
+#: 色板格子尺寸的兼容兜底值（运行时以配置为准）
 CELL = 24
 
 
@@ -47,7 +51,8 @@ class _SwatchButton(QAbstractButton):
     def __init__(self, color: str, parent=None):
         super().__init__(parent)
         self._color = QColor(color)
-        self.setFixedSize(CELL, CELL)
+        cell = int(AppSettings.input.color_picker_cell)
+        self.setFixedSize(cell, cell)
         self.setCursor(Qt.PointingHandCursor)
         self._hover = False
 
@@ -83,7 +88,9 @@ class CColorPicker(QWidget):
         self._popover: CPopover | None = None
         self._open = False
         self._label: QLabel | None = None
-        self.setFixedSize(SWATCH, SWATCH)
+        self._swatch = int(AppSettings.input.color_picker_swatch)
+        self._cell = int(AppSettings.input.color_picker_cell)
+        self.setFixedSize(self._swatch, self._swatch)
         self.setCursor(Qt.PointingHandCursor)
 
     # ------------------------------------------------------------------
@@ -133,7 +140,7 @@ class CColorPicker(QWidget):
             self.close_popup()
             return
         self._open = True
-        popover = CPopover(self, width=CELL * 8 + 30)
+        popover = CPopover(self, width=self._cell * 8 + 30)
         popover.content_layout().addWidget(self._build_content(popover))
         popover.closed.connect(self._on_closed)
         popover.show_at(self)

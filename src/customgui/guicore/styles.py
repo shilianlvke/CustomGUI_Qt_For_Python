@@ -1,30 +1,20 @@
 # 这里决定整个window的总体样式
 from PySide6.QtGui import QColor
 
-from customgui.appcore import Logger, PathFactory, get_design_tokens
+from customgui.appcore import AppSettings, Logger, PathFactory, get_design_tokens
 
 from .acrylic import acrylic_active
 
 # ----------------------------------------------------------------------
-# 亚克力玻璃层的不透明度（0-1）
+# 亚克力玻璃层的不透明度
 # ----------------------------------------------------------------------
-# 仅在原生亚克力可用时生效；叠加顺序为
-# 桌面 -> 亚克力色调（acrylic.opacity）-> 窗口 -> 侧栏/面板 -> 区域卡片 -> 卡片。
-# 数值越大越接近实色：太大看不到模糊，太小会牺牲文字可读性。
+# 具体取值见 settings/window.yaml 的 ``glass`` 分组（0-1），
+# 叠加顺序为：桌面 -> 亚克力色调（acrylic.opacity）-> 窗口 -> 侧栏/面板
+# -> 区域卡片 -> 卡片。约束：太大看不到模糊，太小会牺牲文字可读性。
 # 主界面（CWindow）本身就是背景层：由它铺这层玻璃，标题栏、侧栏、内容卡片
 # 都是它的子控件，不再额外引入任何"背景窗口/背景控件"。这样标题栏的鼠标
 # 命中区域、拖动与双击最大化等原生交互都留在原来的控件树上。
-GLASS_WINDOW = 0.24
-# 侧栏 / 标题栏 / 版权栏不再叠自己的底色：它们与窗口四周的留白共用同一层
-# 玻璃，任何暴露在布局间隙里的窗口底色都与侧栏完全同色，不会出现「竖条
-# 比旁边面板更粉/更绿」的拼色接缝。
-GLASS_SIDEBAR = 0.0
-GLASS_PANEL = 0.0
-# 内容区是压在玻璃上的一整张「纸」，比外壳更实，保证正文可读性
-GLASS_REGION = 0.34
-GLASS_CARD = 0.34
-GLASS_CONTROL = 0.22
-GLASS_MENU = 0.92
+
 
 
 def _mix(start: str, end: str, ratio: float) -> str:
@@ -75,8 +65,9 @@ def region_card_background() -> str:
     if not acrylic_active():
         return tint
     colors = get_design_tokens().colors
-    window = _composite(colors.surface_app, GLASS_WINDOW, colors.surface_app)
-    return _composite(tint, GLASS_REGION, window)
+    glass_cfg = AppSettings.glass
+    window = _composite(colors.surface_app, glass_cfg.window, colors.surface_app)
+    return _composite(tint, glass_cfg.region, window)
 
 
 class Styles:
@@ -110,20 +101,23 @@ class Styles:
         colors = self.tokens.colors
         glass = acrylic_active()
         self.glass = glass
+        glass_cfg = AppSettings.glass
 
         # 各层表面：玻璃模式下使用半透明写法，否则保持不透明主题色
-        self._window_bg = _rgba(colors.surface_app, GLASS_WINDOW) if glass else colors.surface_app
-        self._sidebar_bg = _rgba(colors.surface_sidebar, GLASS_SIDEBAR) if glass else colors.surface_sidebar
-        self._panel_bg = _rgba(colors.surface_panel, GLASS_PANEL) if glass else colors.surface_panel
-        self._card_bg = _rgba(colors.surface_card, GLASS_CARD) if glass else colors.surface_card
-        self._region_bg = _rgba(region_card_tint(), GLASS_REGION) if glass else region_card_tint()
-        self._control_bg = _rgba(colors.surface_sidebar, GLASS_CONTROL) if glass else colors.surface_sidebar
-        self._menu_bg = _rgba(colors.surface_interactive, GLASS_MENU) if glass else colors.surface_interactive
+        self._window_bg = _rgba(colors.surface_app, glass_cfg.window) if glass else colors.surface_app
+        self._sidebar_bg = _rgba(colors.surface_sidebar, glass_cfg.sidebar) if glass else colors.surface_sidebar
+        self._panel_bg = _rgba(colors.surface_panel, glass_cfg.panel) if glass else colors.surface_panel
+        self._card_bg = _rgba(colors.surface_card, glass_cfg.card) if glass else colors.surface_card
+        self._region_bg = _rgba(region_card_tint(), glass_cfg.region) if glass else region_card_tint()
+        self._control_bg = _rgba(colors.surface_sidebar, glass_cfg.control) if glass else colors.surface_sidebar
+        self._menu_bg = _rgba(colors.surface_interactive, glass_cfg.menu) if glass else colors.surface_interactive
         # Overlay 左菜单浮在内容之上，需要接近不透明的面板底色；沿用侧栏的
         # 0 透明度会让菜单和页面文字互相穿透。
-        self._overlay_panel_bg = _rgba(colors.surface_panel, 0.96) if glass else colors.surface_panel
+        self._overlay_panel_bg = (
+            _rgba(colors.surface_panel, glass_cfg.overlay_panel) if glass else colors.surface_panel
+        )
         self._overlay_panel_border = _rgba(colors.text_primary, 0.14) if glass else colors.surface_interactive_pressed
-        self._tooltip_bg = _rgba(colors.surface_sidebar, GLASS_MENU) if glass else colors.surface_sidebar
+        self._tooltip_bg = _rgba(colors.surface_sidebar, glass_cfg.tooltip) if glass else colors.surface_sidebar
 
         # 描边与状态层：玻璃模式用正文色的低透明度，深浅主题都会得到
         # 「深色上是白色高光、浅色上是灰色阴影」的 Fluent 分层效果

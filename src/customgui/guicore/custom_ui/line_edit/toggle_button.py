@@ -8,7 +8,7 @@ from PySide6.QtWidgets import QSizePolicy, QWidget
 
 from ..button import CButton
 from ..button.severity import contrast_text
-from .input_style import RADIUS, colors, field_font, rounded_path, size_spec
+from .input_style import colors, field_font, radius, rounded_path, size_spec
 
 
 class CToggleButton(CButton):
@@ -123,7 +123,7 @@ class CSelectButton(QWidget):
         painter = QPainter(self)
         painter.setRenderHint(QPainter.Antialiasing)
         palette = colors()
-        frame = rounded_path(QRectF(self.rect()).adjusted(0.5, 0.5, -0.5, -0.5), RADIUS)
+        frame = rounded_path(QRectF(self.rect()).adjusted(0.5, 0.5, -0.5, -0.5), radius())
         painter.fillPath(frame, QColor(palette["addon_background"]))
 
         if not self.isEnabled():

@@ -50,6 +50,9 @@ class _Logger:
         "error": logging.ERROR,
         "critical": logging.CRITICAL,
     }
+    DEFAULT_LOG_FILE_NAME = "customgui.log"
+    DEFAULT_LOG_MAX_BYTES = 1_048_576
+    DEFAULT_LOG_BACKUP_COUNT = 5
 
     def __init__(self):
         self._logger = logging.getLogger("CustomGUI")
@@ -82,6 +85,9 @@ class _Logger:
             datefmt="%Y-%m-%d %H:%M:%S",
         )
         use_color = self._read_color_enabled_from_console_config()
+        log_file_name, log_max_bytes, log_backup_count = (
+            self._read_file_policy_from_console_config()
+        )
 
         if not self._logger.handlers:
             console_handler = logging.StreamHandler()
@@ -95,9 +101,9 @@ class _Logger:
             try:
                 os.makedirs(log_dir, exist_ok=True)
                 file_handler = RotatingFileHandler(
-                    log_dir / "customgui.log",
-                    maxBytes=1_048_576,
-                    backupCount=5,
+                    log_dir / log_file_name,
+                    maxBytes=log_max_bytes,
+                    backupCount=log_backup_count,
                     encoding="utf-8",
                 )
                 file_handler.setFormatter(formatter)
@@ -140,6 +146,36 @@ class _Logger:
         if isinstance(enabled, str):
             return enabled.strip().lower() in ("true", "1", "yes", "on")
         return bool(enabled)
+
+    @classmethod
+    def _read_file_policy_from_console_config(cls) -> tuple:
+        """解析 console.yaml 的 ``logger_file`` 分组，返回 (name, max_bytes, backup_count)。
+
+        配置缺失或类型非法时回落到原默认值，保持原有日志行为。
+        """
+        section = cls._read_console_config().get("logger_file")
+        if not isinstance(section, dict):
+            section = {}
+
+        name = section.get("name")
+        if not isinstance(name, str) or not name.strip():
+            name = cls.DEFAULT_LOG_FILE_NAME
+        else:
+            name = name.strip()
+
+        max_bytes = section.get("max_bytes")
+        if isinstance(max_bytes, bool) or not isinstance(max_bytes, int) or max_bytes <= 0:
+            max_bytes = cls.DEFAULT_LOG_MAX_BYTES
+
+        backup_count = section.get("backup_count")
+        if (
+            isinstance(backup_count, bool)
+            or not isinstance(backup_count, int)
+            or backup_count <= 0
+        ):
+            backup_count = cls.DEFAULT_LOG_BACKUP_COUNT
+
+        return name, max_bytes, backup_count
 
     def info(self, msg: str):
         self._logger.info(msg)

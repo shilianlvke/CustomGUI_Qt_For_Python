@@ -34,7 +34,7 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
-from customgui.appcore import get_theme_manager
+from customgui.appcore import AppSettings, get_theme_manager
 
 from ..button import CButton
 from ..panels.style import RADIUS, paint_surface, panel_colors, rounded_path
@@ -44,6 +44,15 @@ from ..scroll import CScrollArea
 _ITEM_HEIGHT = 34
 #: 条目内文字左右留白
 _ITEM_PADDING = 10
+
+
+def _data_config() -> tuple[int, int]:
+    """(条目高度, 条目内文字留白)，配置缺失时回落默认值。"""
+    try:
+        cfg = AppSettings.data
+        return int(cfg.item_height), int(cfg.item_padding)
+    except Exception:
+        return _ITEM_HEIGHT, _ITEM_PADDING
 
 
 def _payload_label(item: Any) -> str:
@@ -84,6 +93,10 @@ def _wrap_in_shell(widget: QWidget, parent: QWidget | None = None) -> QFrame:
 class _ItemDelegate(QStyledItemDelegate):
     """列表条目绘制：圆角底、选中态强调色、悬停底色。"""
 
+    def __init__(self, parent=None):
+        super().__init__(parent)
+        self._item_height, self._item_padding = _data_config()
+
     def paint(self, painter: QPainter, option: QStyleOptionViewItem, index):  # noqa: N802 - 覆写 Qt 命名
         colors = panel_colors()
         selected = bool(option.state & QStyle.State_Selected)
@@ -106,17 +119,17 @@ class _ItemDelegate(QStyledItemDelegate):
 
         metrics = QFontMetrics(option.font)
         text = str(index.data(Qt.DisplayRole) or "")
-        text = metrics.elidedText(text, Qt.ElideRight, max(0, int(rect.width()) - _ITEM_PADDING * 2))
+        text = metrics.elidedText(text, Qt.ElideRight, max(0, int(rect.width()) - self._item_padding * 2))
         painter.setPen(text_color)
         painter.drawText(
-            rect.adjusted(_ITEM_PADDING, 0, -_ITEM_PADDING, 0),
+            rect.adjusted(self._item_padding, 0, -self._item_padding, 0),
             Qt.AlignLeft | Qt.AlignVCenter,
             text,
         )
         painter.restore()
 
     def sizeHint(self, option, index):  # noqa: N802 - 覆写 Qt 命名
-        return QSize(160, _ITEM_HEIGHT)
+        return QSize(160, self._item_height)
 
 
 class _TokenList(QListWidget):
@@ -124,6 +137,7 @@ class _TokenList(QListWidget):
 
     def __init__(self, parent=None):
         super().__init__(parent)
+        self._item_height, _ = _data_config()
         self._payloads: list[Any] = []
         self.setObjectName("CDataView_List")
         self.setFrameShape(QFrame.Shape.NoFrame)
@@ -145,7 +159,7 @@ class _TokenList(QListWidget):
         for payload in self._payloads:
             entry = QListWidgetItem(_payload_label(payload))
             entry.setData(Qt.UserRole, payload)
-            entry.setSizeHint(QSize(0, _ITEM_HEIGHT))
+            entry.setSizeHint(QSize(0, self._item_height))
             self.addItem(entry)
 
     def payloads(self) -> list[Any]:

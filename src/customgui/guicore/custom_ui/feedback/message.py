@@ -13,6 +13,7 @@ from ..close_button import CCloseButton as _CloseButton
 from ..display.palette import is_dark_theme
 from ..paint_utils import draw_check
 
+#: 消息条图标尺寸（配置不可用时的兜底默认）
 _ICON_SIZE = 20
 
 
@@ -67,8 +68,16 @@ def message_palette(severity) -> dict[str, QColor]:
 class _MessageIcon(QWidget):
     """圆形语义图标：i / ! / ✓ / × / ?。"""
 
-    def __init__(self, severity, size: int = _ICON_SIZE, parent=None):
+    def __init__(self, severity, size: int | None = None, parent=None):
         super().__init__(parent)
+        # 图标尺寸来自 settings（实例初始化时读取，避免导入期触发配置加载）
+        if size is None:
+            try:
+                from customgui.appcore import AppSettings
+
+                size = int(AppSettings.feedback.message_icon_size)
+            except Exception:
+                size = _ICON_SIZE
         self._severity = normalize_severity(severity)
         self._size = max(12, int(size))
         self.setFixedSize(self._size, self._size)

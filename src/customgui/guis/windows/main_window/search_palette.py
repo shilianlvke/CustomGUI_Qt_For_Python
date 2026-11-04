@@ -4,14 +4,15 @@ from __future__ import annotations
 
 from PySide6.QtCore import Qt, Signal
 
-from customgui.appcore import Language
+from customgui.appcore import AppSettings, Language
 from customgui.guicore import CInputText
 from customgui.guicore.custom_ui.line_edit.overlay import CPopover
 from customgui.guicore.custom_ui.menu.menu_list import CMenuList
 
 from .registry import get_page_routes
 
-#: 弹层一次最多展示的结果条数（超出后只保留最前面的匹配）
+#: 弹层一次最多展示的结果条数（超出后只保留最前面的匹配）。
+#: 保留为兼容别名，运行时以 :attr:`AppSettings.search.max_results` 为准。
 MAX_RESULTS = 8
 
 
@@ -30,6 +31,7 @@ class CSearchPalette(CPopover):
         self.setObjectName("CSearchPalette")
         self._window = window
         self._routes: dict[str, tuple[str, str]] = {}
+        self._max_results = int(AppSettings.search.max_results)
 
         self._input = CInputText(
             placeholder=Language.resolve_key("language.UI.ui_Search", "Search pages…"),
@@ -68,7 +70,7 @@ class CSearchPalette(CPopover):
             if needle and needle not in title.lower() and needle not in btn_name.lower():
                 continue
             items.append({"label": title, "key": btn_name})
-            if len(items) >= MAX_RESULTS:
+            if len(items) >= self._max_results:
                 break
         self._list.set_items(items)
         self.adjustSize()

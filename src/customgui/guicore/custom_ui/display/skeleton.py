@@ -6,9 +6,19 @@ from PySide6.QtCore import QRectF, QSize, QTimer
 from PySide6.QtGui import QColor, QLinearGradient, QPainter, QPainterPath
 from PySide6.QtWidgets import QSizePolicy, QWidget
 
+from customgui.appcore import AppSettings
+
 from .palette import tokens
 
 _INTERVAL = 33
+
+
+def _skeleton_interval() -> int:
+    """刷新间隔（毫秒），配置缺失时回落默认值。"""
+    try:
+        return max(1, int(AppSettings.display_components.skeleton_interval))
+    except Exception:
+        return _INTERVAL
 
 
 def _duration() -> int:
@@ -35,6 +45,7 @@ class CSkeleton(QWidget):
         self._shape = shape if shape in ("rect", "circle", "text") else "rect"
         self._animation = animation
         self._phase = 0.0
+        self._interval = _skeleton_interval()
         self._duration = _duration()
         if self._shape == "circle":
             width = height
@@ -42,7 +53,7 @@ class CSkeleton(QWidget):
         self.setSizePolicy(QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Fixed)
 
         self._timer = QTimer(self)
-        self._timer.setInterval(_INTERVAL)
+        self._timer.setInterval(self._interval)
         self._timer.timeout.connect(self._tick)
 
     # ------------------------------------------------------------------
@@ -63,7 +74,7 @@ class CSkeleton(QWidget):
         return QSize(self.width(), self.height())
 
     def _tick(self) -> None:
-        self._phase = (self._phase + _INTERVAL / self._duration) % 1.0
+        self._phase = (self._phase + self._interval / self._duration) % 1.0
         self.update()
 
     # ------------------------------------------------------------------

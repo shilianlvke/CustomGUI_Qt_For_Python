@@ -14,6 +14,14 @@ from ..display.palette import is_dark_theme, tokens
 RADIUS = 8
 
 
+def panel_radius() -> float:
+    """面板圆角，配置缺失时回落默认值。"""
+    try:
+        return float(AppSettings.panels.radius)
+    except Exception:
+        return RADIUS
+
+
 def panel_settings() -> tuple[int, int, int, int]:
     """(标签滑动时长, 折叠时长, 分割条宽度, 握把长度)。"""
     try:
@@ -86,22 +94,23 @@ def with_alpha(color: QColor | str, alpha: int) -> QColor:
     return value
 
 
-def rounded_path(rect: QRectF, radius: float = RADIUS) -> QPainterPath:
+def rounded_path(rect: QRectF, radius: float | None = None) -> QPainterPath:
+    value = panel_radius() if radius is None else radius
     path = QPainterPath()
-    path.addRoundedRect(rect, radius, radius)
+    path.addRoundedRect(rect, value, value)
     return path
 
 
 def paint_surface(
     painter: QPainter,
     rect: QRectF,
-    radius: float = RADIUS,
+    radius: float | None = None,
     background: QColor | str | None = None,
     border: QColor | str | None = None,
 ) -> QPainterPath:
     """画一层圆角面板（底色 + 1px 描边），返回路径供裁剪用。"""
     colors = panel_colors()
-    path = rounded_path(rect, radius)
+    path = rounded_path(rect, panel_radius() if radius is None else radius)
     painter.fillPath(path, QColor(background or colors["background"]))
     if border is not None:
         painter.setBrush(QColor(0, 0, 0, 0))
@@ -119,6 +128,7 @@ def panel_font(size: int = 13, weight: QFont.Weight = QFont.Weight.DemiBold) -> 
 
 __all__ = [
     "RADIUS",
+    "panel_radius",
     "panel_colors",
     "panel_font",
     "panel_settings",

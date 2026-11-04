@@ -10,6 +10,8 @@ from PySide6.QtCore import QPointF, QRectF, QSize, Qt, Signal
 from PySide6.QtGui import QColor, QFont, QFontMetrics, QPainter, QPen
 from PySide6.QtWidgets import QHBoxLayout, QLabel, QSizePolicy, QStackedWidget, QVBoxLayout, QWidget
 
+from customgui.appcore import AppSettings
+
 from ..button import CButton, Variant
 from ..paint_utils import draw_check
 from .menu_list import menu_colors, menu_font
@@ -21,6 +23,20 @@ STEP_BAR_HEIGHT = 52
 STEP_BAR_WIDTH = 210
 #: 纵向步骤条每行最小高度
 STEP_ROW_HEIGHT = 56
+
+
+def _stepper_config() -> tuple[int, int, int, int]:
+    """(圆点直径, 步骤条高度, 步骤条宽度, 每行最小高度)，配置缺失时回落默认值。"""
+    try:
+        cfg = AppSettings.menus
+        return (
+            int(cfg.stepper_circle_size),
+            int(cfg.stepper_bar_height),
+            int(cfg.stepper_bar_width),
+            int(cfg.stepper_row_height),
+        )
+    except Exception:
+        return CIRCLE_SIZE, STEP_BAR_HEIGHT, STEP_BAR_WIDTH, STEP_ROW_HEIGHT
 
 
 def _normalize_steps(steps) -> list[dict]:
@@ -45,6 +61,12 @@ class _StepIndicator(QWidget):
 
     def __init__(self, orientation: str = "horizontal", parent=None):
         super().__init__(parent)
+        (
+            self._circle_size,
+            self._step_bar_height,
+            self._step_bar_width,
+            self._step_row_height,
+        ) = _stepper_config()
         self.setObjectName("CStepper_Indicator_Widget")
         self.setMouseTracking(True)
         self.setFont(menu_font(13))
@@ -53,11 +75,11 @@ class _StepIndicator(QWidget):
         self._current = 0
         self._hover = -1
         if self._orientation == "horizontal":
-            self.setFixedHeight(STEP_BAR_HEIGHT)
+            self.setFixedHeight(self._step_bar_height)
             self.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed)
         else:
-            self.setFixedWidth(STEP_BAR_WIDTH)
-            self.setFixedHeight(STEP_ROW_HEIGHT)
+            self.setFixedWidth(self._step_bar_width)
+            self.setFixedHeight(self._step_row_height)
             self.setSizePolicy(QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Fixed)
 
     # ------------------------------------------------------------------
@@ -68,7 +90,7 @@ class _StepIndicator(QWidget):
         elif not self._titles:
             self._current = 0
         if self._orientation == "vertical":
-            self.setFixedHeight(max(STEP_ROW_HEIGHT * len(self._titles), STEP_ROW_HEIGHT))
+            self.setFixedHeight(max(self._step_row_height * len(self._titles), self._step_row_height))
         self._hover = -1
         self.update()
 
@@ -90,11 +112,11 @@ class _StepIndicator(QWidget):
         block = self._block()
         if self._orientation == "horizontal":
             x = block * index + 2
-            y = (self.height() - CIRCLE_SIZE) / 2
+            y = (self.height() - self._circle_size) / 2
         else:
             x = 2
-            y = block * index + (block - CIRCLE_SIZE) / 2
-        return QRectF(x, y, CIRCLE_SIZE, CIRCLE_SIZE)
+            y = block * index + (block - self._circle_size) / 2
+        return QRectF(x, y, self._circle_size, self._circle_size)
 
     def paintEvent(self, event):  # noqa: N802 - 覆写 Qt 命名
         if not self._titles:
@@ -200,8 +222,8 @@ class _StepIndicator(QWidget):
 
     def sizeHint(self) -> QSize:  # noqa: N802 - 覆写 Qt 命名
         if self._orientation == "horizontal":
-            return QSize(max(240, 120 * len(self._titles)), STEP_BAR_HEIGHT)
-        return QSize(STEP_BAR_WIDTH, max(STEP_ROW_HEIGHT * len(self._titles), STEP_ROW_HEIGHT))
+            return QSize(max(240, 120 * len(self._titles)), self._step_bar_height)
+        return QSize(self._step_bar_width, max(self._step_row_height * len(self._titles), self._step_row_height))
 
 
 class CStepper(QWidget):

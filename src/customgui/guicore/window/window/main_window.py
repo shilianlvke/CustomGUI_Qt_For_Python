@@ -190,10 +190,11 @@ class CWindow(QFrame):
             if self.graphicsEffect() is not None:
                 return
             effect = QGraphicsDropShadowEffect(self)
-            effect.setBlurRadius(20)
-            effect.setXOffset(0)
-            effect.setYOffset(0)
-            effect.setColor(QColor(0, 0, 0, 160))
+            shadow = AppSettings.shadow
+            effect.setBlurRadius(int(shadow.blur_radius))
+            effect.setXOffset(int(shadow.offset_x))
+            effect.setYOffset(int(shadow.offset_y))
+            effect.setColor(QColor(0, 0, 0, int(shadow.alpha)))
             self.setGraphicsEffect(effect)
             self.shadow = effect
             return

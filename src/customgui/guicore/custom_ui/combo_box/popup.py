@@ -17,7 +17,7 @@ from PySide6.QtCore import QPoint, QRectF, QSize, Qt, Signal
 from PySide6.QtGui import QColor, QPainter, QPainterPath, QPen
 from PySide6.QtWidgets import QFrame, QListWidget, QListWidgetItem, QWidget
 
-from ..line_edit.input_style import RADIUS, colors
+from ..line_edit.input_style import colors, radius
 
 
 class ComboChevron(QWidget):
@@ -124,6 +124,7 @@ class ComboPopup(QFrame):
     # ------------------------------------------------------------------
     def _apply_style(self) -> None:
         palette = colors()
+        corner = radius()
         text = palette["text"]
         muted = palette["placeholder"]
         accent = QColor(palette["focus_border"])
@@ -136,7 +137,7 @@ class ComboPopup(QFrame):
             "}"
             "QListWidget#CComboBox_PopupList::item {"
             f" min-height: {self.ROW_HEIGHT - 6}px; padding: 3px 8px;"
-            f" border-radius: {RADIUS - 1}px;"
+            f" border-radius: {corner - 1}px;"
             "}"
             f"QListWidget#CComboBox_PopupList::item:hover {{ background: {hover}; }}"
             f"QListWidget#CComboBox_PopupList::item:selected {{"
@@ -153,7 +154,8 @@ class ComboPopup(QFrame):
         rect = QRectF(self.rect()).adjusted(self.MARGIN, self.MARGIN, -self.MARGIN, -self.MARGIN)
         painter.setPen(QPen(QColor(palette["border"]), 1))
         painter.setBrush(QColor(palette["addon_background"]))
-        painter.drawRoundedRect(rect, RADIUS, RADIUS)
+        corner = radius()
+        painter.drawRoundedRect(rect, corner, corner)
         painter.end()
 
     # ------------------------------------------------------------------

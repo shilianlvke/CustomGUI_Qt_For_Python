@@ -7,7 +7,7 @@ from PySide6.QtGui import QColor, QDoubleValidator, QPainter, QPen
 from PySide6.QtWidgets import QHBoxLayout, QWidget
 
 from ..paint_utils import draw_chevron
-from .input_style import RADIUS, colors, rounded_path, size_spec
+from .input_style import colors, radius, rounded_path, size_spec
 from .input_text import CInputText
 
 
@@ -44,19 +44,19 @@ class _SpinButtons(QWidget):
         body = QRectF(self.rect())
         middle = body.height() / 2
 
-        painter.fillPath(rounded_path(body, RADIUS, self._corners), QColor(palette["background"]))
+        painter.fillPath(rounded_path(body, radius(), self._corners), QColor(palette["background"]))
 
         # hover 半区高亮（Aura: button.hover.background）
         if self._hover and self.isEnabled():
             zone = QRectF(0, 0, body.width(), middle) if self._hover == 1 else QRectF(0, middle, body.width(), middle)
             highlight = QColor(palette["hover_border"])
             highlight.setAlpha(28)
-            painter.setClipPath(rounded_path(body, RADIUS, self._corners))
+            painter.setClipPath(rounded_path(body, radius(), self._corners))
             painter.fillRect(zone, highlight)
             painter.setClipping(False)
 
         # 轮廓：左边缘交给左边输入框的右边框，其余三边自己画
-        stroke = rounded_path(body.adjusted(0.5, 0.5, -0.5, -0.5), RADIUS, self._corners)
+        stroke = rounded_path(body.adjusted(0.5, 0.5, -0.5, -0.5), radius(), self._corners)
         painter.setClipRect(QRectF(1.0, 0.0, body.width() - 1.0, body.height()))
         painter.setBrush(Qt.NoBrush)
         painter.setPen(QPen(QColor(palette["border"]), 1))

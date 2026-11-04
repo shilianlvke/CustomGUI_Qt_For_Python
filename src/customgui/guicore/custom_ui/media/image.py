@@ -6,7 +6,7 @@ from PySide6.QtCore import QEvent, QPointF, QRectF, Qt, Signal
 from PySide6.QtGui import QColor, QFont, QFontMetrics, QPainter, QPainterPath, QPen, QPixmap
 from PySide6.QtWidgets import QAbstractButton, QSizePolicy, QWidget
 
-from customgui.appcore import ColorPalette
+from customgui.appcore import AppSettings, ColorPalette
 
 from ..display.palette import tokens
 from ..icon_utils import render_icon
@@ -17,6 +17,15 @@ _RADIUS = 8
 _MASK_ALPHA = 210
 #: 底部说明文字占用的高度
 _CAPTION_HEIGHT = 28
+
+
+def _image_config() -> tuple[int, int, int]:
+    """(圆角, 遮罩透明度, 说明文字高度)，配置缺失时回落默认值。"""
+    try:
+        cfg = AppSettings.media
+        return int(cfg.radius), int(cfg.image_mask_alpha), int(cfg.image_caption_height)
+    except Exception:
+        return _RADIUS, _MASK_ALPHA, _CAPTION_HEIGHT
 
 
 def _as_pixmap(source: str | QPixmap | None) -> QPixmap:
@@ -81,6 +90,7 @@ class _ImagePreview(QWidget):
 
     def __init__(self, parent: QWidget, pixmap: QPixmap, caption: str = "", zoom: bool = True):
         super().__init__(parent)
+        _, self._mask_alpha, _ = _image_config()
         self._pixmap = pixmap
         self._caption = caption
         self._scale = 1.0
@@ -181,7 +191,7 @@ class _ImagePreview(QWidget):
         painter.setRenderHint(QPainter.Antialiasing)
         painter.setRenderHint(QPainter.SmoothPixmapTransform)
         mask = QColor(ColorPalette.custom_dark_one)
-        mask.setAlpha(_MASK_ALPHA)
+        mask.setAlpha(self._mask_alpha)
         painter.fillRect(self.rect(), mask)
 
         target = self._image_rect()
@@ -251,6 +261,7 @@ class CImage(QWidget):
         parent=None,
     ):
         super().__init__(parent)
+        self._radius, _, self._caption_height = _image_config()
         self._pixmap = _as_pixmap(image)
         self._caption = caption
         self._preview_enabled = bool(preview)
@@ -334,7 +345,7 @@ class CImage(QWidget):
     def _content_rect(self) -> QRectF:
         rect = QRectF(self.rect()).adjusted(0.5, 0.5, -0.5, -0.5)
         if self._caption:
-            rect.setBottom(rect.bottom() - _CAPTION_HEIGHT)
+            rect.setBottom(rect.bottom() - self._caption_height)
         return rect
 
     def paintEvent(self, event):  # noqa: N802 - 覆写 Qt 命名
@@ -344,7 +355,7 @@ class CImage(QWidget):
         palette = tokens()
         body = QRectF(self.rect()).adjusted(0.5, 0.5, -0.5, -0.5)
         path = QPainterPath()
-        path.addRoundedRect(body, _RADIUS, _RADIUS)
+        path.addRoundedRect(body, self._radius, self._radius)
         painter.fillPath(path, QColor(palette["surface"]))
         painter.setBrush(Qt.NoBrush)
         painter.setPen(QPen(QColor(palette["border"]), 1))
@@ -370,7 +381,7 @@ class CImage(QWidget):
             text = metrics.elidedText(self._caption, Qt.ElideRight, int(body.width()) - 24)
             painter.setPen(QColor(palette["muted"]))
             painter.drawText(
-                QRectF(body.left() + 12, body.bottom() - _CAPTION_HEIGHT, body.width() - 24, _CAPTION_HEIGHT),
+                QRectF(body.left() + 12, body.bottom() - self._caption_height, body.width() - 24, self._caption_height),
                 Qt.AlignCenter,
                 text,
             )

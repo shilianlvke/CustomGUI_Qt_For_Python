@@ -206,14 +206,34 @@ class SetupMainWindow:
             Logger.debug(f"启动尺寸已夹到屏幕可用区域: {width}x{height}")
 
     def resize_grips(self):
-        self.left_grip.setGeometry(5, 10, 10, self.height())
-        self.right_grip.setGeometry(self.width() - 15, 10, 10, self.height())
-        self.top_grip.setGeometry(5, 5, self.width() - 10, 10)
-        self.bottom_grip.setGeometry(5, self.height() - 15, self.width() - 10, 10)
+        grips = AppSettings.grips
+        corner_size = int(grips.corner_size)
+        corner_offset = int(grips.corner_offset)
+        corner_inset = int(grips.corner_inset)
+        edge_size = int(grips.edge_size)
+        self.left_grip.setGeometry(corner_offset, edge_size, edge_size, self.height())
+        self.right_grip.setGeometry(
+            self.width() - corner_size, edge_size, edge_size, self.height()
+        )
+        self.top_grip.setGeometry(
+            corner_offset, corner_offset, self.width() - edge_size, edge_size
+        )
+        self.bottom_grip.setGeometry(
+            corner_offset, self.height() - corner_size, self.width() - edge_size, edge_size
+        )
         # self.top_left_grip.setGeometry(5, 5, 15, 15)
-        self.top_right_grip.setGeometry(self.width() - 20, 5, 15, 15)
-        self.bottom_left_grip.setGeometry(5, self.height() - 20, 15, 15)
-        self.bottom_right_grip.setGeometry(self.width() - 20, self.height() - 20, 15, 15)
+        self.top_right_grip.setGeometry(
+            self.width() - corner_inset, corner_offset, corner_size, corner_size
+        )
+        self.bottom_left_grip.setGeometry(
+            corner_offset, self.height() - corner_inset, corner_size, corner_size
+        )
+        self.bottom_right_grip.setGeometry(
+            self.width() - corner_inset,
+            self.height() - corner_inset,
+            corner_size,
+            corner_size,
+        )
 
     def menu_add_btn(self):
         register_builtin_title_menus()

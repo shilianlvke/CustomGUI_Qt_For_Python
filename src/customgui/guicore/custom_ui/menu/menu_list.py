@@ -42,6 +42,37 @@ TEXT_PADDING = 12
 ARROW_SPACE = 24
 
 
+def _menu_list_config() -> tuple[int, int, int, int, int, int, int, int, int, int]:
+    """(留白, 行高, 分隔线高, 行圆角, 行内缩, 图标, 图标间距, 缩进, 文字留白, 箭头预留)。"""
+    try:
+        cfg = AppSettings.menus
+        return (
+            int(cfg.list_padding),
+            int(cfg.list_row_height),
+            int(cfg.separator_height),
+            int(cfg.row_radius),
+            int(cfg.row_inset),
+            int(cfg.icon_size),
+            int(cfg.icon_gap),
+            int(cfg.indent),
+            int(cfg.text_padding),
+            int(cfg.arrow_space),
+        )
+    except Exception:  # 配置上下文未就绪时用兜底值
+        return (
+            LIST_PADDING,
+            ROW_HEIGHT,
+            SEPARATOR_HEIGHT,
+            ROW_RADIUS,
+            ROW_INSET,
+            ICON_SIZE,
+            ICON_GAP,
+            INDENT,
+            TEXT_PADDING,
+            ARROW_SPACE,
+        )
+
+
 def menu_font(size: int = 14, weight: QFont.Weight = QFont.Weight.Normal) -> QFont:
     """菜单族统一字体（像素字号，跟随应用字体族）。"""
     font = QFont(AppSettings.family)
@@ -78,10 +109,11 @@ class _Row:
     expanded: bool
     top: float = 0.0
     height: float = ROW_HEIGHT
+    inset: float = ROW_INSET
 
     def rect(self, width: float) -> QRectF:
         height = max(1.0, self.height - 2)
-        return QRectF(ROW_INSET, self.top + 1, max(0.0, width - ROW_INSET * 2), height)
+        return QRectF(self.inset, self.top + 1, max(0.0, width - self.inset * 2), height)
 
 
 class CMenuList(QWidget):
@@ -111,6 +143,18 @@ class CMenuList(QWidget):
         parent=None,
     ):
         super().__init__(parent)
+        (
+            self._list_padding,
+            self._row_height,
+            self._separator_height,
+            self._row_radius,
+            self._row_inset,
+            self._icon_size,
+            self._icon_gap,
+            self._indent,
+            self._text_padding,
+            self._arrow_space,
+        ) = _menu_list_config()
         self.setObjectName("CMenuList_Widget")
         self.setMouseTracking(True)
         self.setFont(menu_font())
@@ -202,12 +246,12 @@ class CMenuList(QWidget):
     def _refresh_rows(self) -> None:
         self._rows = []
         self._walk(self._items, 0, "")
-        top = float(LIST_PADDING)
+        top = float(self._list_padding)
         for row in self._rows:
             row.top = top
-            row.height = SEPARATOR_HEIGHT if row.item.separator else ROW_HEIGHT
+            row.height = self._separator_height if row.item.separator else self._row_height
             top += row.height
-        self.setFixedHeight(max(int(top + LIST_PADDING), ROW_HEIGHT + LIST_PADDING * 2))
+        self.setFixedHeight(max(int(top + self._list_padding), self._row_height + self._list_padding * 2))
         self.update()
 
     def _walk(self, items: list[MenuItem], depth: int, prefix: str) -> None:
@@ -215,7 +259,7 @@ class CMenuList(QWidget):
             path = f"{prefix}/{index}"
             has_children = bool(item.items) and not item.separator
             expanded = has_children and path in self._expanded
-            self._rows.append(_Row(item, depth, path, has_children, expanded))
+            self._rows.append(_Row(item, depth, path, has_children, expanded, inset=float(self._row_inset)))
             if self._inline and has_children and expanded:
                 self._walk(item.items, depth + 1, path)
 
@@ -250,17 +294,17 @@ class CMenuList(QWidget):
             if hovered:
                 painter.setPen(Qt.NoPen)
                 painter.setBrush(QColor(colors["hover"]))
-                painter.drawRoundedRect(rect, ROW_RADIUS, ROW_RADIUS)
+                painter.drawRoundedRect(rect, self._row_radius, self._row_radius)
 
             color = QColor(colors["muted"] if item.disabled else colors["text"])
-            x = rect.left() + TEXT_PADDING + row.depth * INDENT
+            x = rect.left() + self._text_padding + row.depth * self._indent
             if item.icon is not None:
-                pixmap = render_icon(item.icon, color, ICON_SIZE, dpr)
+                pixmap = render_icon(item.icon, color, self._icon_size, dpr)
                 if pixmap is not None:
-                    painter.drawPixmap(int(x), int(rect.center().y() - ICON_SIZE / 2), pixmap)
-                x += ICON_SIZE + ICON_GAP
+                    painter.drawPixmap(int(x), int(rect.center().y() - self._icon_size / 2), pixmap)
+                x += self._icon_size + self._icon_gap
 
-            reserved = ARROW_SPACE if row.has_children else 8
+            reserved = self._arrow_space if row.has_children else 8
             available = max(0.0, rect.right() - x - reserved)
             text = metrics.elidedText(item.label, Qt.ElideRight, int(available))
             painter.setPen(color)
@@ -279,7 +323,7 @@ class CMenuList(QWidget):
     def sizeHint(self) -> QSize:  # noqa: N802 - 覆写 Qt 命名
         metrics = QFontMetrics(self.font())
         width = max((metrics.horizontalAdvance(item.label) for item in self._items), default=0)
-        return QSize(max(160, width + TEXT_PADDING * 2 + ICON_SIZE + ARROW_SPACE), self.height())
+        return QSize(max(160, width + self._text_padding * 2 + self._icon_size + self._arrow_space), self.height())
 
     # ------------------------------------------------------------------
     # 交互

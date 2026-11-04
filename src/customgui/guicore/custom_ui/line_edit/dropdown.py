@@ -11,12 +11,19 @@ from PySide6.QtCore import QPointF, QRectF, QSize, Qt
 from PySide6.QtGui import QColor, QPainter, QPen
 from PySide6.QtWidgets import QSizePolicy, QWidget
 
+from customgui.appcore import AppSettings
+
 from ..paint_utils import draw_chevron
-from .input_style import RADIUS, colors, field_font, rounded_path, size_spec
+from .input_style import colors, field_font, radius, rounded_path, size_spec
 from .overlay import CPopover
 
-#: 右侧留给箭头/图标的宽度
+#: 右侧留给箭头/图标宽度的兼容兜底值（运行时以 :func:`affix_width` 为准）
 AFFIX_WIDTH = 30
+
+
+def affix_width() -> int:
+    """右侧留给箭头/图标的宽度（读取 ``AppSettings.input.affix_width``）。"""
+    return int(AppSettings.input.affix_width)
 
 
 class CDropdownField(QWidget):
@@ -30,6 +37,7 @@ class CDropdownField(QWidget):
         self._open = False
         self._popover: CPopover | None = None
         self._show_chevron = chevron
+        self._affix_width = affix_width()
 
         self.setCursor(Qt.PointingHandCursor)
         self.setFocusPolicy(Qt.StrongFocus)
@@ -64,7 +72,7 @@ class CDropdownField(QWidget):
 
     def _content_right(self) -> float:
         right = self.width() - self._spec().padding_x
-        return right - AFFIX_WIDTH + 10 if self._show_chevron else right
+        return right - self._affix_width + 10 if self._show_chevron else right
 
     def _paint_box(self, painter: QPainter, invalid: bool = False) -> None:
         palette = colors()
@@ -82,7 +90,7 @@ class CDropdownField(QWidget):
             painter.setOpacity(0.6)
         painter.setBrush(QColor(background))
         painter.setPen(QPen(QColor(border), 1))
-        painter.drawPath(rounded_path(rect, RADIUS))
+        painter.drawPath(rounded_path(rect, radius()))
 
     def _paint_chevron(self, painter: QPainter) -> None:
         if not self._show_chevron:
@@ -171,4 +179,4 @@ class CDropdownField(QWidget):
         super().hideEvent(event)
 
 
-__all__ = ["CDropdownField", "AFFIX_WIDTH"]
+__all__ = ["CDropdownField", "AFFIX_WIDTH", "affix_width"]

@@ -10,6 +10,8 @@ from PySide6.QtCore import QPoint, QPointF, QRectF, QSize, Qt, Signal
 from PySide6.QtGui import QColor, QFontMetrics, QPainter, QPen
 from PySide6.QtWidgets import QWidget
 
+from customgui.appcore import AppSettings
+
 from ..icon_utils import render_icon
 from .menu_item import MenuItem, normalize_items
 from .menu_list import ICON_GAP, ICON_SIZE, ROW_HEIGHT, ROW_RADIUS, CMenuListPopup, menu_colors, menu_font
@@ -22,6 +24,15 @@ BAR_PADDING = 12
 BAR_SEPARATOR = 9
 
 
+def _menubar_config() -> tuple[int, int, int]:
+    """(菜单栏高度, 项左右内边距, 分隔线宽度)，配置缺失时回落默认值。"""
+    try:
+        cfg = AppSettings.menus
+        return int(cfg.bar_height), int(cfg.bar_padding), int(cfg.bar_separator)
+    except Exception:
+        return BAR_HEIGHT, BAR_PADDING, BAR_SEPARATOR
+
+
 class _MenuBarBase(QWidget):
     """顶层菜单条（水平 / 垂直两种排布，供菜单栏与 MegaMenu 共用）。"""
 
@@ -30,6 +41,7 @@ class _MenuBarBase(QWidget):
 
     def __init__(self, items=None, orientation: str = "horizontal", parent=None):
         super().__init__(parent)
+        self._bar_height, self._bar_padding, self._bar_separator = _menubar_config()
         self.setObjectName("CMenubar_Widget")
         self.setMouseTracking(True)
         self.setFont(menu_font(14))
@@ -74,15 +86,15 @@ class _MenuBarBase(QWidget):
 
     def _sync_extent(self) -> None:
         if self._orientation == "horizontal":
-            self.setFixedHeight(BAR_HEIGHT)
+            self.setFixedHeight(self._bar_height)
         else:
             self.setFixedWidth(200)
             self.setFixedHeight(max(ROW_HEIGHT * len(self._items), ROW_HEIGHT))
 
     def _item_width(self, item: MenuItem, metrics: QFontMetrics) -> int:
         if item.separator:
-            return BAR_SEPARATOR
-        width = metrics.horizontalAdvance(item.label) + BAR_PADDING * 2
+            return self._bar_separator
+        width = metrics.horizontalAdvance(item.label) + self._bar_padding * 2
         if item.icon is not None:
             width += ICON_SIZE + ICON_GAP
         return width
@@ -94,7 +106,7 @@ class _MenuBarBase(QWidget):
             x = 0.0
             for item in self._items:
                 width = float(self._item_width(item, metrics))
-                rects.append(QRectF(x, 0, width, BAR_HEIGHT))
+                rects.append(QRectF(x, 0, width, self._bar_height))
                 x += width
         else:
             for index in range(len(self._items)):
@@ -105,7 +117,7 @@ class _MenuBarBase(QWidget):
         metrics = QFontMetrics(self.font())
         if self._orientation == "horizontal":
             width = sum(self._item_width(item, metrics) for item in self._items)
-            return QSize(max(120, width), BAR_HEIGHT)
+            return QSize(max(120, width), self._bar_height)
         return QSize(200, max(ROW_HEIGHT * len(self._items), ROW_HEIGHT))
 
     def resizeEvent(self, event):  # noqa: N802 - 覆写 Qt 命名
@@ -141,14 +153,14 @@ class _MenuBarBase(QWidget):
                 painter.drawRoundedRect(rect.adjusted(2, 3, -2, -3), ROW_RADIUS, ROW_RADIUS)
 
             color = QColor(colors["accent"] if active else colors["muted"] if item.disabled else colors["text"])
-            x = rect.left() + BAR_PADDING
+            x = rect.left() + self._bar_padding
             if item.icon is not None:
                 pixmap = render_icon(item.icon, color, ICON_SIZE, self.devicePixelRatioF())
                 if pixmap is not None:
                     painter.drawPixmap(int(x), int(rect.center().y() - ICON_SIZE / 2), pixmap)
                 x += ICON_SIZE + ICON_GAP
 
-            available = max(0.0, rect.right() - x - BAR_PADDING)
+            available = max(0.0, rect.right() - x - self._bar_padding)
             painter.setPen(color)
             painter.drawText(
                 QRectF(x, rect.top(), available, rect.height()),

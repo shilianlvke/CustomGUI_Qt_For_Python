@@ -10,7 +10,6 @@ from PySide6.QtGui import QColor, QFont, QPainterPath
 from customgui.appcore import AppSettings, ColorPalette, get_design_tokens
 
 from ...acrylic import acrylic_active, glass_tint
-from ...styles import GLASS_CONTROL
 
 
 @dataclass(frozen=True)
@@ -29,10 +28,20 @@ SIZES = {
     "lg": InputSize(height=48, padding_x=14, font_px=18, icon_px=18),
 }
 
-#: Aura 表单圆角
+#: Aura 表单圆角的兼容兜底值（运行时以 :func:`radius` 为准）
 RADIUS = 6
-#: 图标与文本的间距
+#: 图标与文本间距的兼容兜底值（运行时以 :func:`icon_gap` 为准）
 ICON_GAP = 6
+
+
+def radius() -> int:
+    """表单圆角（运行时读取 ``AppSettings.input.radius``）。"""
+    return int(AppSettings.input.radius)
+
+
+def icon_gap() -> int:
+    """图标与文本的间距（运行时读取 ``AppSettings.input.icon_gap``）。"""
+    return int(AppSettings.input.icon_gap)
 
 
 def is_dark_theme() -> bool:
@@ -61,13 +70,13 @@ def colors() -> dict[str, str | QColor]:
     两个方向都是「更醒目」，不会像直接用 surface_interactive_hover 那样反向变淡。
 
     亚克力模式下底色/描边改成与 ``#CInputText_LineEdit`` 完全同一套半透明
-    写法（``GLASS_CONTROL``）：自绘输入框（下拉框、数字框、日期框等）与
+    写法（``AppSettings.glass.control``）：自绘输入框（下拉框、数字框、日期框等）与
     原生 QLineEdit 并排时不会一实一透。
     """
     tokens = get_design_tokens().colors
     dark = is_dark_theme()
     if acrylic_active():
-        background = glass_tint(tokens.surface_sidebar, GLASS_CONTROL)
+        background = glass_tint(tokens.surface_sidebar, AppSettings.glass.control)
         disabled_background = glass_tint(tokens.surface_app, 0.10)
         border = glass_tint(tokens.text_primary, 0.14)
         hover_border = glass_tint(tokens.text_primary, 0.28)
@@ -147,6 +156,8 @@ __all__ = [
     "SIZES",
     "RADIUS",
     "ICON_GAP",
+    "radius",
+    "icon_gap",
     "colors",
     "corner_css",
     "field_font",

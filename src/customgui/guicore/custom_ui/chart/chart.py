@@ -52,6 +52,14 @@ CHART_TYPES = ("line", "bar", "pie", "doughnut", "polar", "radar")
 _RADIUS = 8
 
 
+def _chart_config() -> int:
+    """图表圆角，配置缺失时回落默认值。"""
+    try:
+        return int(AppSettings.chart.radius)
+    except Exception:
+        return _RADIUS
+
+
 def charts_available() -> bool:
     """返回当前环境是否成功导入 QtCharts。"""
     return _CHARTS_AVAILABLE
@@ -126,6 +134,7 @@ class CChart(QWidget):
         parent=None,
     ):
         super().__init__(parent)
+        self._radius = _chart_config()
         self.setObjectName("CChart_Widget")
         self._chart_type = _normalize_chart_type(chart_type)
         self._title = str(title)
@@ -248,7 +257,7 @@ class CChart(QWidget):
 
     def _new_chart(self):
         chart = QPolarChart() if self._chart_type in ("polar", "radar") else QChart()
-        chart.setBackgroundRoundness(_RADIUS)
+        chart.setBackgroundRoundness(self._radius)
         chart.setMargins(QMargins(8, 8, 8, 8))
         chart.setTitle(self._title)
         return chart

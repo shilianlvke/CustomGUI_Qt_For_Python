@@ -32,6 +32,22 @@ ROW_RADIUS = 6
 FALLBACK_DURATION = 180
 
 
+def _app_menu_config() -> tuple[int, int, int, int, int, int]:
+    """(行高, 缩进, 图标尺寸, 图标间距, 文字留白, 行圆角)。"""
+    try:
+        cfg = AppSettings.menus
+        return (
+            int(cfg.app_row_height),
+            int(cfg.app_indent),
+            int(cfg.app_icon_size),
+            int(cfg.app_icon_gap),
+            int(cfg.app_text_padding),
+            int(cfg.app_row_radius),
+        )
+    except Exception:  # 配置上下文未就绪时用兜底值
+        return ROW_HEIGHT, INDENT, ICON_SIZE, ICON_GAP, TEXT_PADDING, ROW_RADIUS
+
+
 def _build_item(value, depth: int) -> CAppMenuItem:
     """把字典 / ``MenuItem`` / 已有控件归一为 :class:`CAppMenuItem`。"""
     if isinstance(value, CAppMenuItem):
@@ -63,6 +79,14 @@ class CAppMenuItem(QWidget):
         parent=None,
     ):
         super().__init__(parent)
+        (
+            self._row_height,
+            self._indent,
+            self._icon_size,
+            self._icon_gap,
+            self._text_padding,
+            self._row_radius,
+        ) = _app_menu_config()
         self._label = str(label)
         self._icon = icon
         self._key = key
@@ -76,7 +100,7 @@ class CAppMenuItem(QWidget):
 
         self.setMouseTracking(True)
         self.setCursor(Qt.PointingHandCursor)
-        self.setFixedHeight(ROW_HEIGHT)
+        self.setFixedHeight(self._row_height)
         self.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed)
         self._apply_font()
 
@@ -174,7 +198,7 @@ class CAppMenuItem(QWidget):
     # 绘制
     # ------------------------------------------------------------------
     def sizeHint(self) -> QSize:  # noqa: N802 - 覆写 Qt 命名
-        return QSize(200, ROW_HEIGHT)
+        return QSize(200, self._row_height)
 
     def paintEvent(self, event):  # noqa: N802 - 覆写 Qt 命名
         colors = get_design_tokens().colors
@@ -185,28 +209,28 @@ class CAppMenuItem(QWidget):
         painter.setPen(Qt.NoPen)
         if self._active:
             painter.setBrush(QColor(colors.border_context))
-            painter.drawRoundedRect(row, ROW_RADIUS, ROW_RADIUS)
+            painter.drawRoundedRect(row, self._row_radius, self._row_radius)
             text_color = QColor(ColorPalette.custom_white)
             muted_color = text_color
         elif self._hover:
             painter.setBrush(QColor(colors.surface_interactive))
-            painter.drawRoundedRect(row, ROW_RADIUS, ROW_RADIUS)
+            painter.drawRoundedRect(row, self._row_radius, self._row_radius)
             text_color = QColor(colors.text_active)
             muted_color = QColor(colors.text_primary)
         else:
             text_color = QColor(colors.text_primary if self._depth == 0 else colors.text_muted)
             muted_color = QColor(colors.text_muted)
 
-        left = row.left() + TEXT_PADDING + self._depth * INDENT
+        left = row.left() + self._text_padding + self._depth * self._indent
         if self._icon is not None:
-            pixmap = render_icon(self._icon, text_color, ICON_SIZE, self.devicePixelRatioF())
+            pixmap = render_icon(self._icon, text_color, self._icon_size, self.devicePixelRatioF())
             if pixmap is not None:
                 painter.drawPixmap(
                     int(left),
-                    int(row.center().y() - ICON_SIZE / 2),
+                    int(row.center().y() - self._icon_size / 2),
                     pixmap,
                 )
-            left += ICON_SIZE + ICON_GAP
+            left += self._icon_size + self._icon_gap
 
         reserved = 24 if self.has_children() else 8
         available = max(0.0, row.right() - left - reserved)

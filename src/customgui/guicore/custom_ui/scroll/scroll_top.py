@@ -6,19 +6,10 @@ from PySide6.QtCore import QEasingCurve, QEvent, QPointF, QPropertyAnimation, QR
 from PySide6.QtGui import QColor, QPainter, QPen
 from PySide6.QtWidgets import QAbstractButton, QGraphicsOpacityEffect, QScrollArea
 
+from customgui.appcore import AppSettings
+
 from ..display.palette import tokens
 from ..paint_utils import draw_chevron
-
-#: 默认直径
-_SIZE = 36
-#: 距视口右下角的间距
-_MARGIN = 16
-#: 滚动超过该值后才显示按钮
-_THRESHOLD = 32
-#: 淡入淡出时长
-_FADE_MS = 160
-#: 回顶滚动时长
-_SCROLL_MS = 320
 
 
 class CScrollTop(QAbstractButton):
@@ -27,11 +18,21 @@ class CScrollTop(QAbstractButton):
     def __init__(
         self,
         scroll_area: QScrollArea,
-        size: int = _SIZE,
-        margin: int = _MARGIN,
+        size: int | None = None,
+        margin: int | None = None,
         parent=None,
     ):
         super().__init__(scroll_area if parent is None else parent)
+        # 几何与动画参数来自 settings（构造时读取，避免导入期触发配置加载）
+        config = AppSettings.scroll_top
+        if size is None:
+            size = int(config.size)
+        if margin is None:
+            margin = int(config.margin)
+        self._threshold = int(config.threshold)
+        self._fade_ms = int(config.fade_duration)
+        self._scroll_ms = int(config.scroll_duration)
+
         self._scroll_area = scroll_area
         self._margin = max(0, int(margin))
         self._hover = False
@@ -43,7 +44,7 @@ class CScrollTop(QAbstractButton):
         self._effect.setOpacity(0.0)
         self.setGraphicsEffect(self._effect)
         self._fade = QPropertyAnimation(self._effect, b"opacity", self)
-        self._fade.setDuration(_FADE_MS)
+        self._fade.setDuration(self._fade_ms)
         self._fade.setEasingCurve(QEasingCurve.OutCubic)
         self._fade.finished.connect(self._hide_if_transparent)
         self._scroll_animation: QPropertyAnimation | None = None
@@ -81,7 +82,7 @@ class CScrollTop(QAbstractButton):
     # ------------------------------------------------------------------
     def _on_scroll(self, value: int) -> None:
         bar = self._scroll_area.verticalScrollBar()
-        target = 1.0 if value > bar.minimum() + _THRESHOLD else 0.0
+        target = 1.0 if value > bar.minimum() + self._threshold else 0.0
         self._fade_to(target)
 
     def _fade_to(self, target: float) -> None:
@@ -100,7 +101,7 @@ class CScrollTop(QAbstractButton):
             self.hide()
 
     def is_at_top(self) -> bool:
-        return self._scroll_area.verticalScrollBar().value() <= _THRESHOLD
+        return self._scroll_area.verticalScrollBar().value() <= self._threshold
 
     # ------------------------------------------------------------------
     # 回顶
@@ -112,7 +113,7 @@ class CScrollTop(QAbstractButton):
         if self._scroll_animation is not None:
             self._scroll_animation.stop()
         animation = QPropertyAnimation(bar, b"value", self)
-        animation.setDuration(_SCROLL_MS)
+        animation.setDuration(self._scroll_ms)
         animation.setStartValue(bar.value())
         animation.setEndValue(bar.minimum())
         animation.setEasingCurve(QEasingCurve.OutCubic)

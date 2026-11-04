@@ -6,6 +6,8 @@ from PySide6.QtCore import QRectF, QSize, Qt, Signal
 from PySide6.QtGui import QColor, QFontMetrics, QPainter, QPainterPath, QPixmap
 from PySide6.QtWidgets import QSizePolicy, QWidget
 
+from customgui.appcore import AppSettings
+
 from ..paint_utils import draw_cross
 from .icon import tinted_pixmap
 from .palette import tokens
@@ -14,6 +16,15 @@ HEIGHT = 28
 PADDING_X = 10
 ICON_SIZE = 14
 ICON_GAP = 6
+
+
+def _chip_config() -> tuple[int, int, int, int]:
+    """(高度, 左右内边距, 图标尺寸, 图标间距)，配置缺失时回落默认值。"""
+    try:
+        cfg = AppSettings.display_components
+        return int(cfg.chip_height), int(cfg.chip_padding_x), int(cfg.chip_icon_size), int(cfg.chip_icon_gap)
+    except Exception:
+        return HEIGHT, PADDING_X, ICON_SIZE, ICON_GAP
 
 
 class CChip(QWidget):
@@ -30,6 +41,7 @@ class CChip(QWidget):
         parent=None,
     ):
         super().__init__(parent)
+        self._height, self._padding_x, self._icon_size, self._icon_gap = _chip_config()
         self._text = text
         self._icon = icon
         self._image = QPixmap(image) if image else QPixmap()
@@ -40,7 +52,7 @@ class CChip(QWidget):
         font = self.font()
         font.setPixelSize(13)
         self.setFont(font)
-        self.setFixedHeight(HEIGHT)
+        self.setFixedHeight(self._height)
         if removable:
             self.setMouseTracking(True)
 
@@ -65,7 +77,7 @@ class CChip(QWidget):
         if not self._image.isNull():
             return 20
         if self._icon is not None:
-            return ICON_SIZE
+            return self._icon_size
         return 0
 
     # ------------------------------------------------------------------
@@ -73,13 +85,13 @@ class CChip(QWidget):
     # ------------------------------------------------------------------
     def sizeHint(self) -> QSize:  # noqa: N802 - 覆写 Qt 命名
         metrics = QFontMetrics(self.font())
-        width = PADDING_X * 2 + metrics.horizontalAdvance(self._text)
+        width = self._padding_x * 2 + metrics.horizontalAdvance(self._text)
         leading = self._leading_width()
         if leading:
-            width += leading + ICON_GAP
+            width += leading + self._icon_gap
         if self._removable:
             width += 18
-        return QSize(width, HEIGHT)
+        return QSize(width, self._height)
 
     def minimumSizeHint(self) -> QSize:  # noqa: N802 - 覆写 Qt 命名
         return self.sizeHint()
@@ -100,7 +112,7 @@ class CChip(QWidget):
         painter.setPen(QColor(palette["border"]))
         painter.drawPath(path)
 
-        left = PADDING_X
+        left = self._padding_x
         if not self._image.isNull():
             avatar = QRectF(left, (self.height() - 20) / 2, 20, 20)
             clip = QPainterPath()
@@ -110,14 +122,14 @@ class CChip(QWidget):
             scaled = self._image.scaled(20, 20, Qt.KeepAspectRatioByExpanding, Qt.SmoothTransformation)
             painter.drawPixmap(int(avatar.left()), int(avatar.top()), scaled)
             painter.restore()
-            left += 20 + ICON_GAP
+            left += 20 + self._icon_gap
         elif self._icon is not None:
-            pixmap = tinted_pixmap(self._icon, palette["muted"], ICON_SIZE, self.devicePixelRatioF())
+            pixmap = tinted_pixmap(self._icon, palette["muted"], self._icon_size, self.devicePixelRatioF())
             if pixmap is not None:
-                painter.drawPixmap(int(left), int((self.height() - ICON_SIZE) / 2), pixmap)
-                left += ICON_SIZE + ICON_GAP
+                painter.drawPixmap(int(left), int((self.height() - self._icon_size) / 2), pixmap)
+                left += self._icon_size + self._icon_gap
 
-        right = self.width() - PADDING_X - (18 if self._removable else 0)
+        right = self.width() - self._padding_x - (18 if self._removable else 0)
         painter.setPen(QColor(palette["text"]))
         painter.drawText(
             QRectF(left, 0, right - left, self.height()),
@@ -126,7 +138,7 @@ class CChip(QWidget):
         )
 
         if self._removable:
-            self._remove_rect = QRectF(self.width() - PADDING_X - 14, (self.height() - 16) / 2, 16, 16)
+            self._remove_rect = QRectF(self.width() - self._padding_x - 14, (self.height() - 16) / 2, 16, 16)
             if self._hover_remove:
                 painter.setPen(Qt.NoPen)
                 painter.setBrush(QColor(palette["surface_strong"]))

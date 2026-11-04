@@ -6,6 +6,8 @@ from PySide6.QtCore import QRectF, QSize, Qt, Signal
 from PySide6.QtGui import QColor, QFont, QFontMetrics, QPainter, QPainterPath, QPen, QPixmap
 from PySide6.QtWidgets import QAbstractButton, QHBoxLayout, QSizePolicy, QVBoxLayout, QWidget
 
+from customgui.appcore import AppSettings
+
 from ..display.palette import tokens
 from ..icon_utils import render_icon
 from .carousel import _ArrowButton, _IndicatorDots
@@ -15,6 +17,21 @@ _THUMB_WIDTH = 74
 _THUMB_HEIGHT = 52
 _THUMB_ROW_HEIGHT = 58
 _FOOTER_HEIGHT = 30
+
+
+def _galleria_config() -> tuple[int, int, int, int, int]:
+    """(圆角, 缩略图宽, 缩略图高, 缩略图行高, 底部高度)，配置缺失时回落默认值。"""
+    try:
+        cfg = AppSettings.media
+        return (
+            int(cfg.radius),
+            int(cfg.galleria_thumb_width),
+            int(cfg.galleria_thumb_height),
+            int(cfg.galleria_thumb_row_height),
+            int(cfg.galleria_footer_height),
+        )
+    except Exception:
+        return _RADIUS, _THUMB_WIDTH, _THUMB_HEIGHT, _THUMB_ROW_HEIGHT, _FOOTER_HEIGHT
 
 
 def _item_pixmap(item: dict) -> QPixmap:
@@ -31,6 +48,7 @@ class _Stage(QWidget):
 
     def __init__(self, item: dict | None = None, parent=None):
         super().__init__(parent)
+        self._radius = _galleria_config()[0]
         self._item = dict(item) if item else {}
 
     def set_item(self, item: dict | None) -> None:
@@ -47,7 +65,7 @@ class _Stage(QWidget):
         palette = tokens()
         rect = QRectF(self.rect()).adjusted(0.5, 0.5, -0.5, -0.5)
         path = QPainterPath()
-        path.addRoundedRect(rect, _RADIUS, _RADIUS)
+        path.addRoundedRect(rect, self._radius, self._radius)
         painter.fillPath(path, QColor(palette["surface"]))
         painter.setPen(QPen(QColor(palette["border"]), 1))
         painter.drawPath(path)
@@ -107,11 +125,12 @@ class _Thumbnail(QAbstractButton):
 
     def __init__(self, item: dict, index: int, parent=None):
         super().__init__(parent)
+        _, thumb_width, thumb_height, _, _ = _galleria_config()
         self._item = dict(item)
         self._index = index
         self._active = False
         self._hover = False
-        self.setFixedSize(_THUMB_WIDTH, _THUMB_HEIGHT)
+        self.setFixedSize(thumb_width, thumb_height)
         self.setCursor(Qt.PointingHandCursor)
 
     def index(self) -> int:
@@ -176,6 +195,7 @@ class CGalleria(QWidget):
 
     def __init__(self, items=None, loop: bool = True, parent=None):
         super().__init__(parent)
+        _, _, _, self._thumb_row_height, self._footer_height = _galleria_config()
         self._items: list[dict] = []
         self._index = 0
         self._loop = bool(loop)
@@ -188,7 +208,7 @@ class CGalleria(QWidget):
         self._thumb_layout.setContentsMargins(0, 0, 0, 0)
         self._thumb_layout.setSpacing(6)
         self._thumb_layout.addStretch(1)
-        thumb_row.setFixedHeight(_THUMB_ROW_HEIGHT)
+        thumb_row.setFixedHeight(self._thumb_row_height)
 
         footer = QWidget(self)
         footer_layout = QHBoxLayout(footer)
@@ -202,7 +222,7 @@ class CGalleria(QWidget):
         footer_layout.addWidget(self._dots)
         footer_layout.addStretch(1)
         footer_layout.addWidget(self._next_button)
-        footer.setFixedHeight(_FOOTER_HEIGHT)
+        footer.setFixedHeight(self._footer_height)
 
         outer = QVBoxLayout(self)
         outer.setContentsMargins(0, 0, 0, 0)

@@ -16,6 +16,14 @@ from .style import paint_surface, panel_colors, with_alpha
 _HEADER_HEIGHT = 44
 
 
+def _header_height() -> int:
+    """标题栏高度，配置缺失时回落默认值。"""
+    try:
+        return int(AppSettings.panels.accordion_header_height)
+    except Exception:
+        return _HEADER_HEIGHT
+
+
 class _AccordionHeader(QWidget):
     """面板标题行：图标 + 标题 + 右侧 chevron（随展开进度旋转）。"""
 
@@ -23,13 +31,14 @@ class _AccordionHeader(QWidget):
 
     def __init__(self, title: str, icon: str | QIcon | None, parent=None):
         super().__init__(parent)
+        self._header_height = _header_height()
         self._title = title
         self._icon = icon
         self._progress = 0.0
         self._hover = False
         self._icon_cache: dict[tuple, object] = {}
 
-        self.setFixedHeight(_HEADER_HEIGHT)
+        self.setFixedHeight(self._header_height)
         self.setCursor(Qt.PointingHandCursor)
         self.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed)
 

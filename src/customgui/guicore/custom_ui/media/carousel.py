@@ -24,6 +24,20 @@ _SPACING = 8
 _DOT_STEP = 14
 
 
+def _carousel_config() -> tuple[int, int, int, int]:
+    """(圆角, 底部高度, 卡片间距, 指示点步进)，配置缺失时回落默认值。"""
+    try:
+        cfg = AppSettings.media
+        return (
+            int(cfg.radius),
+            int(cfg.carousel_footer_height),
+            int(cfg.carousel_spacing),
+            int(cfg.carousel_dot_step),
+        )
+    except Exception:
+        return _RADIUS, _FOOTER_HEIGHT, _SPACING, _DOT_STEP
+
+
 def _scroll_duration() -> int:
     """翻页动画时长（读取面板配置，缺失时回落到 220ms）。"""
     try:
@@ -72,6 +86,7 @@ class _IndicatorDots(QWidget):
 
     def __init__(self, parent=None):
         super().__init__(parent)
+        self._dot_step = _carousel_config()[3]
         self._count = 0
         self._current = 0
         self.setCursor(Qt.PointingHandCursor)
@@ -80,7 +95,7 @@ class _IndicatorDots(QWidget):
     def set_state(self, count: int, current: int) -> None:
         self._count = max(0, int(count))
         self._current = max(0, int(current))
-        self.setFixedWidth(max(0, self._count * _DOT_STEP))
+        self.setFixedWidth(max(0, self._count * self._dot_step))
         self.setVisible(self._count > 1)
         self.update()
 
@@ -98,11 +113,11 @@ class _IndicatorDots(QWidget):
             color = QColor(palette["accent"] if index == self._current else palette["muted"])
             painter.setPen(Qt.NoPen)
             painter.setBrush(color)
-            painter.drawEllipse(QRectF(index * _DOT_STEP + 3, 2, 8, 8))
+            painter.drawEllipse(QRectF(index * self._dot_step + 3, 2, 8, 8))
         painter.end()
 
     def mousePressEvent(self, event):  # noqa: N802 - 覆写 Qt 命名
-        index = int(event.position().x()) // _DOT_STEP
+        index = int(event.position().x()) // self._dot_step
         if 0 <= index < self._count:
             self.activated.emit(index)
             event.accept()
@@ -150,6 +165,7 @@ class _SlideCard(QWidget):
 
     def __init__(self, item: dict, index: int, parent=None):
         super().__init__(parent)
+        self._radius = _carousel_config()[0]
         self._item = dict(item)
         self._index = index
         self.setCursor(Qt.PointingHandCursor)
@@ -167,7 +183,7 @@ class _SlideCard(QWidget):
         palette = tokens()
         rect = QRectF(self.rect()).adjusted(0.5, 0.5, -0.5, -0.5)
         path = QPainterPath()
-        path.addRoundedRect(rect, _RADIUS, _RADIUS)
+        path.addRoundedRect(rect, self._radius, self._radius)
         painter.fillPath(path, QColor(palette["surface"]))
 
         pixmap = _item_pixmap(self._item)
@@ -265,6 +281,7 @@ class CCarousel(QWidget):
         parent=None,
     ):
         super().__init__(parent)
+        _, self._footer_height, self._spacing, _ = _carousel_config()
         self._items: list[dict] = []
         self._num_visible = max(1, int(num_visible))
         self._num_scroll = max(1, int(num_scroll))
@@ -286,7 +303,7 @@ class CCarousel(QWidget):
         footer_layout.addWidget(self._dots)
         footer_layout.addStretch(1)
         footer_layout.addWidget(self._next_button)
-        footer.setFixedHeight(_FOOTER_HEIGHT)
+        footer.setFixedHeight(self._footer_height)
 
         outer = QVBoxLayout(self)
         outer.setContentsMargins(0, 0, 0, 0)
@@ -433,7 +450,7 @@ class CCarousel(QWidget):
             self._viewport.relayout(0, 0, self._viewport.height())
             return
         visible = max(1, min(self._num_visible, count))
-        spacing = _SPACING if visible > 1 else 0
+        spacing = self._spacing if visible > 1 else 0
         width = self._viewport.width() - spacing * (visible - 1)
         slide_width = max(1, int(width / visible))
         self._step = slide_width + spacing

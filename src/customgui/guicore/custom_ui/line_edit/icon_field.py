@@ -7,7 +7,7 @@ from PySide6.QtGui import QColor, QIcon, QPainter, QPen
 from PySide6.QtWidgets import QAbstractButton, QHBoxLayout, QSizePolicy, QWidget
 
 from ..icon_utils import render_icon
-from .input_style import RADIUS, InputSize, colors, rounded_path, size_spec
+from .input_style import InputSize, colors, radius, rounded_path, size_spec
 from .input_text import CInputText
 
 
@@ -46,7 +46,7 @@ class _IconSlot(QAbstractButton):
         palette = colors()
         rect = QRectF(self.rect()).adjusted(0.5, 0.5, -0.5, -0.5)
         corners = (True, False, False, True) if self._side == "left" else (False, True, True, False)
-        path = rounded_path(rect, RADIUS, corners)
+        path = rounded_path(rect, radius(), corners)
         painter.fillPath(path, QColor(palette["addon_background"]))
         if self._hover:
             tint = QColor(palette["hover_border"])

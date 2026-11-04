@@ -9,7 +9,8 @@ from customgui.guicore.custom_ui.div import CVDiv
 from ...acrylic import acrylic_active, glass_tint
 from .title_button import CTitleButton
 
-#: 非亚克力模式下留给窗口外阴影的边距（最大化时归零）
+#: 非亚克力模式下留给窗口外阴影的边距（最大化时归零）。
+#: 保留为兼容别名，运行时以 :attr:`AppSettings.title_bar_margin` 为准。
 _CUSTOM_MARGINS = (10, 10, 10, 10)
 
 
@@ -42,6 +43,8 @@ class CTitleBar(QWidget):
         self._parent = parent
         self._app_parent = app_parent
         self.settings = AppSettings
+        #: 非亚克力模式下窗口外圈留白（配置值，最大化时归零）
+        self._custom_margin = int(AppSettings.title_bar_margin)
 
         # 最大化状态跟随窗口实例（此前是模块级全局，多窗口会互相串状态）
         self._is_maximized = False
@@ -232,7 +235,7 @@ class CTitleBar(QWidget):
         ui = getattr(self._parent, "ui", None)
         if ui is not None:
             # 最大化/亚克力模式都铺满；只有"非亚克力 + 正常尺寸"才留阴影外圈
-            margins = (0, 0, 0, 0) if (maximized or acrylic_active()) else _CUSTOM_MARGINS
+            margins = (0, 0, 0, 0) if (maximized or acrylic_active()) else (self._custom_margin,) * 4
             ui.central_widget_layout.setContentsMargins(*margins)
             window = getattr(ui, "window", None)
             if window is not None:

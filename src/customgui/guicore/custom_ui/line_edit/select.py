@@ -10,14 +10,13 @@ from PySide6.QtCore import QRectF, Qt, QTimer, Signal
 from PySide6.QtGui import QColor, QFontMetrics, QPainter, QPen
 from PySide6.QtWidgets import QLineEdit, QSizePolicy, QVBoxLayout, QWidget
 
+from customgui.appcore import AppSettings
+
 from ..paint_utils import draw_cross
 from .dropdown import CDropdownField
-from .input_style import RADIUS, colors, rounded_path
+from .input_style import colors, radius, rounded_path
 from .input_text import CInputText
 from .overlay import COptionList, CTreeList
-
-#: 标签高（md 下 26px）
-_CHIP_GAP = 4
 
 
 class _InlineEdit(QLineEdit):
@@ -160,6 +159,7 @@ class _ChipsField(CDropdownField):
         self._edit: _InlineEdit | None = None
         self._chip_boxes: list[tuple[QRectF, str]] = []
         self._overflow = 0
+        self._chip_gap = int(AppSettings.input.select_chip_gap)
 
         if editable:
             self._edit = _InlineEdit(self)
@@ -211,9 +211,9 @@ class _ChipsField(CDropdownField):
                 self._overflow = len(self._values) - len(self._chip_boxes)
                 break
             self._chip_boxes.append((QRectF(x, top, width, height), value))
-            x += width + _CHIP_GAP
+            x += width + self._chip_gap
         if self._overflow:
-            x += 34 + _CHIP_GAP
+            x += 34 + self._chip_gap
         return x
 
     def _sync_edit(self) -> None:
@@ -261,7 +261,7 @@ class _ChipsField(CDropdownField):
 
         if self._overflow:
             last = self._chip_boxes[-1][0] if self._chip_boxes else QRectF(self._text_left(), 0, 0, 0)
-            rect = QRectF(last.right() + _CHIP_GAP, last.top(), 34, last.height())
+            rect = QRectF(last.right() + self._chip_gap, last.top(), 34, last.height())
             painter.setBrush(chip_bg)
             painter.setPen(Qt.NoPen)
             painter.drawRoundedRect(rect, 6, 6)
@@ -520,7 +520,7 @@ class CListbox(QWidget):
         rect = QRectF(self.rect()).adjusted(0.5, 0.5, -0.5, -0.5)
         painter.setBrush(QColor(palette["background"]))
         painter.setPen(QPen(QColor(palette["border"]), 1))
-        painter.drawPath(rounded_path(rect, RADIUS))
+        painter.drawPath(rounded_path(rect, radius()))
         painter.end()
 
 

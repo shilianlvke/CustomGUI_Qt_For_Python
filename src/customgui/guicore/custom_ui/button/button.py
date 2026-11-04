@@ -60,6 +60,21 @@ _SPIN_INTERVAL_MS = 16
 _DISABLED_OPACITY = 0.6
 
 
+def _button_config() -> tuple[int, int, int, int, float]:
+    """(圆角, 图标间距, 旋转周期, 刷新间隔, 禁用透明度)，配置缺失时回落默认值。"""
+    try:
+        cfg = AppSettings.button
+        return (
+            int(cfg.radius),
+            int(cfg.icon_gap),
+            max(1, int(cfg.spin_period)),
+            max(1, int(cfg.spin_interval)),
+            float(cfg.disabled_opacity),
+        )
+    except Exception:  # 配置上下文未就绪时用兜底值，组件不应因此不可用
+        return _RADIUS, _ICON_GAP, _SPIN_PERIOD_MS, _SPIN_INTERVAL_MS, _DISABLED_OPACITY
+
+
 class CButton(QPushButton):
     """PrimeVue Aura 风格按钮。"""
 
@@ -87,6 +102,13 @@ class CButton(QPushButton):
     ):
         super().__init__(parent)
         self.setObjectName("CButton_PushButton")
+        (
+            self._corner_radius,
+            self._icon_gap,
+            self._spin_period,
+            self._spin_interval,
+            self._disabled_opacity,
+        ) = _button_config()
         self.setCursor(Qt.PointingHandCursor)
         self.setFocusPolicy(Qt.StrongFocus)
         self.setSizePolicy(QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Fixed)
@@ -244,7 +266,7 @@ class CButton(QPushButton):
         text_width = metrics.horizontalAdvance(text) if text else 0
         leading = icon_px if (self._loading or (self._has_icon() and self._icon_pos == "left")) else 0
         trailing = icon_px if (self._has_icon() and self._icon_pos == "right" and not self._loading) else 0
-        gap = _ICON_GAP if text_width and (leading or trailing) else 0
+        gap = self._icon_gap if text_width and (leading or trailing) else 0
         content = leading + trailing + text_width + (gap if text_width else 0)
         if self._fixed_width is not None:
             width = self._fixed_width
@@ -279,7 +301,7 @@ class CButton(QPushButton):
         if self._spinner_timer is None:
             self._spinner_timer = QTimer(self)
             self._spinner_timer.timeout.connect(self._tick_spinner)
-        self._spinner_timer.start(_SPIN_INTERVAL_MS)
+        self._spinner_timer.start(self._spin_interval)
 
     def is_loading(self) -> bool:
         return self._loading
@@ -291,7 +313,7 @@ class CButton(QPushButton):
         return self._severity
 
     def _tick_spinner(self) -> None:
-        step = 360.0 * _SPIN_INTERVAL_MS / _SPIN_PERIOD_MS
+        step = 360.0 * self._spin_interval / self._spin_period
         self._spinner_angle = (self._spinner_angle + step) % 360.0
         self.update()
 
@@ -307,7 +329,7 @@ class CButton(QPushButton):
         return colors_for(self._severity, self._variant, self._plain)
 
     def _radius(self) -> float:
-        return self._body_rect().height() / 2 if self._rounded else _RADIUS
+        return self._body_rect().height() / 2 if self._rounded else self._corner_radius
 
     def _rounded_path(self, rect: QRectF) -> QPainterPath:
         radius = self._radius()
@@ -362,7 +384,7 @@ class CButton(QPushButton):
         self._current_colors = (background, border, text)
 
         if not self.isEnabled():
-            painter.setOpacity(_DISABLED_OPACITY)
+            painter.setOpacity(self._disabled_opacity)
 
         body = self._body_rect()
         path = self._rounded_path(body)
@@ -402,7 +424,7 @@ class CButton(QPushButton):
 
         metrics = QFontMetrics(self.font())
         text_width = metrics.horizontalAdvance(text) if text else 0
-        gap = _ICON_GAP if (text_width and (leading or trailing)) else 0
+        gap = self._icon_gap if (text_width and (leading or trailing)) else 0
         display_text = text
         available = max(0, int(body.width() - leading - trailing - gap))
         if text_width > available:

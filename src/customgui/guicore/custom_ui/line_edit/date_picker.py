@@ -6,14 +6,19 @@ from PySide6.QtCore import QDate, QPointF, QRectF, Qt, Signal
 from PySide6.QtGui import QColor, QFont, QFontMetrics, QPainter, QPen
 from PySide6.QtWidgets import QHBoxLayout, QVBoxLayout, QWidget
 
+from customgui.appcore import AppSettings
+
 from ..button import CButton
 from ..paint_utils import draw_calendar, draw_chevron
 from .dropdown import CDropdownField
 from .input_style import colors, field_font
 
+#: 日期格子边长的兼容兜底值（运行时以配置为准）
 CELL = 36
 WEEKDAYS = ("Mo", "Tu", "We", "Th", "Fr", "Sa", "Su")
+#: 头部高度的兼容兜底值（运行时以配置为准）
 HEADER_HEIGHT = 34
+#: 星期表头高度的兼容兜底值（运行时以配置为准）
 WEEKDAY_HEIGHT = 24
 
 
@@ -27,10 +32,16 @@ class CCalendarPanel(QWidget):
         self._value = value or QDate.currentDate()
         self._view = QDate(self._value.year(), self._value.month(), 1)
         self._hover = -1
+        self._cell = int(AppSettings.input.date_cell)
+        self._header_height = int(AppSettings.input.date_header_height)
+        self._weekday_height = int(AppSettings.input.date_weekday_height)
         self.setMouseTracking(True)
         self.setCursor(Qt.PointingHandCursor)
         self.setFont(field_font("md"))
-        self.setFixedSize(CELL * 7 + 8, HEADER_HEIGHT + WEEKDAY_HEIGHT + CELL * 6 + 4)
+        self.setFixedSize(
+            self._cell * 7 + 8,
+            self._header_height + self._weekday_height + self._cell * 6 + 4,
+        )
 
     # ------------------------------------------------------------------
     # 数据
@@ -48,7 +59,12 @@ class CCalendarPanel(QWidget):
         self.update()
 
     def _grid_rect(self) -> QRectF:
-        return QRectF(4, HEADER_HEIGHT + WEEKDAY_HEIGHT, CELL * 7, CELL * 6)
+        return QRectF(
+            4,
+            self._header_height + self._weekday_height,
+            self._cell * 7,
+            self._cell * 6,
+        )
 
     # ------------------------------------------------------------------
     # 绘制
@@ -65,10 +81,10 @@ class CCalendarPanel(QWidget):
         header_font.setWeight(QFont.Weight.DemiBold)
         painter.setFont(header_font)
         title = f"{self._view.toString('MMMM')} {self._view.year()}"
-        painter.drawText(QRectF(0, 0, self.width(), HEADER_HEIGHT), Qt.AlignCenter, title)
+        painter.drawText(QRectF(0, 0, self.width(), self._header_height), Qt.AlignCenter, title)
         painter.setFont(self.font())
-        draw_chevron(painter, QPointF(16, HEADER_HEIGHT / 2), palette["text"], 8, "left", 1.6)
-        draw_chevron(painter, QPointF(self.width() - 16, HEADER_HEIGHT / 2), palette["text"], 8, "right", 1.6)
+        draw_chevron(painter, QPointF(16, self._header_height / 2), palette["text"], 8, "left", 1.6)
+        draw_chevron(painter, QPointF(self.width() - 16, self._header_height / 2), palette["text"], 8, "right", 1.6)
 
         # 星期表头
         weekday_font = QFont(self.font())
@@ -77,7 +93,7 @@ class CCalendarPanel(QWidget):
         painter.setPen(QColor(palette["placeholder"]))
         for column, label in enumerate(WEEKDAYS):
             painter.drawText(
-                QRectF(4 + column * CELL, HEADER_HEIGHT, CELL, WEEKDAY_HEIGHT),
+                QRectF(4 + column * self._cell, self._header_height, self._cell, self._weekday_height),
                 Qt.AlignCenter,
                 label,
             )
@@ -91,8 +107,11 @@ class CCalendarPanel(QWidget):
         for day in range(1, days + 1):
             index = leading + day - 1
             row, column = divmod(index, 7)
-            center = QPointF(grid.left() + column * CELL + CELL / 2, grid.top() + row * CELL + CELL / 2)
-            radius = CELL / 2 - 4
+            center = QPointF(
+                grid.left() + column * self._cell + self._cell / 2,
+                grid.top() + row * self._cell + self._cell / 2,
+            )
+            radius = self._cell / 2 - 4
             date = QDate(self._view.year(), self._view.month(), day)
 
             if date == self._value:
@@ -117,7 +136,12 @@ class CCalendarPanel(QWidget):
                 painter.setPen(QColor(palette["text"]))
 
             painter.drawText(
-                QRectF(center.x() - CELL / 2, center.y() - CELL / 2, CELL, CELL),
+                QRectF(
+                    center.x() - self._cell / 2,
+                    center.y() - self._cell / 2,
+                    self._cell,
+                    self._cell,
+                ),
                 Qt.AlignCenter,
                 str(day),
             )
@@ -130,8 +154,8 @@ class CCalendarPanel(QWidget):
         grid = self._grid_rect()
         if not grid.contains(position):
             return None
-        column = int((position.x() - grid.left()) // CELL)
-        row = int((position.y() - grid.top()) // CELL)
+        column = int((position.x() - grid.left()) // self._cell)
+        row = int((position.y() - grid.top()) // self._cell)
         index = row * 7 + column - (self._view.dayOfWeek() - 1)
         if not 0 <= index < self._view.daysInMonth():
             return None
@@ -151,7 +175,7 @@ class CCalendarPanel(QWidget):
 
     def mousePressEvent(self, event):  # noqa: N802 - 覆写 Qt 命名
         position = event.position()
-        if position.y() <= HEADER_HEIGHT:
+        if position.y() <= self._header_height:
             if position.x() < 32:
                 self.month_offset(-1)
             elif position.x() > self.width() - 32:

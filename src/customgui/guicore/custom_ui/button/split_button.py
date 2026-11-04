@@ -35,6 +35,31 @@ _MENU_ICON = 16
 _MENU_MIN_WIDTH = 200
 
 
+def _split_button_config() -> tuple[int, int, int, int, int, int, int]:
+    """(行间距, 横向内边距, 纵向内边距, 行圆角, 图标间距, 图标尺寸, 最小宽度)。"""
+    try:
+        cfg = AppSettings.split_button
+        return (
+            int(cfg.menu_gap),
+            int(cfg.item_padding_x),
+            int(cfg.item_padding_y),
+            int(cfg.item_radius),
+            int(cfg.icon_gap),
+            int(cfg.icon_size),
+            int(cfg.min_width),
+        )
+    except Exception:  # 配置上下文未就绪时用兜底值
+        return (
+            _MENU_GAP,
+            _MENU_ITEM_PADDING_X,
+            _MENU_ITEM_PADDING_Y,
+            _MENU_ITEM_RADIUS,
+            _MENU_ICON_GAP,
+            _MENU_ICON,
+            _MENU_MIN_WIDTH,
+        )
+
+
 class _SplitMenu(QWidget):
     """PrimeVue ``Menu`` 的**内容**部分（单选、带图标、可含分隔线）。
 
@@ -51,13 +76,23 @@ class _SplitMenu(QWidget):
         self.setMouseTracking(True)
         self.setFocusPolicy(Qt.StrongFocus)
 
+        (
+            self._menu_gap,
+            self._item_padding_x,
+            self._item_padding_y,
+            self._item_radius,
+            self._icon_gap,
+            self._icon_size,
+            self._min_width,
+        ) = _split_button_config()
+
         self._items = list(items)
         self._hover = -1
         self._rows: list[tuple[str, str | None, str | None, QRect]] = []
         self._font = QFont(AppSettings.family)
         self._font.setPixelSize(max(12, AppSettings.text_size + 2))
         self._font.setWeight(QFont.Weight.Normal)
-        self._item_height = _MENU_ITEM_PADDING_Y * 2 + max(_MENU_ICON, QFontMetrics(self._font).height())
+        self._item_height = self._item_padding_y * 2 + max(self._icon_size, QFontMetrics(self._font).height())
         self.setFont(self._font)
         width = self._natural_width()
         self._build_rows(width)
@@ -74,9 +109,9 @@ class _SplitMenu(QWidget):
             if item is None:
                 continue
             label, icon = item
-            icon_width = _MENU_ICON + _MENU_ICON_GAP if icon else 0
+            icon_width = self._icon_size + self._icon_gap if icon else 0
             widest = max(widest, icon_width + metrics.horizontalAdvance(label))
-        return widest + _MENU_ITEM_PADDING_X * 2
+        return widest + self._item_padding_x * 2
 
     def _build_rows(self, width: int) -> None:
         y = 0
@@ -84,13 +119,13 @@ class _SplitMenu(QWidget):
         for item in self._items:
             if item is None:
                 rows.append(("separator", None, None, QRect(0, y, width, 1)))
-                y += 1 + _MENU_GAP
+                y += 1 + self._menu_gap
                 continue
             label, icon = item
             rows.append(("item", label, icon, QRect(0, y, width, self._item_height)))
-            y += self._item_height + _MENU_GAP
+            y += self._item_height + self._menu_gap
         self._rows = rows
-        self._last_height = max(0, y - _MENU_GAP)
+        self._last_height = max(0, y - self._menu_gap)
 
     def _rows_height(self) -> int:
         return getattr(self, "_last_height", 0)
@@ -136,19 +171,19 @@ class _SplitMenu(QWidget):
                 highlight.setAlpha(24)
                 painter.setPen(Qt.NoPen)
                 painter.setBrush(highlight)
-                painter.drawRoundedRect(QRectF(rect), _MENU_ITEM_RADIUS, _MENU_ITEM_RADIUS)
+                painter.drawRoundedRect(QRectF(rect), self._item_radius, self._item_radius)
 
             color = active_color if hovered else text_color
-            x = rect.left() + _MENU_ITEM_PADDING_X
+            x = rect.left() + self._item_padding_x
             if icon:
                 tint = text_color if hovered else icon_color
-                pixmap = render_icon(icon, tint, _MENU_ICON, self.devicePixelRatioF())
+                pixmap = render_icon(icon, tint, self._icon_size, self.devicePixelRatioF())
                 if pixmap is not None:
                     painter.drawPixmap(int(x), int(rect.center().y() - pixmap.height() / 2), pixmap)
-                x += _MENU_ICON + _MENU_ICON_GAP
+                x += self._icon_size + self._icon_gap
             painter.setPen(color)
             painter.drawText(
-                QRect(x, rect.top(), rect.right() - x - _MENU_ITEM_PADDING_X, rect.height()),
+                QRect(x, rect.top(), rect.right() - x - self._item_padding_x, rect.height()),
                 Qt.AlignVCenter | Qt.AlignLeft,
                 label or "",
             )
@@ -240,6 +275,7 @@ class CSplitButton(QWidget):
         self._size = size if size in _SIZES else "md"
         self._items: list[tuple[str, str | None] | None] = list(items or [])
         self._severity = severity
+        self._menu_min_width = _split_button_config()[-1]
         self._menu: _SplitMenu | None = None
         self._popover: CPopover | None = None
 
@@ -318,7 +354,7 @@ class CSplitButton(QWidget):
             self._popover.close()
             self._popover.deleteLater()
 
-        popover = CPopover(self, width=max(_MENU_MIN_WIDTH, self.width()))
+        popover = CPopover(self, width=max(self._menu_min_width, self.width()))
         menu = _SplitMenu(self._items, popover)
         menu.actionTriggered.connect(self.actionTriggered.emit)
         popover.content_layout().addWidget(menu)

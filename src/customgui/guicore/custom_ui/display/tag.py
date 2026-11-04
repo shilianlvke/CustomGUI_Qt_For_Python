@@ -6,6 +6,8 @@ from PySide6.QtCore import QRectF, QSize, Qt
 from PySide6.QtGui import QFontMetrics, QPainter, QPainterPath
 from PySide6.QtWidgets import QSizePolicy, QWidget
 
+from customgui.appcore import AppSettings
+
 from ..button.severity import contrast_text, normalize_severity, severity_color
 from .icon import tinted_pixmap
 
@@ -13,6 +15,15 @@ HEIGHT = 24
 PADDING_X = 9
 ICON_SIZE = 13
 ICON_GAP = 5
+
+
+def _tag_config() -> tuple[int, int, int, int]:
+    """(高度, 左右内边距, 图标尺寸, 图标间距)，配置缺失时回落默认值。"""
+    try:
+        cfg = AppSettings.display_components
+        return int(cfg.tag_height), int(cfg.tag_padding_x), int(cfg.tag_icon_size), int(cfg.tag_icon_gap)
+    except Exception:
+        return HEIGHT, PADDING_X, ICON_SIZE, ICON_GAP
 
 
 class CTag(QWidget):
@@ -27,6 +38,7 @@ class CTag(QWidget):
         parent=None,
     ):
         super().__init__(parent)
+        self._height, self._padding_x, self._icon_size, self._icon_gap = _tag_config()
         self._text = text
         self._severity = normalize_severity(severity)
         self._rounded = rounded
@@ -35,7 +47,7 @@ class CTag(QWidget):
         font = self.font()
         font.setPixelSize(13)
         self.setFont(font)
-        self.setFixedHeight(HEIGHT)
+        self.setFixedHeight(self._height)
 
     # ------------------------------------------------------------------
     # 数据
@@ -69,10 +81,10 @@ class CTag(QWidget):
     # ------------------------------------------------------------------
     def sizeHint(self) -> QSize:  # noqa: N802 - 覆写 Qt 命名
         metrics = QFontMetrics(self.font())
-        width = metrics.horizontalAdvance(self._text) + PADDING_X * 2
+        width = metrics.horizontalAdvance(self._text) + self._padding_x * 2
         if self._icon is not None:
-            width += ICON_SIZE + ICON_GAP
-        return QSize(width, HEIGHT)
+            width += self._icon_size + self._icon_gap
+        return QSize(width, self._height)
 
     def minimumSizeHint(self) -> QSize:  # noqa: N802 - 覆写 Qt 命名
         return self.sizeHint()
@@ -89,16 +101,16 @@ class CTag(QWidget):
         path.addRoundedRect(rect, radius, radius)
         painter.fillPath(path, base)
 
-        left = PADDING_X
+        left = self._padding_x
         if self._icon is not None:
-            pixmap = tinted_pixmap(self._icon, text_color, ICON_SIZE, self.devicePixelRatioF())
+            pixmap = tinted_pixmap(self._icon, text_color, self._icon_size, self.devicePixelRatioF())
             if pixmap is not None:
-                painter.drawPixmap(int(left), int((self.height() - ICON_SIZE) / 2), pixmap)
-                left += ICON_SIZE + ICON_GAP
+                painter.drawPixmap(int(left), int((self.height() - self._icon_size) / 2), pixmap)
+                left += self._icon_size + self._icon_gap
 
         painter.setPen(text_color)
         painter.drawText(
-            QRectF(left, 0, self.width() - left - PADDING_X, self.height()),
+            QRectF(left, 0, self.width() - left - self._padding_x, self.height()),
             Qt.AlignLeft | Qt.AlignVCenter,
             self._text,
         )

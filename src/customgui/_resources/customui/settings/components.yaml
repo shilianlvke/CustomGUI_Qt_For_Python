@@ -1,0 +1,139 @@
+# ======================================================================
+# 组件级配置（几何 / 动画 / 阈值）
+# 命名约定：
+#   - 数值单位：像素直接用裸数字；时长统一以毫秒为单位；
+#   - 透明度/比例使用 0-1 的小数；
+#   - 分组名对应组件族，键名与代码中的语义一致。
+# 所有键都可被应用品牌层的同名文件逐键覆盖（见 ConfigRegistry.load_settings）。
+# ======================================================================
+
+# SPLIT BUTTON 分裂按钮下拉菜单
+split_button:
+  menu_gap: 2 # 菜单与按钮的间距
+  item_padding_x: 12 # 菜单项水平内边距
+  item_padding_y: 8 # 菜单项垂直内边距
+  item_radius: 4 # 菜单项圆角
+  icon_gap: 8 # 图标与文字间距
+  icon_size: 16 # 菜单图标尺寸
+  min_width: 200 # 菜单最小宽度
+
+# INPUT 输入类组件（文本框 / 选择器 / 滑块 / 日期 / 颜色）
+input:
+  radius: 6 # 输入框圆角
+  icon_gap: 6 # 图标与文字间距
+  row_height: 34 # 下拉/选项行高
+  popover_max_rows: 8 # 弹层最多可见行数
+  popover_inset: 6 # 弹层与字段的内缩
+  affix_width: 30 # 前后缀区域宽度
+  float_label_band: 14 # 浮动标签留白带高度
+  float_font_size: 11 # 浮动标签字号
+  select_chip_gap: 4 # 多选项标签间距
+  checkbox_box_size: 20 # 勾选框尺寸
+  checkbox_label_gap: 8 # 勾选框与文字间距
+  slider_track_height: 4 # 滑块轨道高度
+  slider_handle_radius: 9 # 滑块手柄半径
+  slider_margin: 12 # 滑块两端留白
+  knob_ring_width: 9 # 旋钮圆环宽度
+  knob_start_angle: 225.0 # 旋钮起始角度（度）
+  knob_sweep: 270.0 # 旋钮可旋转角度（度）
+  knob_pixels_per_step: 3 # 每步拖拽像素
+  rating_star_size: 24 # 评分星标尺寸
+  rating_star_gap: 6 # 星标间距
+  date_cell: 36 # 日期单元格尺寸
+  date_header_height: 34 # 日期选择器标题栏高度
+  date_weekday_height: 24 # 星期行高度
+  color_picker_swatch: 40 # 颜色选择器色块尺寸
+  color_picker_cell: 24 # 颜色选择器单元格尺寸
+
+# MENUS 菜单类组件
+menus:
+  list_row_height: 34 # 列表菜单行高
+  list_padding: 4 # 列表菜单内边距
+  separator_height: 9 # 分隔符高度
+  row_radius: 6 # 菜单项圆角
+  row_inset: 4 # 菜单项左右内缩
+  icon_size: 16 # 菜单图标尺寸
+  icon_gap: 8 # 图标与文字间距
+  indent: 16 # 子级缩进
+  text_padding: 12 # 文字左侧留白
+  arrow_space: 24 # 子菜单箭头预留宽度
+  bar_height: 36 # 菜单栏高度
+  bar_padding: 12 # 菜单栏左右内边距
+  bar_separator: 9 # 菜单栏分隔符宽度
+  tab_height: 38 # 标签菜单高度
+  tab_padding: 16 # 标签菜单水平内边距
+  tab_indicator_height: 2 # 标签指示条高度
+  mega_padding: 6 # 大型菜单内边距
+  mega_spacing: 4 # 大型菜单项间距
+  mega_column_width: 180 # 大型菜单列宽
+  stepper_circle_size: 26 # 步骤圆点尺寸
+  stepper_bar_height: 52 # 横向步骤条高度
+  stepper_bar_width: 210 # 纵向步骤条宽度
+  stepper_row_height: 56 # 纵向步骤行高
+  app_row_height: 38 # 侧栏应用菜单行高
+  app_indent: 16 # 侧栏应用菜单缩进
+  app_icon_size: 16 # 侧栏应用菜单图标尺寸
+  app_icon_gap: 8 # 侧栏应用菜单图标间距
+  app_text_padding: 12 # 侧栏应用菜单文字留白
+  app_row_radius: 6 # 侧栏应用菜单圆角
+
+# DATA 数据视图 / 树 / 时间线
+data:
+  item_height: 34 # 列表项高度
+  item_padding: 10 # 列表项内边距
+  tree_indent: 18 # 树每一级缩进
+  tree_arrow_size: 16 # 树展开箭头尺寸
+  tree_checkbox_size: 14 # 树复选框尺寸
+  tree_icon_size: 16 # 树节点图标尺寸
+  tree_row_height: 34 # 树行高
+  timeline_dot_radius: 6 # 时间线圆点半径
+  timeline_halo_radius: 10 # 时间线光晕半径
+  timeline_axis_margin: 24 # 时间线轴线边距
+  timeline_card_gap: 22 # 时间线卡片与轴线间距
+  timeline_edge: 12 # 时间线两端留白
+  timeline_spacing: 14 # 时间线条目间距
+  timeline_horizontal_card_width: 200 # 横向时间线卡片宽度
+  timeline_axis_top: 16 # 轴线顶部起点
+  timeline_dot_offset: 18 # 圆点相对卡片偏移
+  timeline_dot_gap: 18 # 圆点与卡片间距
+
+# MEDIA 图片 / 轮播 / 画廊
+media:
+  radius: 8 # 圆角半径
+  image_mask_alpha: 210 # 图片遮罩不透明度（0-255）
+  image_caption_height: 28 # 图片说明栏高度
+  carousel_footer_height: 30 # 轮播底部指示区高度
+  carousel_spacing: 8 # 轮播项间距
+  carousel_dot_step: 14 # 轮播指示点间距
+  galleria_thumb_width: 74 # 缩略图宽度
+  galleria_thumb_height: 52 # 缩略图高度
+  galleria_thumb_row_height: 58 # 缩略图行高
+  galleria_footer_height: 30 # 画廊底部高度
+
+# DISPLAY 展示类组件
+display_components:
+  progress_interval: 33 # 进度条动画刷新间隔（毫秒）
+  skeleton_interval: 33 # 骨架屏动画刷新间隔（毫秒）
+  tag_height: 24 # 标签高度
+  tag_padding_x: 9 # 标签水平内边距
+  tag_icon_size: 13 # 标签图标尺寸
+  tag_icon_gap: 5 # 标签图标与文字间距
+  chip_height: 28 # 徽标高度
+  chip_padding_x: 10 # 徽标水平内边距
+  chip_icon_size: 14 # 徽标图标尺寸
+  chip_icon_gap: 6 # 徽标图标与文字间距
+
+# UPLOAD 文件上传
+upload:
+  radius: 8 # 拖拽区圆角
+  list_max_height: 200 # 文件列表最大高度
+  upload_interval: 60 # 模拟上传刷新间隔（毫秒）
+  upload_step: 5 # 每次刷新增加的上传进度
+
+# CHART 图表
+chart:
+  radius: 8 # 图表圆角
+
+# SEARCH 全局搜索面板
+search:
+  max_results: 8 # 最大结果条数

@@ -236,6 +236,12 @@ class FeedbackSettings:
     toast_spacing: NonNegativeInt = 8
     #: 骨架屏微光扫过一圈的时长
     skeleton_duration: NonNegativeInt = 1400
+    #: 单条 Toast 的宽度
+    toast_width: NonNegativeInt = 340
+    #: Toast 外阴影占用的边距
+    toast_shadow: NonNegativeInt = 5
+    #: 消息条图标尺寸
+    message_icon_size: NonNegativeInt = 20
 
 
 @dataclass(frozen=True)
@@ -262,14 +268,277 @@ class PanelSettings:
     splitter_handle: NonNegativeInt = 8
     #: 分割条握把长度
     splitter_grip: NonNegativeInt = 28
+    #: 面板圆角半径
+    radius: NonNegativeInt = 8
+    #: 手风琴标题栏高度
+    accordion_header_height: NonNegativeInt = 44
+    #: Fieldset 顶部留白
+    fieldset_border_top: NonNegativeInt = 10
+    #: Fieldset 图例高度
+    fieldset_legend_height: NonNegativeInt = 20
+    #: Fieldset 图例与内容的间距
+    fieldset_legend_gap: NonNegativeInt = 6
+    #: 标签页关闭按钮宽度
+    tabs_close_width: NonNegativeInt = 20
+    #: 标签页图标与文字间距
+    tabs_icon_gap: NonNegativeInt = 7
 
 
 @dataclass(frozen=True)
 class ButtonSettings:
-    """按钮交互参数（毫秒）。"""
+    """按钮交互与几何参数（毫秒 / 像素 / 0-1）。"""
 
     #: 悬停 / 按下时的颜色过渡时长（对齐 Aura 的 0.2s）
     hover_duration: NonNegativeInt = 160
+    #: 圆角半径
+    radius: NonNegativeInt = 6
+    #: 图标与文字间距
+    icon_gap: NonNegativeInt = 8
+    #: 加载指示器旋转一圈的时长
+    spin_period: NonNegativeInt = 2000
+    #: 加载指示器的刷新间隔
+    spin_interval: NonNegativeInt = 16
+    #: 禁用态整体透明度（0-1）
+    disabled_opacity: float = 0.6
+
+    def __post_init__(self):
+        if not 0.0 <= self.disabled_opacity <= 1.0:
+            raise ValueError(f"button.disabled_opacity 必须在 0-1 之间 (当前 {self.disabled_opacity})")
+
+
+@dataclass(frozen=True)
+class GlassSettings:
+    """亚克力玻璃层的不透明度（0-1）。
+
+    数值越大越接近实色；0 表示该层完全透明（只透出下层）。
+    """
+
+    window: float = 0.24
+    sidebar: float = 0.0
+    panel: float = 0.0
+    region: float = 0.34
+    card: float = 0.34
+    control: float = 0.22
+    menu: float = 0.92
+    overlay_panel: float = 0.96
+    tooltip: float = 0.92
+
+    def __post_init__(self):
+        for field in fields(self):
+            value = getattr(self, field.name)
+            if not 0.0 <= value <= 1.0:
+                raise ValueError(f"glass.{field.name} 必须在 0-1 之间 (当前 {value})")
+
+
+@dataclass(frozen=True)
+class GripSettings:
+    """窗口缩放夹点几何（像素）。"""
+
+    #: 四角夹点尺寸
+    corner_size: NonNegativeInt = 15
+    #: 四角夹点内边距
+    corner_offset: NonNegativeInt = 5
+    #: 右侧/下侧夹点相对窗口边缘的缩进
+    corner_inset: NonNegativeInt = 20
+    #: 四边夹点厚度
+    edge_size: NonNegativeInt = 10
+
+
+@dataclass(frozen=True)
+class ShadowSettings:
+    """窗口外阴影参数（像素 / 0-255）。"""
+
+    blur_radius: NonNegativeInt = 20
+    alpha: NonNegativeInt = 160
+    offset_x: int = 0
+    offset_y: int = 0
+
+
+@dataclass(frozen=True)
+class MenuOverlaySettings:
+    """左菜单 Overlay 模式的遮罩参数（0-255 / 毫秒）。"""
+
+    scrim_alpha_dark: NonNegativeInt = 80
+    scrim_alpha_light: NonNegativeInt = 52
+    duration: NonNegativeInt = 160
+
+
+@dataclass(frozen=True)
+class ScrollTopSettings:
+    """滚动回顶按钮的几何与动画参数（像素 / 毫秒）。"""
+
+    size: NonNegativeInt = 36
+    margin: NonNegativeInt = 16
+    threshold: NonNegativeInt = 32
+    fade_duration: NonNegativeInt = 160
+    scroll_duration: NonNegativeInt = 320
+
+
+@dataclass(frozen=True)
+class SplitButtonSettings:
+    """分裂按钮下拉菜单的几何参数（像素）。"""
+
+    menu_gap: NonNegativeInt = 2
+    item_padding_x: NonNegativeInt = 12
+    item_padding_y: NonNegativeInt = 8
+    item_radius: NonNegativeInt = 4
+    icon_gap: NonNegativeInt = 8
+    icon_size: NonNegativeInt = 16
+    min_width: NonNegativeInt = 200
+
+
+@dataclass(frozen=True)
+class InputSettings:
+    """输入类组件的几何与交互参数（像素 / 数值）。"""
+
+    radius: NonNegativeInt = 6
+    icon_gap: NonNegativeInt = 6
+    row_height: NonNegativeInt = 34
+    popover_max_rows: NonNegativeInt = 8
+    popover_inset: NonNegativeInt = 6
+    affix_width: NonNegativeInt = 30
+    float_label_band: NonNegativeInt = 14
+    float_font_size: NonNegativeInt = 11
+    select_chip_gap: NonNegativeInt = 4
+    checkbox_box_size: NonNegativeInt = 20
+    checkbox_label_gap: NonNegativeInt = 8
+    slider_track_height: NonNegativeInt = 4
+    slider_handle_radius: NonNegativeInt = 9
+    slider_margin: NonNegativeInt = 12
+    knob_ring_width: NonNegativeInt = 9
+    knob_start_angle: float = 225.0
+    knob_sweep: float = 270.0
+    knob_pixels_per_step: NonNegativeInt = 3
+    rating_star_size: NonNegativeInt = 24
+    rating_star_gap: NonNegativeInt = 6
+    date_cell: NonNegativeInt = 36
+    date_header_height: NonNegativeInt = 34
+    date_weekday_height: NonNegativeInt = 24
+    color_picker_swatch: NonNegativeInt = 40
+    color_picker_cell: NonNegativeInt = 24
+
+
+@dataclass(frozen=True)
+class MenuSettings:
+    """菜单类组件的几何与动画参数（像素 / 毫秒）。"""
+
+    list_row_height: NonNegativeInt = 34
+    list_padding: NonNegativeInt = 4
+    separator_height: NonNegativeInt = 9
+    row_radius: NonNegativeInt = 6
+    row_inset: NonNegativeInt = 4
+    icon_size: NonNegativeInt = 16
+    icon_gap: NonNegativeInt = 8
+    indent: NonNegativeInt = 16
+    text_padding: NonNegativeInt = 12
+    arrow_space: NonNegativeInt = 24
+    bar_height: NonNegativeInt = 36
+    bar_padding: NonNegativeInt = 12
+    bar_separator: NonNegativeInt = 9
+    tab_height: NonNegativeInt = 38
+    tab_padding: NonNegativeInt = 16
+    tab_indicator_height: NonNegativeInt = 2
+    mega_padding: NonNegativeInt = 6
+    mega_spacing: NonNegativeInt = 4
+    mega_column_width: NonNegativeInt = 180
+    stepper_circle_size: NonNegativeInt = 26
+    stepper_bar_height: NonNegativeInt = 52
+    stepper_bar_width: NonNegativeInt = 210
+    stepper_row_height: NonNegativeInt = 56
+    app_row_height: NonNegativeInt = 38
+    app_indent: NonNegativeInt = 16
+    app_icon_size: NonNegativeInt = 16
+    app_icon_gap: NonNegativeInt = 8
+    app_text_padding: NonNegativeInt = 12
+    app_row_radius: NonNegativeInt = 6
+
+
+@dataclass(frozen=True)
+class DataSettings:
+    """数据视图 / 树 / 时间线的几何参数（像素）。"""
+
+    item_height: NonNegativeInt = 34
+    item_padding: NonNegativeInt = 10
+    tree_indent: NonNegativeInt = 18
+    tree_arrow_size: NonNegativeInt = 16
+    tree_checkbox_size: NonNegativeInt = 14
+    tree_icon_size: NonNegativeInt = 16
+    tree_row_height: NonNegativeInt = 34
+    timeline_dot_radius: NonNegativeInt = 6
+    timeline_halo_radius: NonNegativeInt = 10
+    timeline_axis_margin: NonNegativeInt = 24
+    timeline_card_gap: NonNegativeInt = 22
+    timeline_edge: NonNegativeInt = 12
+    timeline_spacing: NonNegativeInt = 14
+    timeline_horizontal_card_width: NonNegativeInt = 200
+    timeline_axis_top: NonNegativeInt = 16
+    timeline_dot_offset: NonNegativeInt = 18
+    timeline_dot_gap: NonNegativeInt = 18
+
+
+@dataclass(frozen=True)
+class MediaSettings:
+    """媒体组件的圆角、遮罩与缩略图几何（像素 / 0-255）。"""
+
+    radius: NonNegativeInt = 8
+    image_mask_alpha: NonNegativeInt = 210
+    image_caption_height: NonNegativeInt = 28
+    carousel_footer_height: NonNegativeInt = 30
+    carousel_spacing: NonNegativeInt = 8
+    carousel_dot_step: NonNegativeInt = 14
+    galleria_thumb_width: NonNegativeInt = 74
+    galleria_thumb_height: NonNegativeInt = 52
+    galleria_thumb_row_height: NonNegativeInt = 58
+    galleria_footer_height: NonNegativeInt = 30
+
+
+@dataclass(frozen=True)
+class DisplaySettings:
+    """展示类组件的几何与刷新间隔（像素 / 毫秒）。"""
+
+    progress_interval: NonNegativeInt = 33
+    skeleton_interval: NonNegativeInt = 33
+    tag_height: NonNegativeInt = 24
+    tag_padding_x: NonNegativeInt = 9
+    tag_icon_size: NonNegativeInt = 13
+    tag_icon_gap: NonNegativeInt = 5
+    chip_height: NonNegativeInt = 28
+    chip_padding_x: NonNegativeInt = 10
+    chip_icon_size: NonNegativeInt = 14
+    chip_icon_gap: NonNegativeInt = 6
+
+
+@dataclass(frozen=True)
+class UploadSettings:
+    """文件上传组件的几何与模拟进度参数。"""
+
+    radius: NonNegativeInt = 8
+    list_max_height: NonNegativeInt = 200
+    upload_interval: NonNegativeInt = 60
+    upload_step: NonNegativeInt = 5
+
+
+@dataclass(frozen=True)
+class ChartSettings:
+    """图表组件的圆角（像素）。"""
+
+    radius: NonNegativeInt = 8
+
+
+@dataclass(frozen=True)
+class SearchSettings:
+    """全局搜索面板的行为参数。"""
+
+    max_results: NonNegativeInt = 8
+
+
+@dataclass(frozen=True)
+class LoggerFileSettings:
+    """日志文件轮转参数（console.yaml 引导期读取）。"""
+
+    name: str = "customgui.log"
+    max_bytes: NonNegativeInt = 1_048_576
+    backup_count: NonNegativeInt = 5
 
 
 @dataclass(frozen=True)
@@ -341,14 +610,35 @@ class AppSettingsModel:
     display: list[str]
     logger_level: str
     logger_color: bool
+    # ---- console.yaml（日志文件轮转，引导期读取） ----
+    logger_file: LoggerFileSettings = dataclass_field(default_factory=LoggerFileSettings)
     # ---- window.yaml（栏目切换动画） ----
     page_transition: PageTransitionSettings = dataclass_field(default_factory=PageTransitionSettings)
     feedback: FeedbackSettings = dataclass_field(default_factory=FeedbackSettings)
     overlay: OverlaySettings = dataclass_field(default_factory=OverlaySettings)
     panels: PanelSettings = dataclass_field(default_factory=PanelSettings)
     button: ButtonSettings = dataclass_field(default_factory=ButtonSettings)
-    # ---- window.yaml（亚克力材质） ----
+    # ---- window.yaml（亚克力材质 / 玻璃层 / 窗口几何） ----
     acrylic: AcrylicSettings = dataclass_field(default_factory=AcrylicSettings)
+    glass: GlassSettings = dataclass_field(default_factory=GlassSettings)
+    grips: GripSettings = dataclass_field(default_factory=GripSettings)
+    shadow: ShadowSettings = dataclass_field(default_factory=ShadowSettings)
+    menu_overlay: MenuOverlaySettings = dataclass_field(default_factory=MenuOverlaySettings)
+    scroll_top: ScrollTopSettings = dataclass_field(default_factory=ScrollTopSettings)
+    #: 非亚克力模式下窗口外圈留给阴影的边距
+    title_bar_margin: NonNegativeInt = 10
+    #: 非亚克力模式下主界面外圈留白
+    content_margin: NonNegativeInt = 10
+    # ---- components.yaml ----
+    split_button: SplitButtonSettings = dataclass_field(default_factory=SplitButtonSettings)
+    input: InputSettings = dataclass_field(default_factory=InputSettings)
+    menus: MenuSettings = dataclass_field(default_factory=MenuSettings)
+    data: DataSettings = dataclass_field(default_factory=DataSettings)
+    media: MediaSettings = dataclass_field(default_factory=MediaSettings)
+    display_components: DisplaySettings = dataclass_field(default_factory=DisplaySettings)
+    upload: UploadSettings = dataclass_field(default_factory=UploadSettings)
+    chart: ChartSettings = dataclass_field(default_factory=ChartSettings)
+    search: SearchSettings = dataclass_field(default_factory=SearchSettings)
 
     @classmethod
     def from_mapping(cls, data: Mapping, label: str = "AppSettings") -> AppSettingsModel:

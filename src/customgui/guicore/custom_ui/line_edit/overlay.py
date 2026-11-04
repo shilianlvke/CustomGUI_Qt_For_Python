@@ -17,18 +17,33 @@ from ..menu.menu_list import menu_colors
 from ..paint_utils import draw_check, draw_chevron, draw_shadow
 from .input_style import colors, rounded_path
 
-#: 列表行高（Aura 菜单项约 2.25rem）
+#: 列表行高的兼容兜底值（运行时以 :func:`row_height` 为准）
 ROW_HEIGHT = 34
-#: 浮层最多直接展开的行数，超出后滚动
+#: 浮层最多展开行数的兼容兜底值（运行时以 :func:`max_visible_rows` 为准）
 MAX_VISIBLE_ROWS = 8
-#: 列表上下留白
+#: 列表上下留白（无对应配置，保持常量）
 LIST_PADDING = 3
 
 #: 浮层阴影边距（左, 上, 右, 下）——Aura 的 ``overlay.navigation.shadow`` 比按钮大一圈，
 #: 圆角外不再是一块「透明的直角缺口」，而是被阴影包住的悬浮卡片
 POPOVER_SHADOW = (8, 4, 8, 14)
-#: 内容与浮层本体之间的内衬：必须 ≥ 圆角半径 ×(1-1/√2)≈2.35，且不侵入圆角区
+#: 内衬的兼容兜底值（运行时以 :func:`popover_inset` 为准）
 POPOVER_INSET = 6
+
+
+def row_height() -> int:
+    """列表行高（运行时读取 ``AppSettings.input.row_height``）。"""
+    return int(AppSettings.input.row_height)
+
+
+def max_visible_rows() -> int:
+    """浮层最多直接展开的行数（读取 ``AppSettings.input.popover_max_rows``）。"""
+    return int(AppSettings.input.popover_max_rows)
+
+
+def popover_inset() -> int:
+    """内容与浮层本体内衬（读取 ``AppSettings.input.popover_inset``）。"""
+    return int(AppSettings.input.popover_inset)
 
 
 def list_font() -> QFont:
@@ -58,13 +73,14 @@ class CPopover(QFrame):
         self.setObjectName("CPopover")
         self._radius = radius
         self._body_width = width
+        inset = popover_inset()
         left, top, right, bottom = POPOVER_SHADOW
         self._layout = QVBoxLayout(self)
         self._layout.setContentsMargins(
-            left + POPOVER_INSET,
-            top + POPOVER_INSET,
-            right + POPOVER_INSET,
-            bottom + POPOVER_INSET,
+            left + inset,
+            top + inset,
+            right + inset,
+            bottom + inset,
         )
         self._layout.setSpacing(4)
         self.setFixedWidth(width + left + right)
@@ -150,6 +166,8 @@ class COptionList(QWidget):
         self._filter = ""
         self._hover = -1
         self._scroll = 0
+        self._row_height = row_height()
+        self._max_rows = max_visible_rows()
         self._preferred_height: int | None = None
         self._visible: list[int] = list(range(len(self._options)))
         self.setMouseTracking(True)
@@ -199,11 +217,11 @@ class COptionList(QWidget):
         self.update()
 
     def _content_height(self) -> int:
-        return max(1, len(self._visible)) * ROW_HEIGHT + LIST_PADDING * 2
+        return max(1, len(self._visible)) * self._row_height + LIST_PADDING * 2
 
     def _viewport_height(self) -> int:
-        rows = max(1, min(len(self._visible), MAX_VISIBLE_ROWS))
-        return rows * ROW_HEIGHT + LIST_PADDING * 2
+        rows = max(1, min(len(self._visible), self._max_rows))
+        return rows * self._row_height + LIST_PADDING * 2
 
     def _max_scroll(self) -> int:
         return max(0, self._content_height() - self.height())
@@ -214,7 +232,7 @@ class COptionList(QWidget):
 
     def set_preferred_height(self, height: int) -> None:
         """强制列表高度（Listbox 用固定高度）。"""
-        self._preferred_height = max(ROW_HEIGHT + LIST_PADDING * 2, height)
+        self._preferred_height = max(self._row_height + LIST_PADDING * 2, height)
         self.setFixedHeight(self._preferred_height)
         self._scroll = max(0, min(self._scroll, self._max_scroll()))
 
@@ -229,10 +247,10 @@ class COptionList(QWidget):
         metrics = QFontMetrics(self.font())
 
         for row, index in enumerate(self._visible):
-            top = LIST_PADDING + row * ROW_HEIGHT - self._scroll
-            if top + ROW_HEIGHT < 0 or top > self.height():
+            top = LIST_PADDING + row * self._row_height - self._scroll
+            if top + self._row_height < 0 or top > self.height():
                 continue
-            item = QRectF(4, top + 1, self.width() - 8, ROW_HEIGHT - 2)
+            item = QRectF(4, top + 1, self.width() - 8, self._row_height - 2)
             if index in self._selected:
                 fill = QColor(accents)
                 fill.setAlpha(38)
@@ -261,7 +279,7 @@ class COptionList(QWidget):
     # 交互
     # ------------------------------------------------------------------
     def _index_at(self, position) -> int:
-        row = int((position.y() + self._scroll - LIST_PADDING) // ROW_HEIGHT)
+        row = int((position.y() + self._scroll - LIST_PADDING) // self._row_height)
         if 0 <= row < len(self._visible):
             return self._visible[row]
         return -1
@@ -304,6 +322,7 @@ class CTreeList(QWidget):
         self._collapsed: set[str] = set()
         self._rows: list[tuple[int, dict, bool, bool, str]] = []
         self._hover = -1
+        self._row_height = row_height()
         self.setMouseTracking(True)
         self.setCursor(Qt.PointingHandCursor)
         self.setFont(list_font())
@@ -315,7 +334,7 @@ class CTreeList(QWidget):
     def _rebuild(self) -> None:
         self._rows = []
         self._walk(self._nodes, 0, "")
-        self.setFixedHeight(max(1, len(self._rows)) * ROW_HEIGHT + LIST_PADDING * 2)
+        self.setFixedHeight(max(1, len(self._rows)) * self._row_height + LIST_PADDING * 2)
         self.update()
 
     def _walk(self, nodes, depth: int, prefix: str) -> None:
@@ -348,8 +367,8 @@ class CTreeList(QWidget):
         metrics = QFontMetrics(self.font())
 
         for row, (depth, node, has_children, expanded, _path) in enumerate(self._rows):
-            top = LIST_PADDING + row * ROW_HEIGHT
-            item = QRectF(4, top + 1, self.width() - 8, ROW_HEIGHT - 2)
+            top = LIST_PADDING + row * self._row_height
+            item = QRectF(4, top + 1, self.width() - 8, self._row_height - 2)
             if row == self._hover:
                 fill = QColor(palette["hover_border"])
                 fill.setAlpha(34)
@@ -378,7 +397,7 @@ class CTreeList(QWidget):
     # 交互
     # ------------------------------------------------------------------
     def _row_at(self, position) -> int:
-        row = int((position.y() - LIST_PADDING) // ROW_HEIGHT)
+        row = int((position.y() - LIST_PADDING) // self._row_height)
         return row if 0 <= row < len(self._rows) else -1
 
     def mouseMoveEvent(self, event):  # noqa: N802 - 覆写 Qt 命名
@@ -409,7 +428,11 @@ __all__ = [
     "COptionList",
     "CTreeList",
     "ROW_HEIGHT",
+    "MAX_VISIBLE_ROWS",
     "POPOVER_SHADOW",
     "POPOVER_INSET",
+    "row_height",
+    "max_visible_rows",
+    "popover_inset",
     "list_font",
 ]

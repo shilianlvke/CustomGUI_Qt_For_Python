@@ -20,11 +20,21 @@ from customgui.appcore import AppSettings
 
 from ...custom_ui.display.palette import is_dark_theme
 
-#: 遮罩最深的不透明度（0-255）：深色主题压得更重，浅色主题保持轻盈
+#: 遮罩最深的不透明度（0-255）：深色主题压得更重，浅色主题保持轻盈。
+#: 保留为配置不可用时的兜底默认，运行时以 :attr:`AppSettings.menu_overlay` 为准。
 SCRIM_ALPHA_DARK = 80
 SCRIM_ALPHA_LIGHT = 52
-#: 遮罩淡入淡出时长（毫秒）
+#: 遮罩淡入淡出时长（毫秒）；同上，运行时以配置为准
 SCRIM_DURATION = 160
+
+
+def _scrim_settings() -> tuple[int, int, int]:
+    """(深色遮罩透明度, 浅色遮罩透明度, 动画时长)，配置缺失时回落到常量。"""
+    try:
+        cfg = AppSettings.menu_overlay
+        return int(cfg.scrim_alpha_dark), int(cfg.scrim_alpha_light), int(cfg.duration)
+    except Exception:
+        return SCRIM_ALPHA_DARK, SCRIM_ALPHA_LIGHT, SCRIM_DURATION
 
 
 def menu_rail_width() -> int:
@@ -75,8 +85,10 @@ class CMenuOverlayScrim(QWidget):
         self.setAutoFillBackground(False)
         self.setFocusPolicy(Qt.NoFocus)
         self._alpha = 0
+        # 遮罩参数来自 settings（构造时读取，避免导入期触发配置加载）
+        self._scrim_alpha_dark, self._scrim_alpha_light, duration = _scrim_settings()
         self._animation = QVariantAnimation(self)
-        self._animation.setDuration(SCRIM_DURATION)
+        self._animation.setDuration(duration)
         self._animation.setEasingCurve(QEasingCurve.OutCubic)
         self._animation.valueChanged.connect(self._on_alpha)
         self._animation.finished.connect(self._on_finished)
@@ -88,7 +100,7 @@ class CMenuOverlayScrim(QWidget):
     def fade_in(self) -> None:
         self.show()
         self.raise_()
-        self._animate(SCRIM_ALPHA_DARK if is_dark_theme() else SCRIM_ALPHA_LIGHT)
+        self._animate(self._scrim_alpha_dark if is_dark_theme() else self._scrim_alpha_light)
 
     def fade_out(self) -> None:
         if not self.isVisible():

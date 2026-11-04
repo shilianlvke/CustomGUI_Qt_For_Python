@@ -10,7 +10,7 @@ from PySide6.QtCore import QPoint, QRectF, Qt, Signal
 from PySide6.QtGui import QColor, QPainter, QPainterPath, QPen
 from PySide6.QtWidgets import QHBoxLayout, QWidget
 
-from customgui.appcore import get_design_tokens
+from customgui.appcore import AppSettings, get_design_tokens
 
 from .menu_item import MenuItem, as_menu_item
 from .menu_list import CMenuList, menu_colors
@@ -21,6 +21,15 @@ MEGA_PADDING = 6
 MEGA_SPACING = 4
 #: 单列宽度
 COLUMN_WIDTH = 180
+
+
+def _mega_menu_config() -> tuple[int, int, int]:
+    """(面板内边距, 列间距, 单列宽度)，配置缺失时回落默认值。"""
+    try:
+        cfg = AppSettings.menus
+        return int(cfg.mega_padding), int(cfg.mega_spacing), int(cfg.mega_column_width)
+    except Exception:
+        return MEGA_PADDING, MEGA_SPACING, COLUMN_WIDTH
 
 
 class _MegaPanel(QWidget):
@@ -34,17 +43,18 @@ class _MegaPanel(QWidget):
         self.setAttribute(Qt.WA_TranslucentBackground)
         self.setObjectName("CMegaMenu_Popup")
         self._radius = get_design_tokens().radius.window
+        self._padding, self._spacing, self._column_width = _mega_menu_config()
         self._columns = max(1, int(columns))
 
         layout = QHBoxLayout(self)
-        layout.setContentsMargins(MEGA_PADDING, MEGA_PADDING, MEGA_PADDING, MEGA_PADDING)
-        layout.setSpacing(MEGA_SPACING)
+        layout.setContentsMargins(self._padding, self._padding, self._padding, self._padding)
+        layout.setSpacing(self._spacing)
 
         rows = self._flatten(items)
         chunk = max(1, -(-len(rows) // self._columns)) if rows else 1
         chunks = [rows[index : index + chunk] for index in range(0, len(rows), chunk)] or [[]]
         for entries in chunks[: self._columns]:
-            column = CMenuList(entries, width=COLUMN_WIDTH, draw_surface=False, parent=self)
+            column = CMenuList(entries, width=self._column_width, draw_surface=False, parent=self)
             column.itemClicked.connect(self._on_item_clicked)
             layout.addWidget(column, 0)
 

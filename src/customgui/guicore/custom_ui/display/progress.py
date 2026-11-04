@@ -6,10 +6,20 @@ from PySide6.QtCore import QRectF, QSize, Qt, QTimer, Signal
 from PySide6.QtGui import QColor, QPainter, QPainterPath
 from PySide6.QtWidgets import QSizePolicy, QWidget
 
+from customgui.appcore import AppSettings
+
 from ..button.severity import contrast_text
 from .palette import tokens
 
 _INTERVAL = 33
+
+
+def _progress_interval() -> int:
+    """刷新间隔（毫秒），配置缺失时回落默认值。"""
+    try:
+        return max(1, int(AppSettings.display_components.progress_interval))
+    except Exception:
+        return _INTERVAL
 
 
 class CProgressBar(QWidget):
@@ -35,6 +45,7 @@ class CProgressBar(QWidget):
         self._vertical = orientation == "vertical"
         self._bar_height = 20 if show_value else max(3, height)
         self._phase = 0.0
+        self._interval = _progress_interval()
         if self._vertical:
             self.setFixedWidth(self._bar_height)
             self.setSizePolicy(QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Expanding)
@@ -43,7 +54,7 @@ class CProgressBar(QWidget):
             self.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed)
 
         self._timer = QTimer(self)
-        self._timer.setInterval(_INTERVAL)
+        self._timer.setInterval(self._interval)
         self._timer.timeout.connect(self._tick)
 
     # ------------------------------------------------------------------
@@ -86,7 +97,7 @@ class CProgressBar(QWidget):
     # 动画与生命周期
     # ------------------------------------------------------------------
     def _tick(self) -> None:
-        self._phase = (self._phase + _INTERVAL / 1300) % 1.0
+        self._phase = (self._phase + self._interval / 1300) % 1.0
         self.update()
 
     def showEvent(self, event):  # noqa: N802 - 覆写 Qt 命名

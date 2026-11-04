@@ -14,6 +14,8 @@ from PySide6.QtCore import QEvent, QPointF, QRectF, QSize, Qt, Signal
 from PySide6.QtGui import QColor, QFont, QPainter, QPainterPath, QPen
 from PySide6.QtWidgets import QFrame, QLabel, QVBoxLayout, QWidget
 
+from customgui.appcore import AppSettings
+
 from ..button.severity import contrast_text, normalize_severity, severity_color
 from ..display.icon import tinted_pixmap
 from ..display.palette import tokens
@@ -39,6 +41,38 @@ AXIS_TOP = 16
 DOT_OFFSET = 18
 #: 横向布局时轴线与卡片的间距
 DOT_GAP = 18
+
+
+def _timeline_config() -> tuple[int, int, int, int, int, int, int, int, int, int]:
+    """(点半径, 光晕半径, 轴线边距, 卡片间距, 内边距, 事件间距,
+    横向卡片宽度, 轴顶距, 点偏移, 横向点间距)。"""
+    try:
+        cfg = AppSettings.data
+        return (
+            int(cfg.timeline_dot_radius),
+            int(cfg.timeline_halo_radius),
+            int(cfg.timeline_axis_margin),
+            int(cfg.timeline_card_gap),
+            int(cfg.timeline_edge),
+            int(cfg.timeline_spacing),
+            int(cfg.timeline_horizontal_card_width),
+            int(cfg.timeline_axis_top),
+            int(cfg.timeline_dot_offset),
+            int(cfg.timeline_dot_gap),
+        )
+    except Exception:  # 配置上下文未就绪时用兜底值
+        return (
+            DOT_RADIUS,
+            HALO_RADIUS,
+            AXIS_MARGIN,
+            CARD_GAP,
+            EDGE,
+            SPACING,
+            HORIZONTAL_CARD_WIDTH,
+            AXIS_TOP,
+            DOT_OFFSET,
+            DOT_GAP,
+        )
 
 
 class _TimelineCard(QFrame):
@@ -133,6 +167,18 @@ class CTimeline(QWidget):
         parent=None,
     ):
         super().__init__(parent)
+        (
+            self._dot_radius,
+            self._halo_radius,
+            self._axis_margin,
+            self._card_gap,
+            self._edge,
+            self._spacing,
+            self._horizontal_card_width,
+            self._axis_top,
+            self._dot_offset,
+            self._dot_gap,
+        ) = _timeline_config()
         self.setObjectName("CTimeline_Widget")
         self._events: list[dict] = []
         self._cards: list[_TimelineCard] = []
@@ -212,9 +258,9 @@ class CTimeline(QWidget):
             base = _severity_color(event.get("severity"))
             painter.setPen(Qt.NoPen)
             painter.setBrush(with_alpha(base, 40))
-            painter.drawEllipse(dot, HALO_RADIUS, HALO_RADIUS)
+            painter.drawEllipse(dot, self._halo_radius, self._halo_radius)
             painter.setBrush(base)
-            painter.drawEllipse(dot, DOT_RADIUS, DOT_RADIUS)
+            painter.drawEllipse(dot, self._dot_radius, self._dot_radius)
             icon = event.get("icon")
             if icon is not None:
                 pixmap = tinted_pixmap(icon, contrast_text(base), 12, self.devicePixelRatioF())
@@ -256,8 +302,8 @@ class CTimeline(QWidget):
     def sizeHint(self) -> QSize:  # noqa: N802
         count = len(self._events)
         if self._layout_mode == "vertical":
-            return QSize(420, max(160, count * 92 + EDGE * 2))
-        return QSize(max(360, count * (HORIZONTAL_CARD_WIDTH + SPACING) + EDGE * 2), 280)
+            return QSize(420, max(160, count * 92 + self._edge * 2))
+        return QSize(max(360, count * (self._horizontal_card_width + self._spacing) + self._edge * 2), 280)
 
     def minimumSizeHint(self) -> QSize:  # noqa: N802
         return QSize(200, 120)
@@ -274,14 +320,14 @@ class CTimeline(QWidget):
         self.update()
 
     def _layout_vertical(self, width: int) -> None:
-        edge = EDGE
-        gap = CARD_GAP
+        edge = self._edge
+        gap = self._card_gap
         if self._align == "alternate":
             axis = width / 2
         elif self._align == "right":
-            axis = width - AXIS_MARGIN
+            axis = width - self._axis_margin
         else:
-            axis = AXIS_MARGIN
+            axis = self._axis_margin
 
         y = edge
         dots: list[QPointF] = []
@@ -302,8 +348,8 @@ class CTimeline(QWidget):
             card_width = max(120, int(card_width))
             height = card.preferred_height(card_width)
             card.setGeometry(int(x), int(y), card_width, height)
-            dots.append(QPointF(axis, y + DOT_OFFSET))
-            y += height + SPACING
+            dots.append(QPointF(axis, y + self._dot_offset))
+            y += height + self._spacing
 
         self._dots = dots
         self._axis_vertical = True
@@ -311,35 +357,35 @@ class CTimeline(QWidget):
         self._line_end = QPointF(axis, dots[-1].y())
 
     def _layout_horizontal(self, width: int) -> None:
-        edge = EDGE
+        edge = self._edge
         count = len(self._cards)
-        available = width - edge * 2 - SPACING * (count - 1)
-        card_width = max(120, min(HORIZONTAL_CARD_WIDTH, int(available / count)))
-        content_width = card_width * count + SPACING * (count - 1)
+        available = width - edge * 2 - self._spacing * (count - 1)
+        card_width = max(120, min(self._horizontal_card_width, int(available / count)))
+        content_width = card_width * count + self._spacing * (count - 1)
         start = max(edge, (width - content_width) / 2)
 
         heights = [card.preferred_height(card_width) for card in self._cards]
         max_height = max(heights)
 
         if self._align == "right":
-            axis_y = edge + max_height + DOT_GAP
+            axis_y = edge + max_height + self._dot_gap
         elif self._align == "alternate":
             above = [height for index, height in enumerate(heights) if index % 2 == 1]
-            axis_y = edge + (max(above) if above else 0) + DOT_GAP
+            axis_y = edge + (max(above) if above else 0) + self._dot_gap
         else:
-            axis_y = AXIS_TOP
+            axis_y = self._axis_top
 
         dots: list[QPointF] = []
         for index, card in enumerate(self._cards):
-            x = int(start + index * (card_width + SPACING))
+            x = int(start + index * (card_width + self._spacing))
             if self._align == "left":
-                y = axis_y + DOT_GAP
+                y = axis_y + self._dot_gap
             elif self._align == "right":
-                y = axis_y - DOT_GAP - heights[index]
+                y = axis_y - self._dot_gap - heights[index]
             elif index % 2 == 0:
-                y = axis_y + DOT_GAP
+                y = axis_y + self._dot_gap
             else:
-                y = axis_y - DOT_GAP - heights[index]
+                y = axis_y - self._dot_gap - heights[index]
             card.setGeometry(x, int(y), card_width, heights[index])
             dots.append(QPointF(x + card_width / 2, axis_y))
 

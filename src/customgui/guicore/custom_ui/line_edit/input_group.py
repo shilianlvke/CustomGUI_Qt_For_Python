@@ -13,7 +13,7 @@ from PySide6.QtGui import QColor, QPainter, QPen, QPixmap
 from PySide6.QtWidgets import QHBoxLayout, QWidget
 
 from ..icon_utils import render_icon
-from .input_style import RADIUS, colors, field_font, rounded_path, size_spec
+from .input_style import colors, field_font, radius, rounded_path, size_spec
 
 
 class CInputGroupAddon(QWidget):
@@ -87,10 +87,10 @@ class CInputGroupAddon(QWidget):
         body = QRectF(self.rect())
 
         # 底色铺满整块：与相邻块之间不留 1px 缝
-        painter.fillPath(rounded_path(body, RADIUS, self._corners), QColor(palette["addon_background"]))
+        painter.fillPath(rounded_path(body, radius(), self._corners), QColor(palette["addon_background"]))
 
         # 描边：先画完整轮廓，再把共享边裁掉
-        stroke = rounded_path(body.adjusted(0.5, 0.5, -0.5, -0.5), RADIUS, self._corners)
+        stroke = rounded_path(body.adjusted(0.5, 0.5, -0.5, -0.5), radius(), self._corners)
         left = 0.0 if self._edge_left else 1.0
         right = 0.0 if self._edge_right else 1.0
         painter.setClipRect(QRectF(left, 0.0, self.width() - left - right, self.height()))

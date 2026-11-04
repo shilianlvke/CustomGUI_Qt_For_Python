@@ -6,10 +6,14 @@ from PySide6.QtCore import QEasingCurve, QRectF, QSize, Qt, QVariantAnimation
 from PySide6.QtGui import QColor, QFontMetrics, QPainter, QPen
 from PySide6.QtWidgets import QAbstractButton, QSizePolicy
 
+from customgui.appcore import AppSettings
+
 from ..paint_utils import draw_check
 from .input_style import colors, field_font
 
+#: 方框尺寸的兼容兜底值（运行时以配置为准）
 BOX_SIZE = 20
+#: 方框与文字间距的兼容兜底值（运行时以配置为准）
 LABEL_GAP = 8
 _CHECK_COLOR = QColor("#ffffff")
 
@@ -36,6 +40,8 @@ class _ChoiceBase(QAbstractButton):
         self.setFont(field_font("md"))
         self.setText(text)
         self._hover = False
+        self._box_size = int(AppSettings.input.checkbox_box_size)
+        self._label_gap = int(AppSettings.input.checkbox_label_gap)
         self.setFocusPolicy(Qt.StrongFocus)
         self.setSizePolicy(QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Fixed)
 
@@ -45,21 +51,21 @@ class _ChoiceBase(QAbstractButton):
     def sizeHint(self) -> QSize:  # noqa: N802 - 覆写 Qt 命名
         metrics = QFontMetrics(self.font())
         label = self.text()
-        width = BOX_SIZE + (LABEL_GAP + metrics.horizontalAdvance(label) if label else 0)
-        return QSize(width + 2, max(BOX_SIZE, metrics.height()) + 4)
+        width = self._box_size + (self._label_gap + metrics.horizontalAdvance(label) if label else 0)
+        return QSize(width + 2, max(self._box_size, metrics.height()) + 4)
 
     def minimumSizeHint(self) -> QSize:  # noqa: N802 - 覆写 Qt 命名
         return self.sizeHint()
 
     def _box_rect(self) -> QRectF:
-        return QRectF(1, (self.height() - BOX_SIZE) / 2, BOX_SIZE, BOX_SIZE)
+        return QRectF(1, (self.height() - self._box_size) / 2, self._box_size, self._box_size)
 
     # ------------------------------------------------------------------
     # 绘制
     # ------------------------------------------------------------------
     def _label_offset(self) -> int:
         """文字起点（开关的轨道比方框宽，需覆盖）。"""
-        return BOX_SIZE
+        return self._box_size
 
     def _paint_label(self, painter: QPainter, palette: dict) -> None:
         label = self.text()
@@ -68,7 +74,7 @@ class _ChoiceBase(QAbstractButton):
         offset = self._label_offset()
         painter.setPen(QColor(palette["text"]))
         painter.drawText(
-            QRectF(offset + LABEL_GAP, 0, self.width() - offset - LABEL_GAP, self.height()),
+            QRectF(offset + self._label_gap, 0, self.width() - offset - self._label_gap, self.height()),
             Qt.AlignLeft | Qt.AlignVCenter,
             label,
         )
@@ -172,7 +178,7 @@ class CToggleSwitch(_ChoiceBase):
     def sizeHint(self) -> QSize:  # noqa: N802 - 覆写 Qt 命名
         metrics = QFontMetrics(self.font())
         label = self.text()
-        width = self.TRACK_WIDTH + (LABEL_GAP + metrics.horizontalAdvance(label) if label else 0)
+        width = self.TRACK_WIDTH + (self._label_gap + metrics.horizontalAdvance(label) if label else 0)
         return QSize(width + 2, max(self.TRACK_HEIGHT, metrics.height()) + 4)
 
     def _track_rect(self) -> QRectF:

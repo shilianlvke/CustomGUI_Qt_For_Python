@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from PySide6.QtWidgets import QPlainTextEdit, QSizePolicy
 
-from .input_style import RADIUS, corner_css, size_spec
+from .input_style import corner_css, radius, size_spec
 
 
 class CTextarea(QPlainTextEdit):
@@ -49,7 +49,7 @@ class CTextarea(QPlainTextEdit):
     def _apply_geometry(self) -> None:
         spec = size_spec(self._size)
         self.setStyleSheet(
-            f"#CTextarea_PlainTextEdit {{ {corner_css(RADIUS, self._corners)}"
+            f"#CTextarea_PlainTextEdit {{ {corner_css(radius(), self._corners)}"
             f" padding: {max(4, spec.padding_x - 4)}px {spec.padding_x}px;"
             f" font-size: {spec.font_px}px; }}"
         )

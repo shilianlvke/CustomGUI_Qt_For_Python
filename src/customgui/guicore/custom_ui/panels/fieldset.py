@@ -18,6 +18,15 @@ _LEGEND_HEIGHT = 20
 _LEGEND_GAP = 6
 
 
+def _fieldset_config() -> tuple[int, int, int]:
+    """(顶部偏移, 图例高度, 图例间距)，配置缺失时回落默认值。"""
+    try:
+        cfg = AppSettings.panels
+        return int(cfg.fieldset_border_top), int(cfg.fieldset_legend_height), int(cfg.fieldset_legend_gap)
+    except Exception:
+        return _BORDER_TOP, _LEGEND_HEIGHT, _LEGEND_GAP
+
+
 class CFieldset(QWidget):
     """带图例的分组框，可选折叠。"""
 
@@ -31,6 +40,7 @@ class CFieldset(QWidget):
         parent=None,
     ):
         super().__init__(parent)
+        self._border_top, self._legend_height, self._legend_gap = _fieldset_config()
         self._legend = legend
         self._toggleable = toggleable
         self._expanded = not collapsed
@@ -49,7 +59,7 @@ class CFieldset(QWidget):
         self.content_layout.setSpacing(8)
 
         layout = QVBoxLayout(self)
-        layout.setContentsMargins(14, _BORDER_TOP + 18, 14, 14)
+        layout.setContentsMargins(14, self._border_top + 18, 14, 14)
         layout.setSpacing(0)
         layout.addWidget(self._wrapper)
 
@@ -95,7 +105,7 @@ class CFieldset(QWidget):
         return float(width)
 
     def _legend_rect(self) -> QRectF:
-        return QRectF(14, _BORDER_TOP - _LEGEND_HEIGHT / 2, self._legend_width(), _LEGEND_HEIGHT)
+        return QRectF(14, self._border_top - self._legend_height / 2, self._legend_width(), self._legend_height)
 
     # ------------------------------------------------------------------
     def paintEvent(self, event):  # noqa: N802 - 覆写 Qt 命名
@@ -103,7 +113,7 @@ class CFieldset(QWidget):
         painter.setRenderHint(QPainter.Antialiasing)
         colors = panel_colors()
 
-        border = QRectF(0.5, _BORDER_TOP + 0.5, self.width() - 1, self.height() - _BORDER_TOP - 1)
+        border = QRectF(0.5, self._border_top + 0.5, self.width() - 1, self.height() - self._border_top - 1)
         painter.setPen(Qt.NoPen)
         painter.setBrush(QColor(colors["background"]))
         painter.drawRoundedRect(border, 8, 8)
@@ -120,12 +130,12 @@ class CFieldset(QWidget):
         # 在边框上给图例开口（只清 2px 的线，不破坏圆角）
         painter.setPen(Qt.NoPen)
         painter.setBrush(QColor(colors["background"]))
-        painter.drawRect(QRectF(legend.left(), _BORDER_TOP - 1, legend.width(), 3))
+        painter.drawRect(QRectF(legend.left(), self._border_top - 1, legend.width(), 3))
 
         text_left = legend.left() + 8
         if self._toggleable:
             painter.save()
-            painter.translate(QPointF(legend.left() + 8, _BORDER_TOP))
+            painter.translate(QPointF(legend.left() + 8, self._border_top))
             painter.rotate(180 * self._progress)
             draw_chevron(painter, QPointF(0, 0), QColor(colors["muted"]), size=7, direction="down", width=1.5)
             painter.restore()
@@ -153,7 +163,7 @@ class CFieldset(QWidget):
 
     def mouseReleaseEvent(self, event):  # noqa: N802 - 覆写 Qt 命名
         if self._toggleable and event.button() == Qt.LeftButton:
-            if event.position().y() <= _BORDER_TOP + _LEGEND_HEIGHT / 2:
+            if event.position().y() <= self._border_top + self._legend_height / 2:
                 self.toggle()
                 event.accept()
                 return

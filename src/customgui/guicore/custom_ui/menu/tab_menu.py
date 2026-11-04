@@ -10,6 +10,8 @@ from PySide6.QtCore import QPointF, QRectF, QSize, Qt, Signal
 from PySide6.QtGui import QColor, QFontMetrics, QPainter, QPen
 from PySide6.QtWidgets import QSizePolicy, QWidget
 
+from customgui.appcore import AppSettings
+
 from ..icon_utils import render_icon
 from .menu_item import MenuItem, as_menu_item, normalize_items
 from .menu_list import ICON_GAP, ICON_SIZE, ROW_RADIUS, menu_colors, menu_font
@@ -20,6 +22,15 @@ TAB_HEIGHT = 38
 TAB_PADDING = 16
 #: 激活指示条高度
 INDICATOR_HEIGHT = 2
+
+
+def _tab_menu_config() -> tuple[int, int, int]:
+    """(标签高度, 左右内边距, 指示条高度)，配置缺失时回落默认值。"""
+    try:
+        cfg = AppSettings.menus
+        return int(cfg.tab_height), int(cfg.tab_padding), int(cfg.tab_indicator_height)
+    except Exception:
+        return TAB_HEIGHT, TAB_PADDING, INDICATOR_HEIGHT
 
 
 class CTabMenu(QWidget):
@@ -33,10 +44,11 @@ class CTabMenu(QWidget):
 
     def __init__(self, tabs=None, current: int = 0, parent=None):
         super().__init__(parent)
+        self._tab_height, self._tab_padding, self._indicator_height = _tab_menu_config()
         self.setObjectName("CTabMenu_Widget")
         self.setMouseTracking(True)
         self.setFont(menu_font(13))
-        self.setFixedHeight(TAB_HEIGHT)
+        self.setFixedHeight(self._tab_height)
         self.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed)
         self._tabs: list[MenuItem] = []
         self._current = 0
@@ -99,10 +111,10 @@ class CTabMenu(QWidget):
         rects: list[QRectF] = []
         x = 0.0
         for item in self._tabs:
-            width = metrics.horizontalAdvance(item.label) + TAB_PADDING * 2
+            width = metrics.horizontalAdvance(item.label) + self._tab_padding * 2
             if item.icon is not None:
                 width += ICON_SIZE + ICON_GAP
-            rects.append(QRectF(x, 0, float(width), TAB_HEIGHT))
+            rects.append(QRectF(x, 0, float(width), self._tab_height))
             x += width
         self._rects = rects
 
@@ -118,7 +130,7 @@ class CTabMenu(QWidget):
 
         if self._rects:
             painter.setPen(QPen(QColor(colors["divider"]), 1))
-            painter.drawLine(QPointF(0, TAB_HEIGHT - 1), QPointF(self.width(), TAB_HEIGHT - 1))
+            painter.drawLine(QPointF(0, self._tab_height - 1), QPointF(self.width(), self._tab_height - 1))
 
         for index, (item, rect) in enumerate(zip(self._tabs, self._rects, strict=False)):
             active = index == self._current
@@ -139,7 +151,7 @@ class CTabMenu(QWidget):
                 if pixmap is not None:
                     painter.drawPixmap(int(x), int(rect.center().y() - ICON_SIZE / 2), pixmap)
                 x += ICON_SIZE + ICON_GAP
-            text_width = max(0.0, rect.right() - x - TAB_PADDING)
+            text_width = max(0.0, rect.right() - x - self._tab_padding)
             painter.setPen(color)
             painter.drawText(
                 QRectF(x, rect.top(), text_width, rect.height()),
@@ -149,7 +161,7 @@ class CTabMenu(QWidget):
 
             if active:
                 painter.fillRect(
-                    QRectF(rect.left() + TAB_PADDING, TAB_HEIGHT - INDICATOR_HEIGHT, max(0.0, rect.width() - TAB_PADDING * 2), INDICATOR_HEIGHT),
+                    QRectF(rect.left() + self._tab_padding, self._tab_height - self._indicator_height, max(0.0, rect.width() - self._tab_padding * 2), self._indicator_height),
                     QColor(colors["accent"]),
                 )
         painter.end()
@@ -157,7 +169,7 @@ class CTabMenu(QWidget):
     def sizeHint(self) -> QSize:  # noqa: N802 - 覆写 Qt 命名
         self._measure()
         width = int(self._rects[-1].right()) if self._rects else 0
-        return QSize(max(160, width), TAB_HEIGHT)
+        return QSize(max(160, width), self._tab_height)
 
     # ------------------------------------------------------------------
     # 交互

@@ -12,6 +12,8 @@ from PySide6.QtCore import QModelIndex, QPointF, QRectF, Qt
 from PySide6.QtGui import QColor, QPainter, QPainterPath, QPen
 from PySide6.QtWidgets import QStyle, QStyleOptionViewItem
 
+from customgui.appcore import AppSettings
+
 from ...button.severity import contrast_text
 from ...display.icon import tinted_pixmap
 from ...display.palette import tokens
@@ -29,6 +31,22 @@ CHECKBOX_SIZE = 14
 ICON_SIZE = 16
 #: 行高
 ROW_HEIGHT = 34
+
+
+def _tree_config() -> tuple[int, int, int, int, int]:
+    """(缩进, 箭头, 复选框, 图标, 行高)，配置缺失时回落默认值。"""
+    try:
+        cfg = AppSettings.data
+        return (
+            int(cfg.tree_indent),
+            int(cfg.tree_arrow_size),
+            int(cfg.tree_checkbox_size),
+            int(cfg.tree_icon_size),
+            int(cfg.tree_row_height),
+        )
+    except Exception:
+        return INDENT, ARROW_SIZE, CHECKBOX_SIZE, ICON_SIZE, ROW_HEIGHT
+
 
 _ALIGN = {
     "left": Qt.AlignLeft | Qt.AlignVCenter,
@@ -73,25 +91,26 @@ def _row_metrics(
     rect: QRectF, index: QModelIndex, checkbox: bool
 ) -> tuple[QRectF | None, QRectF | None, float | None, float]:
     """计算一行中箭头、复选框、图标与文字的水平位置。"""
-    x = rect.left() + 8 + _index_depth(index) * INDENT
+    indent, arrow_size, checkbox_size, icon_size, _ = _tree_config()
+    x = rect.left() + 8 + _index_depth(index) * indent
     center_y = rect.center().y()
 
     arrow: QRectF | None = None
     model = index.model()
     if model is not None and model.rowCount(index) > 0:
-        arrow = QRectF(x, center_y - ARROW_SIZE / 2, ARROW_SIZE, ARROW_SIZE)
-        x += ARROW_SIZE + 2
+        arrow = QRectF(x, center_y - arrow_size / 2, arrow_size, arrow_size)
+        x += arrow_size + 2
 
     box: QRectF | None = None
     if checkbox:
-        box = QRectF(x, center_y - CHECKBOX_SIZE / 2, CHECKBOX_SIZE, CHECKBOX_SIZE)
-        x += CHECKBOX_SIZE + 6
+        box = QRectF(x, center_y - checkbox_size / 2, checkbox_size, checkbox_size)
+        x += checkbox_size + 6
 
     icon_x: float | None = None
     node = index.data(NODE_ROLE)
     if isinstance(node, dict) and node.get("icon") is not None:
         icon_x = x
-        x += ICON_SIZE + 6
+        x += icon_size + 6
 
     return arrow, box, icon_x, x
 
@@ -149,9 +168,10 @@ def _paint_icon(
     icon = node.get("icon") if isinstance(node, dict) else None
     if icon is None:
         return
-    pixmap = tinted_pixmap(icon, color, ICON_SIZE, max(1.0, float(dpr)))
+    _, _, _, icon_size, _ = _tree_config()
+    pixmap = tinted_pixmap(icon, color, icon_size, max(1.0, float(dpr)))
     if pixmap is not None:
-        painter.drawPixmap(QPointF(icon_x, center_y - ICON_SIZE / 2), pixmap)
+        painter.drawPixmap(QPointF(icon_x, center_y - icon_size / 2), pixmap)
 
 
 def _check_state(value: Any) -> Qt.CheckState:

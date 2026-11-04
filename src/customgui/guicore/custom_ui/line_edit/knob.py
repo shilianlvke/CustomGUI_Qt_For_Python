@@ -12,9 +12,13 @@ from customgui.appcore import AppSettings
 
 from .input_style import colors
 
+#: 环宽度的兼容兜底值（运行时以配置为准）
 RING_WIDTH = 9
+#: 起始角度的兼容兜底值（运行时以配置为准）
 START_ANGLE = 225.0
+#: 扫过角度的兼容兜底值（运行时以配置为准）
 SWEEP = 270.0
+#: 每步像素数的兼容兜底值（运行时以配置为准）
 PIXELS_PER_STEP = 3
 
 
@@ -42,6 +46,10 @@ class CKnob(QWidget):
         self._template = value_template or "{value}"
         self._drag_origin: tuple[int, int] | None = None
         self._drag_value = self._value
+        self._ring_width = int(AppSettings.input.knob_ring_width)
+        self._start_angle = float(AppSettings.input.knob_start_angle)
+        self._sweep = float(AppSettings.input.knob_sweep)
+        self._pixels_per_step = int(AppSettings.input.knob_pixels_per_step)
         self.setFixedSize(size, size)
         self.setSizePolicy(QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Fixed)
         self.setCursor(Qt.SizeVerCursor)
@@ -78,12 +86,12 @@ class CKnob(QWidget):
         return (self._value - self._minimum) / (self._maximum - self._minimum)
 
     def _ring_rect(self) -> QRectF:
-        inset = RING_WIDTH / 2 + 4
+        inset = self._ring_width / 2 + 4
         return QRectF(self.rect()).adjusted(inset, inset, -inset, -inset)
 
     def _handle_center(self) -> QPointF:
         rect = self._ring_rect()
-        angle = math.radians(START_ANGLE - SWEEP * self._ratio())
+        angle = math.radians(self._start_angle - self._sweep * self._ratio())
         return QPointF(
             rect.center().x() + rect.width() / 2 * math.cos(angle),
             rect.center().y() - rect.height() / 2 * math.sin(angle),
@@ -100,12 +108,12 @@ class CKnob(QWidget):
         rect = self._ring_rect()
 
         painter.setBrush(Qt.NoBrush)
-        painter.setPen(QPen(QColor(palette["control_border"]), RING_WIDTH, Qt.SolidLine, Qt.RoundCap))
-        painter.drawArc(rect, int(START_ANGLE * 16), int(-SWEEP * 16))
+        painter.setPen(QPen(QColor(palette["control_border"]), self._ring_width, Qt.SolidLine, Qt.RoundCap))
+        painter.drawArc(rect, int(self._start_angle * 16), int(-self._sweep * 16))
 
         if self._value > self._minimum:
-            painter.setPen(QPen(accent, RING_WIDTH, Qt.SolidLine, Qt.RoundCap))
-            painter.drawArc(rect, int(START_ANGLE * 16), int(-SWEEP * 16 * self._ratio()))
+            painter.setPen(QPen(accent, self._ring_width, Qt.SolidLine, Qt.RoundCap))
+            painter.drawArc(rect, int(self._start_angle * 16), int(-self._sweep * 16 * self._ratio()))
 
         painter.setPen(Qt.NoPen)
         painter.setBrush(accent)
@@ -132,7 +140,7 @@ class CKnob(QWidget):
         if self._drag_origin is None:
             return
         delta = self._drag_origin[1] - event.globalPosition().y()
-        steps = round(delta / PIXELS_PER_STEP)
+        steps = round(delta / self._pixels_per_step)
         self.setValue(self._drag_value + steps * self._step)
 
     def mouseReleaseEvent(self, event):  # noqa: N802 - 覆写 Qt 命名

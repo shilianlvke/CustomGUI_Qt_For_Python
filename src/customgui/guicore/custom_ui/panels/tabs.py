@@ -25,6 +25,15 @@ _CLOSE_WIDTH = 20
 _ICON_GAP = 7
 
 
+def _tabs_config() -> tuple[int, int]:
+    """(关闭按钮宽度, 图标间距)，配置缺失时回落默认值。"""
+    try:
+        cfg = AppSettings.panels
+        return int(cfg.tabs_close_width), int(cfg.tabs_icon_gap)
+    except Exception:
+        return _CLOSE_WIDTH, _ICON_GAP
+
+
 @dataclass
 class _TabItem:
     """单个标签的元数据。"""
@@ -45,6 +54,7 @@ class _TabBar(QWidget):
 
     def __init__(self, position: str = "top", size: str = "md", parent=None):
         super().__init__(parent)
+        self._close_width, self._icon_gap = _tabs_config()
         self._position = "bottom" if position == "bottom" else "top"
         self._size = size if size in _TAB_HEIGHTS else "md"
         self._items: list[_TabItem] = []
@@ -126,9 +136,9 @@ class _TabBar(QWidget):
     def _content_width(self, item: _TabItem, metrics: QFontMetrics) -> int:
         width = _PAD_X[self._size] * 2
         if item.icon is not None:
-            width += _ICON_SIZES[self._size] + _ICON_GAP
+            width += _ICON_SIZES[self._size] + self._icon_gap
         if item.closable:
-            width += _CLOSE_WIDTH
+            width += self._close_width
         if item.title:
             width += metrics.horizontalAdvance(item.title)
         return max(44, width)
@@ -228,14 +238,14 @@ class _TabBar(QWidget):
     def _text_rect(self, rect: QRectF, item: _TabItem) -> QRectF:
         left = rect.left() + _PAD_X[self._size]
         if item.icon is not None:
-            left += _ICON_SIZES[self._size] + _ICON_GAP
+            left += _ICON_SIZES[self._size] + self._icon_gap
         right = rect.right() - _PAD_X[self._size]
         if item.closable:
-            right -= _CLOSE_WIDTH
+            right -= self._close_width
         return QRectF(left, rect.top(), max(0.0, right - left), rect.height())
 
     def _close_rect(self, rect: QRectF) -> QRectF:
-        return QRectF(rect.right() - _PAD_X[self._size] - _CLOSE_WIDTH + 2, rect.center().y() - 9, 18, 18)
+        return QRectF(rect.right() - _PAD_X[self._size] - self._close_width + 2, rect.center().y() - 9, 18, 18)
 
     def _tab_color(self, index: int, item: _TabItem) -> QColor:
         colors = panel_colors()

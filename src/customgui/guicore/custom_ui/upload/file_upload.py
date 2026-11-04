@@ -28,6 +28,8 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
+from customgui.appcore import AppSettings
+
 from ..button.button import CButton
 from ..button.severity import Severity, Variant, severity_color
 from ..display.palette import tokens
@@ -41,6 +43,20 @@ _LIST_MAX_HEIGHT = 200
 #: 进度演示的刷新间隔（毫秒）与每次增量
 _UPLOAD_INTERVAL_MS = 60
 _UPLOAD_STEP = 5
+
+
+def _upload_config() -> tuple[int, int, int, int]:
+    """(圆角, 列表最大高度, 进度刷新间隔, 每次增量)，配置缺失时回落默认值。"""
+    try:
+        cfg = AppSettings.upload
+        return (
+            int(cfg.radius),
+            int(cfg.list_max_height),
+            int(cfg.upload_interval),
+            int(cfg.upload_step),
+        )
+    except Exception:
+        return _RADIUS, _LIST_MAX_HEIGHT, _UPLOAD_INTERVAL_MS, _UPLOAD_STEP
 
 
 def _format_size(size: int) -> str:
@@ -87,6 +103,7 @@ class _DropArea(QFrame):
 
     def __init__(self, parent=None):
         super().__init__(parent)
+        self._radius = _upload_config()[0]
         self.setObjectName("CFileUpload_DropArea")
         self.setAcceptDrops(True)
         self.setCursor(Qt.PointingHandCursor)
@@ -152,7 +169,7 @@ class _DropArea(QFrame):
         painter.setRenderHint(QPainter.Antialiasing)
         rect = QRectF(self.rect()).adjusted(1, 1, -1, -1)
         path = QPainterPath()
-        path.addRoundedRect(rect, _RADIUS, _RADIUS)
+        path.addRoundedRect(rect, self._radius, self._radius)
         painter.fillPath(path, background)
         painter.setBrush(Qt.NoBrush)
         painter.setPen(QPen(border, 1.4, Qt.DashLine))
@@ -317,6 +334,7 @@ class CFileUpload(QWidget):
         parent=None,
     ):
         super().__init__(parent)
+        _, self._list_max_height, self._upload_interval, self._upload_step = _upload_config()
         self.setObjectName("CFileUpload_Widget")
         self._mode = "basic" if str(mode).strip().lower() == "basic" else "advanced"
         self._accept = _normalize_accept(accept)
@@ -330,7 +348,7 @@ class CFileUpload(QWidget):
         self._status_is_error = False
 
         self._upload_timer = QTimer(self)
-        self._upload_timer.setInterval(_UPLOAD_INTERVAL_MS)
+        self._upload_timer.setInterval(self._upload_interval)
         self._upload_timer.timeout.connect(self._on_upload_tick)
 
         self._build_ui()
@@ -373,7 +391,7 @@ class CFileUpload(QWidget):
             self._list_scroll.setWidgetResizable(True)
             self._list_scroll.setFrameShape(QFrame.NoFrame)
             self._list_scroll.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
-            self._list_scroll.setMaximumHeight(_LIST_MAX_HEIGHT)
+            self._list_scroll.setMaximumHeight(self._list_max_height)
             self._list_scroll.setWidget(self._list_host)
             self._list_scroll.setVisible(False)
             root.addWidget(self._list_scroll)
@@ -588,7 +606,7 @@ class CFileUpload(QWidget):
         return self._upload_timer.isActive()
 
     def _on_upload_tick(self) -> None:
-        progress = min(100, self._progress_value + _UPLOAD_STEP)
+        progress = min(100, self._progress_value + self._upload_step)
         self.set_progress(progress)
         if progress >= 100:
             self._upload_timer.stop()

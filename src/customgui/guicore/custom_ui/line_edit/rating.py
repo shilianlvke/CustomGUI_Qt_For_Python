@@ -6,10 +6,14 @@ from PySide6.QtCore import QPointF, QSize, Qt, Signal
 from PySide6.QtGui import QColor, QPainter
 from PySide6.QtWidgets import QSizePolicy, QWidget
 
+from customgui.appcore import AppSettings
+
 from ..paint_utils import star_path
 from .input_style import colors
 
+#: 星星尺寸的兼容兜底值（运行时以配置为准）
 STAR_SIZE = 24
+#: 星星间距的兼容兜底值（运行时以配置为准）
 STAR_GAP = 6
 
 
@@ -23,10 +27,15 @@ class CRating(QWidget):
         self._maximum = max(1, maximum)
         self._value = max(0, min(self._maximum, value))
         self._hover = -1
+        self._star_size = int(AppSettings.input.rating_star_size)
+        self._star_gap = int(AppSettings.input.rating_star_gap)
         self.setMouseTracking(True)
         self.setCursor(Qt.PointingHandCursor)
         self.setSizePolicy(QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Fixed)
-        self.setFixedSize(self._maximum * (STAR_SIZE + STAR_GAP) - STAR_GAP + 2, STAR_SIZE + 6)
+        self.setFixedSize(
+            self._maximum * (self._star_size + self._star_gap) - self._star_gap + 2,
+            self._star_size + 6,
+        )
 
     # ------------------------------------------------------------------
     # 数据
@@ -59,19 +68,19 @@ class CRating(QWidget):
 
         for index in range(self._maximum):
             center = QPointF(
-                1 + STAR_SIZE / 2 + index * (STAR_SIZE + STAR_GAP),
+                1 + self._star_size / 2 + index * (self._star_size + self._star_gap),
                 self.height() / 2,
             )
             painter.setPen(Qt.NoPen)
             painter.setBrush(accent if index < active else empty)
-            painter.drawPath(star_path(center, STAR_SIZE / 2 - 1))
+            painter.drawPath(star_path(center, self._star_size / 2 - 1))
         painter.end()
 
     # ------------------------------------------------------------------
     # 交互
     # ------------------------------------------------------------------
     def _index_at(self, x: float) -> int:
-        index = int(x // (STAR_SIZE + STAR_GAP))
+        index = int(x // (self._star_size + self._star_gap))
         return max(0, min(self._maximum - 1, index))
 
     def mouseMoveEvent(self, event):  # noqa: N802 - 覆写 Qt 命名

@@ -6,13 +6,10 @@ from PySide6.QtCore import QAbstractAnimation, QEasingCurve, QEvent, Qt, QVarian
 from PySide6.QtGui import QFont
 from PySide6.QtWidgets import QLabel, QWidget
 
+from customgui.appcore import AppSettings
+
 from .input_style import colors, size_spec
 from .input_text import CInputText
-
-#: 标签上浮后占用的高度
-_LABEL_BAND = 14
-#: 上浮后的字号
-_FLOAT_FONT_PX = 11
 
 
 class CFloatLabel(QWidget):
@@ -23,7 +20,9 @@ class CFloatLabel(QWidget):
         self.setObjectName("CFloatLabel_Widget")
         self._size = size
         self._spec = size_spec(size)
-        self.setFixedHeight(self._spec.height + _LABEL_BAND)
+        self._label_band = int(AppSettings.input.float_label_band)
+        self._float_font_px = int(AppSettings.input.float_font_size)
+        self.setFixedHeight(self._spec.height + self._label_band)
 
         self._input = CInputText(size=size, parent=self)
         self._label = QLabel(label, self)
@@ -57,7 +56,7 @@ class CFloatLabel(QWidget):
 
     # ------------------------------------------------------------------
     def resizeEvent(self, event):  # noqa: N802 - 覆写 Qt 命名
-        self._input.setGeometry(0, _LABEL_BAND, self.width(), self._spec.height)
+        self._input.setGeometry(0, self._label_band, self.width(), self._spec.height)
         self._apply_progress(self._progress)
         super().resizeEvent(event)
 
@@ -83,7 +82,9 @@ class CFloatLabel(QWidget):
         self._progress = progress
         spec = self._spec
         font = QFont(self._label.font())
-        font.setPixelSize(max(_FLOAT_FONT_PX, round(spec.font_px + (_FLOAT_FONT_PX - spec.font_px) * progress)))
+        font.setPixelSize(
+            max(self._float_font_px, round(spec.font_px + (self._float_font_px - spec.font_px) * progress))
+        )
         self._label.setFont(font)
         self._label.adjustSize()
 
@@ -91,7 +92,7 @@ class CFloatLabel(QWidget):
         if progress >= 1.0:
             y = 0
         else:
-            y = _LABEL_BAND + round((spec.height - self._label.height()) / 2 * (1 - progress))
+            y = self._label_band + round((spec.height - self._label.height()) / 2 * (1 - progress))
         self._label.move(x, y)
 
         palette = colors()

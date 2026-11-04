@@ -7,3 +7,7 @@ display:
 - '/_/   \____/|__/|__/___/_/|_|   /____/ /_/     /_/_/ |_/_/|_/ /___/_//_/\____/\____/ '
 logger_level: DEBUG
 logger_color: true
+logger_file: # 日志文件轮转（引导期由 Logger 直接读取）
+  name: customgui.log
+  max_bytes: 1048576 # 单文件上限（字节），超出后轮转
+  backup_count: 5 # 保留的历史文件数

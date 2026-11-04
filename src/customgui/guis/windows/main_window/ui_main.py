@@ -220,11 +220,11 @@ class UiMainWindow:
         # 添加中心小部件并设置内容边距
         self.parent.setCentralWidget(self.central_widget)
         if AppSettings.custom_title_bar:
-            # 10px 外圈原本是给 QGraphicsDropShadowEffect 留的投影空间。
-            # 亚克力模式下阴影关闭，这 10px 只剩一条透出壁纸的"外包装"，
-            # 看起来像在主界面外面又套了一层。此时让 CWindow 直接铺满窗口：
+            # 外圈留白（AppSettings.content_margin）原本是给 QGraphicsDropShadowEffect
+            # 留的投影空间。亚克力模式下阴影关闭，这圈留白只剩一条透出壁纸的
+            # "外包装"，看起来像在主界面外面又套了一层。此时让 CWindow 直接铺满窗口：
             # 主界面就是背景，原生材质与主界面边界完全重合。
-            margin = 0 if acrylic_active() else 10
+            margin = 0 if acrylic_active() else int(AppSettings.content_margin)
             self.central_widget_layout.setContentsMargins(margin, margin, margin, margin)
         else:
             self.window.set_stylesheet(border_radius=0, border_size=0)

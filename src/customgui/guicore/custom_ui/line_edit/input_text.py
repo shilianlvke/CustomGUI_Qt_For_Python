@@ -9,7 +9,7 @@ from PySide6.QtWidgets import QLineEdit, QSizePolicy
 from customgui.appcore import PathFactory
 
 from ..icon_utils import render_icon
-from .input_style import ICON_GAP, RADIUS, colors, corner_css, size_spec
+from .input_style import colors, corner_css, icon_gap, radius, size_spec
 
 
 class CInputText(QLineEdit):
@@ -66,11 +66,11 @@ class CInputText(QLineEdit):
 
     def _apply_geometry(self) -> None:
         spec = size_spec(self._size)
-        left = spec.padding_x + (spec.icon_px + ICON_GAP if self._leading_icon() else 0)
-        right = spec.padding_x + (spec.icon_px + ICON_GAP if self._trailing_icon() else 0)
+        left = spec.padding_x + (spec.icon_px + icon_gap() if self._leading_icon() else 0)
+        right = spec.padding_x + (spec.icon_px + icon_gap() if self._trailing_icon() else 0)
         self.setFixedHeight(spec.height)
         self.setStyleSheet(
-            f"#CInputText_LineEdit {{ height: {spec.height}px; {corner_css(RADIUS, self._corners)}"
+            f"#CInputText_LineEdit {{ height: {spec.height}px; {corner_css(radius(), self._corners)}"
             f" padding-left: {left}px; padding-right: {right}px; font-size: {spec.font_px}px; }}"
         )
 
