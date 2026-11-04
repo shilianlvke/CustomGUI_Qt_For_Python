@@ -74,6 +74,31 @@ apps_root()                             # -> Path
 | `iter_file_layers(dir, suffix)` | 返回每层的同名文件，供配置深合并 |
 | `apps_root()` / `data_root()` | 应用目录 / 可写数据根 |
 
+### 用户配置持久化
+
+运行时修改的外观偏好写入 `<data_root>/settings/user.yaml`（默认
+`%APPDATA%/CustomGUI/settings/user.yaml`），只记录改动过的键：
+
+| 字段 | 来源 | 写入时机 |
+| --- | --- | --- |
+| `theme_name` | 主题卡片 / 深色模式 | 主题切换后立即写入 |
+| `language` | 外观配置语言选择 | 语言切换完成后立即写入 |
+| `menu_mode` | Static / Overlay | 切换后立即写入 |
+| `startup_size` | 窗口尺寸 | 正常关闭窗口时写入（最大化/最小化/全屏跳过） |
+
+```python
+from customgui.appcore import load_user_settings, save_user_settings, user_settings_path
+
+load_user_settings()                        # 启动时读取（已校验，缺失返回 {}）
+save_user_settings(theme_name="bright")     # 手动写入，失败返回 False 且不影响会话
+user_settings_path()                        # -> Path
+```
+
+优先级：**user.yaml > 品牌覆盖层（`apps/<app>/brand`）> 基座默认 `settings/*.yaml`**。
+用户文件缺失、YAML 损坏、顶层不是字典或字段值非法时回退下层配置；写入使用
+临时文件 + 原子替换，失败只记录告警。首次读取且 `user.yaml` 不存在时，会
+自动迁移旧版 `ui_state.json` 中的主题 / 语言 / 窗口尺寸。
+
 ## 4. 主题与令牌
 
 ```python

@@ -13,8 +13,8 @@ from customgui.appcore import (
     MenuPlugin,
     get_plugin_registry,
     get_theme_manager,
+    load_user_settings,
 )
-from customgui.appcore.ui_state import load_ui_state
 from customgui.guicore import CGrips
 from customgui.guis.app_loader import load_apps
 
@@ -88,9 +88,9 @@ class SetupMainWindow:
 
     def setup_gui(self):
         Logger.debug("开始装配主窗口 UI")
-        # 先恢复用户上次的主题 / 语言 / 窗口尺寸，再装载应用与页面，
+        # 先恢复用户上次保存的主题 / 语言 / 窗口尺寸，再装载应用与页面，
         # 保证菜单文案、页面语言与窗口几何一次到位（避免启动后再重建）。
-        SetupMainWindow.restore_ui_state(self)
+        user_state = SetupMainWindow.restore_ui_state(self)
         # 装载 Apps 目录下的应用模组（菜单 + 页面 + 语言）
         load_apps()
         # 添加标题描述
@@ -112,6 +112,8 @@ class SetupMainWindow:
             SetupMainWindow.resize_grips(self)
         # 加载按钮
         SetupMainWindow.menu_add_btn(self)
+        # 菜单模式依赖菜单按钮已就位，放在按钮创建之后再恢复
+        SetupMainWindow.restore_menu_mode(self, user_state)
         # PAGES (default page only; others are built on first navigation)
         load_registered_pages(self, eager=False)
         # 设置初始页面/设置左右列菜单（无任何应用时内容区留空）
@@ -138,11 +140,16 @@ class SetupMainWindow:
         SetupMainWindow.clamp_to_screen(self)
 
     @staticmethod
-    def restore_ui_state(window):
-        """恢复上次保存的主题 / 语言 / 窗口尺寸（缺失或非法值时保持默认）。"""
-        state = load_ui_state()
+    def restore_ui_state(window) -> dict:
+        """恢复用户上次保存的主题 / 语言 / 窗口尺寸，返回读取到的用户配置。
 
-        theme = state.get("theme")
+        用户配置是 ``<data_root>/settings/user.yaml`` 增量覆盖层，优先级高于
+        基座默认值与品牌层；缺失或非法的字段保持下层配置。窗口尺寸会在
+        ``clamp_to_screen`` 中再夹到当前屏幕可用区域。
+        """
+        state = load_user_settings()
+
+        theme = state.get("theme_name")
         if isinstance(theme, str) and theme in AppThemes:
             get_theme_manager().apply(theme)
             # 窗口已按配置主题构建过一次，恢复后要立刻重建样式
@@ -154,7 +161,7 @@ class SetupMainWindow:
         if isinstance(language, str) and language in LANGUAGE_OPTIONS and language != Language.current():
             Language.apply(language)
 
-        size = state.get("window_size")
+        size = state.get("startup_size")
         if isinstance(size, (list, tuple)) and len(size) == 2:
             try:
                 width, height = int(size[0]), int(size[1])
@@ -162,6 +169,23 @@ class SetupMainWindow:
                 width = height = 0
             if width > 0 and height > 0:
                 window.resize(width, height)
+        return state
+
+    @staticmethod
+    def restore_menu_mode(window, state: dict) -> None:
+        """按用户配置恢复左菜单 Static / Overlay 模式并同步抽屉选中态。"""
+        mode = state.get("menu_mode")
+        if not isinstance(mode, str) or mode not in ("static", "overlay"):
+            return
+        try:
+            MainFunctions.set_menu_mode(window, mode)
+        except Exception as exc:  # noqa: BLE001 - 菜单恢复失败不应阻断启动
+            Logger.warning(f"恢复菜单模式失败，回退 Static: {exc}")
+            return
+        config = getattr(getattr(window, "ui", None), "theme_config", None)
+        setter = getattr(config, "set_menu_mode", None)
+        if callable(setter):
+            setter(mode)
 
     @staticmethod
     def clamp_to_screen(window):

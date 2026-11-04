@@ -5,15 +5,16 @@
    并广播通知（左菜单/标题栏/左列等组件订阅后自动刷新文本与提示）；
 2. 窗口级刷新：窗口标题、当前页标题；
 3. **页面重建**：清空页面容器并重新加载全部页面，
-   使页面内文本（走语言包的部分）完整切换到新语言。
+   使页面内文本（走语言包的部分）完整切换到新语言；
+4. 目标语言写入用户配置覆盖层（``<data_root>/settings/user.yaml``），
+   下次启动由 ``SetupMainWindow.restore_ui_state`` 读取。
 """
 
 from __future__ import annotations
 
 from PySide6.QtWidgets import QWidget
 
-from customgui.appcore import LANGUAGE_OPTIONS, Language, Logger
-from customgui.appcore.ui_state import save_ui_state
+from customgui.appcore import LANGUAGE_OPTIONS, Language, Logger, save_user_settings
 
 from .windows.main_window.functions import MainFunctions
 
@@ -38,7 +39,7 @@ def apply_language(language: str, window=None) -> str:
         except Exception as exc:
             Logger.warning(f"语言刷新部分失败: {exc}")
     # 3. 记住用户选择，下次启动由 SetupMainWindow.restore_ui_state 恢复
-    save_ui_state(language=language)
+    save_user_settings(language=language)
     return language
 
 

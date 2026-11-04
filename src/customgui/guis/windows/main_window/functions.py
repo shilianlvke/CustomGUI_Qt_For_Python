@@ -113,8 +113,8 @@ class MainFunctions:
         scrim.dismissed.connect(ui.left_menu.collapse)
         window._menu_overlay_scrim = scrim
 
-        tracker = CLeftMenuOverlayTracker(ui.window)
-        ui.window.installEventFilter(tracker)
+        tracker = CLeftMenuOverlayTracker(window)
+        window.installEventFilter(tracker)
         window._menu_overlay_tracker = tracker
 
         shortcut = QShortcut(QKeySequence(Qt.Key_Escape), ui.window)
@@ -141,7 +141,7 @@ class MainFunctions:
 
         tracker = getattr(window, "_menu_overlay_tracker", None)
         if tracker is not None:
-            ui.window.removeEventFilter(tracker)
+            window.removeEventFilter(tracker)
             tracker.deleteLater()
             window._menu_overlay_tracker = None
 

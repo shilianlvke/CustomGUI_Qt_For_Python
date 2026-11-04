@@ -165,6 +165,13 @@ def configure(
             LANGUAGE_OPTIONS.invalidate()
         except Exception:
             pass
+        # data_dir 可能已切换：丢弃用户配置缓存，下次读取按新目录解析
+        try:
+            from .appcore.user_settings import reset_user_settings_cache
+
+            reset_user_settings_cache()
+        except Exception:
+            pass
 
     return _ACTIVE
 

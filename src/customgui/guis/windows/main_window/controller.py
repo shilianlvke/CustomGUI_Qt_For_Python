@@ -9,8 +9,8 @@ from customgui.appcore import (
     get_plugin_registry,
     get_theme_manager,
     record_event,
+    save_user_settings,
 )
-from customgui.appcore.ui_state import save_ui_state
 from customgui.guicore import Styles
 
 from .functions import MainFunctions
@@ -38,7 +38,7 @@ class _WindowStateTracker(QObject):
         except RuntimeError:
             return
         if size.width() > 0 and size.height() > 0:
-            save_ui_state(window_size=[size.width(), size.height()])
+            save_user_settings(startup_size=[size.width(), size.height()])
 
 
 class PageRouterController:
@@ -164,7 +164,7 @@ class ThemeController:
             # 旧组件/测试桩：回落到直接设置样式（样式仅在此处构造一次）
             now = self._style_factory()
             window_widget.setStyleSheet(now.style)
-        save_ui_state(theme=self._theme_manager.current())
+        save_user_settings(theme_name=self._theme_manager.current())
 
 
 class ColumnController:
@@ -256,17 +256,18 @@ class MainWindowController:
         language_changed = getattr(config, "languageChanged", None)
         if language_changed is not None:
             language_changed.connect(self._apply_language)
-        # 关闭窗口时把正常尺寸写入 ui_state.json，下次启动恢复
+        # 关闭窗口时把正常尺寸写入用户配置 user.yaml，下次启动恢复
         # （测试桩可能只提供 SimpleNamespace，不是 QObject，跳过即可）
         if isinstance(window, QObject):
             self._window_state_tracker = _WindowStateTracker(window)
             window.installEventFilter(self._window_state_tracker)
 
     def _apply_menu_mode(self, mode: str) -> None:
-        """外观配置里的 Static / Overlay 菜单模式，交给宿主改变左菜单布局。"""
+        """外观配置里的 Static / Overlay 菜单模式：应用并写入用户配置。"""
         setter = getattr(self._main_functions, "set_menu_mode", None)
         if callable(setter):
             setter(self._window, mode)
+        save_user_settings(menu_mode=mode)
 
     def _apply_language(self, language: str) -> None:
         """外观配置里直接选中的目标语言：整体切换并重建页面。"""

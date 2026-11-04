@@ -38,6 +38,12 @@ from .sysx import (
     to_user_message,
     track_timing,
 )
+from .user_settings import (
+    load_user_settings,
+    reset_user_settings_cache,
+    save_user_settings,
+    user_settings_path,
+)
 
 __all__ = [
     "YamlHandler",
@@ -79,4 +85,8 @@ __all__ = [
     "track_timing",
     "ButtonDecision",
     "MainWindowButtonUseCase",
+    "load_user_settings",
+    "save_user_settings",
+    "user_settings_path",
+    "reset_user_settings_cache",
 ]

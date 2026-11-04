@@ -260,7 +260,9 @@ def load_apps(root: str | Path | None = None, force: bool = False) -> list[Path]
             )
 
     app_state.handles = handles
-    apply_apps_language(AppSettings.language, app_dirs)
+    # 用当前生效语言（可能已由用户配置恢复）而不是 AppSettings 默认值，
+    # 否则基座文案切到 en_us 后，应用菜单仍会被注入 zh_cn 的语言包。
+    apply_apps_language(Language.current(), app_dirs)
     app_state.loaded = True
     Logger.info(f"应用加载完成: {loaded}/{len(app_dirs)}")
     record_event("apps.loaded", category="app", payload={"total": len(app_dirs), "loaded": loaded})
