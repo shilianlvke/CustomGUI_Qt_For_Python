@@ -48,7 +48,7 @@ _FILE_NAME = "user.yaml"
 _LEGACY_FILE = "ui_state.json"
 _SUBDIR = "settings"
 #: 用户配置显式版本号；文件缺失该键时按 v1 处理
-SCHEMA_VERSION = 2
+SCHEMA_VERSION = 3
 _SCHEMA_KEY = "schema_version"
 #: 允许持久化的字段（与 AppSettings / 外观配置一一对应）
 SUPPORTED_FIELDS = (
@@ -58,7 +58,13 @@ SUPPORTED_FIELDS = (
     "startup_size",
     "acrylic_transparency",
     "glass_strength",
+    "background_image",
+    "background_fit",
+    "background_recent",
 )
+
+#: 背景图的适应模式（与 Windows 个性化设置一致）
+BACKGROUND_FIT_MODES = ("fill", "fit", "stretch", "tile", "center")
 
 _LOCK = threading.Lock()
 _CACHE: dict[str, Any] | None = None
@@ -87,6 +93,17 @@ def _normalize_field(key: str, value: Any) -> Any | None:
         if not all(isinstance(item, int) and not isinstance(item, bool) and item > 0 for item in value):
             return None
         return [int(value[0]), int(value[1])]
+    if key == "background_image":
+        if isinstance(value, str):
+            return value.strip()
+        return None
+    if key == "background_fit":
+        return value if value in BACKGROUND_FIT_MODES else None
+    if key == "background_recent":
+        if not isinstance(value, (list, tuple)):
+            return None
+        paths = [str(item).strip() for item in value if isinstance(item, str) and str(item).strip()]
+        return list(dict.fromkeys(paths))[:5]
     return None
 
 
@@ -143,8 +160,10 @@ def _read_file() -> dict[str, Any]:
 def _migrate_state(state: dict[str, Any], version: int) -> dict[str, Any]:
     """把旧版本字段迁移为当前版本。
 
-    v1 → v2：仅引入显式版本号，字段语义不变。后续破坏性变更在这里追加
-    迁移分支，并在 *version* 小于目标版本时补齐默认值或重命名字段。
+    v1 → v2：仅引入显式版本号，字段语义不变。
+    v2 → v3：新增背景图路径、适应模式与最近使用列表；缺失时保持默认。
+    后续破坏性变更在这里追加迁移分支，并在 *version* 小于目标版本时补齐
+    默认值或重命名字段。
     """
     if version < SCHEMA_VERSION:
         state = dict(state)
@@ -265,6 +284,7 @@ def reset_user_settings_cache() -> None:
 
 
 __all__ = [
+    "BACKGROUND_FIT_MODES",
     "SCHEMA_VERSION",
     "SUPPORTED_FIELDS",
     "load_user_settings",

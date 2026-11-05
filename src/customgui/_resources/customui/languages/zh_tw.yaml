@@ -144,6 +144,23 @@ UI:
   ui_LanguageHint: 選擇介面顯示語言
   ui_MenuMode: 選單模式
   ui_MenuModeHint: 固定顯示於內容區旁，浮層覆蓋於目前頁面之上
+  ui_Background: 個人化設定背景
+  ui_BackgroundHint: 圖片背景僅作用於目前視窗。
+  ui_BackgroundNone: 無
+  ui_BackgroundImage: 圖片
+  ui_RecentImages: 最近使用的影像
+  ui_NoRecentImages: 尚無最近使用的影像
+  ui_ChoosePhoto: 選擇一張照片
+  ui_BrowsePhoto: 瀏覽照片
+  ui_ClearBackground: 清除背景
+  ui_BackgroundFit: 為桌面影像選擇符合模式
+  ui_FitFill: 填滿
+  ui_FitFit: 符合
+  ui_FitStretch: 延展
+  ui_FitTile: 並排
+  ui_FitCenter: 置中
+  ui_BackgroundExpand: 展開背景設定
+  ui_BackgroundCollapse: 收起背景設定
   ui_DarkMode: 深色模式
   ui_DarkModeHint: 開啟後使用暗色主題
   ui_ModeStatic: 固定

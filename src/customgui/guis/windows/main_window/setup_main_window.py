@@ -152,6 +152,8 @@ class SetupMainWindow:
         # 材质参数必须在主题之前恢复：主题切换会重建全局样式，样式里的
         # 玻璃层透明度直接读取当前强度。
         appearance_applied = SetupMainWindow.restore_appearance(window, state)
+        # 背景图与主题无关，先于样式重建恢复；无效路径由 CWindow 自动回落到纯色。
+        SetupMainWindow.restore_background(window, state)
 
         theme_applied = False
         theme = state.get("theme_name")
@@ -197,6 +199,22 @@ class SetupMainWindow:
         if callable(setter):
             setter(transparency=transparency, strength=strength)
         return applied
+
+    @staticmethod
+    def restore_background(window, state: dict) -> bool:
+        """恢复用户选择的背景图与适应模式，返回是否成功应用到窗口。"""
+        path = state.get("background_image")
+        fit = state.get("background_fit")
+        widget = getattr(getattr(window, "ui", None), "window", None)
+        setter = getattr(widget, "set_background_image", None)
+        if not callable(setter):
+            return False
+        return bool(
+            setter(
+                path if isinstance(path, str) else "",
+                fit if isinstance(fit, str) else "fill",
+            )
+        )
 
     @staticmethod
     def restore_menu_mode(window, state: dict) -> None:

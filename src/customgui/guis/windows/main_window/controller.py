@@ -295,6 +295,9 @@ class MainWindowController:
         appearance_committed = getattr(config, "appearanceCommitted", None)
         if appearance_committed is not None:
             appearance_committed.connect(self._flush_appearance)
+        background_changed = getattr(config, "backgroundChanged", None)
+        if background_changed is not None:
+            background_changed.connect(self._apply_background)
         # 滑块连续拖动时重建整棵控件树的样式代价较高，用 60ms 节流合并；
         # 透明度只需重挂系统材质，可以每次立即生效。
         self._appearance_style_dirty = False
@@ -319,6 +322,13 @@ class MainWindowController:
         """亚克力质感强度滑块：标记需要重建样式，由节流器统一刷新。"""
         self._appearance_style_dirty = True
         self._schedule_appearance_flush()
+
+    def _apply_background(self, path: str, fit: str) -> None:
+        """外观配置里的背景图：立即应用到主窗口（持久化由配置面板负责）。"""
+        widget = getattr(getattr(self._window, "ui", None), "window", None)
+        setter = getattr(widget, "set_background_image", None)
+        if callable(setter):
+            setter(path, fit)
 
     def _schedule_appearance_flush(self) -> None:
         if self._appearance_timer is None:

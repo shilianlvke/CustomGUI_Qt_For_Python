@@ -4,6 +4,7 @@ from PySide6.QtGui import QColor
 from customgui.appcore import AppSettings, ColorPalette, Logger, PathFactory, get_design_tokens
 
 from .acrylic import MIN_WINDOW_GLASS_ALPHA, acrylic_active, glass_alpha
+from .background import background_image_active
 from .styles_components import _ComponentStyles, _mix
 
 # ----------------------------------------------------------------------
@@ -93,7 +94,13 @@ class Styles(_ComponentStyles):
         self._icon_arrow_down = PathFactory.set_svg_icon("icon_arrow_down").replace("\\", "/")
 
         colors = self.tokens.colors
-        glass = acrylic_active()
+        # 背景图激活时即使没有系统亚克力，也要把各层表面转为半透明，
+        # 否则侧栏/面板/卡片会整块盖住 CWindow 绘制的背景图。
+        image_mode = background_image_active() and not acrylic_active()
+        glass = acrylic_active() or background_image_active()
+        # 背景图模式给表面一个可读性下限：既能看到图，又不至于文字发飘。
+        min_surface = 0.58 if image_mode else 0.0
+        min_sidebar = 0.50 if image_mode else 0.0
         self.glass = glass
         glass_cfg = AppSettings.glass
 
@@ -106,11 +113,31 @@ class Styles(_ComponentStyles):
             if glass
             else colors.surface_app
         )
-        self._sidebar_bg = _rgba(colors.surface_sidebar, glass_alpha(glass_cfg.sidebar)) if glass else colors.surface_sidebar
-        self._panel_bg = _rgba(colors.surface_panel, glass_alpha(glass_cfg.panel)) if glass else colors.surface_panel
-        self._card_bg = _rgba(colors.surface_card, glass_alpha(glass_cfg.card)) if glass else colors.surface_card
-        self._region_bg = _rgba(region_card_tint(), glass_alpha(glass_cfg.region)) if glass else region_card_tint()
-        self._control_bg = _rgba(colors.surface_sidebar, glass_alpha(glass_cfg.control)) if glass else colors.surface_sidebar
+        self._sidebar_bg = (
+            _rgba(colors.surface_sidebar, glass_alpha(glass_cfg.sidebar, minimum=min_sidebar))
+            if glass
+            else colors.surface_sidebar
+        )
+        self._panel_bg = (
+            _rgba(colors.surface_panel, glass_alpha(glass_cfg.panel, minimum=min_surface))
+            if glass
+            else colors.surface_panel
+        )
+        self._card_bg = (
+            _rgba(colors.surface_card, glass_alpha(glass_cfg.card, minimum=min_surface))
+            if glass
+            else colors.surface_card
+        )
+        self._region_bg = (
+            _rgba(region_card_tint(), glass_alpha(glass_cfg.region, minimum=min_surface))
+            if glass
+            else region_card_tint()
+        )
+        self._control_bg = (
+            _rgba(colors.surface_sidebar, glass_alpha(glass_cfg.control, minimum=min_surface))
+            if glass
+            else colors.surface_sidebar
+        )
         self._menu_bg = (
             _rgba(colors.surface_interactive, glass_alpha(glass_cfg.menu, minimum=0.85)) if glass else colors.surface_interactive
         )
@@ -179,6 +206,10 @@ class Styles(_ComponentStyles):
                 background-color: {self._window_bg};
                 border-radius: {self.tokens.radius.window}px;
                 border: {self.tokens.border.width}px solid {self._window_border};
+            }}
+            /* 设置背景图后由 CWindow.paintEvent 负责绘制，样式表底色必须透明 */
+            #CWindow_Frame[hasBackgroundImage="true"] {{
+                background-color: transparent;
             }}
             /* 最大化/贴边：由 CWindow 改这条动态属性即可，无需重建整张样式表 */
             #CWindow_Frame[frameStyle="flat"] {{

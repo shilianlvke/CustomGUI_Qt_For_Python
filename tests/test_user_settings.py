@@ -252,6 +252,38 @@ def test_restore_appearance_applies_and_syncs_panel():
         reset_appearance_overrides()
 
 
+def test_background_fields_roundtrip():
+    assert user_settings.save_user_settings(
+        background_image="/tmp/wall.png",
+        background_fit="fill",
+        background_recent=["/tmp/a.png", "/tmp/b.png"],
+    )
+
+    assert user_settings.load_user_settings() == {
+        "background_image": "/tmp/wall.png",
+        "background_fit": "fill",
+        "background_recent": ["/tmp/a.png", "/tmp/b.png"],
+    }
+
+
+def test_background_recent_deduplicates_and_limits():
+    assert user_settings.save_user_settings(
+        background_recent=["/a.png", "/a.png", "/b.png", "/c.png", "/d.png", "/e.png", "/f.png"],
+    )
+    assert user_settings.load_user_settings()["background_recent"] == [
+        "/a.png",
+        "/b.png",
+        "/c.png",
+        "/d.png",
+        "/e.png",
+    ]
+
+
+def test_invalid_background_fit_is_ignored():
+    assert not user_settings.save_user_settings(background_fit="cover")
+    assert not user_settings.save_user_settings(background_image=123)
+
+
 def test_missing_schema_version_is_treated_as_v1():
     _write(user_settings.user_settings_path(), "theme_name: bright\n")
     assert user_settings.load_user_settings() == {"theme_name": "bright"}

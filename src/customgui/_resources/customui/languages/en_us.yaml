@@ -143,6 +143,23 @@ UI:
   ui_LanguageHint: Choose the interface language
   ui_MenuMode: Menu Mode
   ui_MenuModeHint: Dock beside the content, or overlay the current page
+  ui_Background: Personalize your background
+  ui_BackgroundHint: Images apply to this window only.
+  ui_BackgroundNone: None
+  ui_BackgroundImage: Image
+  ui_RecentImages: Recent images
+  ui_NoRecentImages: No recent images
+  ui_ChoosePhoto: Choose a photo
+  ui_BrowsePhoto: Browse photos
+  ui_ClearBackground: Clear background
+  ui_BackgroundFit: Choose a fit for your desktop image
+  ui_FitFill: Fill
+  ui_FitFit: Fit
+  ui_FitStretch: Stretch
+  ui_FitTile: Tile
+  ui_FitCenter: Center
+  ui_BackgroundExpand: Expand background settings
+  ui_BackgroundCollapse: Collapse background settings
   ui_DarkMode: Dark Mode
   ui_DarkModeHint: Use a dark theme
   ui_ModeStatic: Docked

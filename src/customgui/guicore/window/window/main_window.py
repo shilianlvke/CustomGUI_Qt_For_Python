@@ -1,10 +1,12 @@
-from PySide6.QtCore import QEasingCurve, QPropertyAnimation, Qt, QTimer
-from PySide6.QtGui import QColor
+from PySide6.QtCore import QEasingCurve, QPropertyAnimation, QRectF, Qt, QTimer
+from PySide6.QtGui import QColor, QPainter, QPainterPath, QPixmap
 from PySide6.QtWidgets import QApplication, QFrame, QGraphicsDropShadowEffect, QHBoxLayout, QVBoxLayout
 
-from customgui.appcore import AppSettings, get_design_tokens, get_theme_manager, track_timing
+from customgui.appcore import AppSettings, ColorPalette, get_design_tokens, get_theme_manager, track_timing
+from customgui.appcore.user_settings import BACKGROUND_FIT_MODES
 
 from ...acrylic import acrylic_active, acrylic_transparency, apply_acrylic, glass_strength, remove_acrylic
+from ...background import background_image_active, set_background_image_active
 from ...styles import Styles
 
 #: 无圆角、无边框的框架状态（最大化 / 贴边时使用），对应样式表里的属性选择器
@@ -48,6 +50,12 @@ class CWindow(QFrame):
         #: 样式缓存：来源键 + 对应的 base 样式表（构造期字段需先于 apply_style 初始化）
         self._style_cache_key = None
         self._style_cache_base: str | None = None
+        #: 背景图：源路径、适应模式与缩放缓存
+        self._background_image = ""
+        self._background_fit = "fill"
+        self._background_pixmap = QPixmap()
+        self._background_cache: QPixmap | None = None
+        self._background_cache_key: tuple | None = None
         self.apply_style()
         self.set_shadow_enabled(AppSettings.custom_title_bar and AppSettings.window_shadow)
 
@@ -112,9 +120,124 @@ class CWindow(QFrame):
             acrylic_active(),
             acrylic_transparency(),
             glass_strength(),
+            background_image_active(),
             bool(AppSettings.custom_title_bar),
             override,
         )
+
+    # ------------------------------------------------------------------
+    # 背景图
+    # ------------------------------------------------------------------
+    def background_image(self) -> str:
+        """当前背景图路径；空字符串表示使用主题纯色背景。"""
+        return self._background_image
+
+    def background_fit(self) -> str:
+        """背景图适应模式（fill / fit / stretch / tile / center）。"""
+        return self._background_fit
+
+    def set_background_image(self, path: str | None, fit: str | None = None) -> bool:
+        """设置或清除窗口背景图；路径无效时回落到纯色背景。
+
+        背景图绘制在 ``CWindow`` 自身的 ``paintEvent`` 里，不新增外层背景控件，
+        并随窗口尺寸与适应模式缓存缩放结果。
+        """
+        mode = str(fit or self._background_fit)
+        if mode not in BACKGROUND_FIT_MODES:
+            mode = "fill"
+        pixmap = QPixmap(str(path)) if path else QPixmap()
+        valid = not pixmap.isNull()
+        self._background_image = str(path) if valid else ""
+        self._background_fit = mode
+        self._background_pixmap = pixmap
+        self._background_cache = None
+        self._background_cache_key = None
+        self.setProperty("hasBackgroundImage", valid)
+        set_background_image_active(valid)
+        # 各层表面需要重新计算透明度，不能只 repolish 当前控件。
+        self.apply_style()
+        self.update()
+        return valid
+
+    def set_background_fit(self, fit: str) -> str:
+        """切换适应模式并立即重绘；未知模式回落到 fill。"""
+        mode = str(fit)
+        if mode not in BACKGROUND_FIT_MODES:
+            mode = "fill"
+        if mode != self._background_fit:
+            self._background_fit = mode
+            self._background_cache = None
+            self._background_cache_key = None
+            self.update()
+        return self._background_fit
+
+    def resizeEvent(self, event):
+        super().resizeEvent(event)
+        self._background_cache = None
+        self._background_cache_key = None
+
+    def paintEvent(self, event):
+        if self._background_pixmap.isNull():
+            super().paintEvent(event)
+            return
+        surface = self._background_surface()
+        if surface is not None:
+            painter = QPainter(self)
+            painter.setRenderHint(QPainter.RenderHint.Antialiasing, True)
+            painter.setRenderHint(QPainter.RenderHint.SmoothPixmapTransform, True)
+            radius = 0.0 if self.property("frameStyle") == "flat" else float(get_design_tokens().radius.window)
+            path = QPainterPath()
+            path.addRoundedRect(QRectF(self.rect()), radius, radius)
+            painter.setClipPath(path)
+            painter.drawPixmap(0, 0, surface)
+            # Fluent 可读性遮罩：背景图上叠一层极淡的主题底色
+            tint = QColor(ColorPalette.custom_bg_one)
+            tint.setAlpha(24)
+            painter.fillPath(path, tint)
+            painter.end()
+        super().paintEvent(event)
+
+    def _background_surface(self) -> QPixmap | None:
+        """按当前尺寸与适应模式缩放背景图（带缓存）。"""
+        if self._background_pixmap.isNull() or self.width() <= 0 or self.height() <= 0:
+            return None
+        key = (self.width(), self.height(), self._background_fit, self.devicePixelRatioF())
+        if self._background_cache is not None and self._background_cache_key == key:
+            return self._background_cache
+        width, height = self.width(), self.height()
+        surface = QPixmap(width, height)
+        surface.fill(Qt.GlobalColor.transparent)
+        painter = QPainter(surface)
+        painter.setRenderHint(QPainter.RenderHint.SmoothPixmapTransform, True)
+        source = self._background_pixmap
+        mode = self._background_fit
+        if mode == "stretch":
+            painter.drawPixmap(0, 0, width, height, source)
+        elif mode == "tile":
+            for y in range(0, height, max(1, source.height())):
+                for x in range(0, width, max(1, source.width())):
+                    painter.drawPixmap(x, y, source)
+        elif mode == "center":
+            painter.drawPixmap((width - source.width()) // 2, (height - source.height()) // 2, source)
+        elif mode == "fit":
+            scaled = source.scaled(
+                width, height, Qt.AspectRatioMode.KeepAspectRatio, Qt.TransformationMode.SmoothTransformation
+            )
+            painter.drawPixmap((width - scaled.width()) // 2, (height - scaled.height()) // 2, scaled)
+        else:  # fill：保持比例并裁掉超出部分
+            scaled = source.scaled(
+                width,
+                height,
+                Qt.AspectRatioMode.KeepAspectRatioByExpanding,
+                Qt.TransformationMode.SmoothTransformation,
+            )
+            x = (width - scaled.width()) // 2
+            y = (height - scaled.height()) // 2
+            painter.drawPixmap(x, y, scaled)
+        painter.end()
+        self._background_cache = surface
+        self._background_cache_key = key
+        return surface
 
     def set_stylesheet(self, border_radius=None, border_size=None):
         """覆盖框架圆角/边框；两个参数均为 None 时清除覆盖（恢复主题默认）。

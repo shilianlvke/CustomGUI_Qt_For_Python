@@ -144,6 +144,23 @@ UI:
   ui_LanguageHint: 表示言語を選択
   ui_MenuMode: メニューモード
   ui_MenuModeHint: コンテンツ横に固定表示、または現在のページに重ねて表示
+  ui_Background: 背景をカスタマイズ
+  ui_BackgroundHint: 画像はこのウィンドウにのみ適用されます。
+  ui_BackgroundNone: なし
+  ui_BackgroundImage: 画像
+  ui_RecentImages: 最近使用した画像
+  ui_NoRecentImages: 最近使用した画像はありません
+  ui_ChoosePhoto: 写真を選択
+  ui_BrowsePhoto: 写真を参照
+  ui_ClearBackground: 背景をクリア
+  ui_BackgroundFit: デスクトップ画像の適合方法を選択
+  ui_FitFill: 画面に合わせる
+  ui_FitFit: 全体を表示
+  ui_FitStretch: 拡大
+  ui_FitTile: 並べて表示
+  ui_FitCenter: 中央に表示
+  ui_BackgroundExpand: 背景設定を展開
+  ui_BackgroundCollapse: 背景設定を折りたたむ
   ui_DarkMode: ダークモード
   ui_DarkModeHint: 暗色テーマを使用
   ui_ModeStatic: 固定

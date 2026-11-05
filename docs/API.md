@@ -94,6 +94,9 @@ apps_root()                             # -> Path
 | `startup_size` | 窗口尺寸 | 正常关闭窗口时写入（最大化/最小化/全屏跳过） |
 | `acrylic_transparency` | 外观配置「窗口透明度」滑块 | 拖动过程中节流写入，松手再落盘一次 |
 | `glass_strength` | 外观配置「亚克力质感强度」滑块 | 拖动过程中节流写入，松手再落盘一次 |
+| `background_image` | 外观配置「个性化设置背景」 | 选择/清除背景图时立即写入，空字符串表示纯色 |
+| `background_fit` | 背景图适应模式 | 选择填充/适应/拉伸/平铺/居中时写入 |
+| `background_recent` | 最近使用的背景图 | 选择背景图时写入，最多 5 条并自动去重 |
 
 ```python
 from customgui.appcore import load_user_settings, save_user_settings, user_settings_path
@@ -245,6 +248,21 @@ ui = UiMainWindow(); ui.setup_ui(window)
 SetupMainWindow.setup_gui(window)
 controller = MainWindowController(window)
 ```
+
+### 窗口背景图
+
+```python
+from customgui.guicore import CWindow
+
+window.set_background_image("C:/Pictures/wall.png", "fill")  # fill / fit / stretch / tile / center
+window.set_background_fit("fit")
+window.background_image()   # -> 路径；空字符串表示主题纯色
+window.background_fit()     # -> 当前适应模式
+window.set_background_image("")  # 清除
+```
+
+背景图由 `CWindow.paintEvent` 绘制并按尺寸缓存缩放结果；激活时各层表面自动转为
+半透明（复用玻璃层参数并保留可读性下限），不会新增外层背景控件。
 
 单页面应用可以直接继承预览页基类，省掉滚动容器、卡片与标题样式的样板：
 

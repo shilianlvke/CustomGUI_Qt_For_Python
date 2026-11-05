@@ -48,6 +48,8 @@ class CAppConfigurator(_ConfigSectionsMixin, QFrame):
     #: 实时预览：透明度（0-100）与亚克力质感强度（0-100）变化
     transparencyChanged = Signal(int)
     glassStrengthChanged = Signal(int)
+    #: 背景图变更：(路径, 适应模式)；路径为空表示恢复主题纯色
+    backgroundChanged = Signal(str, str)
     #: 滑块拖动结束：宿主可在此一次性落盘，避免拖动过程中频繁写文件
     appearanceCommitted = Signal()
     closed = Signal()
@@ -263,6 +265,7 @@ class CAppConfigurator(_ConfigSectionsMixin, QFrame):
         for key, (label, fallback) in self._texts.items():
             label.setText(Language.resolve_key(key, fallback))
         self.menu_mode_select.set_options(self._menu_mode_labels(), index=self.menu_mode_select.current_index(), emit=False)
+        self._refresh_background_texts()
         self._sync_language()
         self.update()
 
@@ -389,6 +392,12 @@ class CAppConfigurator(_ConfigSectionsMixin, QFrame):
         self.dark_switch.update()
         self.transparency_slider.update()
         self.glass_strength_slider.update()
+        self.background_type_select.update()
+        self.background_fit_select.update()
+        self.background_toggle.update()
+        for thumb in self._recent_thumbs:
+            thumb.update()
+        self._refresh_background_icon()
         self.update()
 
     def paintEvent(self, event):  # noqa: N802 - 覆写 Qt 命名

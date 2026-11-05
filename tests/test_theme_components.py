@@ -16,6 +16,7 @@ import re
 os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
 
 import pytest
+from PySide6.QtCore import Qt
 from PySide6.QtGui import QColor, QPalette
 from PySide6.QtWidgets import QApplication, QWidget
 
@@ -271,6 +272,60 @@ def test_apply_style_reuses_cache_until_source_changes(qapp, monkeypatch):
 def test_geometry_not_in_central_stylesheet(qapp, selector, keyword):
     """几何量不得出现在中央样式表里（只允许颜色/状态/字体与令牌化尺寸）。"""
     assert keyword not in _central_block(selector), f"{selector} 仍残留几何声明 {keyword}"
+
+
+def test_window_background_image_and_fit_modes(qapp, tmp_path):
+    """CWindow 背景图：加载、属性切换、适应模式与无效路径回落。"""
+    from PySide6.QtGui import QImage
+
+    from customgui.guicore.window.window import main_window as window_module
+
+    image_path = tmp_path / "bg.png"
+    image = QImage(120, 80, QImage.Format.Format_RGB32)
+    image.fill(Qt.GlobalColor.darkMagenta)
+    assert image.save(str(image_path))
+
+    window = window_module.CWindow()
+    assert window.background_image() == ""
+    assert not window.property("hasBackgroundImage")
+
+    assert window.set_background_image(str(image_path), "fill")
+    assert window.background_image() == str(image_path)
+    assert window.background_fit() == "fill"
+    assert window.property("hasBackgroundImage") is True
+    surface = window._background_surface()
+    assert surface is not None and surface.size() == window.size()
+
+    assert window.set_background_fit("tile") == "tile"
+    assert window.set_background_fit("unknown") == "fill"
+
+    assert not window.set_background_image(str(tmp_path / "missing.png"))
+    assert window.background_image() == ""
+    assert window.property("hasBackgroundImage") is False
+
+
+def test_restore_background_applies_to_window(qapp, tmp_path):
+    """启动恢复：合法路径应用到 CWindow，非法路径回落到纯色。"""
+    from types import SimpleNamespace
+
+    from PySide6.QtGui import QImage
+
+    from customgui.guicore.window.window import main_window as window_module
+    from customgui.guis.windows.main_window.setup_main_window import SetupMainWindow
+
+    image_path = tmp_path / "bg.png"
+    image = QImage(64, 40, QImage.Format.Format_RGB32)
+    image.fill(Qt.GlobalColor.darkGreen)
+    assert image.save(str(image_path))
+
+    target = window_module.CWindow()
+    window = SimpleNamespace(ui=SimpleNamespace(window=target))
+    assert SetupMainWindow.restore_background(window, {"background_image": str(image_path), "background_fit": "fit"})
+    assert target.background_image() == str(image_path)
+    assert target.background_fit() == "fit"
+
+    assert not SetupMainWindow.restore_background(window, {"background_image": str(tmp_path / "missing.png")})
+    assert target.background_image() == ""
 
 
 def test_menu_button_geometry_follows_params(qapp):

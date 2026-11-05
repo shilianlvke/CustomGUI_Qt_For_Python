@@ -75,6 +75,42 @@ def test_configurator_open_close_and_theme_signal(host):
     assert closed == [True]
 
 
+def test_configurator_background_accordion_expand_and_apply(host, tmp_path):
+    """背景手风琴默认收起，展开后可选择图片并发出变更信号。"""
+    from PySide6.QtGui import QImage
+
+    panel = CAppConfigurator(host)
+    panel.open()
+    _wait_animation()
+    assert not panel.is_background_expanded()
+    assert not panel._background_content.isVisible()
+
+    panel.background_toggle.click()
+    _wait_animation()
+    assert panel.is_background_expanded()
+    assert panel._background_content.isVisible()
+
+    image_path = tmp_path / "wall.png"
+    image = QImage(80, 48, QImage.Format.Format_RGB32)
+    image.fill(Qt.GlobalColor.darkCyan)
+    assert image.save(str(image_path))
+
+    changed: list[tuple[str, str]] = []
+    panel.backgroundChanged.connect(lambda path, fit: changed.append((path, fit)))
+    assert panel._apply_background_path(str(image_path))
+    assert panel.background_path() == str(image_path)
+    assert changed and changed[-1] == (str(image_path), "fill")
+
+    fit_labels = panel._background_fit_labels()
+    panel.background_fit_select.set_value(fit_labels[1])
+    assert panel.background_fit() == "fit"
+    assert changed[-1] == (str(image_path), "fit")
+
+    panel.background_type_select.set_value(panel._background_type_labels()[0])
+    assert panel.background_path() == ""
+    assert changed[-1][0] == ""
+
+
 def test_configurator_menu_mode_and_dark_mode(host):
     panel = CAppConfigurator(host)
     modes = []

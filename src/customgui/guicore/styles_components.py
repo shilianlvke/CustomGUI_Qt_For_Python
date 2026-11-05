@@ -282,6 +282,15 @@ class _ComponentStyles:
             #CShowCard #IconLabel {{
                 background-color: {self._fill_hover};
             }}
+            /* 外观配置里的背景图手风琴：Fluent 设置卡片 */
+            #CBackgroundAccordion_Frame {{
+                background-color: {self._card_bg};
+                border: 1px solid {self._control_stroke_secondary};
+                border-radius: {self.tokens.radius.window}px;
+            }}
+            #CBackgroundAccordionHeader, #CBackgroundAccordionContent {{
+                background: transparent;
+            }}
         """
 
     def update_tooltip_style(self):
