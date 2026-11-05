@@ -1,4 +1,4 @@
-"""图表组件（复刻 PrimeVue Chart）。
+"""图表组件（Windows Fluent Design 数据可视化）。
 
 支持 ``line`` / ``bar`` / ``pie`` / ``doughnut`` / ``polar`` / ``radar`` 六种类型，
 底层使用 ``PySide6.QtCharts``。雷达图与极坐标图复用 ``QPolarChart``：类别刻度放在

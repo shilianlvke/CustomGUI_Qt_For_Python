@@ -1,4 +1,4 @@
-"""进度条（复刻 PrimeVue Aura ProgressBar）。"""
+"""进度条（Windows Fluent Design ProgressBar）。"""
 
 from __future__ import annotations
 
@@ -33,7 +33,7 @@ class CProgressBar(QWidget):
         maximum: int = 100,
         show_value: bool = False,
         indeterminate: bool = False,
-        height: int = 6,
+        height: int = 4,
         orientation: str = "horizontal",
         parent=None,
     ):

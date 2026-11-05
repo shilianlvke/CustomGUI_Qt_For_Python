@@ -1,4 +1,4 @@
-"""确认对话框（复刻 PrimeVue Aura ConfirmDialog）。"""
+"""确认对话框（Windows Fluent Design ContentDialog）。"""
 
 from __future__ import annotations
 

@@ -288,18 +288,18 @@ class PanelSettings:
 class ButtonSettings:
     """按钮交互与几何参数（毫秒 / 像素 / 0-1）。"""
 
-    #: 悬停 / 按下时的颜色过渡时长（对齐 Aura 的 0.2s）
-    hover_duration: NonNegativeInt = 160
-    #: 圆角半径
-    radius: NonNegativeInt = 6
+    #: 悬停 / 按下时的颜色过渡时长（Fluent 控件状态切换约 0.12s）
+    hover_duration: NonNegativeInt = 120
+    #: 圆角半径（Fluent 标准控件 4px）
+    radius: NonNegativeInt = 4
     #: 图标与文字间距
     icon_gap: NonNegativeInt = 8
     #: 加载指示器旋转一圈的时长
-    spin_period: NonNegativeInt = 2000
+    spin_period: NonNegativeInt = 1600
     #: 加载指示器的刷新间隔
     spin_interval: NonNegativeInt = 16
-    #: 禁用态整体透明度（0-1）
-    disabled_opacity: float = 0.6
+    #: 禁用态整体透明度（0-1，Fluent 禁用内容 38%）
+    disabled_opacity: float = 0.38
 
     def __post_init__(self):
         if not 0.0 <= self.disabled_opacity <= 1.0:
@@ -391,19 +391,19 @@ class SplitButtonSettings:
 class InputSettings:
     """输入类组件的几何与交互参数（像素 / 数值）。"""
 
-    radius: NonNegativeInt = 6
+    radius: NonNegativeInt = 4
     icon_gap: NonNegativeInt = 6
-    row_height: NonNegativeInt = 34
+    row_height: NonNegativeInt = 32
     popover_max_rows: NonNegativeInt = 8
     popover_inset: NonNegativeInt = 6
-    affix_width: NonNegativeInt = 30
+    affix_width: NonNegativeInt = 32
     float_label_band: NonNegativeInt = 14
-    float_font_size: NonNegativeInt = 11
+    float_font_size: NonNegativeInt = 10
     select_chip_gap: NonNegativeInt = 4
     checkbox_box_size: NonNegativeInt = 20
     checkbox_label_gap: NonNegativeInt = 8
     slider_track_height: NonNegativeInt = 4
-    slider_handle_radius: NonNegativeInt = 9
+    slider_handle_radius: NonNegativeInt = 10
     slider_margin: NonNegativeInt = 12
     knob_ring_width: NonNegativeInt = 9
     knob_start_angle: float = 225.0
@@ -422,48 +422,48 @@ class InputSettings:
 class MenuSettings:
     """菜单类组件的几何与动画参数（像素 / 毫秒）。"""
 
-    list_row_height: NonNegativeInt = 34
+    list_row_height: NonNegativeInt = 36
     list_padding: NonNegativeInt = 4
     separator_height: NonNegativeInt = 9
-    row_radius: NonNegativeInt = 6
+    row_radius: NonNegativeInt = 4
     row_inset: NonNegativeInt = 4
     icon_size: NonNegativeInt = 16
     icon_gap: NonNegativeInt = 8
     indent: NonNegativeInt = 16
     text_padding: NonNegativeInt = 12
     arrow_space: NonNegativeInt = 24
-    bar_height: NonNegativeInt = 36
+    bar_height: NonNegativeInt = 40
     bar_padding: NonNegativeInt = 12
     bar_separator: NonNegativeInt = 9
-    tab_height: NonNegativeInt = 38
+    tab_height: NonNegativeInt = 40
     tab_padding: NonNegativeInt = 16
     tab_indicator_height: NonNegativeInt = 2
     mega_padding: NonNegativeInt = 6
     mega_spacing: NonNegativeInt = 4
     mega_column_width: NonNegativeInt = 180
-    stepper_circle_size: NonNegativeInt = 26
+    stepper_circle_size: NonNegativeInt = 28
     stepper_bar_height: NonNegativeInt = 52
     stepper_bar_width: NonNegativeInt = 210
     stepper_row_height: NonNegativeInt = 56
-    app_row_height: NonNegativeInt = 38
+    app_row_height: NonNegativeInt = 40
     app_indent: NonNegativeInt = 16
     app_icon_size: NonNegativeInt = 16
     app_icon_gap: NonNegativeInt = 8
     app_text_padding: NonNegativeInt = 12
-    app_row_radius: NonNegativeInt = 6
+    app_row_radius: NonNegativeInt = 4
 
 
 @dataclass(frozen=True)
 class DataSettings:
     """数据视图 / 树 / 时间线的几何参数（像素）。"""
 
-    item_height: NonNegativeInt = 34
-    item_padding: NonNegativeInt = 10
+    item_height: NonNegativeInt = 36
+    item_padding: NonNegativeInt = 12
     tree_indent: NonNegativeInt = 18
     tree_arrow_size: NonNegativeInt = 16
-    tree_checkbox_size: NonNegativeInt = 14
+    tree_checkbox_size: NonNegativeInt = 16
     tree_icon_size: NonNegativeInt = 16
-    tree_row_height: NonNegativeInt = 34
+    tree_row_height: NonNegativeInt = 36
     timeline_dot_radius: NonNegativeInt = 6
     timeline_halo_radius: NonNegativeInt = 10
     timeline_axis_margin: NonNegativeInt = 24
@@ -499,7 +499,7 @@ class DisplaySettings:
     progress_interval: NonNegativeInt = 33
     skeleton_interval: NonNegativeInt = 33
     tag_height: NonNegativeInt = 24
-    tag_padding_x: NonNegativeInt = 9
+    tag_padding_x: NonNegativeInt = 8
     tag_icon_size: NonNegativeInt = 13
     tag_icon_gap: NonNegativeInt = 5
     chip_height: NonNegativeInt = 28

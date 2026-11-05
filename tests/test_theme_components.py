@@ -277,7 +277,7 @@ def test_menu_button_geometry_follows_params(qapp):
     """CMenuButton 的圆角/边框宽度由实例参数决定，未传时回落设计令牌。"""
     tokens = get_design_tokens()
     default = CMenuButton()
-    assert f"border-radius: {tokens.radius.window}px" in default.styleSheet()
+    assert f"border-radius: {tokens.radius.control}px" in default.styleSheet()
     assert f"border-width: {tokens.border.width}px" in default.styleSheet()
 
     custom = CMenuButton(radius=4, border_size=6)
@@ -325,7 +325,7 @@ def test_status_button_geometry_follows_token(qapp):
     """CStatusButton 的圆角与边框宽度取设计令牌，显式传参可覆盖。"""
     tokens = get_design_tokens()
     sheet = CStatusButton().styleSheet()
-    assert f"border-radius: {tokens.radius.window}px" in sheet
+    assert f"border-radius: {tokens.radius.control}px" in sheet
     assert f"border-width: {tokens.border.width}px" in sheet
 
     custom = CStatusButton(radius=3, border_size=1)

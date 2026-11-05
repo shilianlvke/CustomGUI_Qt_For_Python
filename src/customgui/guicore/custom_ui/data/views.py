@@ -1,4 +1,4 @@
-"""列表类数据视图（复刻 PrimeVue DataView / PickList / OrderList）。
+"""列表类数据视图（Windows Fluent Design DataView / PickList / OrderList）。
 
 实现要点：
 

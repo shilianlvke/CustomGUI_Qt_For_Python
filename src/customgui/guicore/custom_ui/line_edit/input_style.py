@@ -1,4 +1,4 @@
-"""输入组件的尺寸规格与主题配色（对齐 Aura form.field）。"""
+"""输入组件的尺寸规格与主题配色（Windows Fluent Design 表单）。"""
 
 from __future__ import annotations
 
@@ -23,13 +23,13 @@ class InputSize:
 
 
 SIZES = {
-    "sm": InputSize(height=32, padding_x=10, font_px=14, icon_px=14),
-    "md": InputSize(height=40, padding_x=12, font_px=16, icon_px=16),
-    "lg": InputSize(height=48, padding_x=14, font_px=18, icon_px=18),
+    "sm": InputSize(height=28, padding_x=10, font_px=12, icon_px=12),
+    "md": InputSize(height=32, padding_x=12, font_px=14, icon_px=16),
+    "lg": InputSize(height=40, padding_x=14, font_px=16, icon_px=16),
 }
 
-#: Aura 表单圆角的兼容兜底值（运行时以 :func:`radius` 为准）
-RADIUS = 6
+#: Fluent 控件圆角的兼容兜底值（运行时以 :func:`radius` 为准）
+RADIUS = 4
 #: 图标与文本间距的兼容兜底值（运行时以 :func:`icon_gap` 为准）
 ICON_GAP = 6
 
@@ -78,27 +78,27 @@ def colors() -> dict[str, str | QColor]:
     if acrylic_active():
         background = glass_tint(tokens.surface_sidebar, glass_alpha(AppSettings.glass.control))
         disabled_background = glass_tint(tokens.surface_app, 0.10)
-        border = glass_tint(tokens.text_primary, 0.14)
-        hover_border = glass_tint(tokens.text_primary, 0.28)
+        border = glass_tint(tokens.text_primary, 0.32)
+        hover_border = glass_tint(tokens.text_primary, 0.52)
         addon_background = background
         control_border = glass_tint(tokens.text_primary, 0.24)
     else:
         background = tokens.surface_sidebar
         disabled_background = tokens.surface_app
-        border = tokens.surface_interactive_pressed
-        hover_border = _mix(border, tokens.text_primary, 0.35)
+        border = _mix(tokens.surface_app, tokens.text_primary, 0.42)
+        hover_border = _mix(border, tokens.text_primary, 0.25)
         addon_background = tokens.surface_sidebar
-        control_border = border
+        control_border = _mix(tokens.surface_app, tokens.text_primary, 0.26)
     return {
         "background": background,
         "disabled_background": disabled_background,
         "border": border,
         "hover_border": hover_border,
         "focus_border": tokens.border_context,
-        "invalid_border": "#f87171",
+        "invalid_border": QColor(ColorPalette.custom_red).name(),
         "text": tokens.text_active,
         "placeholder": tokens.text_muted,
-        # Aura 的 addon 底色与输入框同色，靠边框区分，不做深浅对比
+        # Fluent addon 与输入框同层，靠描边区分，不做深浅对比
         "addon_background": addon_background,
         "icon": tokens.text_primary if dark else tokens.text_muted,
         "control_border": control_border,

@@ -1,4 +1,4 @@
-"""标签（复刻 PrimeVue Aura Tag）。"""
+"""标签（Windows Fluent Design 描边标签）。"""
 
 from __future__ import annotations
 
@@ -45,7 +45,7 @@ class CTag(QWidget):
         self._icon = icon
         self.setSizePolicy(QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Fixed)
         font = self.font()
-        font.setPixelSize(13)
+        font.setPixelSize(12)
         self.setFont(font)
         self.setFixedHeight(self._height)
 

@@ -1,4 +1,4 @@
-"""横向轮播（复刻 PrimeVue Aura Carousel）。"""
+"""横向轮播（Windows Fluent Design Carousel）。"""
 
 from __future__ import annotations
 

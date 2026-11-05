@@ -7,7 +7,7 @@ class CLineEdit(CInputText):
     """兼容壳：沿用 ``height=32`` 的旧视觉，其余行为与 ``CInputText`` 一致。"""
 
     def __init__(self, text="", place_holder_text="", parent=None):
-        super().__init__(text=text, placeholder=place_holder_text, size="sm", parent=parent)
+        super().__init__(text=text, placeholder=place_holder_text, size="md", parent=parent)
 
 
 __all__ = ["CLineEdit"]

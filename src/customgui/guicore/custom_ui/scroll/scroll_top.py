@@ -1,4 +1,4 @@
-"""滚动回顶按钮（复刻 Sakai 的 ScrollTop，带淡入淡出）。"""
+"""滚动回顶按钮（Windows Fluent Design ScrollTop，带淡入淡出）。"""
 
 from __future__ import annotations
 

@@ -1,4 +1,4 @@
-"""图片展示（复刻 PrimeVue Image，附带点击放大的预览遮罩）。"""
+"""图片展示（Windows Fluent Design Image，附带点击放大的预览遮罩）。"""
 
 from __future__ import annotations
 

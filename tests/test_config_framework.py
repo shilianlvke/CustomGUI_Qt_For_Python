@@ -115,7 +115,7 @@ def test_app_settings_model_coerces_full_payload():
         "tooltip_border_radius": 17,
         "tooltip_font": 300,
         "time_animation": 500,
-        "family": "微软雅黑",
+        "family": "Segoe UI Variable",
         "title_size": 18,
         "subtitle_size": 15,
         "text_size": 12,
@@ -171,7 +171,7 @@ def test_app_settings_model_rejects_wrong_types():
         "tooltip_border_radius": 17,
         "tooltip_font": 300,
         "time_animation": 500,
-        "family": "微软雅黑",
+        "family": "Segoe UI Variable",
         "title_size": 18,
         "subtitle_size": 15,
         "text_size": 12,
@@ -216,7 +216,7 @@ def test_app_settings_model_rejects_startup_smaller_than_minimum():
         "tooltip_border_radius": 17,
         "tooltip_font": 300,
         "time_animation": 500,
-        "family": "微软雅黑",
+        "family": "Segoe UI Variable",
         "title_size": 18,
         "subtitle_size": 15,
         "text_size": 12,
@@ -286,7 +286,7 @@ def test_language_validation_requires_group_keys():
 def test_app_settings_view_exposes_typed_fields():
     get_app_context(force_reload=True)
 
-    assert AppSettings.family == "微软雅黑"
+    assert AppSettings.family == "Segoe UI Variable"
     assert AppSettings.startup_size == (960, 540)
     assert AppSettings.lef_menu_size.minimum == 50
     assert AppSettings.left_column_size.maximum == 240
@@ -316,7 +316,7 @@ def test_context_is_cwd_independent(tmp_path, monkeypatch):
 
     ctx = get_app_context(force_reload=True)
 
-    assert ctx.settings.family == "微软雅黑"
+    assert ctx.settings.family == "Segoe UI Variable"
     assert AppSettings.logo_home == "mihoutao"
 
 
@@ -418,7 +418,7 @@ def test_registry_settings_merge_across_files(tmp_path):
             "tooltip_border_radius": 17,
             "tooltip_font": 300,
             "time_animation": 500,
-            "family": "微软雅黑",
+            "family": "Segoe UI Variable",
             "title_size": 18,
             "subtitle_size": 15,
             "text_size": 12,
@@ -428,7 +428,7 @@ def test_registry_settings_merge_across_files(tmp_path):
     model = registry.load_settings()
 
     assert model.theme_name == "bright"
-    assert model.family == "微软雅黑"
+    assert model.family == "Segoe UI Variable"
     assert model.logger_color is False
 
 
@@ -467,7 +467,7 @@ def test_settings_layer_merges_with_base_instead_of_replacing(brand_layer):
 
     assert model.startup_size == (1280, 800)  # 品牌层覆盖生效
     assert model.minimum_size == (960, 540)  # 基座打底
-    assert model.family == "微软雅黑"  # 基座打底（品牌层没写）
+    assert model.family == "Segoe UI Variable"  # 基座打底（品牌层没写）
     assert model.top_column_size.maximum == 240  # 基座新增的必填字段没被挤掉
 
 

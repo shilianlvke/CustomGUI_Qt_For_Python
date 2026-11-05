@@ -157,13 +157,26 @@ flowchart LR
 - 语言切换：`apply_language()` 先广播（标题栏/菜单/版权栏自刷新），再整体重建页面栈，
   只构建默认页与当前页，避免实例化全部隐藏页面。
 
-## 7. 主题与令牌
+## 7. 主题与令牌（Windows Fluent Design）
 
-- `ThemeModel` 是一组必填颜色 + 可选颜色；`ThemeManager.apply()` 把主题色写入 `ColorPalette`，
-  并按强调色推导 hover / pressed。
-- `Styles()` 从 `DesignTokens` 生成全局 QSS；自绘组件在 `paintEvent` 中实时读取令牌，**不在构造时快照色值**，
-  否则主题热切换会出现新旧配色混搭。
-- `ThemeManager.subscribe(callback)` 支持弱引用/控件销毁自动解绑，切换后只 `update()`，不重建整窗样式表。
+- **字体**：`Segoe UI Variable`；标题 15pt、副标题 11pt、正文 10pt；小号标签 9pt / 600。
+- **圆角**：标准控件（按钮/输入框/菜单项）4px；窗口、卡片、面板、对话框、菜单 8px；
+  提示气泡 8px。胶囊（`rounded=True`、Badge、Chip、开关）保留全圆角。
+- **高度**：控件三档 28 / 32 / 40px；md 32px 为默认密度；列表行高 36px。
+- **状态**：悬停 = 常态底色叠加正文色 6%，按下 10%；输入框聚焦为 2px 强调色底边；
+  按钮键盘聚焦为 2px 强调色描边；禁用态使用中性底 + 弱化文字（38% 内容色），
+  不再整体降低语义色透明度。
+- **语义色**：primary / info / help 使用主题强调色；success / warn / danger 使用主题的
+  `custom_green` / `custom_yellow` / `custom_red`，四套主题各自解析，不写死 Aura 色阶。
+- **阴影**：按钮默认平面，`raised` 为可选浮起；菜单、对话框、Toast、Tooltip 使用
+  短距离、低透明度的 Fluent 高度阴影。
+- **描边**：控件描边比卡片描边更深（约正文色 26%–42%），保证浅色主题下可辨认。
+
+`ThemeModel` 是一组必填颜色 + 可选颜色；`ThemeManager.apply()` 把主题色写入 `ColorPalette`，
+并按强调色推导 hover / pressed。`Styles()` 从 `DesignTokens` 生成全局 QSS；自绘组件在
+`paintEvent` 中实时读取令牌，**不在构造时快照色值**，否则主题热切换会出现新旧配色混搭。
+`ThemeManager.subscribe(callback)` 支持弱引用/控件销毁自动解绑，切换后只 `update()`，
+不重建整窗样式表。
 
 ## 8. 错误边界与遥测
 

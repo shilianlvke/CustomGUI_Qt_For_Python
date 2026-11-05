@@ -1,4 +1,4 @@
-"""跟随锚点的小型确认气泡（复刻 PrimeVue ConfirmPopup）。"""
+"""跟随锚点的小型确认气泡（Windows Fluent Design Flyout）。"""
 
 from __future__ import annotations
 

@@ -7,15 +7,15 @@ minimum_size: # 最小窗口大小
   - 540
 
 # ICON SIZE 图标大小
-icon_size: 32
+icon_size: 16
 
 # CUSTOM WINDOW
 custom_title_bar: True # 自定义标题栏
 hide_grips: True # 隐藏调试边界
 window_margin: 2
 window_space: 2
-window_border_size: 2
-window_border_radius: 10
+window_border_size: 1
+window_border_radius: 8
 window_shadow: True
 title_bar_margin: 10 # 非亚克力模式下标题栏外圈留白
 content_margin: 10 # 非亚克力模式下主界面外圈留白
@@ -94,15 +94,15 @@ bottom_column_size: # 底部抽屉高度区间
   minimum: 0
   maximum: 240
 # CREDITS BAR
-custom_padding: 10
-custom_border: 3
+custom_padding: 12
+custom_border: 2
 
 # TOOLTIP
-tooltip_border_radius: 17
-tooltip_font: 300
+tooltip_border_radius: 8
+tooltip_font: 400
 
 # ANIMATION
-time_animation: 500 # 动画时长
+time_animation: 200 # 动画时长
 
 # PAGE TRANSITION 栏目切换动画（毫秒，按下面四段串联；任一段为 0 则跳过，全 0 为瞬切）
 page_transition:
@@ -146,15 +146,15 @@ panels:
 
 # BUTTON 按钮交互（毫秒 / 像素 / 0-1）
 button:
-  hover_duration: 160 # 悬停/按下颜色过渡
-  radius: 6 # 圆角半径
+  hover_duration: 120 # Fluent 控件状态切换比 Aura 更快
+  radius: 4 # Fluent 标准控件圆角
   icon_gap: 8 # 图标与文字间距
-  spin_period: 2000 # 加载指示器旋转一圈时长
+  spin_period: 1600 # 加载指示器旋转一圈时长
   spin_interval: 16 # 加载指示器刷新间隔
-  disabled_opacity: 0.6 # 禁用态整体透明度
+  disabled_opacity: 0.38 # Fluent 禁用态内容不透明度
 
 # FONT
-family: 微软雅黑
-title_size: 18 # 标题大小
-subtitle_size: 15 # 副标题大小
-text_size: 12 # 正文大小 ✅
+family: Segoe UI Variable
+title_size: 15 # 标题大小（约 20px）
+subtitle_size: 11 # 副标题大小（约 15px）
+text_size: 10 # 正文大小（约 13px）

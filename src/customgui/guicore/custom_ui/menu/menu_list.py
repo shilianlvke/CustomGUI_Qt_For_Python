@@ -25,11 +25,11 @@ from .menu_item import MenuItem, normalize_items
 #: 列表上下留白
 LIST_PADDING = 4
 #: 菜单行高
-ROW_HEIGHT = 34
+ROW_HEIGHT = 36
 #: 分隔线占用高度
 SEPARATOR_HEIGHT = 9
-#: 行内圆角（与选项列表一致）
-ROW_RADIUS = 6
+#: 行内圆角（与 Fluent 菜单项一致）
+ROW_RADIUS = 4
 #: 行左右内缩
 ROW_INSET = 4
 #: 图标逻辑尺寸与图标/文字间距

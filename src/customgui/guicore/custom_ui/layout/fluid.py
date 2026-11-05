@@ -1,4 +1,4 @@
-"""流体布局包装（复刻 Sakai 的 Fluid：子控件随容器宽度伸缩）。"""
+"""流体布局包装（Windows Fluent Design Fluid：子控件随容器宽度伸缩）。"""
 
 from __future__ import annotations
 

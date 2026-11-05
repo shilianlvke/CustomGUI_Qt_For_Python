@@ -1,4 +1,4 @@
-"""按钮组：同一行内合并边框与圆角的按钮集合（对应 Sakai 的 ButtonGroup）。"""
+"""按钮组：同一行内合并边框与圆角的按钮集合（Windows Fluent Design ButtonGroup）。"""
 
 from __future__ import annotations
 

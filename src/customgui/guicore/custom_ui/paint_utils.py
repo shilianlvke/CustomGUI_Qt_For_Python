@@ -101,21 +101,22 @@ def star_path(center: QPointF, outer: float, inner: float | None = None) -> QPai
 #: 阴影溢出控件盒子的量（左, 上, 右, 下）：控件要留出这块透明边距，本体画在缩小后的矩形里
 SHADOW_MARGINS = (3, 1, 3, 4)
 
-#: Aura 的 ``raisedShadow``：``0 3px 1px -2px rgba(0,0,0,.2), 0 2px 2px 0 rgba(0,0,0,.14), 0 1px 5px 0 rgba(0,0,0,.12)``
-#: 拆成 (下移, 外扩, 透明度) 三层，末层再拆一半模拟模糊扩散。
-AURA_SHADOW_LAYERS = (
-    (3, -2, 52),
-    (2, 0, 34),
-    (1, 2, 22),
-    (1, 3, 12),
+#: Fluent 高度阴影：短距离、低不透明度，拆成 (下移, 外扩, 透明度) 三层
+FLUENT_SHADOW_LAYERS = (
+    (2, -1, 30),
+    (1, 0, 20),
+    (1, 2, 12),
 )
+
+#: 兼容旧名（0.x 内测期保留）；新代码请使用 :data:`FLUENT_SHADOW_LAYERS`
+AURA_SHADOW_LAYERS = FLUENT_SHADOW_LAYERS
 
 
 def shadow_layers(
     body_path: QPainterPath,
     body_rect: QRectF,
     radius: float,
-    layers: tuple[tuple[int, int, int], ...] = AURA_SHADOW_LAYERS,
+    layers: tuple[tuple[int, int, int], ...] = FLUENT_SHADOW_LAYERS,
 ) -> list[tuple[QPainterPath, QColor]]:
     """生成「只落在按钮本体之外」的阴影层，供调用方自行缓存。
 
@@ -139,6 +140,7 @@ def draw_shadow(painter: QPainter, body_path: QPainterPath, body_rect: QRectF, r
 
 __all__ = [
     "AURA_SHADOW_LAYERS",
+    "FLUENT_SHADOW_LAYERS",
     "draw_calendar",
     "draw_check",
     "draw_chevron",

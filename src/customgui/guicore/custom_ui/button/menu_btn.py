@@ -45,7 +45,7 @@ class CMenuButton(QPushButton):
             temp_size = QSize(int(size.width() + 36), size.height())
             self.setFixedSize(temp_size)
         tokens = get_design_tokens()
-        self.radius = tokens.radius.window if radius is None else radius
+        self.radius = tokens.radius.control if radius is None else radius
         self.border_size = tokens.border.width if border_size is None else border_size
         self.color = colorpalette
         self._apply_geometry()

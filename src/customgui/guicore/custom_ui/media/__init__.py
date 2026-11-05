@@ -1,4 +1,4 @@
-"""媒体组件（复刻 PrimeVue 的 Image / Carousel / Galleria）。"""
+"""媒体组件（Windows Fluent Design 的 Image / Carousel / Galleria）。"""
 
 from .carousel import CCarousel as CCarousel
 from .galleria import CGalleria as CGalleria

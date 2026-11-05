@@ -52,7 +52,7 @@ def host(qapp):
 
 
 def test_input_sizes(host):
-    for size, height in (("sm", 32), ("md", 40), ("lg", 48)):
+    for size, height in (("sm", 28), ("md", 32), ("lg", 40)):
         field = CInputText(placeholder="x", size=size, parent=host)
         assert field.height() == height
 

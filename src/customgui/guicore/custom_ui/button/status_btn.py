@@ -39,7 +39,7 @@ class CStatusButton(QPushButton):
         self.status_list = [-1, 0, 1] if is_normal else [0, 1]
         self.status = self.status_list[0]
         tokens = get_design_tokens()
-        self.radius = tokens.radius.window if radius is None else radius
+        self.radius = tokens.radius.control if radius is None else radius
         self.border_size = tokens.border.width if border_size is None else border_size
 
         if text_negative is not None:

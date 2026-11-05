@@ -8,8 +8,9 @@ class CToolTip(QLabel):
     """提示气泡。
 
     样式约定（与 ``CPushButton`` 一致）：**颜色与字体**由 ``customgui.guicore/styles.py``
-    的 ``#label_tooltip`` 提供，强调边方向经动态属性 ``accent`` 选择；本类只声明
-    objectName / accent，并本地提供**实例级几何**（圆角、内边距）。
+    的 ``#label_tooltip`` 提供；本类只声明 objectName，并本地提供**实例级几何**
+    （圆角、内边距）。``accent`` 参数保留以兼容既有调用方，但 Fluent 提示气泡
+    不再绘制彩色强调边。
 
     ``accent`` 取 ``left`` / ``top`` / ``right``，分别对应左列按钮、标题栏按钮、
     左列关闭按钮三处调用。半径与内边距默认回落到设计令牌，显式传参即可覆盖。
@@ -25,7 +26,7 @@ class CToolTip(QLabel):
         accent="left",
         radius=None,
         padding=None,
-        minimum_height=34,
+        minimum_height=32,
     ):
         super().__init__()
         tokens = get_design_tokens()
@@ -43,12 +44,12 @@ class CToolTip(QLabel):
         self.setText(tooltip)
         self.adjustSize()
 
-        # SET DROP SHADOW
+        # SET DROP SHADOW（Fluent 浮层阴影：短距离、低不透明度）
         self.shadow = QGraphicsDropShadowEffect(self)
-        self.shadow.setBlurRadius(30)
+        self.shadow.setBlurRadius(16)
         self.shadow.setXOffset(0)
-        self.shadow.setYOffset(0)
-        self.shadow.setColor(QColor(0, 0, 0, 80))
+        self.shadow.setYOffset(4)
+        self.shadow.setColor(QColor(0, 0, 0, 60))
         self.setGraphicsEffect(self.shadow)
 
     def _apply_geometry(self):

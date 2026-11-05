@@ -1,4 +1,4 @@
-"""Sakai 风格嵌套侧边菜单。
+"""Windows Fluent Design 嵌套侧边菜单。
 
 ``CAppMenuItem`` 是一条可点击的菜单行（分组标题或叶子项），``CAppMenu``
 负责树形结构、展开状态、单选激活与信号转发。所有颜色在绘制时实时读取

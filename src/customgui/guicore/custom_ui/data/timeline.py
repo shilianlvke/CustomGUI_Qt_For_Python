@@ -1,4 +1,4 @@
-"""时间线（复刻 Sakai / PrimeVue 的 Timeline）。
+"""时间线（Windows Fluent Design Timeline）。
 
 - 事件数据为 ``list[dict]``，字段 ``date/title/description/icon/severity``；
 - 轴线与圆点自绘，事件卡片由 ``QLabel`` 组成，便于换行与主题跟随；

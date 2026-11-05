@@ -13,7 +13,7 @@ from PySide6.QtWidgets import QPushButton
 
 from customgui.appcore import AppSettings, ColorPalette, PathFactory
 
-from ...acrylic import acrylic_active, glass_tint
+from ...acrylic import glass_tint
 from ...custom_ui import CToolTip
 
 
@@ -106,10 +106,8 @@ class CLeftMenuButton(QPushButton):
         # RECTANGLES
         rect_inside = QRect(4, 5, self.width() - 8, self.height() - 10)
         rect_icon = QRect(0, 0, 50, self.height())
-        rect_blue = QRect(4, 5, 20, self.height() - 10)
-        # 选中块右侧留出与普通态相同的 4px 内缩：卡片本身是透明玻璃，选中块
-        # 若齐平铺到右边缘，会在侧栏与内容区之间露出一条更亮的竖边
-        rect_inside_active = QRect(7, 5, self.width() - 11, self.height() - 10)
+        rect_blue = QRect(2, 8, 3, max(0, self.height() - 16))
+        # Fluent 选中条：左侧 3px 强调色竖条，不再使用整块选中胶囊
         rect_text = QRect(45, 0, self.width() - 50, self.height())
 
         progress = self._active_progress
@@ -117,7 +115,7 @@ class CLeftMenuButton(QPushButton):
 
         # NORMAL BG：先铺普通底，选中块画在其上（两者同色系，边角不会露出色差）
         p.setBrush(QColor(self._normal_bg_color()))
-        p.drawRoundedRect(rect_inside, 8, 8)
+        p.drawRoundedRect(rect_inside, 4, 4)
 
         # ACTIVE BG：用剪裁从左向右展开，比透明度叠色更干净
         # 玻璃模式下选中块也保持半透明，避免在亚克力底上出现一整块实色
@@ -125,10 +123,10 @@ class CLeftMenuButton(QPushButton):
             p.save()
             p.setClipRect(QRect(0, 0, round(self.width() * progress), self.height()))
             accent = ColorPalette.custom_dark_four if is_tab else ColorPalette.custom_context_color
-            p.setBrush(QColor(glass_tint(accent, 0.55)))
-            p.drawRoundedRect(rect_blue, 8, 8)
-            p.setBrush(QColor(glass_tint(ColorPalette.custom_bg_one, 0.55)))
-            p.drawRoundedRect(rect_inside_active, 8, 8)
+            p.setBrush(QColor(glass_tint(ColorPalette.custom_dark_four, 0.55)))
+            p.drawRoundedRect(rect_inside, 4, 4)
+            p.setBrush(QColor(glass_tint(accent, 0.90)))
+            p.drawRoundedRect(rect_blue, 1.5, 1.5)
             p.restore()
 
         # DRAW TEXT：普通色 -> 活动色
@@ -143,15 +141,7 @@ class CLeftMenuButton(QPushButton):
             icon_color = _mix_color(self._normal_icon_color(), target, progress)
         self.icon_paint(p, self._icon_path, rect_icon, icon_color)
 
-        # DRAW ACTIVE MARK：右侧活动标记随进度淡入。
-        # 该标记是一块"用侧栏底色挖出的缺口"，只在侧栏有不透明底色时成立；
-        # 玻璃模式下侧栏是透明的，再填底色反而会在边缘留下一条亮带，故跳过。
-        if progress > 0 and not acrylic_active():
-            p.save()
-            p.setOpacity(progress)
-            self.icon_active(p, self._icon_active_menu, self.width())
-            p.restore()
-
+        # Fluent 选中态已由左侧强调条表达，不再绘制 Sakai 的右侧缺口标记
         p.end()
 
     # 设置活跃的界面

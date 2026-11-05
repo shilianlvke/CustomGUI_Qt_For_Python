@@ -10,7 +10,7 @@ from PySide6.QtGui import QColor
 from PySide6.QtTest import QTest
 from PySide6.QtWidgets import QApplication, QVBoxLayout, QWidget
 
-from customgui.appcore import get_theme_manager
+from customgui.appcore import ColorPalette, get_theme_manager
 from customgui.guicore import CButton, CButtonGroup, CPushButton, CSplitButton
 from customgui.guicore.custom_ui.button.severity import Severity, Variant, colors_for, is_dark_theme
 
@@ -42,7 +42,7 @@ def test_all_severity_variant_combinations_render(qapp):
 
 
 def test_size_heights(qapp):
-    for size, height in (("sm", 32), ("md", 40), ("lg", 48)):
+    for size, height in (("sm", 28), ("md", 32), ("lg", 40)):
         button = CButton(text="Size", size=size)
         assert button.height() == height
 
@@ -141,13 +141,13 @@ def test_focus_ring_only_on_keyboard_focus(qapp):
 def test_raised_reserves_space_for_shadow(qapp):
     """阴影画在 body 之外，控件必须为它留出透明边距，否则会被裁掉。"""
     button = CButton(text="Raised", raised=True)
-    assert button._body_rect().height() == 40
-    assert button.height() > 40
+    assert button._body_rect().height() == 32
+    assert button.height() > 32
     assert button.sizeHint().height() == button.height()
 
     button.set_raised(False)
-    assert button.height() == 40
-    assert button._body_rect().height() == 40
+    assert button.height() == 32
+    assert button._body_rect().height() == 32
 
 
 def test_raised_shadow_covers_every_variant(qapp):
@@ -157,16 +157,17 @@ def test_raised_shadow_covers_every_variant(qapp):
         assert button._shadow_layers(), f"{variant} 缺少 raised 阴影"
 
 
-def test_outlined_border_is_pale_tint_in_light_theme(qapp):
+def test_outlined_border_uses_theme_semantic_color(qapp):
+    """Fluent 语义色来自当前主题，不再写死 PrimeVue Aura 色阶。"""
     assert is_dark_theme()
     colors = colors_for(Severity.SUCCESS, Variant.OUTLINED)
-    assert colors.text.name() == "#4ade80"  # 深色主题文字取 green.400
-    assert colors.border.name() == "#15803d"  # 描边取 green.700
+    assert colors.text.name() == QColor(ColorPalette.custom_green).name()
+    assert colors.border.alpha() == 200
 
     get_theme_manager().apply("bright")
     colors = colors_for(Severity.SUCCESS, Variant.OUTLINED)
-    assert colors.text.name() == "#22c55e"  # 浅色主题文字取 green.500
-    assert colors.border.name() == "#bbf7d0"  # 描边取 green.200
+    assert colors.text.name() == QColor(ColorPalette.custom_green).name()
+    assert colors.border.alpha() == 200
 
 
 def test_split_button_menu_uses_separator(qapp):

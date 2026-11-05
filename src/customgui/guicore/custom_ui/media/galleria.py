@@ -1,4 +1,4 @@
-"""主图 + 缩略图条（复刻 PrimeVue Aura Galleria）。"""
+"""主图 + 缩略图条（Windows Fluent Design Galleria）。"""
 
 from __future__ import annotations
 

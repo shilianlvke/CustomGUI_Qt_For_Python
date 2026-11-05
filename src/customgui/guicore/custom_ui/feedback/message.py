@@ -1,4 +1,4 @@
-"""内联消息（复刻 PrimeVue Aura Message）。"""
+"""内联消息（Windows Fluent Design InfoBar 风格）。"""
 
 from __future__ import annotations
 
@@ -22,23 +22,23 @@ def message_palette(severity) -> dict[str, QColor]:
     sev = normalize_severity(severity)
     dark = is_dark_theme()
     if sev is Severity.CONTRAST:
-        # Aura 的 contrast 是反相卡片：深色主题白底黑字，浅色主题黑底白字
+        # Fluent 的反相卡片：深色主题浅底、浅色主题深底，颜色取主题而不是固定灰阶
         if dark:
             return {
-                "background": QColor("#ffffff"),
-                "border": QColor("#ffffff"),
-                "text": QColor("#27272a"),
-                "title": QColor("#09090b"),
-                "accent": QColor("#09090b"),
-                "outlined": QColor("#f8fafc"),
+                "background": QColor(ColorPalette.custom_text_title),
+                "border": QColor(ColorPalette.custom_text_title),
+                "text": QColor(ColorPalette.custom_bg_one),
+                "title": QColor(ColorPalette.custom_bg_one),
+                "accent": QColor(ColorPalette.custom_bg_one),
+                "outlined": QColor(ColorPalette.custom_dark_two),
             }
         return {
-            "background": QColor("#020617"),
-            "border": QColor("#020617"),
-            "text": QColor("#f1f5f9"),
-            "title": QColor("#ffffff"),
-            "accent": QColor("#ffffff"),
-            "outlined": QColor("#020617"),
+            "background": QColor(ColorPalette.custom_text_title),
+            "border": QColor(ColorPalette.custom_text_title),
+            "text": QColor(ColorPalette.custom_white),
+            "title": QColor(ColorPalette.custom_white),
+            "accent": QColor(ColorPalette.custom_white),
+            "outlined": QColor(ColorPalette.custom_dark_three),
         }
     if sev is Severity.SECONDARY:
         return {
@@ -58,10 +58,10 @@ def message_palette(severity) -> dict[str, QColor]:
     return {
         "background": background,
         "border": border,
-        "text": base.lighter(125) if dark else base.darker(150),
-        "title": base.lighter(142) if dark else base.darker(170),
+        "text": QColor(ColorPalette.custom_text_foreground),
+        "title": QColor(ColorPalette.custom_text_title),
         "accent": base,
-        "outlined": base.lighter(135) if dark else base.darker(130),
+        "outlined": base,
     }
 
 

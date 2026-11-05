@@ -45,6 +45,7 @@ class SpacingTokens:
 @dataclass(frozen=True)
 class RadiusTokens:
     window: int  # 窗口及其内部通用容器的圆角
+    control: int  # 标准控件（按钮 / 输入框 / 菜单项）的圆角
     tooltip: int
 
 
@@ -98,19 +99,20 @@ def get_design_tokens() -> DesignTokens:
             size_text=AppSettings.text_size,
             weight_tooltip=AppSettings.tooltip_font,
             size_label=9,
-            weight_label=700,
+            weight_label=600,
         ),
         spacing=SpacingTokens(
-            padding_sm=10,
+            padding_sm=8,
             padding_md=AppSettings.custom_padding,
-            menu_item_left=20,
-            menu_item_vertical=5,
+            menu_item_left=16,
+            menu_item_vertical=4,
             menu_indicator_right=4,
             menu_indicator_offset=2,
             label_padding_bottom=2,
         ),
         radius=RadiusTokens(
             window=AppSettings.window_border_radius,
+            control=AppSettings.button.radius,
             tooltip=AppSettings.tooltip_border_radius,
         ),
         border=BorderTokens(
@@ -120,7 +122,7 @@ def get_design_tokens() -> DesignTokens:
         size=SizeTokens(
             icon=AppSettings.icon_size,
             control_height=32,
-            drop_down_width=20,
-            card_inset=12,
+            drop_down_width=24,
+            card_inset=8,
         ),
     )

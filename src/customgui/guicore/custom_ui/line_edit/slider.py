@@ -100,6 +100,8 @@ class CSlider(QWidget):
         palette = colors()
         accent = QColor(palette["focus_border"])
         track = self._track_rect()
+        if not self.isEnabled():
+            painter.setOpacity(0.38)
 
         painter.setPen(Qt.NoPen)
         painter.setBrush(QColor(palette["control_border"]))
@@ -114,6 +116,15 @@ class CSlider(QWidget):
         painter.setBrush(QColor(palette["background"]))
         painter.setPen(QPen(accent, 2))
         painter.drawEllipse(center, radius, radius)
+        # Fluent 滑块手柄内圈：强调色小圆点，悬停/拖动时更明显
+        painter.setPen(Qt.NoPen)
+        painter.setBrush(accent)
+        dot = max(2.0, radius * (0.45 if (self._hover or self._dragging) else 0.38))
+        painter.drawEllipse(center, dot, dot)
+        if self.hasFocus():
+            painter.setBrush(Qt.NoBrush)
+            painter.setPen(QPen(accent, 2))
+            painter.drawEllipse(center, radius + 3, radius + 3)
         painter.end()
 
     # ------------------------------------------------------------------

@@ -58,7 +58,7 @@ class _ComponentStyles:
         self.style += f"""
             #CMenuButton_PushButton {{
                 border-style: solid;
-                border-color: {self._stroke};
+                border-color: {self._control_stroke_secondary};
                 background-color: {self._fill_rest};
                 color: {self.tokens.colors.text_primary};
                 padding-left: {self.tokens.spacing.padding_md}px;
@@ -69,6 +69,14 @@ class _ComponentStyles:
             }}
             #CMenuButton_PushButton:pressed {{
                 background-color: {self._fill_pressed};
+            }}
+            #CMenuButton_PushButton:focus {{
+                border: 2px solid {self._accent_border};
+            }}
+            #CMenuButton_PushButton:disabled {{
+                background-color: {self._fill_rest};
+                border-color: {self._stroke};
+                color: {self.tokens.colors.text_muted};
             }}
             #CMenuButton_PushButton::menu-indicator {{
                 image: url({self._icon_arrow_right});
@@ -84,8 +92,8 @@ class _ComponentStyles:
         """
         self.style += f"""
             #CPushButton_PushButton {{
-                border: {self.tokens.border.width}px solid {self._stroke};
-                border-radius: {self.tokens.radius.window}px;
+                border-style: solid;
+                border-color: {self._control_stroke_secondary};
                 background-color: {self._fill_rest};
                 color: {self.tokens.colors.text_primary};
             }}
@@ -96,8 +104,16 @@ class _ComponentStyles:
             #CPushButton_PushButton:pressed {{
                 background-color: {self._fill_pressed};
             }}
+            #CPushButton_PushButton:focus {{
+                border: 2px solid {self._accent_border};
+            }}
+            #CPushButton_PushButton:disabled {{
+                background-color: {self._fill_rest};
+                border-color: {self._stroke};
+                color: {self.tokens.colors.text_muted};
+            }}
             #CPushButton_PushButton:flat {{
-                border: {self.tokens.border.width}px solid {self.tokens.colors.text_primary};
+                border: 1px solid {self.tokens.colors.text_primary};
             }}
         """
 
@@ -109,13 +125,14 @@ class _ComponentStyles:
         同一色相，不会出现"浮在玻璃上的另一个色块"。文字色用 ``text_active``
         保证输入内容的可读性。
         """
-        border = self._input_border
-        hover_border = _mix(border, self.tokens.colors.text_primary, 0.35) if self.glass else border
+        border = self._control_stroke
+        hover_border = _mix(border, self.tokens.colors.text_primary, 0.25)
         selection_bg = self._accent_soft
         self.style += f"""
             #CInputText_LineEdit, #CTextarea_PlainTextEdit {{
                 background-color: {self._control_bg};
                 border: 1px solid {border};
+                border-radius: {self.tokens.radius.control}px;
                 color: {self.tokens.colors.text_active};
                 placeholder-text-color: {self.tokens.colors.text_muted};
                 selection-color: {self.tokens.colors.text_active};
@@ -125,24 +142,31 @@ class _ComponentStyles:
                 border-color: {hover_border};
             }}
             #CInputText_LineEdit:focus, #CTextarea_PlainTextEdit:focus {{
-                border-color: {self._accent_border};
+                border-bottom: 2px solid {self._accent_border};
             }}
             #CInputText_LineEdit[invalid="true"], #CTextarea_PlainTextEdit[invalid="true"] {{
-                border-color: #f87171;
+                border-color: {self._danger};
             }}
             #CInputText_LineEdit:disabled, #CTextarea_PlainTextEdit:disabled {{
                 background-color: {self._fill_rest};
+                border-color: {self._stroke};
                 color: {self.tokens.colors.text_muted};
             }}
             #CLineEdit_LineEdit {{
                 background-color: {self._fill_rest};
-                border-radius: {self.tokens.radius.window}px;
-                border: {self.tokens.border.width}px solid {self._stroke};
+                border-radius: {self.tokens.radius.control}px;
+                border: 1px solid {self._control_stroke};
                 padding-left: {self.tokens.spacing.padding_sm}px;
                 padding-right: {self.tokens.spacing.padding_sm}px;
                 selection-color: {self.tokens.colors.text_active};
                 selection-background-color: {self._accent_soft};
                 color: {self.tokens.colors.text_primary};
+            }}
+            #CLineEdit_LineEdit:focus {{
+                border-bottom: 2px solid {self._accent_border};
+            }}
+            #CLineEdit_LineEdit:disabled {{
+                color: {self.tokens.colors.text_muted};
             }}
         """
 
@@ -156,8 +180,8 @@ class _ComponentStyles:
         """
         self.style += f"""
             #CComboBox_Field {{
-                border: {self.tokens.border.width}px solid {self._stroke};
-                border-radius: {self.tokens.radius.window}px;
+                border: 1px solid {self._control_stroke};
+                border-radius: {self.tokens.radius.control}px;
                 background-color: {self._fill_rest};
                 color: {self.tokens.colors.text_primary};
             }}
@@ -166,11 +190,12 @@ class _ComponentStyles:
                 background-color: {self._fill_hover};
             }}
             #CComboBox_Field[focused="true"] {{
-                border-color: {self._accent_border};
+                border-bottom: 2px solid {self._accent_border};
                 background-color: {self._fill_hover};
             }}
             #CComboBox_Field:disabled {{
                 background-color: {self._fill_rest};
+                border-color: {self._stroke};
                 color: {self.tokens.colors.text_muted};
             }}
         """
@@ -184,7 +209,7 @@ class _ComponentStyles:
         self.style += f"""
             #CStatusButton_PushButton {{
                 border-style: solid;
-                border-color: {self._stroke};
+                border-color: {self._control_stroke_secondary};
                 background-color: {self._fill_rest};
                 color: {self.tokens.colors.text_primary};
             }}
@@ -194,6 +219,13 @@ class _ComponentStyles:
             }}
             #CStatusButton_PushButton:pressed {{
                 background-color: {self._fill_pressed};
+            }}
+            #CStatusButton_PushButton:focus {{
+                border: 2px solid {self._accent_border};
+            }}
+            #CStatusButton_PushButton:disabled {{
+                color: {self.tokens.colors.text_muted};
+                border-color: {self._stroke};
             }}
             #CStatusButton_PushButton[status="1"] {{
                 border-color: {self._accent_border};
@@ -217,7 +249,7 @@ class _ComponentStyles:
         self.style += f"""
             #CMenu_Menu {{
                 border-style: solid;
-                border-color: {self._stroke};
+                border-color: {self._control_stroke_secondary};
                 background-color: {self._menu_bg};
                 color: {self.tokens.colors.text_primary};
             }}
@@ -265,17 +297,8 @@ class _ComponentStyles:
             #label_tooltip {{
                 background-color: {self._tooltip_bg};
                 color: {self.tokens.colors.text_primary};
-                border: 0px solid {self.tokens.colors.border_transparent};
+                border: 1px solid {self._control_stroke_secondary};
                 font: {self.tokens.typography.weight_tooltip} {self.tokens.typography.size_text}pt "{self.tokens.typography.family}";
-            }}
-            #label_tooltip[accent="left"] {{
-                border-left: {self.tokens.border.accent_width}px solid {self._accent_border};
-            }}
-            #label_tooltip[accent="top"] {{
-                border-top: {self.tokens.border.accent_width}px solid {self._accent_border};
-            }}
-            #label_tooltip[accent="right"] {{
-                border-right: {self.tokens.border.accent_width}px solid {self._accent_border};
             }}
         """
 
@@ -295,33 +318,15 @@ class _ComponentStyles:
         改用 ID 选择器（原来是不带选择器的裸规则，会级联到所有子孙控件）。
         """
         self.style += f"""
-            #CLeftColumnTitle_Frame {{
-                background-color: {self._fill_pressed};
+            #CLeftColumnTitle_Frame, #CTopColumnTitle_Frame, #CBottomColumnTitle_Frame {{
+                background-color: transparent;
             }}
-            #CLeftColumnTitle_Label {{
-                color: {self.tokens.colors.text_primary};
+            #CLeftColumnTitle_Label, #CTopColumnTitle_Label, #CBottomColumnTitle_Label {{
+                color: {self.tokens.colors.text_muted};
                 background: none;
             }}
-            #CLeftColumnIcon_Frame, #CLeftColumnBtn_Frame, #CLeftColumnContent_Frame {{
-                background: none;
-            }}
-            #CTopColumnTitle_Frame {{
-                background-color: {self._fill_pressed};
-            }}
-            #CTopColumnTitle_Label {{
-                color: {self.tokens.colors.text_primary};
-                background: none;
-            }}
-            #CTopColumnIcon_Frame, #CTopColumnBtn_Frame, #CTopColumnContent_Frame {{
-                background: none;
-            }}
-            #CBottomColumnTitle_Frame {{
-                background-color: {self._fill_pressed};
-            }}
-            #CBottomColumnTitle_Label {{
-                color: {self.tokens.colors.text_primary};
-                background: none;
-            }}
+            #CLeftColumnIcon_Frame, #CLeftColumnBtn_Frame, #CLeftColumnContent_Frame,
+            #CTopColumnIcon_Frame, #CTopColumnBtn_Frame, #CTopColumnContent_Frame,
             #CBottomColumnIcon_Frame, #CBottomColumnBtn_Frame, #CBottomColumnContent_Frame {{
                 background: none;
             }}
@@ -369,28 +374,28 @@ class _ComponentStyles:
         """
 
     def update_table_style(self):
-        """数据表格与分页条：表头、行、选中态、网格线、滚动条。
+        """数据表格与分页条：Fluent 列表式表头、行悬浮与选中态。
 
-        玻璃模式下整张表是低透明度玻璃板，表头再叠一层更实的底色；网格线
-        与选中态全部改用正文色/强调色的低透明度写法，避免在玻璃上出现
-        与主题无关的硬色块。
+        表格表面使用卡片层底色，表头不铺实色块，仅用底部细线区分；
+        选中态用强调色的低透明度叠加，避免整行高饱和色块。
         """
         selection = self._accent_soft
+        radius = self.tokens.radius.window
         self.style += f"""
             #CDataTable_View, #CDataTable_FrozenView {{
                 background-color: {self._card_bg};
-                alternate-background-color: {self._fill_rest};
+                alternate-background-color: {self._card_bg};
                 color: {self.tokens.colors.text_primary};
-                border: 1px solid {self._stroke};
-                border-radius: 8px;
+                border: 1px solid {self._control_stroke_secondary};
+                border-radius: {self.tokens.radius.window}px;
                 gridline-color: {self._gridline};
                 selection-background-color: {selection};
                 selection-color: {self.tokens.colors.text_active};
                 outline: 0;
             }}
             #CDataTable_View::item, #CDataTable_FrozenView::item {{
-                padding-left: 10px;
-                padding-right: 10px;
+                padding-left: 12px;
+                padding-right: 12px;
                 border: none;
                 border-bottom: 1px solid {self._gridline};
             }}
@@ -399,28 +404,28 @@ class _ComponentStyles:
             }}
             #CDataTable_View QHeaderView::section,
             #CDataTable_FrozenView QHeaderView::section {{
-                background-color: {self._fill_hover};
-                color: {self.tokens.colors.text_primary};
+                background-color: {self._card_bg};
+                color: {self.tokens.colors.text_muted};
                 border: none;
                 border-bottom: 1px solid {self._stroke};
-                padding: 8px 10px;
+                padding: 8px 12px;
                 font-weight: 600;
             }}
             #CDataTable_View QTableCornerButton::section,
             #CDataTable_FrozenView QTableCornerButton::section {{
-                background-color: {self._fill_hover};
+                background-color: {self._card_bg};
                 border: none;
             }}
             #CDataTable_Empty, #CDataTable_Loading {{
                 background-color: {self._card_bg};
                 color: {self.tokens.colors.text_muted};
-                border: 1px solid {self._stroke};
-                border-radius: 8px;
+                border: 1px solid {self._control_stroke_secondary};
+                border-radius: {radius}px;
             }}
             #CDataTable_Detail {{
                 background-color: {self._fill_rest};
-                border: 1px solid {self._stroke};
-                border-radius: 8px;
+                border: 1px solid {self._control_stroke_secondary};
+                border-radius: {radius}px;
             }}
             #CPaginator_Label {{
                 color: {self.tokens.colors.text_muted};
@@ -442,10 +447,10 @@ class _ComponentStyles:
         - 把手 12px 轨道内缩 3px，得到 6px 宽的胶囊形（圆角 3px）；
         - 常态/悬停/按下三档透明度，深浅主题与亚克力开关下都保持可辨。
         """
-        thickness = 12
+        thickness = 10
         inset = 3
         min_length = 32
-        radius = 3
+        radius = 2
         self.style += f"""
             QScrollBar:vertical {{
                 background: transparent;

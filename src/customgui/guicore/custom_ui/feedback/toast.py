@@ -1,4 +1,4 @@
-"""浮出通知（复刻 PrimeVue Aura Toast，带堆叠与自动消失）。"""
+"""浮出通知（Windows Fluent Design InfoBar 风格，带堆叠与自动消失）。"""
 
 from __future__ import annotations
 
@@ -150,7 +150,7 @@ class CToast(QFrame):
         self._title_label.setStyleSheet(f"color: {palette['text']}; background: transparent;")
         self._text_label.setStyleSheet(f"color: {palette['muted']}; background: transparent;")
         self._card = glass_surface(
-            ColorPalette.custom_bg_one if dark else "#ffffff",
+            ColorPalette.custom_bg_one if dark else ColorPalette.custom_dark_three,
             AppSettings.glass.menu,
             minimum=0.88,
         )
@@ -172,13 +172,13 @@ class CToast(QFrame):
             self.height() - self._shadow * 2,
         )
 
-        for offset, alpha in ((4, 18), (2, 26), (1, 34)):
+        for offset, alpha in ((3, 12), (1, 24)):
             shadow = QPainterPath()
-            shadow.addRoundedRect(card.translated(0, offset), 6, 6)
+            shadow.addRoundedRect(card.translated(0, offset), 8, 8)
             painter.fillPath(shadow, QColor(0, 0, 0, alpha))
 
         path = QPainterPath()
-        path.addRoundedRect(card, 6, 6)
+        path.addRoundedRect(card, 8, 8)
         painter.fillPath(path, self._card)
         painter.setBrush(Qt.NoBrush)
         painter.setPen(QPen(self._border, 1))

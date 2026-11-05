@@ -1,4 +1,4 @@
-"""跟随锚点的浮层（复刻 PrimeVue Aura OverlayPanel）。"""
+"""跟随锚点的浮层（Windows Fluent Design Flyout）。"""
 
 from __future__ import annotations
 

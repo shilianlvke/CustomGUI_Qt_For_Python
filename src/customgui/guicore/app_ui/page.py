@@ -37,7 +37,7 @@ from customgui.guicore.custom_ui import CCard, CScrollArea, CScrollTop
 
 __all__ = ["CPreviewPage"]
 
-#: 卡片外边距（左、上、右、下），与参考页 Sakai 的卡片内边距一致
+#: 卡片外边距（左、上、右、下），与 Fluent 卡片的内边距一致
 _CARD_MARGINS = (12, 10, 12, 12)
 #: 卡片标题与内容之间、行与行之间的间距
 _CARD_SPACING = 8

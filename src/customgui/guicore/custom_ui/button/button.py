@@ -1,21 +1,16 @@
-"""统一按钮组件（复刻 PrimeVue Aura Button）。
+"""统一按钮组件（Windows Fluent Design Button）。
 
-覆盖 Sakai 按钮页的全部形态：severity × variant（solid/outlined/text/link）×
-plain / rounded / raised / icon 左右 / 纯图标 / loading / disabled / 三种尺寸。
+覆盖 severity × variant（solid/outlined/text/link）× plain / rounded / raised /
+icon 左右 / 纯图标 / loading / disabled / 三种尺寸。
 
-绘制约定：与 ``CLeftMenuButton`` 一致，**自绘 paintEvent**、颜色实时读调色板，
-不缓存颜色值，主题切换后重绘即生效。
+绘制约定：自绘 paintEvent、颜色实时读调色板，不缓存颜色值，主题切换后重绘即生效。
 
-几处与 Aura 对齐的细节：
+Fluent 细节：
 
-1. ``raised`` 的阴影是 CSS ``box-shadow``，会溢出按钮盒子——Qt 的绘制被裁剪在
-   控件矩形内，所以 raised 按钮额外留出 :data:`~..paint_utils.SHADOW_MARGINS` 的透明边距，
-   真正的外框画在缩小后的「body」矩形里，外观尺寸与普通按钮一致；
-2. 底色用整块 body 矩形填充（只有描边内缩 0.5px 保证 1px 线清晰），这样按钮组、
-   分体按钮的相邻分段之间不会露出 1px 的缝隙；
-3. 焦点框只在**键盘聚焦**时出现（等效 CSS 的 ``:focus-visible``），鼠标点击不画；
-4. ``loading`` 时 spinner 占据前置图标位、文字保留（Aura 的 Button 就是这么排的），
-   转速 2s/圈与 ``.p-icon-spin`` 一致。
+1. 标准控件圆角 4px、md 高 32px；``raised`` 只是可选浮起效果；
+2. 底色铺满 body 矩形，按钮组/分体按钮的相邻分段之间不会露出 1px 缝；
+3. 焦点框只在**键盘聚焦**时出现（等效 CSS 的 ``:focus-visible``）；
+4. 禁用态使用中性底 + 弱化文字，不再整体降低语义色透明度。
 """
 
 from __future__ import annotations
@@ -30,7 +25,7 @@ from customgui.appcore import AppSettings
 
 from ..icon_utils import render_icon
 from ..paint_utils import SHADOW_MARGINS, shadow_layers
-from .severity import Severity, Variant, colors_for, normalize_severity
+from .severity import Severity, Variant, colors_for, disabled_colors, normalize_severity
 
 
 @dataclass(frozen=True)
@@ -44,20 +39,20 @@ class _SizeSpec:
 
 
 _SIZES = {
-    "sm": _SizeSpec(height=32, padding_x=10, font_px=14, icon_px=14),
-    "md": _SizeSpec(height=40, padding_x=12, font_px=16, icon_px=16),
-    "lg": _SizeSpec(height=48, padding_x=14, font_px=18, icon_px=18),
+    "sm": _SizeSpec(height=28, padding_x=10, font_px=12, icon_px=12),
+    "md": _SizeSpec(height=32, padding_x=12, font_px=14, icon_px=16),
+    "lg": _SizeSpec(height=40, padding_x=14, font_px=16, icon_px=16),
 }
 
-_RADIUS = 6
+_RADIUS = 4
 _ICON_GAP = 8
 
-#: spinner 转一圈的时长（对齐 Aura 的 ``.p-icon-spin`` 2s linear）
-_SPIN_PERIOD_MS = 2000
+#: spinner 转一圈的时长（Fluent 加载指示器更快）
+_SPIN_PERIOD_MS = 1600
 _SPIN_INTERVAL_MS = 16
 
-#: 禁用态整体透明度（对齐 Aura 的 ``disabled.opacity: 0.6``）
-_DISABLED_OPACITY = 0.6
+#: 禁用态整体透明度（Fluent 禁用内容 38%）
+_DISABLED_OPACITY = 0.38
 
 
 def _button_config() -> tuple[int, int, int, int, float]:
@@ -76,7 +71,7 @@ def _button_config() -> tuple[int, int, int, int, float]:
 
 
 class CButton(QPushButton):
-    """PrimeVue Aura 风格按钮。"""
+    """Windows Fluent Design 风格按钮。"""
 
     #: 内容按钮的点击信号（QPushButton.clicked 保持可用，二者等价）
     activated = Signal()
@@ -109,12 +104,12 @@ class CButton(QPushButton):
             self._spin_interval,
             self._disabled_opacity,
         ) = _button_config()
-        self.setCursor(Qt.PointingHandCursor)
-        self.setFocusPolicy(Qt.StrongFocus)
         self.setSizePolicy(QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Fixed)
 
         self._severity = normalize_severity(severity)
         self._variant = Variant(variant)
+        # Fluent：普通按钮用箭头光标，只有链接型按钮用小手
+        self.setCursor(Qt.PointingHandCursor if self._variant is Variant.LINK else Qt.ArrowCursor)
         self._plain = plain
         self._rounded = rounded
         self._raised = raised
@@ -326,6 +321,8 @@ class CButton(QPushButton):
         return self._state
 
     def _colors(self):
+        if not self.isEnabled():
+            return disabled_colors(self._variant, self._plain)
         return colors_for(self._severity, self._variant, self._plain)
 
     def _radius(self) -> float:
@@ -383,13 +380,10 @@ class CButton(QPushButton):
             background, border, text = colors.background, colors.border, colors.text
         self._current_colors = (background, border, text)
 
-        if not self.isEnabled():
-            painter.setOpacity(self._disabled_opacity)
-
         body = self._body_rect()
         path = self._rounded_path(body)
 
-        # Aura 的 raised 阴影对四种 variant 都生效（Sakai 的 Rounded Text 就是靠它立起来的）
+        # Fluent 的 raised 只是可选浮起效果，默认按钮保持平面
         if self._raised:
             for layer, color in self._shadow_layers():
                 painter.fillPath(layer, color)
@@ -397,7 +391,7 @@ class CButton(QPushButton):
         # 底色铺满整个 body：相邻分段（按钮组 / 分体按钮）不会露出 1px 缝
         if background.alpha() > 0:
             painter.fillPath(path, background)
-        if self._border_visible and border.alpha() > 0 and self._variant is not Variant.SOLID:
+        if self._border_visible and border.alpha() > 0:
             painter.setBrush(Qt.NoBrush)
             painter.setPen(QPen(border, 1))
             painter.drawPath(self._rounded_path(QRectF(body).adjusted(0.5, 0.5, -0.5, -0.5)))

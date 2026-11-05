@@ -1,7 +1,7 @@
 # 这里决定整个window的总体样式
 from PySide6.QtGui import QColor
 
-from customgui.appcore import AppSettings, Logger, PathFactory, get_design_tokens
+from customgui.appcore import AppSettings, ColorPalette, Logger, PathFactory, get_design_tokens
 
 from .acrylic import MIN_WINDOW_GLASS_ALPHA, acrylic_active, glass_alpha
 from .styles_components import _ComponentStyles, _mix
@@ -145,8 +145,17 @@ class Styles(_ComponentStyles):
 
         # 每种模式下的具体描边
         self._window_border = self._stroke if glass else colors.surface_interactive_pressed
-        self._input_border = self._stroke if glass else colors.surface_interactive_pressed
         self._card_border = self._stroke if glass else colors.border_transparent
+        #: 语义色：Fluent 的 error / success 直接取主题语义色
+        self._danger = QColor(ColorPalette.custom_red).name()
+        self._success = QColor(ColorPalette.custom_green).name()
+        #: Fluent 控件描边：输入框/按钮比卡片描边更深，保证浅色主题下可辨认
+        self._control_stroke = (
+            _rgba(colors.text_primary, 0.42) if glass else _mix(colors.surface_app, colors.text_primary, 0.42)
+        )
+        self._control_stroke_secondary = (
+            _rgba(colors.text_primary, 0.26) if glass else _mix(colors.surface_app, colors.text_primary, 0.26)
+        )
 
         self.style = self._build_base_sheet()
         self.update_btn_style()

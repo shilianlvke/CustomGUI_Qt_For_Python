@@ -19,19 +19,19 @@ split_button:
 
 # INPUT 输入类组件（文本框 / 选择器 / 滑块 / 日期 / 颜色）
 input:
-  radius: 6 # 输入框圆角
+  radius: 4 # Fluent 输入框圆角
   icon_gap: 6 # 图标与文字间距
-  row_height: 34 # 下拉/选项行高
+  row_height: 32 # 下拉/选项行高
   popover_max_rows: 8 # 弹层最多可见行数
   popover_inset: 6 # 弹层与字段的内缩
-  affix_width: 30 # 前后缀区域宽度
+  affix_width: 32 # 前后缀区域宽度
   float_label_band: 14 # 浮动标签留白带高度
-  float_font_size: 11 # 浮动标签字号
+  float_font_size: 10 # 浮动标签字号
   select_chip_gap: 4 # 多选项标签间距
   checkbox_box_size: 20 # 勾选框尺寸
   checkbox_label_gap: 8 # 勾选框与文字间距
   slider_track_height: 4 # 滑块轨道高度
-  slider_handle_radius: 9 # 滑块手柄半径
+  slider_handle_radius: 10 # 滑块手柄半径（Fluent 20px 圆点）
   slider_margin: 12 # 滑块两端留白
   knob_ring_width: 9 # 旋钮圆环宽度
   knob_start_angle: 225.0 # 旋钮起始角度（度）
@@ -47,45 +47,45 @@ input:
 
 # MENUS 菜单类组件
 menus:
-  list_row_height: 34 # 列表菜单行高
+  list_row_height: 36 # 列表菜单行高
   list_padding: 4 # 列表菜单内边距
   separator_height: 9 # 分隔符高度
-  row_radius: 6 # 菜单项圆角
+  row_radius: 4 # Fluent 菜单项圆角
   row_inset: 4 # 菜单项左右内缩
   icon_size: 16 # 菜单图标尺寸
   icon_gap: 8 # 图标与文字间距
   indent: 16 # 子级缩进
   text_padding: 12 # 文字左侧留白
   arrow_space: 24 # 子菜单箭头预留宽度
-  bar_height: 36 # 菜单栏高度
+  bar_height: 40 # 菜单栏高度
   bar_padding: 12 # 菜单栏左右内边距
   bar_separator: 9 # 菜单栏分隔符宽度
-  tab_height: 38 # 标签菜单高度
+  tab_height: 40 # 标签菜单高度
   tab_padding: 16 # 标签菜单水平内边距
   tab_indicator_height: 2 # 标签指示条高度
   mega_padding: 6 # 大型菜单内边距
   mega_spacing: 4 # 大型菜单项间距
   mega_column_width: 180 # 大型菜单列宽
-  stepper_circle_size: 26 # 步骤圆点尺寸
+  stepper_circle_size: 28 # 步骤圆点尺寸
   stepper_bar_height: 52 # 横向步骤条高度
   stepper_bar_width: 210 # 纵向步骤条宽度
   stepper_row_height: 56 # 纵向步骤行高
-  app_row_height: 38 # 侧栏应用菜单行高
+  app_row_height: 40 # 侧栏应用菜单行高
   app_indent: 16 # 侧栏应用菜单缩进
   app_icon_size: 16 # 侧栏应用菜单图标尺寸
   app_icon_gap: 8 # 侧栏应用菜单图标间距
   app_text_padding: 12 # 侧栏应用菜单文字留白
-  app_row_radius: 6 # 侧栏应用菜单圆角
+  app_row_radius: 4 # 侧栏应用菜单圆角
 
 # DATA 数据视图 / 树 / 时间线
 data:
-  item_height: 34 # 列表项高度
-  item_padding: 10 # 列表项内边距
+  item_height: 36 # 列表项高度
+  item_padding: 12 # 列表项内边距
   tree_indent: 18 # 树每一级缩进
   tree_arrow_size: 16 # 树展开箭头尺寸
-  tree_checkbox_size: 14 # 树复选框尺寸
+  tree_checkbox_size: 16 # 树复选框尺寸
   tree_icon_size: 16 # 树节点图标尺寸
-  tree_row_height: 34 # 树行高
+  tree_row_height: 36 # 树行高
   timeline_dot_radius: 6 # 时间线圆点半径
   timeline_halo_radius: 10 # 时间线光晕半径
   timeline_axis_margin: 24 # 时间线轴线边距
@@ -115,7 +115,7 @@ display_components:
   progress_interval: 33 # 进度条动画刷新间隔（毫秒）
   skeleton_interval: 33 # 骨架屏动画刷新间隔（毫秒）
   tag_height: 24 # 标签高度
-  tag_padding_x: 9 # 标签水平内边距
+  tag_padding_x: 8 # 标签水平内边距
   tag_icon_size: 13 # 标签图标尺寸
   tag_icon_gap: 5 # 标签图标与文字间距
   chip_height: 28 # 徽标高度

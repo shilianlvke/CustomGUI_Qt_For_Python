@@ -1,4 +1,4 @@
-"""Sakai 风格应用顶栏。
+"""Windows Fluent Design 应用顶栏。
 
 左侧 logo / 菜单开关 / 标题，中部搜索框，右侧操作按钮、通知与用户头像。
 图标与文字颜色在绘制或刷新时读取设计令牌，切换主题后重绘即生效。
@@ -177,7 +177,7 @@ class _UserButton(QWidget):
 
 
 class CAppTopbar(QWidget):
-    """Sakai 风格应用顶栏。
+    """Windows Fluent Design 应用顶栏。
 
     高度跟随 ``AppSettings.right_title_bar_height``；logo 支持 SVG 路径 / 文字，
     搜索文本变化、通知点击、用户菜单请求与自定义操作均由信号回传。

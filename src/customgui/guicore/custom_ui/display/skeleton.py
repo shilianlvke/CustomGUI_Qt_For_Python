@@ -1,4 +1,4 @@
-"""骨架屏（复刻 PrimeVue Aura Skeleton）。"""
+"""骨架屏（Windows Fluent Design 加载占位）。"""
 
 from __future__ import annotations
 
@@ -114,11 +114,11 @@ class CSkeleton(QWidget):
             start = -band + (rect.width() + band) * self._phase
             gradient = QLinearGradient(start, 0, start + band, 0)
             dark = QColor(palette["skeleton"]).lightness() < 128
-            tone = QColor("#454e5f") if dark else QColor("#ffffff")
+            tone = QColor(palette["text"])
             highlight = QColor(tone)
             highlight.setAlpha(0)
             middle = QColor(tone)
-            middle.setAlpha(170 if dark else 190)
+            middle.setAlpha(90 if dark else 70)
             gradient.setColorAt(0.0, highlight)
             gradient.setColorAt(0.5, middle)
             gradient.setColorAt(1.0, highlight)

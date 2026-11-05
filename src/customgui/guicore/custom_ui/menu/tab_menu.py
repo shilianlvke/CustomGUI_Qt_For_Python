@@ -135,10 +135,10 @@ class CTabMenu(QWidget):
         for index, (item, rect) in enumerate(zip(self._tabs, self._rects, strict=False)):
             active = index == self._current
             hovered = index == self._hover and not item.disabled
-            if active or hovered:
+            if hovered and not active:
+                # Fluent Pivot：激活项只有下划线，悬停项用中性底
                 painter.setPen(Qt.NoPen)
-                fill = colors["header"] if active else colors["hover"]
-                painter.setBrush(QColor(fill))
+                painter.setBrush(QColor(colors["hover"]))
                 painter.drawRoundedRect(rect.adjusted(2, 4, -2, -4), ROW_RADIUS, ROW_RADIUS)
 
             color = QColor(colors["muted"] if item.disabled else colors["accent"] if hovered else colors["text"])
@@ -184,9 +184,8 @@ class CTabMenu(QWidget):
         index = self._index_at(event.position())
         if index != self._hover:
             self._hover = index
-            item = self._tabs[index] if 0 <= index < len(self._tabs) else None
-            clickable = item is not None and not item.disabled and not item.separator
-            self.setCursor(Qt.PointingHandCursor if clickable else Qt.ArrowCursor)
+            # Fluent 标签栏使用箭头光标，与系统 Tabs 一致
+            self.setCursor(Qt.ArrowCursor)
             self.update()
         super().mouseMoveEvent(event)
 

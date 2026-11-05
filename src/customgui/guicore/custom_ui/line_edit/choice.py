@@ -78,21 +78,24 @@ class _ChoiceBase(QAbstractButton):
             label,
         )
 
-    def _paint_focus_ring(self, painter: QPainter, rect: QRectF, palette: dict) -> None:
+    def _paint_focus_ring(self, painter: QPainter, rect: QRectF, palette: dict, rounded: bool = True) -> None:
         if not self.hasFocus():
             return
         ring = QColor(palette["focus_border"])
         ring.setAlpha(90)
         painter.setBrush(Qt.NoBrush)
         painter.setPen(QPen(ring, 2))
-        painter.drawEllipse(rect.adjusted(-2, -2, 2, 2))
+        if rounded:
+            painter.drawRoundedRect(rect.adjusted(-2, -2, 2, 2), 4, 4)
+        else:
+            painter.drawEllipse(rect.adjusted(-2, -2, 2, 2))
 
     def paintEvent(self, event):  # noqa: N802 - 覆写 Qt 命名
         painter = QPainter(self)
         painter.setRenderHint(QPainter.Antialiasing)
         palette = colors()
         if not self.isEnabled():
-            painter.setOpacity(0.5)
+            painter.setOpacity(0.38)
         self._paint_box(painter, palette)
         self._paint_label(painter, palette)
         painter.end()
@@ -157,16 +160,16 @@ class CRadioButton(_ChoiceBase):
             painter.setPen(Qt.NoPen)
             painter.setBrush(accent)
             painter.drawEllipse(rect.center(), 5, 5)
-        self._paint_focus_ring(painter, rect, palette)
+        self._paint_focus_ring(painter, rect, palette, rounded=False)
 
 
 class CToggleSwitch(_ChoiceBase):
-    """开关：选中态滑块从左滑到右（160ms）。"""
+    """开关：选中态滑块从左滑到右（120ms，Fluent 开关）。"""
 
     TRACK_WIDTH = 40
-    TRACK_HEIGHT = 24
-    KNOB_SIZE = 16
-    DURATION = 160
+    TRACK_HEIGHT = 20
+    KNOB_SIZE = 14
+    DURATION = 120
 
     def __init__(self, text: str = "", checked: bool = False, parent=None):
         super().__init__(text, checked, parent)
@@ -239,7 +242,7 @@ class CToggleSwitch(_ChoiceBase):
             ring.setAlpha(90)
             painter.setBrush(Qt.NoBrush)
             painter.setPen(QPen(ring, 2))
-            painter.drawRoundedRect(track.adjusted(-2, -2, 2, 2), 14, 14)
+            painter.drawRoundedRect(track.adjusted(-2, -2, 2, 2), 10, 10)
 
 
 __all__ = ["CCheckbox", "CRadioButton", "CToggleSwitch", "mix_color"]

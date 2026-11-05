@@ -1,4 +1,4 @@
-"""分体按钮：主按钮 + 下拉箭头（对应 PrimeVue 的 SplitButton）。
+"""分体按钮：主按钮 + 下拉箭头（Windows Fluent Design SplitButton）。
 
 弹出内容拆成两层：
 

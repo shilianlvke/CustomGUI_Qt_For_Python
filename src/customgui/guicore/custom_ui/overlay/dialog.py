@@ -1,4 +1,4 @@
-"""对话框（复刻 PrimeVue Aura Dialog）。"""
+"""对话框（Windows Fluent Design ContentDialog）。"""
 
 from __future__ import annotations
 

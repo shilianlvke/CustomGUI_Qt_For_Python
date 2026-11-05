@@ -1,4 +1,4 @@
-"""文件上传组件（复刻 PrimeVue FileUpload 的 advanced / basic 两种形态）。
+"""文件上传组件（Windows Fluent Design 的 advanced / basic 两种形态）。
 
 实现约定：
 
