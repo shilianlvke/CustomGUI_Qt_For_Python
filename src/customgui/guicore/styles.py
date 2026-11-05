@@ -3,7 +3,7 @@ from PySide6.QtGui import QColor
 
 from customgui.appcore import AppSettings, Logger, PathFactory, get_design_tokens
 
-from .acrylic import acrylic_active, glass_alpha
+from .acrylic import MIN_WINDOW_GLASS_ALPHA, acrylic_active, glass_alpha
 
 # ----------------------------------------------------------------------
 # 亚克力玻璃层的不透明度
@@ -66,7 +66,7 @@ def region_card_background() -> str:
         return tint
     colors = get_design_tokens().colors
     glass_cfg = AppSettings.glass
-    window = _composite(colors.surface_app, glass_alpha(glass_cfg.window), colors.surface_app)
+    window = _composite(colors.surface_app, glass_alpha(glass_cfg.window, minimum=MIN_WINDOW_GLASS_ALPHA), colors.surface_app)
     return _composite(tint, glass_alpha(glass_cfg.region), window)
 
 
@@ -106,7 +106,12 @@ class Styles:
         # 各层表面：玻璃模式下使用半透明写法，否则保持不透明主题色。
         # 表面层按运行期「亚克力质感强度」降低不透明度，让系统模糊材质透出更多；
         # 浮层/工具提示保持原配置不缩放，避免菜单文字与页面互相穿透。
-        self._window_bg = _rgba(colors.surface_app, glass_alpha(glass_cfg.window)) if glass else colors.surface_app
+        # 主窗口底色保留最小 Alpha：分层窗口 Alpha=0 的像素会鼠标穿透。
+        self._window_bg = (
+            _rgba(colors.surface_app, glass_alpha(glass_cfg.window, minimum=MIN_WINDOW_GLASS_ALPHA))
+            if glass
+            else colors.surface_app
+        )
         self._sidebar_bg = _rgba(colors.surface_sidebar, glass_alpha(glass_cfg.sidebar)) if glass else colors.surface_sidebar
         self._panel_bg = _rgba(colors.surface_panel, glass_alpha(glass_cfg.panel)) if glass else colors.surface_panel
         self._card_bg = _rgba(colors.surface_card, glass_alpha(glass_cfg.card)) if glass else colors.surface_card

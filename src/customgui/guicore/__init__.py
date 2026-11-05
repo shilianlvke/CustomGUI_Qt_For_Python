@@ -1,3 +1,4 @@
+from .acrylic import MIN_WINDOW_GLASS_ALPHA as MIN_WINDOW_GLASS_ALPHA
 from .acrylic import acrylic_active as acrylic_active
 from .acrylic import acrylic_opacity as acrylic_opacity
 from .acrylic import acrylic_supported as acrylic_supported
@@ -256,6 +257,7 @@ __all__ = [
     "glass_alpha",
     "glass_strength",
     "glass_tint",
+    "MIN_WINDOW_GLASS_ALPHA",
     "reset_appearance_overrides",
     "set_acrylic_transparency",
     "set_glass_strength",

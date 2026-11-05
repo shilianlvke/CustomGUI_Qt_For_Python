@@ -12,7 +12,7 @@
 ``CUSTOMGUI_APPS_DIR``
     应用插件目录，默认是当前项目的 ``Apps/``。
 ``CUSTOMGUI_DATA_DIR``
-    可写数据根目录（日志、遥测），默认 ``%APPDATA%/CustomGUI``。
+    可写数据根目录（日志、遥测、用户配置），默认程序运行根目录。
 
 优先使用显式配置入口 ``customgui.configure(...)``；环境变量仅在未显式
 指定时作为兜底，因此调用顺序不再是硬性要求。
@@ -21,6 +21,7 @@
 from __future__ import annotations
 
 import os
+import sys
 from pathlib import Path
 
 from customgui import package_root
@@ -188,18 +189,43 @@ def apps_root() -> Path:
     return package_root().parent.parent / "apps"
 
 
+def program_root() -> Path:
+    """返回程序运行根目录（运行期配置与日志的默认落点）。
+
+    解析顺序：
+
+    1. 环境变量 ``CUSTOMGUI_PROGRAM_DIR``（便携/测试显式指定）；
+    2. 源码树仓库根（``src`` 的上一级存在 ``pyproject.toml``）；
+    3. PyInstaller 等冻结形态：可执行文件所在目录；
+    4. 其它安装形态：当前工作目录。
+
+    与 :func:`resource_root`（只读默认资源）区分：这里专门用于**可写**的
+    运行期数据，避免落到 ``%APPDATA%`` 等用户系统目录。
+    """
+    override = _env_path("CUSTOMGUI_PROGRAM_DIR")
+    if override is not None:
+        return override
+    source = source_root()
+    if source is not None:
+        return source
+    if getattr(sys, "frozen", False):
+        return Path(sys.executable).resolve().parent
+    return Path.cwd().resolve()
+
+
 def data_root() -> Path:
-    """返回可写数据根目录，绝不写入安装目录。"""
+    """返回可写数据根目录。
+
+    显式 ``configure(data_dir=...)`` 或 ``CUSTOMGUI_DATA_DIR`` 优先；
+    均未提供时落到 :func:`program_root`，不再默认写入用户系统目录。
+    """
     resolved = _cfg().resolved_data_dir()
     if resolved is not None:
         return resolved
     custom_data = _env_path(_DATA_ENV)
     if custom_data:
         return custom_data
-    appdata = os.getenv("APPDATA", "").strip()
-    if appdata:
-        return Path(appdata).expanduser().resolve() / "CustomGUI"
-    return Path.home() / ".customgui"
+    return program_root()
 
 
 def find_resource(path: str | Path) -> Path | None:

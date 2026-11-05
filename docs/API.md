@@ -76,8 +76,9 @@ apps_root()                             # -> Path
 
 ### 用户配置持久化
 
-运行时修改的外观偏好写入 `<data_root>/settings/user.yaml`（默认
-`%APPDATA%/CustomGUI/settings/user.yaml`），只记录改动过的键：
+运行时修改的外观偏好写入 `<data_root>/settings/user.yaml`（默认落在程序运行
+根目录下的 `settings/user.yaml`，可用 `configure(data_dir=...)` 或
+`CUSTOMGUI_DATA_DIR` 覆盖），只记录改动过的键：
 
 | 字段 | 来源 | 写入时机 |
 | --- | --- | --- |

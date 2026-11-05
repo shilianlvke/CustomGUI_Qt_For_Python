@@ -47,6 +47,11 @@ _DWMWA_USE_IMMERSIVE_DARK_MODE_LEGACY = 19
 _DEFAULT_OPACITY = 60
 #: 未配置或配置不可用时的兜底玻璃层强度（0 表示沿用配置值）
 _DEFAULT_GLASS_STRENGTH = 0
+#: 窗口底色允许的最小不透明度。
+#: Windows 分层窗口（WA_TranslucentBackground）按像素 Alpha 做命中测试，
+#: Alpha 为 0 的区域会把鼠标事件直接透到桌面。即使把亚克力强度拉满，
+#: 主窗口也必须保留一层极淡的底色，保证整个窗口仍可点击/拖动。
+MIN_WINDOW_GLASS_ALPHA = 0.03
 
 #: 运行期覆盖值：``None`` 表示沿用配置文件里的 acrylic.opacity
 _ACRYLIC_TRANSPARENCY: int | None = None
@@ -176,12 +181,14 @@ def set_glass_strength(value: int | None) -> int:
     return _GLASS_STRENGTH
 
 
-def glass_alpha(alpha: float) -> float:
+def glass_alpha(alpha: float, minimum: float = 0.0) -> float:
     """把配置里的玻璃层不透明度按当前强度缩放（0-1）。
 
-    强度越高，表面层越透明，从而露出更多系统级模糊材质。
+    强度越高，表面层越透明，从而露出更多系统级模糊材质。``minimum``
+    用于给**主窗口底色**兜底，避免 Alpha 归零后窗口变成鼠标穿透区域。
     """
-    return max(0.0, min(1.0, float(alpha))) * (1.0 - _GLASS_STRENGTH / 100.0)
+    value = max(0.0, min(1.0, float(alpha))) * (1.0 - _GLASS_STRENGTH / 100.0)
+    return max(max(0.0, min(1.0, float(minimum))), value)
 
 
 def reset_appearance_overrides() -> None:
@@ -353,6 +360,7 @@ __all__ = [
     "glass_alpha",
     "glass_strength",
     "glass_tint",
+    "MIN_WINDOW_GLASS_ALPHA",
     "reset_appearance_overrides",
     "set_acrylic_transparency",
     "set_glass_strength",

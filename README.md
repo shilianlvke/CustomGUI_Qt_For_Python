@@ -291,7 +291,7 @@ customgui.configure(
 | `CUSTOMGUI_APPS_DIR` | 应用插件目录 | 自动探测 `data_root/apps` → 仓库根 `apps/` → `src/apps` → 包内 `apps` |
 | `CUSTOMGUI_RESOURCE_DIR` | 覆盖资源根（其下有 `customui/` 或 `resource/customui/`） | 无 |
 | `CUSTOMGUI_ROOT_DIR` | 旧版覆盖根（兼容保留） | 无 |
-| `CUSTOMGUI_DATA_DIR` | 可写数据根 | Windows `%APPDATA%/CustomGUI`，其他 `~/.customgui` |
+| `CUSTOMGUI_DATA_DIR` | 可写数据根 | 程序运行根目录（可用 `CUSTOMGUI_PROGRAM_DIR` 显式指定） |
 | `CUSTOMGUI_DIAGNOSTICS_DIR` | 遥测事件目录 | `<data>/logs/diagnostics` |
 | `CUSTOMGUI_BUILTIN_MENUS` | `0` 关闭基座自带菜单 | 开 |
 

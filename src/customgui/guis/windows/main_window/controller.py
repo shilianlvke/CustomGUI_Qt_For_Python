@@ -32,13 +32,22 @@ class _WindowStateTracker(QObject):
     def _save_size(self) -> None:
         window = self._window
         try:
-            if window.isMaximized() or window.isMinimized() or window.isFullScreen():
-                return
-            size = window.size()
+            maximized = window.isMaximized() or window.isMinimized() or window.isFullScreen()
+            size = None if maximized else window.size()
         except RuntimeError:
             return
-        if size.width() > 0 and size.height() > 0:
-            save_user_settings(startup_size=[size.width(), size.height()])
+        updates = {}
+        if size is not None and size.width() > 0 and size.height() > 0:
+            updates["startup_size"] = [size.width(), size.height()]
+        config = getattr(getattr(window, "ui", None), "theme_config", None)
+        transparency = getattr(config, "transparency", None)
+        strength = getattr(config, "appearance_strength", None)
+        if callable(transparency) and callable(strength):
+            # 关闭窗口时再兜底写一次，避免拖动滑块后立刻退出导致节流写入丢失
+            updates["acrylic_transparency"] = transparency()
+            updates["glass_strength"] = strength()
+        if updates:
+            save_user_settings(**updates)
 
 
 class PageRouterController:
@@ -130,16 +139,22 @@ class ThemeController:
         visible = MainFunctions.right_column_is_visible(self._window)
         if visible and ui.right_column.menus.currentWidget() is menu:
             MainFunctions.toggle_right_column(self._window)
-            self._sync_theme_button()
+            # 关闭动画期间 right_column_frame 仍有宽度，不能再按“当前宽度”
+            # 推断状态，否则第二次点击后按钮会一直停在选中态。
+            self._sync_theme_button(False)
             return True
         ui.right_column.menus.setCurrentWidget(menu)
         if not visible:
             MainFunctions.toggle_right_column(self._window)
-        self._sync_theme_button()
+        self._sync_theme_button(True)
         return True
 
-    def _sync_theme_button(self) -> None:
-        """让标题栏外观配置按钮始终反映抽屉的展开状态。"""
+    def _sync_theme_button(self, active: bool | None = None) -> None:
+        """让标题栏外观配置按钮始终反映抽屉的展开状态。
+
+        ``active`` 显式给出目标状态时以其为准（开合动画进行中的宽度不可靠）；
+        未给出时才按当前可见性推导。
+        """
         ui = getattr(self._window, "ui", None)
         if ui is None:
             return
@@ -147,12 +162,13 @@ class ThemeController:
         if button is None or not hasattr(button, "set_active"):
             return
         menu = getattr(ui, "theme_menu", None)
-        active = bool(
-            menu is not None
-            and MainFunctions.right_column_is_visible(self._window)
-            and ui.right_column.menus.currentWidget() is menu
-        )
-        button.set_active(active)
+        if active is None:
+            active = bool(
+                menu is not None
+                and MainFunctions.right_column_is_visible(self._window)
+                and ui.right_column.menus.currentWidget() is menu
+            )
+        button.set_active(bool(active))
 
     def refresh_styles(self):
         """按当前主题与外观参数重建全局样式（滑块实时预览也走这里）。"""
@@ -373,7 +389,7 @@ class MainWindowController:
             "btn_close_left_column": lambda: self.column_controller.handle_more_button(btn_name),
             "btn_close_top_column": lambda: self.column_controller.handle_top_column_close(btn_name),
             "btn_close_bottom_column": lambda: self.column_controller.handle_bottom_column_close(btn_name),
-            "btn_top_settings": lambda: self.column_controller.handle_top_settings_button(btn),
+            "btn_top_settings": lambda: self._handle_top_settings_button(btn),
             "btn_themes": self._handle_theme_button,
             "btn_search": lambda: self._handle_search_button(btn),
         }
@@ -413,3 +429,10 @@ class MainWindowController:
             toggle()
         else:
             self.theme_controller.cycle_theme()
+
+    def _handle_top_settings_button(self, btn):
+        """顶栏设置按钮开合右列时，外观抽屉会被切走/关闭，需同步按钮状态。"""
+        self.column_controller.handle_top_settings_button(btn)
+        sync = getattr(self.theme_controller, "_sync_theme_button", None)
+        if callable(sync):
+            sync(False)

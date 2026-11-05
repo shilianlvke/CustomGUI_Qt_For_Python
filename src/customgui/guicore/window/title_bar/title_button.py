@@ -75,8 +75,11 @@ class CTitleButton(QPushButton):
         paint.setRenderHint(QPainter.RenderHint.Antialiasing)
 
         if self._is_active:
-            # BRUSH
-            brush = QBrush(QColor(ColorPalette.custom_text_foreground))
+            # 选中态用强调色的低透明度叠层：此前直接填 custom_text_foreground
+            # （近白色），第二次打开外观抽屉时按钮会变成一块突兀的亮白底。
+            active_bg = QColor(ColorPalette.custom_context_color)
+            active_bg.setAlpha(38)
+            brush = QBrush(active_bg)
         else:
             if not self._icon_enter:
                 self._set_icon_color = ColorPalette.custom_icon_color  # Set icon color

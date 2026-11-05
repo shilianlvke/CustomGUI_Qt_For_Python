@@ -118,10 +118,12 @@ def test_configurator_language_selection_and_retranslate(host):
 
 def test_configurator_appearance_sliders(host):
     from customgui.guicore import (
+        MIN_WINDOW_GLASS_ALPHA,
         acrylic_transparency,
         glass_alpha,
         glass_strength,
         reset_appearance_overrides,
+        set_glass_strength,
     )
 
     reset_appearance_overrides()
@@ -144,6 +146,9 @@ def test_configurator_appearance_sliders(host):
         assert panel.glass_strength_value.text() == "60%"
         # 强度越高，表面层不透明度越低（透出更多系统模糊材质）
         assert glass_alpha(0.5) == pytest.approx(0.2)
+        # 窗口底色兜底：Alpha=0 会让分层窗口出现鼠标穿透
+        set_glass_strength(100)
+        assert glass_alpha(0.5, minimum=MIN_WINDOW_GLASS_ALPHA) == pytest.approx(MIN_WINDOW_GLASS_ALPHA)
 
         # 静默同步：只更新控件与运行期值，不再发预览信号
         panel.set_appearance(transparency=70, strength=80)

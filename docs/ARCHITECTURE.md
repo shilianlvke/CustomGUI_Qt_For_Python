@@ -129,8 +129,8 @@ flowchart LR
   品牌层只写要改的键；其他资源（图标/图片/字体）同名整份替换。
 - **路径解析**：`find_resource()` 只在资源根里找；`resolve_path()` 找不到时回落到包内稳定位置，
   便于报错与写操作定位。运行时不得使用 `os.getcwd()`（有测试守）。
-- **可写数据**：日志与遥测写到 `data_root()`（Windows `%APPDATA%/CustomGUI`，其他 `~/.customgui`），
-  绝不写安装目录。
+- **可写数据**：日志、遥测与用户配置写到 `data_root()`（默认程序运行根目录，
+  可用 `configure(data_dir=...)` / `CUSTOMGUI_DATA_DIR` 覆盖），绝不写安装目录或用户系统目录。
 
 ## 6. 应用装载与页面路由
 

@@ -9,7 +9,8 @@ site-packages / Program Files；品牌层又属于应用资产。两者都不应
     <data_root>/settings/user.yaml
 
 只记录**改动过的键**（增量覆盖），基座新增字段仍由默认层提供。默认
-``data_root()`` 为 ``%APPDATA%/CustomGUI``（其它平台回落 ``~/.customgui``）。
+``data_root()`` 为程序运行根目录（显式 ``data_dir`` / ``CUSTOMGUI_DATA_DIR``
+优先），不再写入 ``%APPDATA%`` 等用户系统目录。
 
 读写时机
 --------

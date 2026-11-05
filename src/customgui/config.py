@@ -69,10 +69,9 @@ class AppConfig:
             value = _env_path("CUSTOMGUI_DATA_DIR")
             if value is not None:
                 return value
-        appdata = os.getenv("APPDATA", "").strip()
-        if appdata:
-            return Path(appdata).expanduser().resolve() / "CustomGUI"
-        return Path.home() / ".customgui"
+        # 未显式配置时返回 None，由 paths.data_root() 落到程序运行根目录；
+        # 不再默认写入 %APPDATA% / ~ 等用户系统目录。
+        return None
 
     def resolved_diagnostics_dir(self) -> Path:
         if self.diagnostics_dir is not None:
@@ -81,7 +80,12 @@ class AppConfig:
             value = _env_path("CUSTOMGUI_DIAGNOSTICS_DIR")
             if value is not None:
                 return value
-        data_dir = self.resolved_data_dir() or Path.home() / ".customgui"
+        data_dir = self.resolved_data_dir()
+        if data_dir is None:
+            # 延迟导入避免 customgui.config 与 appcore.paths 的循环依赖
+            from .appcore.sysx.config.paths import program_root
+
+            data_dir = program_root()
         return data_dir / "logs" / "diagnostics"
 
     def resolved_builtin_menus(self) -> bool:
