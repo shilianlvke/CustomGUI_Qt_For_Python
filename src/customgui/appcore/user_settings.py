@@ -47,6 +47,9 @@ from .sysx.modules.logger_module import Logger
 _FILE_NAME = "user.yaml"
 _LEGACY_FILE = "ui_state.json"
 _SUBDIR = "settings"
+#: 用户配置显式版本号；文件缺失该键时按 v1 处理
+SCHEMA_VERSION = 2
+_SCHEMA_KEY = "schema_version"
 #: 允许持久化的字段（与 AppSettings / 外观配置一一对应）
 SUPPORTED_FIELDS = (
     "theme_name",
@@ -110,6 +113,14 @@ def _read_file() -> dict[str, Any]:
         Logger.warning(f"用户配置顶层必须是字典，已忽略: {path}")
         return {}
 
+    version = raw.get(_SCHEMA_KEY, 1)
+    if isinstance(version, bool) or not isinstance(version, int) or version < 1:
+        Logger.warning(f"用户配置版本号非法，按 v1 处理: {path}")
+        version = 1
+    if version > SCHEMA_VERSION:
+        # 文件由更新版本写入：只读取当前版本认识的字段，不覆盖未知数据
+        Logger.warning(f"用户配置版本 {version} 高于当前 {SCHEMA_VERSION}，仅读取已知字段: {path}")
+
     state: dict[str, Any] = {}
     invalid: list[str] = []
     for key in SUPPORTED_FIELDS:
@@ -122,9 +133,21 @@ def _read_file() -> dict[str, Any]:
         state[key] = normalized
     if invalid:
         Logger.warning(f"用户配置字段值非法，已忽略: {', '.join(invalid)}（{path}）")
-    unknown = sorted(str(key) for key in raw if key not in SUPPORTED_FIELDS)
+    unknown = sorted(str(key) for key in raw if key not in SUPPORTED_FIELDS and key != _SCHEMA_KEY)
     if unknown:
-        Logger.debug(f"用户配置存在未支持字段（已忽略）: {', '.join(unknown)}")
+        # 汇总成一条 warning，避免用户误以为手改的配置已经生效
+        Logger.warning(f"用户配置存在未支持字段（已忽略）: {', '.join(unknown)}（{path}）")
+    return _migrate_state(state, version)
+
+
+def _migrate_state(state: dict[str, Any], version: int) -> dict[str, Any]:
+    """把旧版本字段迁移为当前版本。
+
+    v1 → v2：仅引入显式版本号，字段语义不变。后续破坏性变更在这里追加
+    迁移分支，并在 *version* 小于目标版本时补齐默认值或重命名字段。
+    """
+    if version < SCHEMA_VERSION:
+        state = dict(state)
     return state
 
 
@@ -181,8 +204,9 @@ def _write_atomic(path: Path, state: dict[str, Any]) -> None:
     temp = path.with_name(f".{path.name}.{os.getpid()}.tmp")
     try:
         body = "# CustomGUI 用户配置（运行时自动维护，可手动编辑）\n"
+        payload = {_SCHEMA_KEY: SCHEMA_VERSION, **state}
         body += yaml.safe_dump(
-            state,
+            payload,
             allow_unicode=True,
             default_flow_style=False,
             sort_keys=True,
@@ -241,6 +265,7 @@ def reset_user_settings_cache() -> None:
 
 
 __all__ = [
+    "SCHEMA_VERSION",
     "SUPPORTED_FIELDS",
     "load_user_settings",
     "reset_user_settings_cache",

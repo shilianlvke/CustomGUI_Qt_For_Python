@@ -8,6 +8,14 @@ from customgui.appcore import Language
 from customgui.guis.language_service import apply_language, current_language, switch_language
 
 
+@pytest.fixture(scope="module")
+def qapp():
+    from PySide6.QtWidgets import QApplication
+
+    app = QApplication.instance() or QApplication([])
+    yield app
+
+
 @pytest.fixture(autouse=True)
 def _restore_language():
     yield
@@ -117,3 +125,95 @@ def test_apply_same_language_is_idempotent():
         assert calls == []
     finally:
         apply_language("zh_cn")
+
+
+def test_all_pages_with_retranslate_skip_rebuild(qapp):
+    """所有已加载页面都实现 retranslate() 时只局部刷新，不重建页面栈。"""
+    from PySide6.QtWidgets import QStackedWidget, QWidget
+
+    calls = []
+    pages = QStackedWidget()
+    first = QWidget()
+    first.setObjectName("home_page")
+    first.retranslate = lambda: calls.append("home_page")
+    second = QWidget()
+    second.setObjectName("settings_page")
+    second.retranslate = lambda: calls.append("settings_page")
+    pages.addWidget(first)
+    pages.addWidget(second)
+    pages.setCurrentWidget(first)
+
+    titles = {}
+    window = SimpleNamespace(
+        ui=SimpleNamespace(
+            load_pages=SimpleNamespace(pages=pages),
+            left_menu=SimpleNamespace(active_button_id=lambda: None),
+            title_bar=SimpleNamespace(set_title=lambda text: titles.update(page=text)),
+        ),
+        setWindowTitle=lambda text: titles.update(window=text),
+    )
+
+    apply_language("en_us", window)
+
+    assert pages.count() == 2
+    assert pages.widget(0) is first
+    assert pages.widget(1) is second
+    assert calls == ["home_page", "settings_page"]
+    assert titles["window"] == Language.custom_ui.sys_name
+
+
+def test_scroll_positions_survive_page_rebuild(qapp, monkeypatch):
+    """整页重建路径下，QScrollArea 的滚动位置按稳定键恢复。"""
+    from PySide6.QtTest import QTest
+    from PySide6.QtWidgets import QScrollArea, QStackedWidget, QVBoxLayout, QWidget
+
+    from customgui.guicore import CScrollArea
+    from customgui.guis import language_service
+    from customgui.guis.windows.main_window import registry
+
+    stack = QStackedWidget()
+    stack.resize(400, 300)
+    stack.show()
+
+    def _build_page():
+        page = QWidget()
+        page.setObjectName("home_page")
+        layout = QVBoxLayout(page)
+        layout.setContentsMargins(0, 0, 0, 0)
+        area = CScrollArea(object_name="page_scroll")
+        content = QWidget()
+        content.setMinimumHeight(1200)
+        area.setWidget(content)
+        layout.addWidget(area)
+        return page, area
+
+    page, area = _build_page()
+    stack.addWidget(page)
+    stack.setCurrentWidget(page)
+    QTest.qWait(30)
+    area.verticalScrollBar().setValue(500)
+    assert area.verticalScrollBar().value() == 500
+
+    def _load_registered_pages(_window, eager=False):
+        rebuilt_page, _rebuilt_area = _build_page()
+        stack.addWidget(rebuilt_page)
+
+    monkeypatch.setattr(registry, "load_registered_pages", _load_registered_pages)
+    monkeypatch.setattr(registry, "ensure_registered_page", lambda *args, **kwargs: False)
+    monkeypatch.setattr(registry, "get_page_routes", lambda _language: {"btn_home": ("home_page", "Home")})
+    monkeypatch.setattr(registry, "get_default_page_object", lambda: "home_page")
+
+    window = SimpleNamespace(
+        ui=SimpleNamespace(
+            load_pages=SimpleNamespace(pages=stack),
+            left_menu=SimpleNamespace(active_button_id=lambda: "btn_home"),
+        )
+    )
+    language_service._rebuild_pages(window)
+
+    rebuilt = stack.currentWidget()
+    assert rebuilt is not page
+    new_area = rebuilt.findChild(QScrollArea, "page_scroll")
+    assert new_area is not None
+    assert new_area.verticalScrollBar().value() == 500
+    stack.close()

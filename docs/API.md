@@ -4,6 +4,10 @@
 `customgui.window`、`customgui.guicore`。`customgui.appcore.sysx.*`、`customgui.guis.*`
 属于内部实现，可能重组，宿主代码不应直接依赖。
 
+`customgui.guicore.window` 下的窗口部件可直接使用；其中 `window/window/` 与
+`guis/windows/` 是组件内部装配，未来可能调整。完整稳定面见下表，其余导出符号
+属于“可以使用但不承诺长期稳定”的组件内部约定。
+
 签名以源码为准；本文件只列常用入口，完整清单看各包 `__all__`。
 
 ## 1. 稳定面一览
@@ -78,7 +82,9 @@ apps_root()                             # -> Path
 
 运行时修改的外观偏好写入 `<data_root>/settings/user.yaml`（默认落在程序运行
 根目录下的 `settings/user.yaml`，可用 `configure(data_dir=...)` 或
-`CUSTOMGUI_DATA_DIR` 覆盖），只记录改动过的键：
+`CUSTOMGUI_DATA_DIR` 覆盖），只记录改动过的键。文件首行带
+`schema_version`（当前为 `2`）；缺失该键按 v1 读取，高于当前版本时只读取
+已知字段并告警：
 
 | 字段 | 来源 | 写入时机 |
 | --- | --- | --- |

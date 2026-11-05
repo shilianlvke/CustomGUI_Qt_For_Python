@@ -5,7 +5,7 @@ display:
 - ' / ___/ /_/ / |/ |/ / _// , _/   / _  |\  /    \  / __ |/    / _\ \/ _  / /_/ /
   /_/ /'
 - '/_/   \____/|__/|__/___/_/|_|   /____/ /_/     /_/_/ |_/_/|_/ /___/_//_/\____/\____/ '
-logger_level: DEBUG
+logger_level: INFO
 logger_color: true
 logger_file: # 日志文件轮转（引导期由 Logger 直接读取）
   name: customgui.log

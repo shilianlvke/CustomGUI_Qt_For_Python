@@ -2,9 +2,9 @@ from PySide6.QtCore import QEasingCurve, QPropertyAnimation, Qt, QTimer
 from PySide6.QtGui import QColor
 from PySide6.QtWidgets import QApplication, QFrame, QGraphicsDropShadowEffect, QHBoxLayout, QVBoxLayout
 
-from customgui.appcore import AppSettings, get_design_tokens
+from customgui.appcore import AppSettings, get_design_tokens, get_theme_manager, track_timing
 
-from ...acrylic import acrylic_active, apply_acrylic, remove_acrylic
+from ...acrylic import acrylic_active, acrylic_transparency, apply_acrylic, glass_strength, remove_acrylic
 from ...styles import Styles
 
 #: 无圆角、无边框的框架状态（最大化 / 贴边时使用），对应样式表里的属性选择器
@@ -45,6 +45,9 @@ class CWindow(QFrame):
         #: 首次显示淡入只播放一次（最大化/还原不重复）
         self._fade_played = False
         self._fade_animation: QPropertyAnimation | None = None
+        #: 样式缓存：来源键 + 对应的 base 样式表（构造期字段需先于 apply_style 初始化）
+        self._style_cache_key = None
+        self._style_cache_base: str | None = None
         self.apply_style()
         self.set_shadow_enabled(AppSettings.custom_title_bar and AppSettings.window_shadow)
 
@@ -58,34 +61,60 @@ class CWindow(QFrame):
         （QMenu / QToolTip / Qt.Popup）共用同一份，切主题时整棵控件树只
         polish 一次。窗口级只保留最大化/自定义圆角这一小块覆盖规则；旧实现
         在窗口级与应用级各设一遍整表，同一棵树被反复 polish，主题切换明显卡顿。
-        """
-        base = Styles().style
-        override = self._frame_override
-        self._style_has_override = override is not None and override != _FLAT_FRAME
-        override_sheet = ""
-        if self._style_has_override:
-            radius, size = override
-            border_color = get_design_tokens().colors.surface_interactive_pressed
-            override_sheet = f"""#CWindow_Frame {{
-                border-radius: {radius}px;
-                border: {size}px solid {border_color};
-            }}"""
 
-        app = QApplication.instance()
-        if app is not None:
-            if app.styleSheet() != base:
-                app.setStyleSheet(base)
-            if override_sheet:
-                self.setStyleSheet(override_sheet)
-            elif self.styleSheet():
-                # 清掉旧版本留下的窗口级整表副本，避免它盖住新主题
-                self.setStyleSheet("")
-        elif override_sheet:
-            self.setStyleSheet(base + override_sheet)
-        else:
-            self.setStyleSheet(base)
+        样式来源键（主题 / 强调色 / 亚克力运行期参数 / 框架覆盖）未变化时复用
+        上一次构建的 base 字符串，不再构造 ``Styles``；窗口级覆盖规则仍按传入
+        的 ``_frame_override`` 重新计算，最大化/还原路径不受缓存影响。
+        """
+        override = self._frame_override
+        cache_key = self._style_source_key(override)
+        with track_timing("customgui.style.apply", category="perf"):
+            if cache_key == self._style_cache_key and self._style_cache_base is not None:
+                base = self._style_cache_base
+            else:
+                base = Styles().style
+                self._style_cache_key = cache_key
+                self._style_cache_base = base
+
+            self._style_has_override = override is not None and override != _FLAT_FRAME
+            override_sheet = ""
+            if self._style_has_override:
+                radius, size = override
+                border_color = get_design_tokens().colors.surface_interactive_pressed
+                override_sheet = f"""#CWindow_Frame {{
+                    border-radius: {radius}px;
+                    border: {size}px solid {border_color};
+                }}"""
+
+            app = QApplication.instance()
+            if app is not None:
+                if app.styleSheet() != base:
+                    app.setStyleSheet(base)
+                if override_sheet:
+                    self.setStyleSheet(override_sheet)
+                elif self.styleSheet():
+                    # 清掉旧版本留下的窗口级整表副本，避免它盖住新主题
+                    self.setStyleSheet("")
+            elif override_sheet:
+                self.setStyleSheet(base + override_sheet)
+            else:
+                self.setStyleSheet(base)
         # 主题切换后亚克力色调要跟着重算（该调用约 0.15ms 且幂等）
         self._sync_acrylic()
+
+    def _style_source_key(self, override):
+        """样式表的来源键：任一取值变化都可能改变 ``Styles`` 生成的 QSS。"""
+        manager = get_theme_manager()
+        return (
+            AppSettings.theme_name,
+            manager.current(),  # 主题切换经 ThemeManager 生效，AppSettings 仍是启动默认值
+            manager.accent,
+            acrylic_active(),
+            acrylic_transparency(),
+            glass_strength(),
+            bool(AppSettings.custom_title_bar),
+            override,
+        )
 
     def set_stylesheet(self, border_radius=None, border_size=None):
         """覆盖框架圆角/边框；两个参数均为 None 时清除覆盖（恢复主题默认）。

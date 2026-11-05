@@ -3,7 +3,7 @@
 - 全局入口：模块级单例 ``Logger``；
 - 同时输出控制台（可选彩色，由 console.yaml 的 ``logger_color`` 控制）
   与 ``logs/customgui.log``（1MB × 5 滚动文件）；
-- 级别由 console.yaml 的 ``logger_level`` 控制（默认 debug）；
+- 级别由 console.yaml 的 ``logger_level`` 控制（默认 info，调试时按需改 debug）；
 - 引导期直接读取 console.yaml，独立于配置框架，避免循环依赖。
 """
 
@@ -137,7 +137,7 @@ class _Logger:
     def _read_level_from_console_config(cls) -> str:
         level = cls._read_console_config().get("logger_level")
         if not isinstance(level, str) or not level.strip():
-            return "debug"
+            return "info"
         return level.strip().lower()
 
     @classmethod

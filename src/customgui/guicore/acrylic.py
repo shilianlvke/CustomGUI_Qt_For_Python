@@ -26,7 +26,7 @@ from functools import lru_cache
 from PySide6.QtGui import QColor
 from PySide6.QtWidgets import QApplication, QWidget
 
-from customgui.appcore import AppSettings, ColorPalette, get_design_tokens
+from customgui.appcore import AppSettings, ColorPalette, Logger, get_design_tokens
 
 # ----------------------------------------------------------------------
 # Win32 常量与结构体
@@ -57,6 +57,17 @@ MIN_WINDOW_GLASS_ALPHA = 0.03
 _ACRYLIC_TRANSPARENCY: int | None = None
 #: 运行期玻璃层强度：0 沿用配置值，100 时表面层完全透明
 _GLASS_STRENGTH = _DEFAULT_GLASS_STRENGTH
+
+#: 亚克力降级诊断只记录一次，避免每帧重复刷日志
+_LOGGED_KEYS: set[str] = set()
+
+
+def _log_once(key: str, message: str) -> None:
+    """失败路径只记一次 debug 日志；观感问题不应淹没在日志里。"""
+    if key in _LOGGED_KEYS:
+        return
+    _LOGGED_KEYS.add(key)
+    Logger.debug(message)
 
 
 class _AccentPolicy(ctypes.Structure):
@@ -110,7 +121,8 @@ def _platform_supports_acrylic() -> bool:
         pass
     try:
         return int(sys.getwindowsversion().build) >= 22000
-    except Exception:
+    except Exception as exc:
+        _log_once("platform_build", f"亚克力平台版本探测失败：{exc}")
         return False
 
 
@@ -251,7 +263,8 @@ def apply_acrylic(widget: QWidget | None) -> bool:
             _set_corner_preference(hwnd)
             _set_dark_titlebar(hwnd, _theme_is_dark())
         return applied
-    except Exception:
+    except Exception as exc:
+        _log_once("apply", f"亚克力材质应用失败：{exc}")
         return False
 
 
@@ -264,8 +277,8 @@ def remove_acrylic(widget: QWidget | None) -> None:
         return
     try:
         _set_accent(hwnd, _ACCENT_DISABLED, 0)
-    except Exception:
-        pass
+    except Exception as exc:
+        _log_once("remove", f"亚克力材质移除失败：{exc}")
 
 
 def acrylic_tint(opacity: int | None = None) -> int:
@@ -333,8 +346,8 @@ def _set_corner_preference(hwnd: int) -> None:
             ctypes.byref(value),
             ctypes.sizeof(value),
         )
-    except Exception:
-        pass
+    except Exception as exc:
+        _log_once("corner", f"窗口圆角设置失败：{exc}")
 
 
 def _set_dark_titlebar(hwnd: int, dark: bool) -> None:
@@ -350,7 +363,8 @@ def _set_dark_titlebar(hwnd: int, dark: bool) -> None:
             )
             if result == 0:
                 return
-        except Exception:
+        except Exception as exc:
+            _log_once("titlebar", f"深色标题栏设置失败：{exc}")
             continue
 
 

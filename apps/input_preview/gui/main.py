@@ -8,7 +8,7 @@ Listbox / Select / MultiSelect / TreeSelect ｜ ToggleButton / SelectButton ｜ 
 """
 
 from PySide6.QtCore import QDate, QMargins, Qt
-from PySide6.QtWidgets import QHBoxLayout, QLabel, QVBoxLayout, QWidget
+from PySide6.QtWidgets import QHBoxLayout, QVBoxLayout, QWidget
 
 from customgui.appcore import Logger
 from customgui.guicore import (
@@ -142,7 +142,10 @@ class InputPreviewPage(CPreviewPage):
     def _radio_buttons():
         buttons = [CRadioButton(city, checked=index == 0) for index, city in enumerate(_CITIES)]
         for button in buttons:
-            button.toggled.connect(lambda checked, name=button.text(): checked and Logger.info(f"单选: {name}"))
+            # 在 lambda 之前取值：默认参数里调用 button.text() 会在定义时求值，
+            # 既触发 B008，也让后续按钮文本变化无法反映到回调。
+            name = button.text()
+            button.toggled.connect(lambda checked, name=name: checked and Logger.info(f"单选: {name}"))
         return buttons
 
     @staticmethod

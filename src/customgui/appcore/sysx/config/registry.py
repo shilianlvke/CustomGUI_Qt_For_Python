@@ -218,6 +218,11 @@ class _ConfigContextProvider:
                 self._context = ConfigContext(self._registry)
             return self._context.load(force_reload=force_reload)
 
+    def is_loaded(self) -> bool:
+        """上下文是否已加载；与写入共享同一把锁，避免读到过期状态。"""
+        with self._lock:
+            return self._context is not None
+
 
 _REGISTRY = ConfigRegistry()
 _PROVIDER = _ConfigContextProvider(_REGISTRY)
@@ -230,7 +235,7 @@ def get_app_context(force_reload: bool = False) -> ConfigContext:
 
 def is_context_loaded() -> bool:
     """配置上下文是否已加载（供 ``customgui.configure()`` 判断调用时机）。"""
-    return _PROVIDER._context is not None
+    return _PROVIDER.is_loaded()
 
 
 def reset_context() -> None:

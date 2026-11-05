@@ -226,6 +226,29 @@ def test_window_frame_override(qapp):
     assert qapp.styleSheet() == default_style
 
 
+def test_apply_style_reuses_cache_until_source_changes(qapp, monkeypatch):
+    """来源键未变时复用缓存，不再构造 Styles；主题变化后必须重建。"""
+    from customgui.guicore.window.window import main_window as window_module
+
+    calls = []
+    real_init = window_module.Styles.__init__
+
+    def _counting_init(self):
+        calls.append(True)
+        real_init(self)
+
+    monkeypatch.setattr(window_module.Styles, "__init__", _counting_init)
+
+    window = window_module.CWindow()
+    built = len(calls)
+    window.apply_style()
+    assert len(calls) == built  # 第二次 apply_style 命中实例缓存
+
+    get_theme_manager().apply("eye")
+    window.apply_style()
+    assert len(calls) == built + 1  # 主题变化 -> 来源键变化 -> 重建
+
+
 # --------------------------------------------------------------------------
 # 几何量与颜色/字体的职责边界：几何一律在组件本地，不进中央样式表
 # --------------------------------------------------------------------------

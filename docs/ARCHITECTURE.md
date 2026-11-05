@@ -42,6 +42,19 @@ apps/*  ──────────────┐
 
 ## 3. 包地图
 
+### 窗口入口的三层职责
+
+仓库里有三处名字含 `window`，职责不同，扩展时不要混用：
+
+| 入口 | 角色 | 稳定性 |
+| --- | --- | --- |
+| `customgui.window` | 宿主唯一门面：窗口骨架、应用装载、语言服务的再导出 | **稳定**，宿主只依赖这里 |
+| `customgui.guicore.window` | 可复用窗口部件（`CWindow` / `CTitleBar` / `CLeftMenu` 等）与壳层组件 | 组件层稳定；`window/window/` 内部实现不保证 |
+| `customgui.guis.windows` | 主窗口装配、页面栈、按钮路由 | **内部**，宿主通常不直接依赖 |
+
+`customgui.guicore` 为方便宿主一次性导入而再导出了较多符号；稳定 API 的判定以
+[API.md](API.md) 的“稳定面一览”为准，其余符号视为组件内部约定。
+
 ### appcore
 
 | 模块 | 内容 |

@@ -52,8 +52,17 @@ stages:
           - uv venv --python 3.13
           - uv sync --extra dev
           # ---- 质量检查 ----
-          # ruff 不带 --select，直接用 pyproject.toml 的 E/F/W/I/UP/B 规则集；
-          # 本地跑的 `ruff check src tests` 与这里完全等价，不会出现「本地过 CI 挂」。
-          - uv run ruff check src tests
+          # ruff 不带 --select，直接用 pyproject.toml 的 E/F/W/I/UP/B 规则集。
+          # 全仓检查：apps/examples 是用户入口，不能只检查 src/tests。
+          - uv run ruff check src tests apps examples scripts
+          # 增量类型门禁：只约束稳定 API 与公共工具模块（见 pyproject 的 [tool.mypy]）。
+          - uv run mypy
           # pytest 的 offscreen 由 tests/conftest.py 统一设置，无需虚拟显示。
-          - uv run pytest
+          # 覆盖率阈值取当前基线的下方（实测约 72%，门禁 70% 防回退）。
+          - uv run pytest --cov=customgui --cov-report=term-missing --cov-fail-under=70
+          # ---- 打包冒烟 ----
+          # 安装 wheel 后从仓库根运行：确认包内资源、配置上下文与 QSS 构建可用。
+          # --no-deps 避免重复下载 PySide6；运行依赖已由上面的 uv sync 安装。
+          - uv build
+          - uv pip install --reinstall --no-deps dist/customgui-*.whl
+          - .venv/bin/python scripts/wheel_smoke.py

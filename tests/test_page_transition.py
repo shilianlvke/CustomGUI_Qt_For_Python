@@ -211,6 +211,19 @@ def test_new_switch_replaces_previous_layer(stack, fast_timing):
     stack.hide()
 
 
+def test_large_surface_switches_without_animation(stack, monkeypatch):
+    """画布像素量超过上限时直接切换，不创建遮罩（快照成本高于动画收益）。"""
+    monkeypatch.setattr(CPageTransition, "_MAX_ANIMATED_PIXELS", 1)
+    stack.show()
+    QTest.qWait(30)
+    target = stack.widget(1)
+
+    assert CPageTransition.switch(stack, target) is False
+    assert stack.currentWidget() is target
+    assert _layer(stack) is None
+    stack.hide()
+
+
 def test_switch_to_current_page_is_noop(stack):
     stack.show()
     QTest.qWait(30)

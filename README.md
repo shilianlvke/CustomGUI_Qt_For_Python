@@ -211,6 +211,10 @@ apps/<app_name>/
     └── main.py                    # 页面入口
 ```
 
+> **信任边界**：`apps/` 里的入口代码会在宿主进程内直接执行，拥有与宿主相同的权限。
+> 只加载可信插件，不要把不受信任的目录放进 `apps/` 或 `CUSTOMGUI_APPS_DIR`。
+> 详见 [PLUGIN.md](docs/PLUGIN.md) 的“信任边界”。
+
 清单字段（`config.yml`）：
 
 ```yaml

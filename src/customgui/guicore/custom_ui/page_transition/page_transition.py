@@ -24,7 +24,8 @@
 
 1. **业务不等动画**：``setCurrentWidget`` 在第一段擦除开始时就已完成，
    路由与页面状态照旧同步；
-2. **失败即回落**：窗口不可见、总时长为 0、截图失败时退化为瞬时切换；
+2. **失败即回落**：窗口不可见、总时长为 0、截图失败或画布像素量过大
+   （约为 4K 级，快照成本高且收益低）时退化为瞬时切换；
 3. **可打断**：动画期间再次切换会先收尾上一次过场，只保留最新一层遮罩。
 """
 
@@ -155,6 +156,8 @@ class CPageTransition:
     _STATE_ATTR = "_c_page_transition_state"
     #: 配置不可用时的兜底时间线（毫秒）：擦除 / 按钮出 / 按钮入 / 展开
     _FALLBACK_TIMING = (120, 90, 110, 150)
+    #: 参与动画的最大画布像素量（约 4K 量级）；超过则瞬时切换，避免整屏快照卡顿
+    _MAX_ANIMATED_PIXELS = 4_000_000
 
     # 对外入口
     # ///////////////////////////////////////////////////////////////
@@ -194,6 +197,10 @@ class CPageTransition:
         backdrop = None if transparent else cls._surface_color(stage)
         snapshot_fill = QColor(Qt.transparent) if transparent else backdrop
         surface = previous if stage is None else stage
+        # 大页面快照本身就要拷贝整屏像素，擦除动画的收益抵不过卡顿：直接切换。
+        if surface.width() * surface.height() > cls._MAX_ANIMATED_PIXELS:
+            stack.setCurrentWidget(page)
+            return False
         snapshot = cls._snapshot(surface, snapshot_fill)
         if snapshot is None:
             stack.setCurrentWidget(page)

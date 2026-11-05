@@ -43,12 +43,18 @@ def test_save_then_load_roundtrip():
     assert path.is_file()
     content = yaml.safe_load(path.read_text(encoding="utf-8"))
     assert content == {
+        "schema_version": user_settings.SCHEMA_VERSION,
         "theme_name": "bright",
         "language": "en_us",
         "menu_mode": "overlay",
         "startup_size": [1100, 700],
     }
-    assert user_settings.load_user_settings() == content
+    assert user_settings.load_user_settings() == {
+        "theme_name": "bright",
+        "language": "en_us",
+        "menu_mode": "overlay",
+        "startup_size": [1100, 700],
+    }
 
 
 def test_partial_save_merges_existing_keys():
@@ -244,3 +250,27 @@ def test_restore_appearance_applies_and_syncs_panel():
         assert synced == {"transparency": 72, "strength": 35}
     finally:
         reset_appearance_overrides()
+
+
+def test_missing_schema_version_is_treated_as_v1():
+    _write(user_settings.user_settings_path(), "theme_name: bright\n")
+    assert user_settings.load_user_settings() == {"theme_name": "bright"}
+
+
+def test_future_schema_version_keeps_known_fields_and_warns(monkeypatch):
+    messages: list[str] = []
+
+    class _FakeLogger:
+        @staticmethod
+        def warning(message: str) -> None:
+            messages.append(message)
+
+    monkeypatch.setattr(user_settings, "Logger", _FakeLogger)
+    _write(
+        user_settings.user_settings_path(),
+        "schema_version: 99\ntheme_name: bright\nfuture_key: value\n",
+    )
+
+    assert user_settings.load_user_settings() == {"theme_name": "bright"}
+    assert any("高于当前" in message for message in messages)
+    assert any("未支持字段" in message for message in messages)

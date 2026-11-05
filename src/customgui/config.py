@@ -109,6 +109,11 @@ def _as_path(value: str | os.PathLike[str] | None) -> Path | None:
     return Path(value).expanduser().resolve()
 
 
+def _as_paths(values) -> tuple[Path, ...]:
+    """批量解析路径并丢弃 ``None``，保证返回类型是纯 ``tuple[Path, ...]``。"""
+    return tuple(path for path in (_as_path(value) for value in values) if path is not None)
+
+
 _ACTIVE: AppConfig = AppConfig()
 _CONFIGURED = False
 
@@ -148,7 +153,7 @@ def configure(
     _ACTIVE = replace(
         _ACTIVE,
         apps_dir=_as_path(apps_dir) or _ACTIVE.apps_dir,
-        resource_dirs=tuple(_as_path(p) for p in resource_dirs) if resource_dirs else _ACTIVE.resource_dirs,
+        resource_dirs=_as_paths(resource_dirs) if resource_dirs else _ACTIVE.resource_dirs,
         data_dir=_as_path(data_dir) or _ACTIVE.data_dir,
         diagnostics_dir=_as_path(diagnostics_dir) or _ACTIVE.diagnostics_dir,
         builtin_menus=_ACTIVE.builtin_menus if builtin_menus is None else builtin_menus,
@@ -167,17 +172,43 @@ def configure(
             from .appcore.sysx.modules.language_module import LANGUAGE_OPTIONS
 
             LANGUAGE_OPTIONS.invalidate()
-        except Exception:
-            pass
+        except Exception as exc:
+            _log_configure_event(f"语言缓存失效失败（继续使用旧缓存）: {exc}")
         # data_dir 可能已切换：丢弃用户配置缓存，下次读取按新目录解析
         try:
             from .appcore.user_settings import reset_user_settings_cache
 
             reset_user_settings_cache()
-        except Exception:
-            pass
+        except Exception as exc:
+            _log_configure_event(f"用户配置缓存失效失败（继续使用旧缓存）: {exc}")
 
+    _log_effective_config(_ACTIVE)
     return _ACTIVE
+
+
+def _log_configure_event(message: str, level: str = "warning") -> None:
+    """配置层日志：Logger 尚未就绪时静默，不让日志失败影响配置。"""
+    try:
+        from .appcore.sysx.modules.logger_module import Logger
+
+        getattr(Logger, level)(message)
+    except Exception:
+        pass
+
+
+def _log_effective_config(config: AppConfig) -> None:
+    """启动时打印实际生效的目录，便于排查环境变量/显式参数的覆盖关系。"""
+    resources = ", ".join(str(path) for path in config.resolved_resource_dirs()) or "-"
+    _log_configure_event(
+        "配置生效："
+        f"apps={config.resolved_apps_dir() or '-'} "
+        f"data={config.resolved_data_dir() or '-'} "
+        f"diagnostics={config.resolved_diagnostics_dir()} "
+        f"resources=[{resources}] "
+        f"builtin_menus={config.resolved_builtin_menus()} "
+        f"env_fallback={config.env_fallback}",
+        "info",
+    )
 
 
 def reset_config() -> None:
