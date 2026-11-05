@@ -1,5 +1,4 @@
 from PySide6.QtCore import QSize, Qt, Signal
-from PySide6.QtGui import QCursor
 from PySide6.QtSvgWidgets import QSvgWidget
 from PySide6.QtWidgets import QFrame, QHBoxLayout, QLabel, QVBoxLayout, QWidget
 
@@ -85,35 +84,22 @@ class CTitleBar(QWidget):
 
         # self.top_logo.setPixmap(Functions.set_svg_image(logo_image))
 
-        # 移动窗口/最大化/恢复
-        def moveWindow(event):
-            # 如果最大化改变为正常
-            if parent.isMaximized():
-                self.maximize_restore()
-                # self.resize(_old_size)
-                curso_x = parent.pos().x()
-                curso_y = event.globalPos().y() - QCursor.pos().y()
-                parent.move(curso_x, curso_y)
-            # 移动窗口
-            if event.buttons() == Qt.LeftButton:
-                parent.move(parent.pos() + event.globalPos() - parent.dragPos)
-                parent.dragPos = event.globalPos()
-                event.accept()
-            # parent_rect = parent.frameGeometry()
-            # screen_rect = parent.screen().geometry()
-            # # 不可超出屏幕顶部
-            # if parent.pos().y() < 0:
-            #     parent.move(parent.pos().x(), 0)
-            # if parent_rect.bottom() > screen_rect.bottom():
-            #     parent.move(parent.pos().x(), screen_rect.height() - parent_rect.height())
+        # 拖动锚点：按下时光标与窗口左上角在全局坐标下的偏移量。
+        # 为 None 表示本次按下没有落在标题栏的可拖动区域（例如按在标题栏按钮
+        # 上），此时收到移动事件也不搬动窗口。锚点由 CTitleBar 自己维护，
+        # 宿主窗口不需要预先定义 dragPos 之类的属性。
+        self._drag_offset = None
 
         # 移动应用程序小部件。
         # 除原有的 logo / 标题 / 分割线外，还要覆盖标题栏底板（bg）与标题栏
         # 自身：它们都是主界面 CWindow 的子控件，事件留在原控件树上，不需要
         # 任何额外的背景窗口；空白区域同样可以拖动窗口。
         if self._is_custom_title_bar:
-            for widget in (self, self.bg, self.top_logo, self.div_1, self.title_label, self.div_2, self.div_3):
-                widget.mouseMoveEvent = moveWindow
+            draggable = (self, self.bg, self.top_logo, self.logo_svg, self.div_1, self.title_label, self.div_2, self.div_3)
+            for widget in draggable:
+                widget.mousePressEvent = self._drag_press
+                widget.mouseMoveEvent = self._drag_move
+                widget.mouseReleaseEvent = self._drag_release
                 widget.mouseDoubleClickEvent = self.maximize_restore
 
         # 将小部件添加到标题栏
@@ -202,6 +188,54 @@ class CTitleBar(QWidget):
     # ///////////////////////////////////////////////////////////////
     def set_title(self, title):
         self.title_label.setText(title)
+
+    # 窗口拖动
+    # ///////////////////////////////////////////////////////////////
+    def _drag_press(self, event):
+        """标题栏按下：记录锚点并接管本次鼠标事件。
+
+        按在标题栏按钮上时事件由按钮自己处理，不会走到这里；后续移动自然
+        也不会移动窗口，避免「点按钮顺手一拖，窗口跟着飞出去」。
+        """
+        if event.button() != Qt.LeftButton or self._parent is None:
+            return
+        self._drag_offset = event.globalPosition().toPoint() - self._parent.pos()
+        event.accept()
+
+    def _drag_move(self, event):
+        """按锚点平滑移动窗口（没有锚点的移动事件一律忽略）。"""
+        if self._drag_offset is None:
+            return
+        if not (event.buttons() & Qt.LeftButton):
+            # 松开按键时清掉锚点，防止下一次非标题栏拖动命中过期锚点
+            self._drag_offset = None
+            return
+        if self._parent is None:
+            return
+        global_pos = event.globalPosition().toPoint()
+        if self._parent.isMaximized():
+            self._restore_for_drag(global_pos)
+        else:
+            self._parent.move(global_pos - self._drag_offset)
+        event.accept()
+
+    def _drag_release(self, event):
+        if event.button() == Qt.LeftButton:
+            self._drag_offset = None
+
+    def _restore_for_drag(self, global_pos):
+        """最大化状态下开始拖动：还原窗口，并让光标保持在标题栏的同一点。"""
+        local = self.mapFromGlobal(global_pos)
+        ratio = local.x() / max(1, self.width())
+        parent = self._parent
+        self.maximize_restore()
+        normal = parent.normalGeometry()
+        width = normal.width() if normal.width() > 0 else parent.width()
+        parent.move(
+            global_pos.x() - int(width * max(0.0, min(1.0, ratio))),
+            global_pos.y() - local.y(),
+        )
+        self._drag_offset = global_pos - parent.pos()
 
     # 最大化/恢复
     # 最大化并恢复父窗口
