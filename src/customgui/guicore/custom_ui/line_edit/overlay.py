@@ -102,7 +102,7 @@ class CPopover(QFrame):
     def paintEvent(self, event):  # noqa: N802 - 覆写 Qt 命名
         painter = QPainter(self)
         painter.setRenderHint(QPainter.Antialiasing)
-        # 浮层必须使用菜单级不透明底色；输入控件的 22% 玻璃底会让
+        # 浮层必须使用菜单级高不透明度底色；输入控件的 22% 玻璃底会让
         # 页面正文透出，导致弹层文字与底层内容互相干扰。
         palette = menu_colors()
         body = self._body_rect()

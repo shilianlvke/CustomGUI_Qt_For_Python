@@ -42,12 +42,12 @@ def message_palette(severity) -> dict[str, QColor]:
         }
     if sev is Severity.SECONDARY:
         return {
-            "background": QColor(ColorPalette.custom_bg_one if dark else "#f8fafc"),
-            "border": QColor(ColorPalette.custom_bg_two if dark else "#e2e8f0"),
-            "text": QColor(ColorPalette.custom_text_title if dark else "#334155"),
-            "title": QColor(ColorPalette.custom_text_active if dark else "#1e293b"),
-            "accent": QColor(ColorPalette.custom_icon_color if dark else "#64748b"),
-            "outlined": QColor(ColorPalette.custom_text_title if dark else "#334155"),
+            "background": QColor(ColorPalette.custom_bg_one if dark else ColorPalette.custom_dark_two),
+            "border": QColor(ColorPalette.custom_bg_two if dark else ColorPalette.custom_dark_four),
+            "text": QColor(ColorPalette.custom_text_title if dark else ColorPalette.custom_text_foreground),
+            "title": QColor(ColorPalette.custom_text_active if dark else ColorPalette.custom_text_title),
+            "accent": QColor(ColorPalette.custom_icon_color if dark else ColorPalette.custom_text_description),
+            "outlined": QColor(ColorPalette.custom_text_title if dark else ColorPalette.custom_text_foreground),
         }
 
     base = severity_color(sev)

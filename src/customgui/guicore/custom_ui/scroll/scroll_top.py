@@ -8,6 +8,7 @@ from PySide6.QtWidgets import QAbstractButton, QGraphicsOpacityEffect, QScrollAr
 
 from customgui.appcore import AppSettings
 
+from ...acrylic import glass_surface
 from ..display.palette import tokens
 from ..paint_utils import draw_chevron
 
@@ -128,9 +129,12 @@ class CScrollTop(QAbstractButton):
         painter.setRenderHint(QPainter.Antialiasing)
         palette = tokens()
         rect = QRectF(self.rect()).adjusted(0.5, 0.5, -0.5, -0.5)
-        fill = QColor(palette["surface_strong"])
+        # 浮在内容之上的按钮也跟随亚克力强度，保留最小不透明度避免文字干扰
+        fill = glass_surface(palette["surface_strong"], AppSettings.glass.control, minimum=0.20)
         if self._hover:
-            fill = QColor(palette["border"])
+            # 悬停用强调色淡底：旧实现取 border 色，和常态底色几乎同值，
+            # 深色主题下几乎看不出悬停反馈。
+            fill = glass_surface(palette["accent"], 0.18, minimum=0.18)
         painter.setPen(QPen(QColor(palette["border"]), 1))
         painter.setBrush(fill)
         painter.drawEllipse(rect)

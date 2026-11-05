@@ -10,6 +10,7 @@ os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
 
 import pytest
 from PySide6.QtCore import Qt
+from PySide6.QtGui import QColor
 from PySide6.QtTest import QTest
 from PySide6.QtWidgets import QApplication, QVBoxLayout, QWidget
 
@@ -162,6 +163,34 @@ def test_configurator_appearance_sliders(host):
     finally:
         reset_appearance_overrides()
         panel.deleteLater()
+
+
+def test_menu_colors_theme_contrast_and_glass_surface(monkeypatch):
+    import customgui.guicore.acrylic as acrylic_module
+    from customgui.guicore import glass_surface, reset_appearance_overrides, set_glass_strength
+    from customgui.guicore.custom_ui.menu.menu_list import menu_colors
+
+    try:
+        for theme in ("bright", "dracula"):
+            get_theme_manager().apply(theme)
+            palette = menu_colors()
+            background = QColor(palette["background"])
+            hover = QColor(palette["hover"])
+            # 悬停行必须与菜单底色有差异（旧实现亮色主题用纯白，几乎不可见）
+            assert hover.name() != background.name()
+            # 强调色前景按实际对比度自动取黑/白：dracula 浅粉配近黑字，亮色主题配白字
+            lightness = QColor(palette["on_accent"]).lightness()
+            assert lightness < 128 if theme == "dracula" else lightness > 128
+
+        monkeypatch.setattr(acrylic_module, "acrylic_active", lambda: True)
+        set_glass_strength(0)
+        assert glass_surface("#000000", 0.5).alpha() == 128
+        set_glass_strength(100)
+        # 浮层表面保留可读性下限，不会随强度归零
+        assert glass_surface("#000000", 0.5, minimum=0.2).alpha() == 51
+    finally:
+        reset_appearance_overrides()
+        get_theme_manager().apply("default")
 
 
 # ----------------------------------------------------------------------

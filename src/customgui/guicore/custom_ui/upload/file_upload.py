@@ -30,6 +30,7 @@ from PySide6.QtWidgets import (
 
 from customgui.appcore import AppSettings
 
+from ...acrylic import glass_surface
 from ..button.button import CButton
 from ..button.severity import Severity, Variant, severity_color
 from ..display.palette import tokens
@@ -160,7 +161,9 @@ class _DropArea(QFrame):
         palette = tokens()
         accent = QColor(palette["accent"])
         border = accent if self._drag_active else QColor(palette["border"])
-        background = QColor(palette["surface"])
+        # 拖放区是页面上的大块表面：跟随亚克力强度，避免在玻璃卡片上留下
+        # 一整块不透明底；拖入时仍用强调色淡底强调交互状态。
+        background = glass_surface(palette["surface"], AppSettings.glass.card, minimum=0.10)
         if self._drag_active:
             background = QColor(accent)
             background.setAlpha(28)

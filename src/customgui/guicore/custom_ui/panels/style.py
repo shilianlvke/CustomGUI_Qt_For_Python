@@ -7,7 +7,7 @@ from PySide6.QtGui import QColor, QFont, QPainter, QPainterPath, QPen
 
 from customgui.appcore import AppSettings, ColorPalette
 
-from ...acrylic import acrylic_active, glass_tint
+from ...acrylic import acrylic_active, glass_surface, glass_tint
 from ..display.palette import is_dark_theme, tokens
 
 #: 面板圆角（对齐 Aura 的 6px，桌面端略放大一档）
@@ -45,32 +45,36 @@ def panel_colors() -> dict[str, str | QColor]:
     """
     base = tokens()
     glass = acrylic_active()
+    # 延迟导入，避免 panels -> button -> ... -> panels 的循环依赖
+    from ..button.severity import contrast_text
+
+    on_accent = contrast_text(QColor(base["accent"]))
     if is_dark_theme():
         return {
-            "background": glass_tint(ColorPalette.custom_bg_one, 0.34) if glass else ColorPalette.custom_bg_one,
-            "header": glass_tint(ColorPalette.custom_dark_one, 0.10) if glass else ColorPalette.custom_dark_one,
+            "background": glass_surface(ColorPalette.custom_bg_one, 0.34, minimum=0.10) if glass else ColorPalette.custom_bg_one,
+            "header": glass_surface(ColorPalette.custom_dark_one, 0.10, minimum=0.04) if glass else ColorPalette.custom_dark_one,
             "header_solid": ColorPalette.custom_dark_one,
-            "hover": glass_tint(ColorPalette.custom_dark_three, 0.14) if glass else ColorPalette.custom_dark_three,
+            "hover": glass_surface(ColorPalette.custom_dark_three, 0.14, minimum=0.05) if glass else ColorPalette.custom_dark_three,
             "border": glass_tint(base["border"], 0.55) if glass else base["border"],
             "divider": glass_tint(base["border"], 0.35) if glass else base["border"],
             "text": base["text"],
             "muted": base["muted"],
             "accent": base["accent"],
-            "track": glass_tint(ColorPalette.custom_dark_four, 0.55) if glass else ColorPalette.custom_dark_four,
-            "on_accent": "#ffffff",
+            "track": glass_surface(ColorPalette.custom_dark_four, 0.55, minimum=0.15) if glass else ColorPalette.custom_dark_four,
+            "on_accent": on_accent,
         }
     return {
-        "background": glass_tint(ColorPalette.custom_dark_three, 0.34) if glass else ColorPalette.custom_dark_three,
-        "header": glass_tint(ColorPalette.custom_dark_two, 0.10) if glass else ColorPalette.custom_dark_two,
+        "background": glass_surface(ColorPalette.custom_dark_three, 0.34, minimum=0.10) if glass else ColorPalette.custom_dark_three,
+        "header": glass_surface(ColorPalette.custom_dark_two, 0.10, minimum=0.04) if glass else ColorPalette.custom_dark_two,
         "header_solid": ColorPalette.custom_dark_two,
-        "hover": glass_tint(ColorPalette.custom_dark_four, 0.14) if glass else ColorPalette.custom_dark_four,
+        "hover": glass_surface(ColorPalette.custom_dark_four, 0.14, minimum=0.05) if glass else ColorPalette.custom_dark_four,
         "border": glass_tint(ColorPalette.custom_bg_two, 0.55) if glass else ColorPalette.custom_bg_two,
         "divider": glass_tint(ColorPalette.custom_bg_two, 0.35) if glass else ColorPalette.custom_bg_two,
         "text": ColorPalette.custom_text_title,
         "muted": ColorPalette.custom_text_description,
         "accent": ColorPalette.custom_context_color,
-        "track": glass_tint(ColorPalette.custom_bg_three, 0.55) if glass else ColorPalette.custom_bg_three,
-        "on_accent": "#ffffff",
+        "track": glass_surface(ColorPalette.custom_bg_three, 0.55, minimum=0.15) if glass else ColorPalette.custom_bg_three,
+        "on_accent": on_accent,
     }
 
 

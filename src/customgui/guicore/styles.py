@@ -117,14 +117,20 @@ class Styles:
         self._card_bg = _rgba(colors.surface_card, glass_alpha(glass_cfg.card)) if glass else colors.surface_card
         self._region_bg = _rgba(region_card_tint(), glass_alpha(glass_cfg.region)) if glass else region_card_tint()
         self._control_bg = _rgba(colors.surface_sidebar, glass_alpha(glass_cfg.control)) if glass else colors.surface_sidebar
-        self._menu_bg = _rgba(colors.surface_interactive, glass_cfg.menu) if glass else colors.surface_interactive
+        self._menu_bg = (
+            _rgba(colors.surface_interactive, glass_alpha(glass_cfg.menu, minimum=0.85)) if glass else colors.surface_interactive
+        )
         # Overlay 左菜单浮在内容之上，需要接近不透明的面板底色；沿用侧栏的
         # 0 透明度会让菜单和页面文字互相穿透。
         self._overlay_panel_bg = (
-            _rgba(colors.surface_panel, glass_cfg.overlay_panel) if glass else colors.surface_panel
+            _rgba(colors.surface_panel, glass_alpha(glass_cfg.overlay_panel, minimum=0.90))
+            if glass
+            else colors.surface_panel
         )
         self._overlay_panel_border = _rgba(colors.text_primary, 0.14) if glass else colors.surface_interactive_pressed
-        self._tooltip_bg = _rgba(colors.surface_sidebar, glass_cfg.tooltip) if glass else colors.surface_sidebar
+        self._tooltip_bg = (
+            _rgba(colors.surface_sidebar, glass_alpha(glass_cfg.tooltip, minimum=0.85)) if glass else colors.surface_sidebar
+        )
 
         # 描边与状态层：玻璃模式用正文色的低透明度，深浅主题都会得到
         # 「深色上是白色高光、浅色上是灰色阴影」的 Fluent 分层效果

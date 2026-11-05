@@ -7,6 +7,7 @@ from .acrylic import acrylic_transparency as acrylic_transparency
 from .acrylic import apply_acrylic as apply_acrylic
 from .acrylic import glass_alpha as glass_alpha
 from .acrylic import glass_strength as glass_strength
+from .acrylic import glass_surface as glass_surface
 from .acrylic import glass_tint as glass_tint
 from .acrylic import remove_acrylic as remove_acrylic
 from .acrylic import reset_appearance_overrides as reset_appearance_overrides
@@ -256,6 +257,7 @@ __all__ = [
     "acrylic_transparency",
     "glass_alpha",
     "glass_strength",
+    "glass_surface",
     "glass_tint",
     "MIN_WINDOW_GLASS_ALPHA",
     "reset_appearance_overrides",

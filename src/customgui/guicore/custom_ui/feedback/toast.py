@@ -16,8 +16,9 @@ from PySide6.QtCore import (
 from PySide6.QtGui import QColor, QFont, QPainter, QPainterPath, QPen
 from PySide6.QtWidgets import QFrame, QGraphicsOpacityEffect, QHBoxLayout, QLabel, QVBoxLayout, QWidget
 
-from customgui.appcore import ColorPalette
+from customgui.appcore import AppSettings, ColorPalette
 
+from ...acrylic import glass_surface
 from ..button.severity import normalize_severity
 from ..close_button import CCloseButton as _CloseButton
 from ..display.palette import tokens
@@ -148,7 +149,11 @@ class CToast(QFrame):
         dark = QColor(palette["surface"]).lightness() < 128
         self._title_label.setStyleSheet(f"color: {palette['text']}; background: transparent;")
         self._text_label.setStyleSheet(f"color: {palette['muted']}; background: transparent;")
-        self._card = QColor(ColorPalette.custom_bg_one if dark else "#ffffff")
+        self._card = glass_surface(
+            ColorPalette.custom_bg_one if dark else "#ffffff",
+            AppSettings.glass.menu,
+            minimum=0.88,
+        )
         self._border = QColor(palette["border"])
 
     def changeEvent(self, event):  # noqa: N802 - 覆写 Qt 命名

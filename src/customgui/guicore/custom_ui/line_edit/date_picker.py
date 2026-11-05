@@ -118,7 +118,10 @@ class CCalendarPanel(QWidget):
                 painter.setBrush(accent)
                 painter.setPen(Qt.NoPen)
                 painter.drawEllipse(center, radius, radius)
-                painter.setPen(QColor("#ffffff"))
+                # 强调色在部分主题（如 dracula 浅粉）上白字对比不足，按亮度取前景
+                from ..button.severity import contrast_text
+
+                painter.setPen(contrast_text(accent))
             elif date == today:
                 painter.setBrush(Qt.NoBrush)
                 painter.setPen(QPen(QColor(accent), 1.2))

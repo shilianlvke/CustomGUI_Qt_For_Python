@@ -16,6 +16,7 @@ from PySide6.QtWidgets import QFrame, QLabel, QVBoxLayout, QWidget
 
 from customgui.appcore import AppSettings
 
+from ...acrylic import glass_surface
 from ..button.severity import contrast_text, normalize_severity, severity_color
 from ..display.icon import tinted_pixmap
 from ..display.palette import tokens
@@ -138,7 +139,8 @@ class _TimelineCard(QFrame):
         rect = QRectF(self.rect()).adjusted(0.5, 0.5, -0.5, -0.5)
         path = QPainterPath()
         path.addRoundedRect(rect, 8, 8)
-        painter.fillPath(path, QColor(colors["surface"]))
+        # 事件卡片跟随亚克力强度，避免在玻璃页面上形成不透明色块
+        painter.fillPath(path, glass_surface(colors["surface"], AppSettings.glass.card, minimum=0.10))
         painter.setBrush(Qt.NoBrush)
         painter.setPen(QPen(QColor(colors["border"]), 1))
         painter.drawPath(path)

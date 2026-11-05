@@ -18,6 +18,7 @@ from PySide6.QtGui import QColor, QPainter, QPainterPath, QPen
 from PySide6.QtWidgets import QFrame, QListWidget, QListWidgetItem, QWidget
 
 from ..line_edit.input_style import colors, radius
+from ..menu.menu_list import menu_colors
 
 
 class ComboChevron(QWidget):
@@ -123,11 +124,11 @@ class ComboPopup(QFrame):
 
     # ------------------------------------------------------------------
     def _apply_style(self) -> None:
-        palette = colors()
+        palette = menu_colors()
         corner = radius()
         text = palette["text"]
-        muted = palette["placeholder"]
-        accent = QColor(palette["focus_border"])
+        muted = palette["muted"]
+        accent = QColor(palette["accent"])
         hover = f"rgba({accent.red()}, {accent.green()}, {accent.blue()}, 36)"
         selected = f"rgba({accent.red()}, {accent.green()}, {accent.blue()}, 76)"
         self.list.setStyleSheet(
@@ -150,10 +151,12 @@ class ComboPopup(QFrame):
     def paintEvent(self, event) -> None:  # noqa: N802 - 覆写 Qt 命名
         painter = QPainter(self)
         painter.setRenderHint(QPainter.RenderHint.Antialiasing)
-        palette = colors()
+        # 弹层覆盖在页面之上：必须使用菜单级高不透明度底色。
+        # 旧实现沿用输入框的 30% 玻璃色，会让下层正文直接透出来。
+        palette = menu_colors()
         rect = QRectF(self.rect()).adjusted(self.MARGIN, self.MARGIN, -self.MARGIN, -self.MARGIN)
         painter.setPen(QPen(QColor(palette["border"]), 1))
-        painter.setBrush(QColor(palette["addon_background"]))
+        painter.setBrush(QColor(palette["background"]))
         corner = radius()
         painter.drawRoundedRect(rect, corner, corner)
         painter.end()

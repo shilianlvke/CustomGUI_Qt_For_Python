@@ -25,10 +25,12 @@ def tokens() -> dict[str, str]:
             "accent": ColorPalette.custom_context_color,
         }
     return {
-        "surface": "#f7f7f7",
-        "surface_strong": "#d6d6d6",
+        # 浅色主题也走调色板：bright / eye 各自的中性色阶不同，若继续写死灰度，
+        # 护眼主题里的 Tag/Chip/上传区会混入一块与主题无关的灰色。
+        "surface": ColorPalette.custom_dark_two,
+        "surface_strong": ColorPalette.custom_bg_three,
         "skeleton": ColorPalette.custom_dark_four,
-        "border": "#e0e0e0",
+        "border": ColorPalette.custom_dark_four,
         "text": ColorPalette.custom_text_title,
         "muted": ColorPalette.custom_text_description,
         "accent": ColorPalette.custom_context_color,

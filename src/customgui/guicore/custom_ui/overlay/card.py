@@ -6,8 +6,9 @@ from PySide6.QtCore import QRectF, Qt
 from PySide6.QtGui import QColor, QPainter, QPainterPath, QPen
 from PySide6.QtWidgets import QFrame
 
-from customgui.appcore import get_design_tokens
+from customgui.appcore import AppSettings, get_design_tokens
 
+from ...acrylic import glass_surface
 from ..display.palette import tokens
 
 
@@ -27,9 +28,13 @@ class COverlayCard(QFrame):
         painter = QPainter(self)
         painter.setRenderHint(QPainter.Antialiasing)
         palette = tokens()
-        # 底色取主题的 surface_app：深色主题下与旧的 custom_bg_one 完全等价，
-        # 浅色主题（如 eye/bright）则跟随主题，不再是一张突兀的纯白卡片。
-        background = QColor(get_design_tokens().colors.surface_app)
+        # 底色取主题的 surface_app，并随亚克力强度轻微透出下层；对话框本身
+        # 覆盖在遮罩之上，保留 90% 以上的不透明度，正文仍然清晰可读。
+        background = glass_surface(
+            get_design_tokens().colors.surface_app,
+            AppSettings.glass.overlay_panel,
+            minimum=0.90,
+        )
         border = QColor(palette["border"])
 
         rect = QRectF(self.rect()).adjusted(0.5, 0.5, -0.5, -0.5)

@@ -215,6 +215,19 @@ def glass_tint(value: str, alpha: float) -> QColor:
     return color
 
 
+def glass_surface(value: str | QColor, alpha: float, minimum: float = 0.0) -> QColor:
+    """浮层/菜单类表面的玻璃色：同时响应「亚克力质感强度」。
+
+    ``glass_tint`` 用于按钮、描边等固定层级，不随强度滑块变化；菜单、下拉弹层、
+    对话框这类**覆盖在其它内容之上的表面**需要跟随强度，同时用 ``minimum``
+    保留足够的不透明度，避免底层正文透出干扰阅读。
+    """
+    color = QColor(value)
+    if acrylic_active() and color.isValid():
+        color.setAlpha(max(0, min(255, round(255 * glass_alpha(alpha, minimum=minimum)))))
+    return color
+
+
 # ----------------------------------------------------------------------
 # 对外接口
 # ----------------------------------------------------------------------
@@ -359,6 +372,7 @@ __all__ = [
     "acrylic_transparency",
     "glass_alpha",
     "glass_strength",
+    "glass_surface",
     "glass_tint",
     "MIN_WINDOW_GLASS_ALPHA",
     "reset_appearance_overrides",

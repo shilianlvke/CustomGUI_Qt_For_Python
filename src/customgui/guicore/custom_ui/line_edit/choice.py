@@ -15,7 +15,6 @@ from .input_style import colors, field_font
 BOX_SIZE = 20
 #: 方框与文字间距的兼容兜底值（运行时以配置为准）
 LABEL_GAP = 8
-_CHECK_COLOR = QColor("#ffffff")
 
 
 def mix_color(start: QColor, end: QColor, ratio: float) -> QColor:
@@ -132,7 +131,10 @@ class CCheckbox(_ChoiceBase):
         painter.drawRoundedRect(rect, 4, 4)
 
         if checked:
-            draw_check(painter, rect.adjusted(4, 4, -4, -4), _CHECK_COLOR, 1.9)
+            # 勾选符号跟随强调色亮度取黑/白，dracula 的浅粉强调色不再配白勾
+            from ..button.severity import contrast_text
+
+            draw_check(painter, rect.adjusted(4, 4, -4, -4), contrast_text(accent), 1.9)
         self._paint_focus_ring(painter, rect, palette)
 
 
@@ -220,7 +222,14 @@ class CToggleSwitch(_ChoiceBase):
         travel = track.width() - self.KNOB_SIZE - 4
         left = track.left() + 2 + travel * self._progress
         knob = QRectF(left, track.center().y() - self.KNOB_SIZE / 2, self.KNOB_SIZE, self.KNOB_SIZE)
-        painter.setBrush(QColor("#ffffff"))
+        if self._progress > 0.5:
+            # 开启态滑轨用强调色填充：dracula 的浅粉强调色上白滑块对比不足
+            from ..button.severity import contrast_text
+
+            knob_color = contrast_text(accent)
+        else:
+            knob_color = QColor("#ffffff")
+        painter.setBrush(knob_color)
         painter.drawEllipse(knob)
 
         if not self.isEnabled():
