@@ -49,10 +49,10 @@ uv run pytest
 
 | 层 | 包 | 可以做 | 不可以做 |
 | --- | --- | --- | --- |
-| 逻辑层 | `customgui.appcore` | 配置、主题、语言、令牌、插件协议、错误边界、工具 | 不得 import `guicore` / `guis` |
-| 组件层 | `customgui.guicore` | 组件实现、窗口部件、QSS 生成 | 不得 import `guis` |
-| 装配层 | `customgui.guis` | 主窗口组装、页面栈、插件加载、语言服务 | 只能使用 `appcore` 公开面（禁止 `appcore.sysx.*`） |
-| 门面 | `customgui.window` | 把装配层的能力收成稳定 API | 不写业务逻辑 |
+| 逻辑层 | `sllkgui.appcore` | 配置、主题、语言、令牌、插件协议、错误边界、工具 | 不得 import `guicore` / `guis` |
+| 组件层 | `sllkgui.guicore` | 组件实现、窗口部件、QSS 生成 | 不得 import `guis` |
+| 装配层 | `sllkgui.guis` | 主窗口组装、页面栈、插件加载、语言服务 | 只能使用 `appcore` 公开面（禁止 `appcore.sysx.*`） |
+| 门面 | `sllkgui.window` | 把装配层的能力收成稳定 API | 不写业务逻辑 |
 
 这些不是口头约定，`tests/test_architecture_boundaries.py` 用 AST 扫 import 根逐条守着。
 新增层级依赖前先想清楚，改断言要单独说明理由。
@@ -63,9 +63,9 @@ uv run pytest
   （现存 `appcore/tool/Net.py` 属于待改的历史命名）。Linux 文件系统大小写敏感，这条不是洁癖。
 - **不要用 `Path(__file__).resolve().parents[N]` 定位资源**。源码运行、wheel 安装、
   PyInstaller 收集三种形态的目录深度不同，这是最隐蔽的「装完就崩」来源。
-  一律走 `customgui.appcore.sysx.config.paths` 的 `find_resource()` / `resolve_path()` / `iter_files()`。
+  一律走 `sllkgui.appcore.sysx.config.paths` 的 `find_resource()` / `resolve_path()` / `iter_files()`。
 - **不要依赖当前工作目录**。运行时不得调用 `os.getcwd()`。
-- **新公开能力先进门面**：宿主该用的东西放 `customgui.window` 或 `customgui.appcore`，
+- **新公开能力先进门面**：宿主该用的东西放 `sllkgui.window` 或 `sllkgui.appcore`，
   别让消费方去 import 内部子模块。
 - **组件不缓存主题色**：自绘组件在 `paintEvent` 中读令牌，`__init__` 里存色值会导致主题热切换混色。
 - 相对导入：同包用 `.`，兄弟包用 `..`，**改层级后立刻 `python -c "import <包>"` 验证**。
@@ -74,7 +74,7 @@ uv run pytest
 ## 测试
 
 - 全部在 `QT_QPA_PLATFORM=offscreen` 下跑（`tests/conftest.py` 已设）。
-- src layout 下测试导入的是**已安装的** `customgui`，不要往 `sys.path` 塞源码目录——
+- src layout 下测试导入的是**已安装的** `sllkgui`，不要往 `sys.path` 塞源码目录——
   否则测的是源码树，而不是 wheel 里的东西，「装完能不能用」这类问题永远测不出来。
 - 修 bug 请带一条能复现的测试；扫描类断言必须加「扫到了东西」的自检，
   本仓库历史上出现过「扫空目录、永远通过」的假绿测试。
@@ -95,13 +95,13 @@ uv run pytest
 - 一次提交做一件事。重构与功能分开，格式化与逻辑分开。
 - 提交信息说明**为什么**，不只是**改了什么**；沿用 `type(scope): 中文描述` 风格。
 - 破坏性变更必须同步更新 `CHANGELOG.md` 的「破坏性变更」。
-- 版本号只在 `src/customgui/_version.py` 一处改，git tag 与之保持一致（`v0.6.0` / `base-v0.6.0`）。
+- 版本号只在 `src/sllkgui/_version.py` 一处改，git tag 与之保持一致（`v1.0.0` / `base-v1.0.0`）。
 
-## 发版（内测）
+## 发版
 
 ```powershell
 # 1. 改版本号（唯一一处）
-#    src/customgui/_version.py  ->  __version__ = "0.6.0"
+#    src/sllkgui/_version.py  ->  __version__ = "1.0.0"
 
 # 2. 构建与校验
 uv run python -m build --wheel
@@ -109,13 +109,13 @@ uv run twine check dist/*.whl
 
 # 3. 干净环境冒烟（务必做，别只看本机）
 uv venv /tmp/smoke --python 3.12
-uv pip install --python /tmp/smoke/bin/python dist/customgui-0.6.0-py3-none-any.whl
-/tmp/smoke/bin/customgui doctor
+uv pip install --python /tmp/smoke/bin/python dist/sllkgui-1.0.0-py3-none-any.whl
+/tmp/smoke/bin/sllkgui doctor
 
 # 4. 打 tag 并推送
-git tag base-v0.6.0
+git tag base-v1.0.0
 git push origin main --tags
 ```
 
-第 3 步是唯一能验证「开箱即用」的环节。`customgui doctor` 里任一 `✗` 都不要发。
-内测期不发 PyPI，只走 wheel + tag。
+第 3 步是唯一能验证「开箱即用」的环节。`sllkgui doctor` 里任一 `✗` 都不要发。
+1.x 暂不发 PyPI，只走 wheel + tag。

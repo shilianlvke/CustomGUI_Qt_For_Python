@@ -4,8 +4,8 @@ from PySide6.QtCore import Qt
 from PySide6.QtGui import QFont
 from PySide6.QtWidgets import QHBoxLayout, QLabel, QVBoxLayout, QWidget
 
-from customgui.appcore import AppSettings
-from customgui.guicore import (
+from sllkgui.appcore import AppSettings
+from sllkgui.guicore import (
     CButton,
     CConfirmDialog,
     CDialog,
@@ -73,8 +73,8 @@ class OverlayPreviewPage(CPreviewPage):
     @classmethod
     def _toggle_column(cls, window, position: str) -> None:
         """切换指定方向的栏目抽屉（左/右列为基座既有栏目，顶/底列与之同构）。"""
-        from customgui.appcore import PathFactory
-        from customgui.guis.windows.main_window.functions import MainFunctions
+        from sllkgui.appcore import PathFactory
+        from sllkgui.guis.windows.main_window.functions import MainFunctions
 
         if position == "left":
             MainFunctions.set_left_column_menu(

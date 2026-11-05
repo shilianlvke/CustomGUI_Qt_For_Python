@@ -14,11 +14,11 @@ import pytest
 from PySide6.QtTest import QTest
 from PySide6.QtWidgets import QApplication, QFrame, QWidget
 
-from customgui.appcore import AppSettings
-from customgui.appcore.app.main_window_use_cases import MainWindowButtonUseCase
-from customgui.guicore import CBottomColumn, CLeftColumn, CTopColumn, Styles
-from customgui.guis.windows.main_window.controller import ColumnController
-from customgui.guis.windows.main_window.functions import MainFunctions
+from sllkgui.appcore import AppSettings
+from sllkgui.appcore.app.main_window_use_cases import MainWindowButtonUseCase
+from sllkgui.guicore import CBottomColumn, CLeftColumn, CTopColumn, Styles
+from sllkgui.guis.windows.main_window.controller import ColumnController
+from sllkgui.guis.windows.main_window.functions import MainFunctions
 
 
 @pytest.fixture(scope="module")
@@ -115,8 +115,8 @@ def test_main_content_is_flush_with_region_card(qapp):
     """主内容区页面与背景卡片齐平：卡片边缘不再露出一圈底色窄环。"""
     from PySide6.QtWidgets import QMainWindow
 
-    from customgui.appcore import AppLanguages, AppSettings, AppThemes, ColorPalette, Language, get_app_context
-    from customgui.guis.windows.main_window.ui_main import UiMainWindow
+    from sllkgui.appcore import AppLanguages, AppSettings, AppThemes, ColorPalette, Language, get_app_context
+    from sllkgui.guis.windows.main_window.ui_main import UiMainWindow
 
     get_app_context()
     ColorPalette.update(AppThemes[AppSettings.theme_name].data)
@@ -139,8 +139,8 @@ def test_main_window_region_frames_share_card_name(qapp):
     """五个区域容器（内容 + 四向抽屉）都挂 CRegion_Card_Frame。"""
     from PySide6.QtWidgets import QMainWindow
 
-    from customgui.appcore import AppLanguages, AppSettings, AppThemes, ColorPalette, Language, get_app_context
-    from customgui.guis.windows.main_window.ui_main import UiMainWindow
+    from sllkgui.appcore import AppLanguages, AppSettings, AppThemes, ColorPalette, Language, get_app_context
+    from sllkgui.guis.windows.main_window.ui_main import UiMainWindow
 
     # 装配真实主窗口 UI 需要语言包（左列菜单读取 Language.UI）
     get_app_context()

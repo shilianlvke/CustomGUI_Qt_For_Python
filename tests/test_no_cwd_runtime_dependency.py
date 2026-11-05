@@ -2,11 +2,11 @@ import ast
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
-# src layout：运行时包在 src/customgui 下，扫错路径会让断言永远通过。
+# src layout：运行时包在 src/sllkgui 下，扫错路径会让断言永远通过。
 RUNTIME_DIRS = [
-    "src/customgui/appcore",
-    "src/customgui/guis",
-    "src/customgui/guicore",
+    "src/sllkgui/appcore",
+    "src/sllkgui/guis",
+    "src/sllkgui/guicore",
 ]
 RUNTIME_FILES = ["examples/hello_world/main.py"]
 

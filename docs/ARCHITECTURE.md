@@ -1,11 +1,11 @@
 # 架构说明
 
-本文描述 CustomGUI 当前（内测版 `0.6.0`）的代码组织、启动链路与扩展点。
+本文描述 SllkGUI 当前（`1.0.0`）的代码组织、启动链路与扩展点。
 文档为手工维护，与源码同步；断言行为以 `tests/` 为准。
 
 ## 1. 设计目标
 
-- **可被依赖**：宿主项目只接触 `customgui`、`customgui.appcore`、`customgui.window` 三个门面，
+- **可被依赖**：宿主项目只接触 `sllkgui`、`sllkgui.appcore`、`sllkgui.window` 三个门面，
   不必了解内部装配细节。
 - **单向依赖**：逻辑层不认识 UI，组件层不认识装配层，装配层只能用逻辑层的公开面。
 - **装在别处也能跑**：源码、wheel、PyInstaller 三种形态下资源路径一致，不依赖当前工作目录。
@@ -15,29 +15,29 @@
 
 | 层 | 包 | 职责 | 禁止 |
 | --- | --- | --- | --- |
-| 逻辑层 | `customgui.appcore` | 配置、路径、主题、语言、令牌、插件协议、日志、遥测、错误边界、存储 | import `guicore` / `guis` |
-| 组件层 | `customgui.guicore` | 组件实现、窗口部件、QSS 生成、字体、后台任务、回调守卫 | import `guis` |
-| 装配层 | `customgui.guis` | 主窗口组装、页面栈、应用装载、语言服务、按钮路由 | 使用 `appcore.sysx.*` 深层模块 |
-| 门面 | `customgui` / `window` / `config` | 收敛稳定 API：`configure` / `get_app_context` / 命令 | 写业务逻辑 |
+| 逻辑层 | `sllkgui.appcore` | 配置、路径、主题、语言、令牌、插件协议、日志、遥测、错误边界、存储 | import `guicore` / `guis` |
+| 组件层 | `sllkgui.guicore` | 组件实现、窗口部件、QSS 生成、字体、后台任务、回调守卫 | import `guis` |
+| 装配层 | `sllkgui.guis` | 主窗口组装、页面栈、应用装载、语言服务、按钮路由 | 使用 `appcore.sysx.*` 深层模块 |
+| 门面 | `sllkgui` / `window` / `config` | 收敛稳定 API：`configure` / `get_app_context` / 命令 | 写业务逻辑 |
 
 约束由 `tests/test_architecture_boundaries.py` 用 AST 扫描 import 根执行，违反即测试失败。
 
 ```text
 apps/*  ──────────────┐
                       ▼
-              customgui.window  (门面)
+              sllkgui.window  (门面)
                       │
                       ▼
-              customgui.guis    (装配)
+              sllkgui.guis    (装配)
                       │
                       ▼
-             customgui.guicore  (组件)
+             sllkgui.guicore  (组件)
                       │
                       ▼
-             customgui.appcore  (逻辑)
+             sllkgui.appcore  (逻辑)
                       │
                       ▼
-        _resources/customui (默认主题/语言/设置/图标)
+        _resources/sllkgui (默认主题/语言/设置/图标)
 ```
 
 ## 3. 包地图
@@ -48,11 +48,11 @@ apps/*  ──────────────┐
 
 | 入口 | 角色 | 稳定性 |
 | --- | --- | --- |
-| `customgui.window` | 宿主唯一门面：窗口骨架、应用装载、语言服务的再导出 | **稳定**，宿主只依赖这里 |
-| `customgui.guicore.window` | 可复用窗口部件（`CWindow` / `CTitleBar` / `CLeftMenu` 等）与壳层组件 | 组件层稳定；`window/window/` 内部实现不保证 |
-| `customgui.guis.windows` | 主窗口装配、页面栈、按钮路由 | **内部**，宿主通常不直接依赖 |
+| `sllkgui.window` | 宿主唯一门面：窗口骨架、应用装载、语言服务的再导出 | **稳定**，宿主只依赖这里 |
+| `sllkgui.guicore.window` | 可复用窗口部件（`CWindow` / `CTitleBar` / `CLeftMenu` 等）与壳层组件 | 组件层稳定；`window/window/` 内部实现不保证 |
+| `sllkgui.guis.windows` | 主窗口装配、页面栈、按钮路由 | **内部**，宿主通常不直接依赖 |
 
-`customgui.guicore` 为方便宿主一次性导入而再导出了较多符号；稳定 API 的判定以
+`sllkgui.guicore` 为方便宿主一次性导入而再导出了较多符号；稳定 API 的判定以
 [API.md](API.md) 的“稳定面一览”为准，其余符号视为组件内部约定。
 
 ### appcore
@@ -95,7 +95,7 @@ apps/*  ──────────────┐
 | --- | --- |
 | `app_loader.py` | 编排层：`register_app()`、`load_apps()`、`load_app_handles()`、`get_app_handle()`、`reset_apps_cache()` |
 | `app_manifest.py` | 清单与发现：`discover_app_dirs()`、`load_app_manifest()`、协议/入口校验、应用语言加载 |
-| `app_namespace.py` | 私有命名空间 `_customgui_apps`：MetaPathFinder 与应用模块导入 |
+| `app_namespace.py` | 私有命名空间 `_sllkgui_apps`：MetaPathFinder 与应用模块导入 |
 | `app_context.py` | `AppContext`（`lang_text` / `resource` / `import_module`）与 `AppHandle` |
 | `app_v2.py` | 协议 v2：`AppPlugin` / `AppPage` → `MenuPlugin` + `PagePlugin` 的注册转换 |
 | `app_state.py` | 应用目录、句柄与加载标志的集中状态（解开 manifest ↔ loader 的循环依赖） |
@@ -108,9 +108,9 @@ apps/*  ──────────────┐
 
 ## 4. 启动时序
 
-`customgui run`（`cli.py`）与宿主 `main.py` 走的是同一条链路：
+`sllkgui run`（`cli.py`）与宿主 `main.py` 走的是同一条链路：
 
-1. `customgui.configure(...)` 写入全局配置（可选；也可用环境变量）。
+1. `sllkgui.configure(...)` 写入全局配置（可选；也可用环境变量）。
 2. `get_app_context()` 首次加载配置上下文：按资源层深合并 `settings` / `themes` / `languages`，做 schema 校验。
 3. `ColorPalette.update(AppThemes[AppSettings.theme_name].data)`、`Language.update(AppLanguages[...].data)`
    装载主题色与基座语言。
@@ -136,20 +136,20 @@ flowchart LR
 
 ## 5. 配置与资源解析
 
-- **优先级**：`configure()` 显式参数 > `CUSTOMGUI_*` 环境变量 > 内置默认值。
-- **资源根顺序**：`resource_dirs` / `CUSTOMGUI_RESOURCE_DIR` → 各应用 `<app>/brand/` → 包内 `_resources/`。
+- **优先级**：`configure()` 显式参数 > `SLLKGUI_*` 环境变量 > 内置默认值。
+- **资源根顺序**：`resource_dirs` / `SLLKGUI_RESOURCE_DIR` → 各应用 `<app>/brand/` → 包内 `_resources/`。
 - **配置是深合并**：`settings/` / `themes/` / `languages/` 下同名 YAML 逐层 `deep_merge`，
   品牌层只写要改的键；其他资源（图标/图片/字体）同名整份替换。
 - **路径解析**：`find_resource()` 只在资源根里找；`resolve_path()` 找不到时回落到包内稳定位置，
   便于报错与写操作定位。运行时不得使用 `os.getcwd()`（有测试守）。
 - **可写数据**：日志、遥测与用户配置写到 `data_root()`（默认程序运行根目录，
-  可用 `configure(data_dir=...)` / `CUSTOMGUI_DATA_DIR` 覆盖），绝不写安装目录或用户系统目录。
+  可用 `configure(data_dir=...)` / `SLLKGUI_DATA_DIR` 覆盖），绝不写安装目录或用户系统目录。
 
 ## 6. 应用装载与页面路由
 
 - 发现：`discover_app_dirs()` 只认含 `config.yml` 的子目录，按名称排序。
 - 校验：`app_name` 必须等于目录名；`protocol` 只能是 `1` / `2`；违规抛 `AppPluginError`（带错误码）。
-- 命名空间：应用模块挂到私有包 `_customgui_apps.<name>`，支持应用内跨目录相对导入。
+- 命名空间：应用模块挂到私有包 `_sllkgui_apps.<name>`，支持应用内跨目录相对导入。
 - 注册：一个应用可声明多个页面（v2 的 `pages()` 或 v1 的 `register_plugins`），
   每个页面注册为 `PagePlugin`，菜单项注册为 `MenuPlugin`。
 - 路由：`registry.get_page_routes(language)` 把 `button_id` 映射到 `(page_object, title)`；
@@ -207,17 +207,17 @@ flowchart LR
 | 想做的事 | 入口 |
 | --- | --- |
 | 加一个页面 | `apps/<name>/` + 清单 + `gui/main.py`（见 [PLUGIN.md](PLUGIN.md)） |
-| 换品牌配色/图标 | `configure(resource_dirs=[...])` 或 `<app>/brand/customui/` |
-| 加主题 | `_resources/customui/themes/<name>.yaml`，重启后出现在主题循环 |
-| 加语言 | `_resources/customui/languages/<code>.yaml`，`LANGUAGE_OPTIONS` 自动发现 |
-| 调窗口/动画/提示参数 | `_resources/customui/settings/window.yaml` |
+| 换品牌配色/图标 | `configure(resource_dirs=[...])` 或 `<app>/brand/sllkgui/` |
+| 加主题 | `_resources/sllkgui/themes/<name>.yaml`，重启后出现在主题循环 |
+| 加语言 | `_resources/sllkgui/languages/<code>.yaml`，`LANGUAGE_OPTIONS` 自动发现 |
+| 调窗口/动画/提示参数 | `_resources/sllkgui/settings/window.yaml` |
 | 接管按钮行为 | `MainWindowButtonUseCase.ACTION_MAP` 或自定义 `controller` |
 | 后台任务 | `guicore.run_task()` + `TaskWorker` |
 | 遥测落盘 | `record_event()` / `track_timing` |
 
 ## 11. 已知架构债
 
-内测阶段明确保留、但需要在正式版前处理的问题：
+明确保留、需要后续版本处理的问题：
 
 1. **兼容壳**：`CLineEdit` / `CPushButton`、协议 v1（`PAGE` / `build_page`）、旧 `resource/`
    布局仍保留，增加认知成本。三者都有真实调用方，删除要连带改应用与文档，

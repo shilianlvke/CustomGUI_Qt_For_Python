@@ -10,7 +10,7 @@ def main() -> int:
 
     target_name = sys.argv[1]
     root = Path(__file__).resolve().parents[1]
-    dist_app = root / "dist" / "CustomGUI"
+    dist_app = root / "dist" / "SllkGUI"
     releases_dir = root / "dist" / "release"
     releases_dir.mkdir(parents=True, exist_ok=True)
 
@@ -18,7 +18,7 @@ def main() -> int:
         print(f"Build output not found: {dist_app}")
         return 1
 
-    archive_base = releases_dir / f"CustomGUI-{target_name}"
+    archive_base = releases_dir / f"SllkGUI-{target_name}"
     archive_path = shutil.make_archive(str(archive_base), "zip", root_dir=dist_app)
     print(f"Created archive: {archive_path}")
     return 0

@@ -1,6 +1,6 @@
 from threading import Thread
 
-from customgui.appcore import AppSettings, get_app_context
+from sllkgui.appcore import AppSettings, get_app_context
 
 
 def test_lazy_context_view_access():

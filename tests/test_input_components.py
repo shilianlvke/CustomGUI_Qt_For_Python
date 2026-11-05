@@ -9,7 +9,7 @@ from PySide6.QtCore import QDate, QPoint, Qt
 from PySide6.QtTest import QTest
 from PySide6.QtWidgets import QApplication, QWidget
 
-from customgui.guicore import (
+from sllkgui.guicore import (
     CAutoComplete,
     CCalendarPanel,
     CCheckbox,
@@ -337,7 +337,7 @@ def test_input_icon_is_tinted_by_theme(host):
     """图标不能保留 SVG 里写死的蓝色，要按 form.field.icon.color 着色。"""
     from PySide6.QtGui import QColor
 
-    from customgui.guicore.custom_ui.line_edit.input_style import colors
+    from sllkgui.guicore.custom_ui.line_edit.input_style import colors
 
     field = CInputText(icon="icon_users", parent=host)
     image = field._tinted_icon().pixmap(16, 16).toImage()
@@ -366,7 +366,7 @@ def test_knob_value_template(host):
 # 浮层外观（圆角 / 阴影 / 内衬）——下拉字段与分体按钮共用
 # ----------------------------------------------------------------------
 def test_popover_reserves_shadow_margins_and_inset(host):
-    from customgui.guicore.custom_ui.line_edit.overlay import (
+    from sllkgui.guicore.custom_ui.line_edit.overlay import (
         POPOVER_INSET,
         POPOVER_SHADOW,
         CPopover,
@@ -388,7 +388,7 @@ def test_popover_body_is_rounded_and_inset(qapp, host):
     """本体四角必须是圆角、内容不侵入圆角；右下角投影区不应有实心直角。"""
     from PySide6.QtWidgets import QLabel
 
-    from customgui.guicore.custom_ui.line_edit.overlay import POPOVER_SHADOW, CPopover
+    from sllkgui.guicore.custom_ui.line_edit.overlay import POPOVER_SHADOW, CPopover
 
     popover = CPopover(host, width=200)
     filler = QLabel("content", popover)
@@ -412,7 +412,7 @@ def test_popover_body_is_rounded_and_inset(qapp, host):
 
 def test_dropdown_popup_reuses_popover(host):
     """CDropdownField 的浮层必须是 CPopover，且本体宽度等于 _popup_width()。"""
-    from customgui.guicore.custom_ui.line_edit.overlay import CPopover
+    from sllkgui.guicore.custom_ui.line_edit.overlay import CPopover
 
     field = CSelect(["Rome", "London"], "Rome", parent=host)
     field.show()

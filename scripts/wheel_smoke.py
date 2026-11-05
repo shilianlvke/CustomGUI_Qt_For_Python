@@ -3,7 +3,7 @@
 用法（先构建并安装 wheel，再从仓库根运行）::
 
     uv build
-    uv pip install --reinstall dist/customgui-*.whl
+    uv pip install --reinstall dist/sllkgui-*.whl
     python scripts/wheel_smoke.py
 
 脚本不依赖源码树：`src/` 不在 `sys.path` 时导入的是已安装 wheel。
@@ -20,9 +20,9 @@ os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
 
 def main() -> int:
     try:
-        import customgui
-        from customgui.appcore import get_app_context
-        from customgui.guicore import Styles
+        import sllkgui
+        from sllkgui.appcore import get_app_context
+        from sllkgui.guicore import Styles
 
         context = get_app_context()
         if context.settings is None:
@@ -31,7 +31,7 @@ def main() -> int:
         for selector in ("#CWindow_Frame", "#CCard_Frame"):
             if selector not in sheet:
                 raise RuntimeError(f"全局样式表缺少关键选择器: {selector}")
-        print(f"wheel smoke ok: customgui {customgui.__version__}, qss {len(sheet)} chars")
+        print(f"wheel smoke ok: sllkgui {sllkgui.__version__}, qss {len(sheet)} chars")
         return 0
     except Exception as exc:
         print(f"wheel smoke failed: {exc}", file=sys.stderr)

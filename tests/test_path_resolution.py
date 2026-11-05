@@ -1,7 +1,7 @@
 """路径解析测试：config.paths（项目根锚定，独立于 cwd）与 PathFactory。
 
 后半部分锁死「应用资产跟着插件走」的机制：应用不该把资源塞进项目根的
-``resource/``，而应放在 ``apps/<app>/brand/customui/...``，由基座自动纳入
+``resource/``，而应放在 ``apps/<app>/brand/sllkgui/...``，由基座自动纳入
 解析链。每条断言都对应一个曾经的真实故障，见各测试的 docstring。
 """
 
@@ -11,15 +11,15 @@ from pathlib import Path
 
 import pytest
 
-import customgui
-from customgui import package_root
-from customgui.appcore import LANGUAGE_OPTIONS
-from customgui.appcore.sysx.common.static_func import PathFinder
-from customgui.appcore.sysx.config.paths import iter_file_layers, iter_files, project_root, resolve_path
+import sllkgui
+from sllkgui import package_root
+from sllkgui.appcore import LANGUAGE_OPTIONS
+from sllkgui.appcore.sysx.common.static_func import PathFinder
+from sllkgui.appcore.sysx.config.paths import iter_file_layers, iter_files, project_root, resolve_path
 
 
 def test_resolve_from_project_root():
-    path = resolve_path("resource/customui/settings")
+    path = resolve_path("resource/sllkgui/settings")
 
     assert path.exists()
     assert path.is_dir()
@@ -27,7 +27,7 @@ def test_resolve_from_project_root():
 
 
 def test_project_root_env_override(tmp_path, monkeypatch):
-    monkeypatch.setenv("CUSTOMGUI_ROOT_DIR", str(tmp_path))
+    monkeypatch.setenv("SLLKGUI_ROOT_DIR", str(tmp_path))
     (tmp_path / "marker.txt").write_text("x", encoding="utf-8")
 
     assert project_root() == tmp_path.resolve()
@@ -35,7 +35,7 @@ def test_project_root_env_override(tmp_path, monkeypatch):
 
 
 def test_iter_files_collects_sorted_yaml():
-    files = iter_files("resource/customui/themes", ".yaml")
+    files = iter_files("resource/sllkgui/themes", ".yaml")
 
     names = [path.stem for path in files]
     assert "default" in names
@@ -54,7 +54,7 @@ def test_path_factory_is_independent_from_cwd(tmp_path, monkeypatch):
 
 
 # ==========================================================================
-# 应用品牌层（<app>/brand/customui/...）与惰性语言发现
+# 应用品牌层（<app>/brand/sllkgui/...）与惰性语言发现
 # ==========================================================================
 def _write_language(directory: Path, name: str, body: str = "UI:\n  ui_Ok: OK\n") -> Path:
     directory.mkdir(parents=True, exist_ok=True)
@@ -65,7 +65,7 @@ def _write_language(directory: Path, name: str, body: str = "UI:\n  ui_Ok: OK\n"
 
 def _fresh(apps_dir: Path, resource_dirs=()):
     """在独立配置下重新解析（每次 invalidate，避免上一用例的缓存干扰）。"""
-    customgui.configure(
+    sllkgui.configure(
         apps_dir=apps_dir,
         resource_dirs=list(resource_dirs),
         data_dir=apps_dir.parent / "data",
@@ -73,7 +73,7 @@ def _fresh(apps_dir: Path, resource_dirs=()):
     )
     LANGUAGE_OPTIONS.invalidate()
 
-    from customgui.appcore.sysx.config.paths import resource_roots
+    from sllkgui.appcore.sysx.config.paths import resource_roots
 
     return resource_roots()
 
@@ -87,7 +87,7 @@ def _restore_base_config():
     ``ConfigAlreadyLoadedError``。
     """
     yield
-    customgui.configure(
+    sllkgui.configure(
         apps_dir=package_root().parent.parent / "apps",
         resource_dirs=(),
         force_reload=True,
@@ -97,9 +97,9 @@ def _restore_base_config():
 
 # -- 布局解析 --------------------------------------------------------------
 def test_app_brand_is_a_resource_root(tmp_path):
-    """``<app>/brand``（其下直接是 ``customui/``）必须被识别为资源根。"""
+    """``<app>/brand``（其下直接是 ``sllkgui/``）必须被识别为资源根。"""
     app = tmp_path / "apps" / "demo"
-    (app / "brand" / "customui" / "languages").mkdir(parents=True)
+    (app / "brand" / "sllkgui" / "languages").mkdir(parents=True)
     (app / "config.yml").write_text("app_name: demo\n", encoding="utf-8")
 
     roots = _fresh(tmp_path / "apps")
@@ -110,14 +110,14 @@ def test_app_brand_is_a_resource_root(tmp_path):
     assert roots.index(target) < len(roots) - 1
 
 
-def test_bare_customui_dir_is_not_a_resource_root(tmp_path):
-    """只有 ``<app>/customui`` 而没有 ``brand/`` 时不得当作资源根。
+def test_bare_sllkgui_dir_is_not_a_resource_root(tmp_path):
+    """只有 ``<app>/sllkgui`` 而没有 ``brand/`` 时不得当作资源根。
 
-    一旦把 ``<app>/customui`` 当根，调用方的 ``customui/themes`` 会拼成
-    ``customui/customui/themes``——多一层，什么都找不到。
+    一旦把 ``<app>/sllkgui`` 当根，调用方的 ``sllkgui/themes`` 会拼成
+    ``sllkgui/sllkgui/themes``——多一层，什么都找不到。
     """
     app = tmp_path / "apps" / "bare"
-    (app / "customui" / "languages").mkdir(parents=True)
+    (app / "sllkgui" / "languages").mkdir(parents=True)
     (app / "config.yml").write_text("app_name: bare\n", encoding="utf-8")
 
     roots = _fresh(tmp_path / "apps")
@@ -126,9 +126,9 @@ def test_bare_customui_dir_is_not_a_resource_root(tmp_path):
 
 
 def test_root_with_nested_resource_sinks_one_level(tmp_path):
-    """``<root>/resource/customui/...`` 这类历史布局仍然可用（下沉一级）。"""
+    """``<root>/resource/sllkgui/...`` 这类历史布局仍然可用（下沉一级）。"""
     root = tmp_path / "project"
-    (root / "resource" / "customui" / "languages").mkdir(parents=True)
+    (root / "resource" / "sllkgui" / "languages").mkdir(parents=True)
 
     roots = _fresh(tmp_path / "apps", resource_dirs=[root])
 
@@ -137,9 +137,9 @@ def test_root_with_nested_resource_sinks_one_level(tmp_path):
 
 
 def test_configured_dir_without_nested_resource_is_used_directly(tmp_path):
-    """其下直接是 ``customui/`` 的目录不再下沉。"""
+    """其下直接是 ``sllkgui/`` 的目录不再下沉。"""
     brand = tmp_path / "project" / "brand"
-    (brand / "customui" / "languages").mkdir(parents=True)
+    (brand / "sllkgui" / "languages").mkdir(parents=True)
 
     roots = _fresh(tmp_path / "apps", resource_dirs=[brand])
 
@@ -149,24 +149,24 @@ def test_configured_dir_without_nested_resource_is_used_directly(tmp_path):
 def test_app_brand_has_priority_over_package(tmp_path):
     """品牌层优先于基座包内资源。"""
     app = tmp_path / "apps" / "demo"
-    _write_language(app / "brand" / "customui" / "languages", "zh_cn", "UI:\n  ui_Ok: 品牌\n")
+    _write_language(app / "brand" / "sllkgui" / "languages", "zh_cn", "UI:\n  ui_Ok: 品牌\n")
     (app / "config.yml").write_text("app_name: demo\n", encoding="utf-8")
 
     _fresh(tmp_path / "apps")
 
-    from customgui.appcore.sysx.config.paths import find_resource
+    from sllkgui.appcore.sysx.config.paths import find_resource
 
-    found = find_resource("resource/customui/languages/zh_cn.yaml")
+    found = find_resource("resource/sllkgui/languages/zh_cn.yaml")
     assert found is not None
     # 命中的必须是品牌层那份，而不是基座包内的
-    assert found == (app / "brand" / "customui" / "languages" / "zh_cn.yaml")
+    assert found == (app / "brand" / "sllkgui" / "languages" / "zh_cn.yaml")
     assert "品牌" in found.read_text(encoding="utf-8")
 
 
 def test_no_duplicate_roots(tmp_path):
     """同一目录不得在资源根里出现两次（会导致重复扫描）。"""
     app = tmp_path / "apps" / "demo"
-    (app / "brand" / "customui").mkdir(parents=True)
+    (app / "brand" / "sllkgui").mkdir(parents=True)
     (app / "config.yml").write_text("app_name: demo\n", encoding="utf-8")
 
     roots = _fresh(tmp_path / "apps", resource_dirs=[app / "brand"])
@@ -191,7 +191,7 @@ def test_iter_file_layers_keeps_every_layer_low_to_high(tmp_path):
     """
     app = tmp_path / "apps" / "demo"
     brand_default = _write_theme(
-        app / "brand" / "customui" / "themes",
+        app / "brand" / "sllkgui" / "themes",
         "default",
         'custom_dark_one: "#010101"\n',
     )
@@ -199,7 +199,7 @@ def test_iter_file_layers_keeps_every_layer_low_to_high(tmp_path):
 
     _fresh(tmp_path / "apps")
 
-    layers = iter_file_layers("resource/customui/themes", ".yaml")
+    layers = iter_file_layers("resource/sllkgui/themes", ".yaml")
 
     paths = layers["default.yaml"]
     assert len(paths) == 2, paths  # 断言必须真的收满两层，不能是空扫描
@@ -212,7 +212,7 @@ def test_iter_files_still_returns_one_file_per_name(tmp_path):
     """``iter_files()`` 保持「同名只给一份」：发现类调用不能被分层影响。"""
     app = tmp_path / "apps" / "demo"
     brand_default = _write_theme(
-        app / "brand" / "customui" / "themes",
+        app / "brand" / "sllkgui" / "themes",
         "default",
         'custom_dark_one: "#010101"\n',
     )
@@ -220,7 +220,7 @@ def test_iter_files_still_returns_one_file_per_name(tmp_path):
 
     _fresh(tmp_path / "apps")
 
-    files = iter_files("resource/customui/themes", ".yaml")
+    files = iter_files("resource/sllkgui/themes", ".yaml")
     defaults = [path for path in files if path.stem == "default"]
 
     assert len(defaults) == 1
@@ -234,7 +234,7 @@ def test_iter_files_still_returns_one_file_per_name(tmp_path):
 def test_language_options_discovers_app_brand_languages(tmp_path):
     """应用品牌层里的语言文件能被 ``LANGUAGE_OPTIONS`` 自动发现。"""
     app = tmp_path / "apps" / "demo"
-    languages = app / "brand" / "customui" / "languages"
+    languages = app / "brand" / "sllkgui" / "languages"
     _write_language(languages, "zh_tw")
     _write_language(languages, "ja_jp")
     (app / "config.yml").write_text("app_name: demo\n", encoding="utf-8")
@@ -260,7 +260,7 @@ def test_language_options_is_lazy_not_import_time(tmp_path):
     assert "xx_overlay" not in before
 
     app = tmp_path / "apps" / "late"
-    _write_language(app / "brand" / "customui" / "languages", "xx_overlay")
+    _write_language(app / "brand" / "sllkgui" / "languages", "xx_overlay")
     (app / "config.yml").write_text("app_name: late\n", encoding="utf-8")
 
     _fresh(tmp_path / "apps")
@@ -286,7 +286,7 @@ def test_language_cycle_works(tmp_path):
     (tmp_path / "apps").mkdir()
     _fresh(tmp_path / "apps")
 
-    from customgui.appcore import Language
+    from sllkgui.appcore import Language
 
     original = Language.current()
     try:

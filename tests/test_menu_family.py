@@ -9,7 +9,7 @@ from PySide6.QtCore import QPoint, Qt
 from PySide6.QtTest import QTest
 from PySide6.QtWidgets import QApplication, QLabel
 
-from customgui.guicore.custom_ui.menu import (
+from sllkgui.guicore.custom_ui.menu import (
     CContextMenu,
     CMegaMenu,
     CMenubar,

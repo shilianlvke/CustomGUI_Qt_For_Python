@@ -1,10 +1,10 @@
 # API 速查
 
-内测期只保证**门面**的名字稳定：`customgui`、`customgui.config`、`customgui.appcore`、
-`customgui.window`、`customgui.guicore`。`customgui.appcore.sysx.*`、`customgui.guis.*`
+公开 API 只保证**门面**的名字稳定：`sllkgui`、`sllkgui.config`、`sllkgui.appcore`、
+`sllkgui.window`、`sllkgui.guicore`。`sllkgui.appcore.sysx.*`、`sllkgui.guis.*`
 属于内部实现，可能重组，宿主代码不应直接依赖。
 
-`customgui.guicore.window` 下的窗口部件可直接使用；其中 `window/window/` 与
+`sllkgui.guicore.window` 下的窗口部件可直接使用；其中 `window/window/` 与
 `guis/windows/` 是组件内部装配，未来可能调整。完整稳定面见下表，其余导出符号
 属于“可以使用但不承诺长期稳定”的组件内部约定。
 
@@ -14,10 +14,10 @@
 
 | 入口 | 提供 |
 | --- | --- |
-| `customgui` | `configure()` / `current_config()` / `reset_config()` / `__version__` / `package_root()` / `resource_root()` |
-| `customgui.appcore` | 配置视图、主题、语言、令牌、插件协议、错误边界、遥测、存储工具 |
-| `customgui.window` | 窗口骨架、应用装载、语言服务 |
-| `customgui.guicore` | 组件、窗口部件、页面基类 `CPreviewPage`、样式、字体、后台任务、回调守卫 |
+| `sllkgui` | `configure()` / `current_config()` / `reset_config()` / `__version__` / `package_root()` / `resource_root()` |
+| `sllkgui.appcore` | 配置视图、主题、语言、令牌、插件协议、错误边界、遥测、存储工具 |
+| `sllkgui.window` | 窗口骨架、应用装载、语言服务 |
+| `sllkgui.guicore` | 组件、窗口部件、页面基类 `CPreviewPage`、样式、字体、后台任务、回调守卫 |
 
 ## 2. 配置
 
@@ -36,23 +36,23 @@ def configure(
 ```
 
 - 传 `None` 的字段保持默认（或环境变量兜底），不会被清空。
-- 优先级：显式参数 > `CUSTOMGUI_*` 环境变量 > 内置默认值。
+- 优先级：显式参数 > `SLLKGUI_*` 环境变量 > 内置默认值。
 - 配置上下文已加载后再调用且未传 `force_reload=True`，抛 `ConfigAlreadyLoadedError`。
 
 ```python
-from customgui import current_config, reset_config
+from sllkgui import current_config, reset_config
 
 cfg = current_config()          # 当前生效配置
 reset_config()                  # 清空（主要给测试用）
 ```
 
-环境变量：`CUSTOMGUI_APPS_DIR`、`CUSTOMGUI_RESOURCE_DIR`、`CUSTOMGUI_ROOT_DIR`、
-`CUSTOMGUI_DATA_DIR`、`CUSTOMGUI_DIAGNOSTICS_DIR`、`CUSTOMGUI_BUILTIN_MENUS`。
+环境变量：`SLLKGUI_APPS_DIR`、`SLLKGUI_RESOURCE_DIR`、`SLLKGUI_ROOT_DIR`、
+`SLLKGUI_DATA_DIR`、`SLLKGUI_DIAGNOSTICS_DIR`、`SLLKGUI_BUILTIN_MENUS`。
 
 ## 3. 配置视图与上下文
 
 ```python
-from customgui.appcore import (
+from sllkgui.appcore import (
     AppSettings, AppLanguages, AppThemes, AppOthers,
     get_app_context, apps_root, ColorPalette, Language, PathFactory,
 )
@@ -68,11 +68,11 @@ apps_root()                             # -> Path
 
 `Attrs` 同时支持属性与字典访问：`node.key` / `node["key"]`，缺失时返回空 `Attrs()` 而不是抛错。
 
-路径工具（`customgui.appcore.sysx.config.paths`，内部模块但常用）：
+路径工具（`sllkgui.appcore.sysx.config.paths`，内部模块但常用）：
 
 | 函数 | 作用 |
 | --- | --- |
-| `resource_roots()` | 按优先级返回资源根（其下有 `customui/`） |
+| `resource_roots()` | 按优先级返回资源根（其下有 `sllkgui/`） |
 | `find_resource(rel)` / `resolve_path(rel)` | 在资源根中查找 / 解析为绝对路径 |
 | `iter_files(dir, suffix)` | 同名只保留最高优先级那份 |
 | `iter_file_layers(dir, suffix)` | 返回每层的同名文件，供配置深合并 |
@@ -82,7 +82,7 @@ apps_root()                             # -> Path
 
 运行时修改的外观偏好写入 `<data_root>/settings/user.yaml`（默认落在程序运行
 根目录下的 `settings/user.yaml`，可用 `configure(data_dir=...)` 或
-`CUSTOMGUI_DATA_DIR` 覆盖），只记录改动过的键。文件首行带
+`SLLKGUI_DATA_DIR` 覆盖），只记录改动过的键。文件首行带
 `schema_version`（当前为 `2`）；缺失该键按 v1 读取，高于当前版本时只读取
 已知字段并告警：
 
@@ -99,7 +99,7 @@ apps_root()                             # -> Path
 | `background_recent` | 最近使用的背景图 | 选择背景图时写入，最多 5 条并自动去重 |
 
 ```python
-from customgui.appcore import load_user_settings, save_user_settings, user_settings_path
+from sllkgui.appcore import load_user_settings, save_user_settings, user_settings_path
 
 load_user_settings()                        # 启动时读取（已校验，缺失返回 {}）
 save_user_settings(theme_name="bright")     # 手动写入，失败返回 False 且不影响会话
@@ -114,7 +114,7 @@ user_settings_path()                        # -> Path
 ## 4. 主题与令牌
 
 ```python
-from customgui.appcore import get_theme_manager, get_design_tokens, ColorPalette
+from sllkgui.appcore import get_theme_manager, get_design_tokens, ColorPalette
 
 manager = get_theme_manager()
 manager.current()                       # 当前主题名
@@ -132,8 +132,8 @@ ColorPalette.update(AppThemes["default"].data)   # 底层入口，通常由 Them
 ## 5. 语言
 
 ```python
-from customgui.appcore import Language, LANGUAGE_OPTIONS
-from customgui.window import apply_language, available_languages, current_language
+from sllkgui.appcore import Language, LANGUAGE_OPTIONS
+from sllkgui.window import apply_language, available_languages, current_language
 
 Language.resolve("language.app.hello.app_text", "默认文案")
 Language.resolve_key("language.UI.ui_Restore")
@@ -151,7 +151,7 @@ available_languages()                # -> ("en_us", "ja_jp", "zh_cn", "zh_tw")
 ## 6. 插件
 
 ```python
-from customgui.appcore import (
+from sllkgui.appcore import (
     AppPlugin, AppPage, AppPluginError, PROTOCOL_VERSION, SUPPORTED_PROTOCOL_VERSIONS,
     PluginRegistry, MenuPlugin, PagePlugin, CommandPlugin,
     get_plugin_registry,
@@ -172,7 +172,7 @@ registry.disable_plugin(plugin_id) / enable_plugin(plugin_id)
 ## 7. 错误边界
 
 ```python
-from customgui.appcore import (
+from sllkgui.appcore import (
     AppError, DomainErrorBoundary, IOErrorBoundary, UIErrorBoundary, to_user_message,
 )
 
@@ -186,7 +186,7 @@ UI 错误；边界内部记录遥测，但不吞掉 `KeyboardInterrupt` / `Syste
 ## 8. 遥测与日志
 
 ```python
-from customgui.appcore import record_event, track_timing, read_recent_events, Logger
+from sllkgui.appcore import record_event, track_timing, read_recent_events, Logger
 
 record_event("app.ready", category="app", level="info", payload={"theme": "default"})
 with track_timing("app.config_load", category="perf"):
@@ -201,7 +201,7 @@ Logger.debug("...") / Logger.warning("...") / Logger.error("...") / Logger.excep
 ## 9. 存储与并发
 
 ```python
-from customgui.appcore.tool import (
+from sllkgui.appcore.tool import (
     read_json, write_json, read_text, write_text, StoreError,
 )
 
@@ -210,14 +210,14 @@ read_json(path, default=None)
 ```
 
 ```python
-from customgui.guicore import run_task, TaskWorker, ProgressUpdate, active_tasks
+from sllkgui.guicore import run_task, TaskWorker, ProgressUpdate, active_tasks
 
 task = run_task(owner, fn, on_done=..., on_error=..., on_progress=..., on_cancelled=...)
 task.cancel()
 ```
 
 ```python
-from customgui.guicore import safe_callback, ui_callback, single_shot
+from sllkgui.guicore import safe_callback, ui_callback, single_shot
 
 safe_callback(fn)              # 控件已析构时静默返回
 ui_callback(owner, fn)         # 绑定 owner 生命周期
@@ -227,7 +227,7 @@ single_shot(owner, 200, fn)    # 宿主销毁后不再触发
 ## 10. 窗口门面
 
 ```python
-from customgui.window import (
+from sllkgui.window import (
     UiMainWindow, SetupMainWindow, MainWindowController, MainFunctions,
     Ui_MainPages, Ui_LeftColumn, Ui_RightColumn,
     AppContext, AppHandle, discover_app_dirs, load_apps, load_app_handles,
@@ -241,7 +241,7 @@ get_app_handle("button_preview")           # 按名字取已加载应用（不�
 discover_app_dirs(root=None)               # 只发现，不注册
 ```
 
-窗口装配顺序（`customgui run` 与宿主 `main.py` 一致）：
+窗口装配顺序（`sllkgui run` 与宿主 `main.py` 一致）：
 
 ```python
 ui = UiMainWindow(); ui.setup_ui(window)
@@ -252,7 +252,7 @@ controller = MainWindowController(window)
 ### 窗口背景图
 
 ```python
-from customgui.guicore import CWindow
+from sllkgui.guicore import CWindow
 
 window.set_background_image("C:/Pictures/wall.png", "fill")  # fill / fit / stretch / tile / center
 window.set_background_fit("fit")
@@ -267,7 +267,7 @@ window.set_background_image("")  # 清除
 单页面应用可以直接继承预览页基类，省掉滚动容器、卡片与标题样式的样板：
 
 ```python
-from customgui.guicore import CPreviewPage
+from sllkgui.guicore import CPreviewPage
 
 
 class MyPage(CPreviewPage):
@@ -291,7 +291,7 @@ PAGE = MyPage
 ## 11. 样式与字体
 
 ```python
-from customgui.guicore import Styles, install_fonts, install_system_fonts
+from sllkgui.guicore import Styles, install_fonts, install_system_fonts
 
 Styles()                       # 生成当前主题的全局 QSS 字符串
 install_fonts(["assets/font.ttf"])   # 返回成功加载的数量
@@ -300,7 +300,7 @@ install_system_fonts()               # 注册系统字体，缓解 offscreen / �
 
 ## 12. 版本与兼容
 
-- 版本单一来源：`src/customgui/_version.py`。`customgui.__version__` **先读该文件**，
+- 版本单一来源：`src/sllkgui/_version.py`。`sllkgui.__version__` **先读该文件**，
   只有文件缺失时才回落到已安装元数据——反过来会让源码树显示 site-packages 里旧 wheel 的版本号。
 - 已下线的历史入口由 `tests/test_removed_entry_points.py` 守着，不得复活。
-- `0.x` 内测期允许 minor 版本破坏兼容，破坏性变更必须写入 [CHANGELOG](../CHANGELOG.md)。
+- `1.x` 内保持向后兼容，破坏性变更只在新的 major 版本引入，并写入 [CHANGELOG](../CHANGELOG.md)。

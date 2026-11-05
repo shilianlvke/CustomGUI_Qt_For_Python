@@ -8,7 +8,7 @@ import pytest
 from PySide6.QtCore import QObject
 from PySide6.QtWidgets import QApplication
 
-from customgui.guicore import (
+from sllkgui.guicore import (
     ProgressUpdate,
     TaskWorker,
     active_tasks,

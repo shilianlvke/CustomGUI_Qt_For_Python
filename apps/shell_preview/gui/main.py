@@ -2,7 +2,7 @@
 
 from PySide6.QtWidgets import QHBoxLayout, QVBoxLayout, QWidget
 
-from customgui.guicore import (
+from sllkgui.guicore import (
     CAppMenu,
     CAppTopbar,
     CButton,
@@ -85,7 +85,7 @@ class ShellPreviewPage(CPreviewPage):
         menu = getattr(ui, "theme_menu", None)
         if menu is None or not hasattr(ui, "right_column"):
             return
-        from customgui.guis.windows.main_window.functions import MainFunctions
+        from sllkgui.guis.windows.main_window.functions import MainFunctions
 
         ui.right_column.menus.setCurrentWidget(menu)
         if not MainFunctions.right_column_is_visible(window):

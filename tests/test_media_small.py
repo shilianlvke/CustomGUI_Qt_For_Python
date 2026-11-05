@@ -10,8 +10,8 @@ from PySide6.QtGui import QColor, QPixmap
 from PySide6.QtTest import QTest
 from PySide6.QtWidgets import QApplication, QScrollArea, QSizePolicy, QWidget
 
-from customgui.appcore import ColorPalette
-from customgui.guicore import (
+from sllkgui.appcore import ColorPalette
+from sllkgui.guicore import (
     CAvatarGroup,
     CCarousel,
     CConfirmPopup,

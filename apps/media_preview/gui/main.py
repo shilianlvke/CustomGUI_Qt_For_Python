@@ -4,8 +4,8 @@ from pathlib import Path
 
 from PySide6.QtWidgets import QHBoxLayout, QLabel, QVBoxLayout, QWidget
 
-from customgui.appcore import PathFactory
-from customgui.guicore import (
+from sllkgui.appcore import PathFactory
+from sllkgui.guicore import (
     CAvatarGroup,
     CButton,
     CCarousel,

@@ -1,6 +1,6 @@
 # 组件速查
 
-`customgui.guicore` 共导出 126 个公开名：`custom_ui` 94 个（91 个组件 + `MenuItem` / `Severity` / `Variant`）、
+`sllkgui.guicore` 共导出 126 个公开名：`custom_ui` 94 个（91 个组件 + `MenuItem` / `Severity` / `Variant`）、
 `window` 12 个窗口部件、`acrylic` 7 个材质工具，以及 `Styles`、字体、任务与回调工具。
 全部组件由设计令牌驱动，主题切换后重绘即生效。
 
@@ -21,7 +21,7 @@
 | 窗口部件 | `CWindow` `CTitleBar` `CLeftMenu` `CLeftColumn` `CTopColumn` `CBottomColumn` `CGrips` `CCredits` `CAppTopbar` `CAppMenu` `CAppMenuItem` `CAppConfigurator` |
 | 材质 | `apply_acrylic` `remove_acrylic` `acrylic_active` `acrylic_opacity` `acrylic_supported` `acrylic_tint` `glass_tint` |
 
-分类只是导航；同名对象都从 `customgui.guicore` 顶层导入。
+分类只是导航；同名对象都从 `sllkgui.guicore` 顶层导入。
 
 ## 2. 通用约定
 
@@ -31,7 +31,7 @@
 - **尺寸**：`size` 取 `sm` / `md` / `lg`，与 `tokens.size.control_height` 对齐。
 - **父子关系**：组件不接管父控件生命周期；放进布局后由 Qt 管理，浮层/通知这类顶层部件要传 `parent`。
 - **色值不缓存**：自绘组件在 `paintEvent` 里读 `ColorPalette` 或 `get_design_tokens()`，不要在 `__init__` 里存颜色。
-- **可调参数**：动画时长、间距、遮罩透明度在 `_resources/customui/settings/window.yaml`
+- **可调参数**：动画时长、间距、遮罩透明度在 `_resources/sllkgui/settings/window.yaml`
   的 `button` / `page_transition` / `feedback` / `overlay` / `panels` 段（见第 7 节）。
 
 ## 3. 常用签名
@@ -213,13 +213,13 @@ CAppConfigurator(window)                   # 右侧外观配置抽屉（主题 /
 | `CCredits` | 底部版权/版本栏，订阅语言变化 |
 | `CAppTopbar` / `CAppMenu` / `CAppMenuItem` / `CAppConfigurator` | 应用壳层 |
 
-右列 `Ui_RightColumn` 由 `customgui.guis` 再导出（实现位于 `guicore.window`）。
+右列 `Ui_RightColumn` 由 `sllkgui.guis` 再导出（实现位于 `guicore.window`）。
 
 ## 5. 设计令牌与样式
 
 ```python
-from customgui.appcore import get_design_tokens, get_theme_manager, ColorPalette
-from customgui.guicore import Styles
+from sllkgui.appcore import get_design_tokens, get_theme_manager, ColorPalette
+from sllkgui.guicore import Styles
 
 tokens = get_design_tokens()
 tokens.colors.surface_card
@@ -238,7 +238,7 @@ get_theme_manager().apply("eye")
 
 ## 6. 预览应用
 
-`apps/` 下的 10 个示例应用就是组件目录的活文档，`customgui install-demo` 后从左侧菜单进入：
+`apps/` 下的 10 个示例应用就是组件目录的活文档，`sllkgui install-demo` 后从左侧菜单进入：
 
 | 应用 | 覆盖组件 |
 | --- | --- |
@@ -253,7 +253,7 @@ get_theme_manager().apply("eye")
 | `media_preview` | `CImage` `CCarousel` `CGalleria` `CPixmap` `CChart` `CFileUpload` |
 | `shell_preview` | `CAppTopbar` `CAppMenu` `CAppConfigurator` |
 
-## 7. 设置项速查（`_resources/customui/settings/window.yaml`）
+## 7. 设置项速查（`_resources/sllkgui/settings/window.yaml`）
 
 | 段 | 键 | 作用 |
 | --- | --- | --- |

@@ -9,15 +9,15 @@ os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
 import pytest
 from PySide6.QtGui import QColor
 
-from customgui.appcore import AppSettings, ColorPalette, get_app_context, get_design_tokens, get_theme_manager
-from customgui.guicore.custom_ui.button.severity import (
+from sllkgui.appcore import AppSettings, ColorPalette, get_app_context, get_design_tokens, get_theme_manager
+from sllkgui.guicore.custom_ui.button.severity import (
     Severity,
     Variant,
     colors_for,
     disabled_colors,
     is_dark_theme,
 )
-from customgui.guicore.custom_ui.line_edit.input_style import SIZES
+from sllkgui.guicore.custom_ui.line_edit.input_style import SIZES
 
 
 @pytest.fixture(scope="module")

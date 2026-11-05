@@ -15,7 +15,7 @@ from PySide6.QtCore import QEvent, QPoint, QPointF, Qt
 from PySide6.QtGui import QWheelEvent
 from PySide6.QtWidgets import QApplication, QWidget
 
-from customgui.guicore import CComboBox
+from sllkgui.guicore import CComboBox
 
 
 @pytest.fixture(scope="module")
@@ -197,7 +197,7 @@ def test_set_current_index_is_clamped(qapp):
 # 5. 主题切换不崩
 # --------------------------------------------------------------------------
 def test_theme_switch_repaints_without_error(qapp):
-    from customgui.appcore import get_theme_manager
+    from sllkgui.appcore import get_theme_manager
 
     manager = get_theme_manager()
     original = manager.current()

@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import pytest
 
-from customgui.appcore.tool import StoreError, read_json, read_text, write_json, write_text
+from sllkgui.appcore.tool import StoreError, read_json, read_text, write_json, write_text
 
 
 def test_write_then_read_json_roundtrip(tmp_path):

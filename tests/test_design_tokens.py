@@ -1,4 +1,4 @@
-from customgui.appcore import AppSettings, ColorPalette, get_design_tokens
+from sllkgui.appcore import AppSettings, ColorPalette, get_design_tokens
 
 
 def test_design_tokens_reflect_current_settings_and_palette():

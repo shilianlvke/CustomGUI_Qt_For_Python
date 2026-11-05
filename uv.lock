@@ -488,7 +488,7 @@ wheels = [
 ]
 
 [[package]]
-name = "customgui"
+name = "sllkgui"
 source = { editable = "." }
 dependencies = [
     { name = "pyside6" },

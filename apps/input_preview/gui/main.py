@@ -10,8 +10,8 @@ Listbox / Select / MultiSelect / TreeSelect ｜ ToggleButton / SelectButton ｜ 
 from PySide6.QtCore import QDate, QMargins, Qt
 from PySide6.QtWidgets import QHBoxLayout, QVBoxLayout, QWidget
 
-from customgui.appcore import Logger
-from customgui.guicore import (
+from sllkgui.appcore import Logger
+from sllkgui.guicore import (
     CAutoComplete,
     CButton,
     CCard,

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""把旧顶层包名（customgui.appcore/customgui.guicore/customgui.guis）重写为 ``customgui.*`` 命名空间。
+"""把旧顶层包名（sllkgui.appcore/sllkgui.guicore/sllkgui.guis）重写为 ``sllkgui.*`` 命名空间。
 
 用法::
 
@@ -8,7 +8,7 @@
 
 设计要点：
 
-1. 规则表按 key 长度降序匹配，避免 ``customgui.appcore`` 抢先匹配 ``customgui.appcore.sysx``；
+1. 规则表按 key 长度降序匹配，避免 ``sllkgui.appcore`` 抢先匹配 ``sllkgui.appcore.sysx``；
 2. 只处理 ``level == 0`` 的绝对导入，相对导入保持不动；
 3. 按 AST 的 ``lineno/col_offset`` 定位后做**行内文本替换**，保留缩进、
    注释、``# noqa`` 与 ``as`` 别名——不使用 ``ast.unparse``，因为它会丢注释；
@@ -28,34 +28,34 @@ SCAN_DIRS = ["src", "apps", "examples", "tests", "scripts"]
 
 # 前缀规则：按 key 长度降序匹配
 PREFIX_RULES: dict[str, str] = {
-    "customgui.appcore.sysx.config": "customgui.appcore.sysx.config",
-    "customgui.appcore.sysx.modules": "customgui.appcore.sysx.modules",
-    "customgui.appcore.sysx.handlers": "customgui.appcore.sysx.handlers",
-    "customgui.appcore.sysx.common": "customgui.appcore.sysx.common",
-    "customgui.appcore.sysx": "customgui.appcore.sysx",
-    "customgui.appcore.app": "customgui.appcore.app",
-    "customgui.appcore.tool": "customgui.appcore.tool",
-    "customgui.appcore": "customgui.appcore",
-    "customgui.guicore.custom_ui": "customgui.guicore.custom_ui",
-    "customgui.guicore.window": "customgui.guicore.window",
-    "customgui.guicore.app_ui": "customgui.guicore.app_ui",
-    "customgui.guicore": "customgui.guicore",
-    "customgui.guis": "customgui.guis",
+    "sllkgui.appcore.sysx.config": "sllkgui.appcore.sysx.config",
+    "sllkgui.appcore.sysx.modules": "sllkgui.appcore.sysx.modules",
+    "sllkgui.appcore.sysx.handlers": "sllkgui.appcore.sysx.handlers",
+    "sllkgui.appcore.sysx.common": "sllkgui.appcore.sysx.common",
+    "sllkgui.appcore.sysx": "sllkgui.appcore.sysx",
+    "sllkgui.appcore.app": "sllkgui.appcore.app",
+    "sllkgui.appcore.tool": "sllkgui.appcore.tool",
+    "sllkgui.appcore": "sllkgui.appcore",
+    "sllkgui.guicore.custom_ui": "sllkgui.guicore.custom_ui",
+    "sllkgui.guicore.window": "sllkgui.guicore.window",
+    "sllkgui.guicore.app_ui": "sllkgui.guicore.app_ui",
+    "sllkgui.guicore": "sllkgui.guicore",
+    "sllkgui.guis": "sllkgui.guis",
 }
 
 # 包内部的相对模块名也要跟着改（相对导入本身不动，但被导入的子模块名变了）
 SUBMODULE_RULES: dict[tuple[str, str], str] = {
     # (旧包, 旧子模块前缀) -> 新子模块前缀；作用在 level>0 的相对导入上
-    ("customgui.appcore", "SYS.module"): "sysx.modules",
-    ("customgui.appcore", "SYS.config"): "sysx.config",
-    ("customgui.appcore", "SYS.handler"): "sysx.handlers",
-    ("customgui.appcore", "SYS.other"): "sysx.common",
-    ("customgui.appcore", "SYS"): "sysx",
-    ("customgui.appcore", "APP"): "app",
-    ("customgui.appcore", "Tool"): "tool",
-    ("customgui.guicore", "CustomUI"): "custom_ui",
-    ("customgui.guicore", "WindowDefineUI"): "window",
-    ("customgui.guicore", "AppDefineUI"): "app_ui",
+    ("sllkgui.appcore", "SYS.module"): "sysx.modules",
+    ("sllkgui.appcore", "SYS.config"): "sysx.config",
+    ("sllkgui.appcore", "SYS.handler"): "sysx.handlers",
+    ("sllkgui.appcore", "SYS.other"): "sysx.common",
+    ("sllkgui.appcore", "SYS"): "sysx",
+    ("sllkgui.appcore", "APP"): "app",
+    ("sllkgui.appcore", "Tool"): "tool",
+    ("sllkgui.guicore", "CustomUI"): "custom_ui",
+    ("sllkgui.guicore", "WindowDefineUI"): "window",
+    ("sllkgui.guicore", "AppDefineUI"): "app_ui",
 }
 
 

@@ -3,8 +3,8 @@
 from PySide6.QtGui import QFont
 from PySide6.QtWidgets import QHBoxLayout, QLabel, QVBoxLayout, QWidget
 
-from customgui.appcore import AppSettings
-from customgui.guicore import (
+from sllkgui.appcore import AppSettings
+from sllkgui.guicore import (
     CDataView,
     COrderList,
     CPickList,

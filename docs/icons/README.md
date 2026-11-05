@@ -4,24 +4,24 @@
 
 ## 1. 内置图标（随包分发）
 
-位置：`src/customgui/_resources/customui/images/svg_icons/`，共 49 个，随 wheel 分发，
+位置：`src/sllkgui/_resources/sllkgui/images/svg_icons/`，共 49 个，随 wheel 分发，
 是基座样式与组件默认值唯一引用的图标集。
 
 ```python
-from customgui.appcore import PathFactory
+from sllkgui.appcore import PathFactory
 
 path = PathFactory.set_svg_icon("icon_arrow_right")   # 自动补 .svg，返回绝对路径
 path = PathFactory.set_ico("icon")                    # images/ico/icon.ico
 ```
 
 `set_svg_icon()` / `set_svg_image()` / `set_png_image()` / `set_jpg_image()` 都只在资源根里查找，
-因此应用品牌层的 `brand/customui/images/svg_icons/` 可以同名覆盖基座图标。
+因此应用品牌层的 `brand/sllkgui/images/svg_icons/` 可以同名覆盖基座图标。
 
 ## 2. 通用图标库（不随包分发）
 
 位置：`docs/icons/library/`，2481 个通用 SVG（约 11 MB）。
 
-- **不参与运行时解析**，也不会被 `import customgui` 加载；
+- **不参与运行时解析**，也不会被 `import sllkgui` 加载；
 - 放在仓库里只为方便检索与复制，代价是仓库体积（见 README「已知限制」）；
 - 需要某个图标时，复制到自己的应用里，而不是引用本目录。
 
@@ -42,7 +42,7 @@ icon_path = ctx.icon("my_icon.svg")            # -> <app>/resource/icon/my_icon.
 
 如果某个图标被 `Styles` 或组件默认值引用，它就应该进包：
 
-1. 把文件放到 `src/customgui/_resources/customui/images/svg_icons/`；
+1. 把文件放到 `src/sllkgui/_resources/sllkgui/images/svg_icons/`；
 2. 代码里用 `PathFactory.set_svg_icon("<name>")` 引用（不带 `.svg`）；
 3. 同步更新 `docs/COMPONENTS.md` 中相关的默认值说明（如有）。
 

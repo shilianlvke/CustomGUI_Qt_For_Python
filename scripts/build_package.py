@@ -8,7 +8,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 
 # 仅扫描源码；排除打包产物 / 虚拟环境 / 缓存
-SRC_DIRS = ["src/customgui", "apps", "scripts", "tests"]
+SRC_DIRS = ["src/sllkgui", "apps", "scripts", "tests"]
 SRC_FILES = ["examples/hello_world/main.py"]
 
 # 即使被某些间接依赖引用，纯 QWidget 应用也“可以安全移除”的 Qt 模块家族。
@@ -115,7 +115,7 @@ def _print_plan(plan: dict) -> None:
 
 # 完整 PyInstaller spec 模板。__KEEP_QT6__ / __EXCLUDE_QT_SUBSTR__ / __EXCLUDES__
 # 由本脚本按源码导入自动替换；路径类占位符替换为绝对路径，避免 cwd / spec 位置歧义。
-# 本模板在每次打包时写入 build/CustomGUI.spec 后由 PyInstaller 执行，无需提交到仓库。
+# 本模板在每次打包时写入 build/SllkGUI.spec 后由 PyInstaller 执行，无需提交到仓库。
 SPEC_TEMPLATE = r'''# -*- mode: python ; coding: utf-8 -*-
 # 本文件由 scripts/build_package.py 在打包时自动生成，请勿手工编辑 / 提交。
 _KEEP_QT6 = __KEEP_QT6__
@@ -141,7 +141,7 @@ a = Analysis(
 #    PyInstaller 的 PySide6 钩子会无条件拷贝所有 Qt6*.dll，模块级 excludes 拦不住，
 #    必须在 a.binaries 里按文件名过滤。保留清单 _KEEP_QT6 由源码导入自动推导。
 # 3) Qt 网络相关插件（tls / networkinformation）：随 QtNetwork 一并移除
-# 4) Qt 翻译文件：应用自带语言系统（customgui.appcore Language），无需 Qt 内置翻译
+# 4) Qt 翻译文件：应用自带语言系统（sllkgui.appcore Language），无需 Qt 内置翻译
 
 _NETWORK_EXCLUDED = 'QtNetwork' in _EXCLUDE_QT_SUBSTR
 # opengl32sw.dll = 软件 OpenGL 光栅器；纯 QWidget 应用走 raster 引擎，运行时不会加载，
@@ -183,7 +183,7 @@ exe = EXE(
     a.scripts,
     [],
     exclude_binaries=True,
-    name='CustomGUI',
+    name='SllkGUI',
     debug=False,
     bootloader_ignore_signals=False,
     strip=False,
@@ -202,7 +202,7 @@ coll = COLLECT(
     strip=False,
     upx=True,
     upx_exclude=[],
-    name='CustomGUI',
+    name='SllkGUI',
 )
 '''
 
@@ -216,7 +216,7 @@ def _render_spec(plan: dict) -> str:
         .replace("__EXCLUDES__", repr(list(plan["exclude_modules"])))
         .replace("__MAIN__", (ROOT / "examples" / "hello_world" / "main.py").as_posix())
         .replace("__PATH__", ROOT.as_posix())
-        .replace("__RES__", (ROOT / "src" / "customgui" / "_resources").as_posix())
+        .replace("__RES__", (ROOT / "src" / "sllkgui" / "_resources").as_posix())
         .replace("__APPS__", (ROOT / "apps").as_posix())
     )
 
@@ -227,14 +227,14 @@ def main() -> int:
     plan = compute_trim_plan()
     _print_plan(plan)
 
-    # 不再依赖仓库内的 CustomGUI.spec（已被 .gitignore 排除）。
+    # 不再依赖仓库内的 SllkGUI.spec（已被 .gitignore 排除）。
     # 每次打包时在本 build/ 目录内生成 spec 并运行，构建逻辑全部内聚于此脚本。
     build_dir = ROOT / "build"
     if build_dir.exists():
         shutil.rmtree(build_dir)
     build_dir.mkdir(parents=True, exist_ok=True)
 
-    spec_path = build_dir / "CustomGUI.spec"
+    spec_path = build_dir / "SllkGUI.spec"
     spec_path.write_text(_render_spec(plan), encoding="utf-8")
 
     dist_dir = ROOT / "dist"

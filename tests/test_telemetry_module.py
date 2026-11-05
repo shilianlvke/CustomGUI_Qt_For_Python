@@ -1,8 +1,8 @@
-from customgui.appcore.sysx.modules.telemetry_module import read_recent_events, record_event, track_timing
+from sllkgui.appcore.sysx.modules.telemetry_module import read_recent_events, record_event, track_timing
 
 
 def test_record_event_writes_event_and_metric(tmp_path, monkeypatch):
-    monkeypatch.setenv("CUSTOMGUI_DIAGNOSTICS_DIR", str(tmp_path))
+    monkeypatch.setenv("SLLKGUI_DIAGNOSTICS_DIR", str(tmp_path))
 
     record_event("test.event", category="test", payload={"ok": True})
 
@@ -18,7 +18,7 @@ def test_record_event_writes_event_and_metric(tmp_path, monkeypatch):
 
 
 def test_track_timing_records_duration(tmp_path, monkeypatch):
-    monkeypatch.setenv("CUSTOMGUI_DIAGNOSTICS_DIR", str(tmp_path))
+    monkeypatch.setenv("SLLKGUI_DIAGNOSTICS_DIR", str(tmp_path))
 
     with track_timing("perf.example", category="perf"):
         _ = sum(range(1000))

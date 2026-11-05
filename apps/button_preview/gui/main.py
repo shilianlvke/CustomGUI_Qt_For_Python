@@ -7,8 +7,8 @@ Icons / Raised / Rounded / Rounded Icons / Rounded Text / Rounded Outlined / Loa
 
 from PySide6.QtCore import QTimer
 
-from customgui.appcore import Logger
-from customgui.guicore import CButton, CButtonGroup, CPreviewPage, CSplitButton
+from sllkgui.appcore import Logger
+from sllkgui.guicore import CButton, CButtonGroup, CPreviewPage, CSplitButton
 
 _SEVERITIES = ("primary", "secondary", "success", "info", "warn", "help", "danger", "contrast")
 

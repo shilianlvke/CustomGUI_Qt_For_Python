@@ -10,15 +10,15 @@ from types import SimpleNamespace
 
 import pytest
 
-import customgui.appcore.sysx.modules.telemetry_module as telemetry
-from customgui.appcore import CommandPlugin, PagePlugin, PluginRegistry, record_event
-from customgui.appcore.sysx.modules.telemetry_module import read_recent_events
-from customgui.guis.windows.main_window.controller import MainWindowController, ThemeController
+import sllkgui.appcore.sysx.modules.telemetry_module as telemetry
+from sllkgui.appcore import CommandPlugin, PagePlugin, PluginRegistry, record_event
+from sllkgui.appcore.sysx.modules.telemetry_module import read_recent_events
+from sllkgui.guis.windows.main_window.controller import MainWindowController, ThemeController
 
 
 @pytest.fixture
 def diagnostics_dir(tmp_path, monkeypatch):
-    monkeypatch.setenv("CUSTOMGUI_DIAGNOSTICS_DIR", str(tmp_path))
+    monkeypatch.setenv("SLLKGUI_DIAGNOSTICS_DIR", str(tmp_path))
     return tmp_path
 
 
@@ -112,8 +112,8 @@ class _StubMainFunctions:
 
 
 def test_controller_language_selection_is_recorded(diagnostics_dir):
-    from customgui.appcore import LANGUAGE_OPTIONS
-    from customgui.guis.language_service import apply_language
+    from sllkgui.appcore import LANGUAGE_OPTIONS
+    from sllkgui.guis.language_service import apply_language
 
     apply_language("zh_cn")  # 重置语言状态，确保切换方向确定
 
@@ -141,7 +141,7 @@ def test_theme_controller_records_theme_switch(diagnostics_dir):
         def __init__(self):
             self.style = "demo"
 
-    from customgui.appcore import ThemeManager
+    from sllkgui.appcore import ThemeManager
 
     controller = ThemeController(
         window=window,

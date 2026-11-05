@@ -4,13 +4,13 @@ from pathlib import Path
 
 # 源码 Demo 使用仓库自己的 Apps/ 与可写 logs/；wheel 使用者由宿主应用设置。
 _DEMO_ROOT = Path(__file__).resolve().parent
-os.environ.setdefault("CUSTOMGUI_APPS_DIR", str(_DEMO_ROOT / "Apps"))
-os.environ.setdefault("CUSTOMGUI_DATA_DIR", str(_DEMO_ROOT))
+os.environ.setdefault("SLLKGUI_APPS_DIR", str(_DEMO_ROOT / "Apps"))
+os.environ.setdefault("SLLKGUI_DATA_DIR", str(_DEMO_ROOT))
 
 from PySide6.QtGui import QIcon
 from PySide6.QtWidgets import QApplication, QMainWindow
 
-from customgui.appcore import (
+from sllkgui.appcore import (
     AppError,
     AppLanguages,
     AppSettings,
@@ -23,8 +23,8 @@ from customgui.appcore import (
     record_event,
     track_timing,
 )
-from customgui.guis import SetupMainWindow, UiMainWindow
-from customgui.guis.windows.main_window.controller import MainWindowController
+from sllkgui.guis import SetupMainWindow, UiMainWindow
+from sllkgui.guis.windows.main_window.controller import MainWindowController
 
 
 class MainWindow(QMainWindow):

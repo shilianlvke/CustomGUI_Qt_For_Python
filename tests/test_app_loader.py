@@ -5,8 +5,8 @@ from pathlib import Path
 
 import pytest
 
-from customgui.appcore import Attrs, Language, PluginRegistry
-from customgui.guis.app_loader import (
+from sllkgui.appcore import Attrs, Language, PluginRegistry
+from sllkgui.guis.app_loader import (
     AppContext,
     apply_apps_language,
     discover_app_dirs,
@@ -51,7 +51,7 @@ def build_page(app):
 """
 
 REGISTER_PLUGINS_CODE = """
-from customgui.appcore import CommandPlugin
+from sllkgui.appcore import CommandPlugin
 
 
 def register_plugins(registry, app):
@@ -67,7 +67,7 @@ def register_plugins(registry, app):
 
 @pytest.fixture
 def apps_root(tmp_path, monkeypatch):
-    monkeypatch.setenv("CUSTOMGUI_APPS_DIR", str(tmp_path))
+    monkeypatch.setenv("SLLKGUI_APPS_DIR", str(tmp_path))
     reset_apps_cache()
     return tmp_path
 
@@ -119,9 +119,9 @@ def test_relative_app_dir_is_resolved_against_cwd(apps_root, monkeypatch):
 
     回归：``YamlHandler`` 内部走 ``resolve_path()``，会把**相对路径当作资源
     相对路径**去各资源根里找。于是 ``apps/demo/config.yml`` 被解析成
-    ``<包>/_resources/customui/apps/demo/config.yml``，读不到就抛
+    ``<包>/_resources/sllkgui/apps/demo/config.yml``，读不到就抛
     ``IOErrorBoundary``——用户看到的是「目录里明明有应用，窗口却是空的」。
-    这正是 ``customgui run --apps-dir apps`` 的踩坑路径。
+    这正是 ``sllkgui run --apps-dir apps`` 的踩坑路径。
     """
     app_dir = apps_root / "apps" / "demo"
     _write_app(app_dir, PAGE_CODE)
@@ -204,7 +204,7 @@ def test_load_apps_idempotent_and_missing_main_still_registers_menu(apps_root):
     again = load_apps()
     assert again == dirs
 
-    from customgui.appcore import get_plugin_registry
+    from sllkgui.appcore import get_plugin_registry
 
     registry = get_plugin_registry()
     assert "app.menu.left.demo" in registry._menus
@@ -234,7 +234,7 @@ def test_app_relative_import_of_user_lib_directory(apps_root, qapp):
     """App 内部自定义逻辑目录（lib）可通过相对导入使用。
 
     ``lib/__init__.py`` 里的 ``from ..calc import add`` 要求：
-    - ``_customgui_apps.demo`` 是包（``__path__`` 指向应用目录）；
+    - ``_sllkgui_apps.demo`` 是包（``__path__`` 指向应用目录）；
     - ``calc.py`` 位于 ``<app>/calc.py``。
     """
     app_dir = apps_root / "demo"
@@ -283,7 +283,7 @@ def build_page(app):
 # 插件协议 v2：AppPlugin / AppPage
 # ==========================================================================
 V2_PLUGIN_CODE = """
-from customgui.appcore import AppPage, AppPlugin
+from sllkgui.appcore import AppPage, AppPlugin
 
 
 class DemoPlugin(AppPlugin):
@@ -329,7 +329,7 @@ PLUGIN = DemoPlugin()
 """
 
 V2_CLASS_ONLY_CODE = """
-from customgui.appcore import AppPage, AppPlugin
+from sllkgui.appcore import AppPage, AppPlugin
 
 
 class SoloPlugin(AppPlugin):
@@ -448,7 +448,7 @@ def test_v2_manifest_can_name_the_plugin_symbol(apps_root):
 
 def test_v2_without_plugin_class_raises(apps_root):
     """protocol=2 但入口没有 AppPlugin 时必须报错，而不是静默不显示页面。"""
-    from customgui.appcore import AppPluginError
+    from sllkgui.appcore import AppPluginError
 
     app_dir = apps_root / "demo"
     _write_app(app_dir, PAGE_CODE, 'protocol: 2\n')
@@ -459,7 +459,7 @@ def test_v2_without_plugin_class_raises(apps_root):
 
 
 def test_unsupported_protocol_version_raises(apps_root):
-    from customgui.appcore import AppPluginError
+    from sllkgui.appcore import AppPluginError
 
     app_dir = apps_root / "demo"
     _write_app(app_dir, PAGE_CODE, 'protocol: "9"\n')
@@ -470,7 +470,7 @@ def test_unsupported_protocol_version_raises(apps_root):
 
 
 def test_core_dir_missing_raises(apps_root):
-    from customgui.appcore import AppPluginError
+    from sllkgui.appcore import AppPluginError
 
     app_dir = apps_root / "demo"
     _write_app(app_dir, V2_PLUGIN_CODE, 'protocol: 2\ncore: launchercore\n')
@@ -498,7 +498,7 @@ def test_core_dir_exposed_on_context(apps_root):
 
 def test_app_name_mismatch_raises(apps_root):
     """目录名与 app_name 不一致必须显式报错（否则应用内导入会静默失效）。"""
-    from customgui.appcore import AppPluginError
+    from sllkgui.appcore import AppPluginError
 
     app_dir = apps_root / "demo"
     _write_app(app_dir, V2_PLUGIN_CODE, 'protocol: 2\n')
@@ -567,7 +567,7 @@ def test_multiple_apps_do_not_share_modules(apps_root):
         (app_dir / "shared" / "__init__.py").write_text(f"VALUE = {value}\n", encoding="utf-8")
         (app_dir / "gui" / "main.py").write_text(
             """
-from customgui.appcore import AppPage, AppPlugin
+from sllkgui.appcore import AppPage, AppPlugin
 
 
 class P(AppPlugin):
@@ -596,7 +596,7 @@ def test_namespace_finder_is_installed_once(apps_root):
     """Finder 全局唯一，多次加载应用不能重复插进 meta_path。"""
     import sys
 
-    from customgui.guis.app_loader import _NamespacePackageFinder
+    from sllkgui.guis.app_loader import _NamespacePackageFinder
 
     app_dir = apps_root / "demo"
     _write_app(app_dir, V2_PLUGIN_CODE, "protocol: 2\n")
@@ -609,17 +609,17 @@ def test_namespace_finder_is_installed_once(apps_root):
 
 def test_namespace_finder_ignores_foreign_modules(apps_root):
     """Finder 只处理自己的私有命名空间，不能拦截常规导入。"""
-    from customgui.guis.app_loader import _APP_NAMESPACE, _NamespacePackageFinder
+    from sllkgui.guis.app_loader import _APP_NAMESPACE, _NamespacePackageFinder
 
     finder = _NamespacePackageFinder()
     assert finder.find_spec("json") is None
-    assert finder.find_spec("customgui.appcore") is None
+    assert finder.find_spec("sllkgui.appcore") is None
     assert finder.find_spec(_APP_NAMESPACE) is None  # 根命名空间本身不处理
 
 
 def test_unknown_app_module_returns_none(apps_root):
     """未登记的应用名不应被 Finder 命中（返回 None 而不是乱猜路径）。"""
-    from customgui.guis.app_loader import _APP_NAMESPACE, _NamespacePackageFinder
+    from sllkgui.guis.app_loader import _APP_NAMESPACE, _NamespacePackageFinder
 
     finder = _NamespacePackageFinder()
     assert finder.find_spec(f"{_APP_NAMESPACE}.never_registered.something") is None

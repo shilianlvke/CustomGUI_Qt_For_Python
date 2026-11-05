@@ -2,7 +2,7 @@
 
 from PySide6.QtWidgets import QLabel, QVBoxLayout, QWidget
 
-from customgui.guicore import CDataTable, CInputText, CPreviewPage, CTableColumn
+from sllkgui.guicore import CDataTable, CInputText, CPreviewPage, CTableColumn
 
 
 class TablePreviewPage(CPreviewPage):

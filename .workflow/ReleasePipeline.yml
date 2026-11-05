@@ -79,8 +79,8 @@ stages:
           - uv run python -m build --wheel
           - uv run twine check dist/*.whl
           - uv venv /tmp/smoke --python 3.13
-          - uv pip install --python /tmp/smoke/bin/python dist/customgui-*.whl
-          - /tmp/smoke/bin/customgui doctor
+          - uv pip install --python /tmp/smoke/bin/python dist/sllkgui-*.whl
+          - /tmp/smoke/bin/sllkgui doctor
           # ---- Linux 打包 ----
           - uv run python scripts/build_package.py
           - uv run python scripts/archive_dist.py linux
@@ -88,7 +88,7 @@ stages:
           # ---- 可选：自动发布（配置 RELEASE_TOKEN 后取消以下三条命令的注释）----
           # - 'if [ -z "${RELEASE_TOKEN}" ]; then echo "错误: 未配置 RELEASE_TOKEN 密文变量（Gitee 仓库 管理→环境变量管理 添加）"; exit 1; fi'
           # - echo "${GITEE_COMMIT_MESSAGE}" > release_body.md
-          # - uv run python scripts/publish_gitee_release.py --owner shilianlvke --repo CustomGUI_Qt_For_Python --token "${RELEASE_TOKEN}" --tag auto --body-file release_body.md --assets-dir dist/release --prerelease false
+          # - uv run python scripts/publish_gitee_release.py --owner shilianlvke --repo SllkGui --token "${RELEASE_TOKEN}" --tag auto --body-file release_body.md --assets-dir dist/release --prerelease false
         # 暂存构建产物（7 天后自动清除；构建历史页可下载）
         artifacts:
           - name: BUILD_ARTIFACT

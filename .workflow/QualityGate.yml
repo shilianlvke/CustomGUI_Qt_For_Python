@@ -59,10 +59,10 @@ stages:
           - uv run mypy
           # pytest 的 offscreen 由 tests/conftest.py 统一设置，无需虚拟显示。
           # 覆盖率阈值取当前基线的下方（实测约 72%，门禁 70% 防回退）。
-          - uv run pytest --cov=customgui --cov-report=term-missing --cov-fail-under=70
+          - uv run pytest --cov=sllkgui --cov-report=term-missing --cov-fail-under=70
           # ---- 打包冒烟 ----
           # 安装 wheel 后从仓库根运行：确认包内资源、配置上下文与 QSS 构建可用。
           # --no-deps 避免重复下载 PySide6；运行依赖已由上面的 uv sync 安装。
           - uv build
-          - uv pip install --reinstall --no-deps dist/customgui-*.whl
+          - uv pip install --reinstall --no-deps dist/sllkgui-*.whl
           - .venv/bin/python scripts/wheel_smoke.py

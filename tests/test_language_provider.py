@@ -4,8 +4,8 @@ from __future__ import annotations
 
 import pytest
 
-from customgui.appcore import Language
-from customgui.appcore.sysx.modules.language_module import LanguageHandler
+from sllkgui.appcore import Language
+from sllkgui.appcore.sysx.modules.language_module import LanguageHandler
 
 
 @pytest.fixture()

@@ -6,13 +6,13 @@ os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
 
 import pytest
 
-from customgui.appcore import ColorPalette, ThemeManager, get_theme_manager
-from customgui.appcore.sysx.modules.telemetry_module import read_recent_events
+from sllkgui.appcore import ColorPalette, ThemeManager, get_theme_manager
+from sllkgui.appcore.sysx.modules.telemetry_module import read_recent_events
 
 
 @pytest.fixture
 def diagnostics_dir(tmp_path, monkeypatch):
-    monkeypatch.setenv("CUSTOMGUI_DIAGNOSTICS_DIR", str(tmp_path))
+    monkeypatch.setenv("SLLKGUI_DIAGNOSTICS_DIR", str(tmp_path))
     return tmp_path
 
 

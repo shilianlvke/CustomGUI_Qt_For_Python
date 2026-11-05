@@ -2,10 +2,10 @@
 
 样式统一后的契约（与 ``CPushButton`` 一致）：
 
-- 组件实例只声明 ``objectName``，颜色/状态/字体一律定义在 ``customgui.guicore/styles.py``；
+- 组件实例只声明 ``objectName``，颜色/状态/字体一律定义在 ``sllkgui.guicore/styles.py``；
 - **几何量不进中央样式表**：圆角、边框宽度、内边距、固定宽高、偏移一律由组件
   本地用一条只含几何属性的样式表提供；
-- 组件几何**全部取设计令牌**（``customgui.appcore.sysx.modules.token_module``）：组件暴露的
+- 组件几何**全部取设计令牌**（``sllkgui.appcore.sysx.modules.token_module``）：组件暴露的
   几何参数默认取 ``None`` 并回落到对应令牌，显式传参可覆盖；
 - 主题切换由 ``CWindow.apply_style()`` 重建中央样式表并下发，组件自身不订阅主题。
 """
@@ -20,8 +20,8 @@ from PySide6.QtCore import Qt
 from PySide6.QtGui import QColor, QPalette
 from PySide6.QtWidgets import QApplication, QWidget
 
-from customgui.appcore import ColorPalette, get_design_tokens, get_theme_manager
-from customgui.guicore import (
+from sllkgui.appcore import ColorPalette, get_design_tokens, get_theme_manager
+from sllkgui.guicore import (
     CLineEdit,
     CMenu,
     CMenuButton,
@@ -200,7 +200,7 @@ def test_scroll_area_custom_background(qapp):
 
 
 def test_window_frame_override(qapp):
-    from customgui.guicore import CWindow
+    from sllkgui.guicore import CWindow
 
     window = CWindow()
     # 中央样式表统一下发到应用级（窗口级只保留最大化/自定义圆角覆盖），
@@ -229,7 +229,7 @@ def test_window_frame_override(qapp):
 
 def test_apply_style_reuses_cache_until_source_changes(qapp, monkeypatch):
     """来源键未变时复用缓存，不再构造 Styles；主题变化后必须重建。"""
-    from customgui.guicore.window.window import main_window as window_module
+    from sllkgui.guicore.window.window import main_window as window_module
 
     calls = []
     real_init = window_module.Styles.__init__
@@ -278,7 +278,7 @@ def test_window_background_image_and_fit_modes(qapp, tmp_path):
     """CWindow 背景图：加载、属性切换、适应模式与无效路径回落。"""
     from PySide6.QtGui import QImage
 
-    from customgui.guicore.window.window import main_window as window_module
+    from sllkgui.guicore.window.window import main_window as window_module
 
     image_path = tmp_path / "bg.png"
     image = QImage(120, 80, QImage.Format.Format_RGB32)
@@ -310,8 +310,8 @@ def test_restore_background_applies_to_window(qapp, tmp_path):
 
     from PySide6.QtGui import QImage
 
-    from customgui.guicore.window.window import main_window as window_module
-    from customgui.guis.windows.main_window.setup_main_window import SetupMainWindow
+    from sllkgui.guicore.window.window import main_window as window_module
+    from sllkgui.guis.windows.main_window.setup_main_window import SetupMainWindow
 
     image_path = tmp_path / "bg.png"
     image = QImage(64, 40, QImage.Format.Format_RGB32)
@@ -404,14 +404,14 @@ def test_tooltip_geometry_follows_params(qapp):
 
 def _init_language():
     """CLeftMenu / CLeftColumn 构造期会读取语言资源，按应用启动的方式初始化一次。"""
-    from customgui.appcore import AppLanguages, AppSettings, Language
+    from sllkgui.appcore import AppLanguages, AppSettings, Language
 
     Language.update(AppLanguages[AppSettings.language].data)
 
 
 def test_left_menu_radius_falls_back_to_token(qapp):
     """CLeftMenu 的圆角默认回落设计令牌，且由组件本地提供。"""
-    from customgui.guicore import CLeftMenu
+    from sllkgui.guicore import CLeftMenu
 
     _init_language()
 
@@ -428,7 +428,7 @@ def test_left_column_geometry_follows_token(qapp):
     标题条与区域背景卡片同宽同顶：上圆角必须等于卡片圆角（否则方角顶出卡片
     轮廓），下沿是卡片内部的接缝，必须是直角。
     """
-    from customgui.guicore import CLeftColumn
+    from sllkgui.guicore import CLeftColumn
 
     _init_language()
     tokens = get_design_tokens()
@@ -473,7 +473,7 @@ def test_qss_color_serializes_qcolor_with_alpha(qapp):
     ``PySide6.QtGui.QColor...``，Qt 判定为无效颜色并丢弃整条规则（Tree/TreeTable
     因此在浅色主题下回退成系统深色底）。
     """
-    from customgui.guicore.custom_ui.panels.style import qss_color
+    from sllkgui.guicore.custom_ui.panels.style import qss_color
 
     assert qss_color(QColor(255, 255, 255, 87)) == "rgba(255, 255, 255, 87)"
     assert qss_color("#202020") == "rgba(32, 32, 32, 255)"
@@ -502,7 +502,7 @@ def test_combo_box_is_not_a_qcombobox(qapp):
     """重写后的 CComboBox 不再继承 QComboBox（这是消除黑角的前提）。"""
     from PySide6.QtWidgets import QComboBox, QWidget
 
-    from customgui.guicore import CComboBox
+    from sllkgui.guicore import CComboBox
 
     combo = CComboBox(items=["a", "b"])
     assert not isinstance(combo, QComboBox)

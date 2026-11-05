@@ -1,0 +1,172 @@
+# 系統資訊
+# 譯自 SllkGUI 術語表（MulanPSL-2.0），與 zh_cn.yaml 逐鍵對齊
+custom_ui:
+  sys_name: SllkGUI
+  sys_version: 1.0.0
+  sys_author: shilianlvke
+  sys_author_email: 1352161062@qq.com
+  sys_copyright: SllkGUI · 基於 PySide6 的開源 UI 基座
+  sys_description: SllkGUI 是一個基於 PySide6 的通用 UI 基座，提供視窗框架、元件庫、主題、語言與外掛載入。
+  sys_license: MulanPSL-2.0
+  sys_github: https://gitee.com/shilianlvke/SllkGui
+PAGE: {}
+UI:
+  # 視窗
+  ui_Minimize: 最小化
+  ui_Maximize: 最大化
+  ui_Restore: 還原
+  # 開啟和關閉
+  ui_Open: 開啟
+  ui_Close: 關閉
+  # 顯示和隱藏
+  ui_Hide: 隱藏
+  ui_Show: 顯示
+  # 增刪改查
+  ui_Add: 新增
+  ui_Del: 刪除
+  ui_Modify: 編輯
+  ui_Search: 搜尋
+  ui_Save: 儲存
+  # 開始和結束
+  ui_Start: 開始
+  ui_Over: 結束
+  # 執行和停止
+  ui_Run: 執行
+  ui_Running: 執行中
+  ui_Stop: 停止
+  ui_Stopping: 正在停止
+  # 選擇檔案與資料夾
+  ui_SelectFolder: 選擇資料夾
+  ui_SelectFolder_F: 選擇的資料夾有誤
+  ui_SelectFile: 選擇檔案
+  ui_SelectFile_F: 選擇的檔案有誤
+  # 連線
+  ui_Connect: 連線
+  ui_Connect_S: 連線成功
+  ui_Connect_F: 連線失敗
+  # 資訊與屬性
+  ui_Info: 資訊
+  ui_Property: 屬性
+  # 其他
+  ui_Settings: 設定
+  ui_OpenFile: 開啟檔案
+  ui_UpdateLogs: 更新日誌
+  ui_Welcome: 歡迎
+  ui_Fresh: 重新整理
+  ui_HomePage: 首頁
+
+  # 檔案操作
+  ui_New: 新增
+  ui_SaveAs: 另存新檔
+  ui_Print: 列印
+  ui_Import: 匯入
+  ui_Export: 匯出
+  ui_RecentFiles: 最近使用的檔案
+
+  # 編輯功能
+  ui_Undo: 復原
+  ui_Redo: 重做
+  ui_Cut: 剪下
+  ui_Copy: 複製
+  ui_Paste: 貼上
+  ui_SelectAll: 全選
+  ui_FindReplace: 尋找與取代
+
+  # 檢視設定
+  ui_ZoomIn: 放大
+  ui_ZoomOut: 縮小
+  ui_ResetZoom: 重設縮放
+  ui_FullScreen: 全螢幕
+  ui_ThemeLight: 淺色主題
+  ui_ThemeDark: 深色主題
+  ui_LayoutReset: 重設版面
+
+  # 視窗管理
+  ui_NewWindow: 新增視窗
+  ui_SplitView: 分割檢視
+  ui_BringToFront: 視窗置頂
+
+  # 通知與提示
+  ui_ConfirmSave: 是否儲存變更？
+  ui_ConfirmExit: 確認結束程式？
+  ui_OperationFailed: 操作失敗
+  ui_PermissionDenied: 權限不足
+  ui_FileCorrupted: 檔案已損毀
+
+  # 偏好設定
+  ui_Language: 語言
+  ui_ShortcutKeys: 快速鍵
+  ui_AutoSave: 自動儲存
+  ui_ProxySettings: 代理伺服器設定
+  ui_ClearCache: 清除快取
+
+  # 導覽列
+  ui_Previous: 上一項
+  ui_Next: 下一項
+  ui_Back: 上一頁
+  ui_Forward: 下一頁
+  ui_JumpTo: 跳至
+
+  # 資料操作
+  ui_SortAsc: 遞增排序
+  ui_SortDesc: 遞減排序
+  ui_Filter: 篩選
+  ui_GroupBy: 分組依據
+  ui_Statistics: 統計資訊
+
+  # 系統整合
+  ui_OpenContainingFolder: 開啟所在資料夾
+  ui_SendTo: 傳送到
+  ui_AddToFavorites: 加入我的最愛
+  ui_CreateShortcut: 建立捷徑
+
+  # 說明相關
+  ui_CheckDependencies: 檢查相依項目
+  ui_Diagnostics: 診斷工具
+  ui_KeyboardShortcuts: 快速鍵清單
+  ui_CheckForUpdates: 檢查更新
+  ui_About: 關於
+
+  # 標題列與基座選單
+  ui_SwitchLanguage: 切換語言
+  ui_SwitchTheme: 外觀配置
+  ui_Appearance: 外觀配置
+  ui_AppearanceHint: 主題、語言與介面版面
+  ui_Theme: 主題
+  ui_ThemeHint: 選擇一套內建配色
+  ui_Material: 材質與通透度
+  ui_MaterialHint: 即時調整視窗透明度與亞克力質感
+  ui_Transparency: 視窗透明度
+  ui_TransparencyHint: 數值越大，桌面內容透出越明顯
+  ui_GlassStrength: 亞克力質感強度
+  ui_GlassStrengthHint: 在預設觀感基礎上增強模糊材質的透出程度
+  ui_Language: 語言
+  ui_LanguageHint: 選擇介面顯示語言
+  ui_MenuMode: 選單模式
+  ui_MenuModeHint: 固定顯示於內容區旁，浮層覆蓋於目前頁面之上
+  ui_Background: 個人化設定背景
+  ui_BackgroundHint: 圖片背景僅作用於目前視窗。
+  ui_BackgroundNone: 無
+  ui_BackgroundImage: 圖片
+  ui_RecentImages: 最近使用的影像
+  ui_NoRecentImages: 尚無最近使用的影像
+  ui_ChoosePhoto: 選擇一張照片
+  ui_BrowsePhoto: 瀏覽照片
+  ui_ClearBackground: 清除背景
+  ui_BackgroundFit: 為桌面影像選擇符合模式
+  ui_FitFill: 填滿
+  ui_FitFit: 符合
+  ui_FitStretch: 延展
+  ui_FitTile: 並排
+  ui_FitCenter: 置中
+  ui_BackgroundExpand: 展開背景設定
+  ui_BackgroundCollapse: 收起背景設定
+  ui_DarkMode: 深色模式
+  ui_DarkModeHint: 開啟後使用暗色主題
+  ui_ModeStatic: 固定
+  ui_ModeOverlay: 浮層
+  ui_SoftwareInfo: 軟體資訊
+
+TEXT:
+  home_page_welcome: 你好！我是 SllkGUI ~
+  login: 登入 SllkGUI

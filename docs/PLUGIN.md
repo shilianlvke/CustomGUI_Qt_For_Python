@@ -1,6 +1,6 @@
 # 应用插件协议
 
-CustomGUI 把「一个页面/一组页面」封装成目录：**放进 `apps/` 即被发现，删除目录即下线**。
+SllkGUI 把「一个页面/一组页面」封装成目录：**放进 `apps/` 即被发现，删除目录即下线**。
 本文件是清单字段、两套协议与装载行为的唯一说明。
 
 ## 0. 信任边界
@@ -9,7 +9,7 @@ CustomGUI 把「一个页面/一组页面」封装成目录：**放进 `apps/` �
 运行在同一进程、拥有相同权限。**这不是沙箱**：
 
 - 只加载可信来源的插件；不要把不受信任的第三方目录放进 `apps/`，也不要让
-  `CUSTOMGUI_APPS_DIR` 指向可被他人写入的位置。
+  `SLLKGUI_APPS_DIR` 指向可被他人写入的位置。
 - `strict_plugins` 只做清单/协议校验，不提供代码隔离。
 - 便携分发时建议在启动日志中打印实际生效的 `apps` 目录（`configure()` 会输出）。
 
@@ -28,7 +28,7 @@ apps/<app_name>/
 │   ├── lang/{zh_cn,zh_tw,en_us,ja_jp}.yml
 │   ├── images/  voice/            # 其他资源
 └── brand/
-    └── customui/                  # 可选：品牌覆盖层（themes / languages / settings / images）
+    └── sllkgui/                  # 可选：品牌覆盖层（themes / languages / settings / images）
 ```
 
 `app_name`、`resource/`、`brand/` 都由加载器识别，无需在代码里拼路径。
@@ -70,7 +70,7 @@ is_default: true
 ```python
 from PySide6.QtWidgets import QLabel, QWidget
 
-from customgui.appcore import AppPage, AppPlugin
+from sllkgui.appcore import AppPage, AppPlugin
 
 
 def build_home(ctx, window) -> QWidget:
@@ -128,7 +128,7 @@ class HelloApp(AppPlugin):
 
 > **`PAGE` 的 `self` 是陷阱**：加载器按 `PAGE.load_page(window)` 调用，`PAGE` 写成**类**时
 > `self` 拿到的是主窗口，写成**实例**时 `self` 是页面对象、`window` 才是窗口——同一份代码
-> 不能依赖 `self` 的含义。内置的 10 个预览应用统一继承 `customgui.guicore.CPreviewPage`，
+> 不能依赖 `self` 的含义。内置的 10 个预览应用统一继承 `sllkgui.guicore.CPreviewPage`，
 > 它的钩子全部是 `classmethod`，两种写法都成立，新页面建议直接以它为起点。
 | 3 | `def build_page(app) -> QWidget` | 基座 | 能 |
 
@@ -161,7 +161,7 @@ v1 的既有应用无需改动；新应用建议直接用 v2——v1 的三套�
 | `resource(*parts)` | `<app>/resource/...` 绝对路径 |
 | `icon(name)` / `image(name)` / `voice(name)` / `lang_file(lang)` | 应用内资源定位 |
 | `brand(*parts)` | `<app>/brand/...`，纳入基座资源解析链 |
-| `import_module("pages.home")` | 在应用命名空间内导入，无需拼 `_customgui_apps.<name>.` |
+| `import_module("pages.home")` | 在应用命名空间内导入，无需拼 `_sllkgui_apps.<name>.` |
 
 ## 6. 语言文件
 
@@ -184,10 +184,10 @@ ctx.lang_text("greeting")   # -> "欢迎使用"
 
 ## 7. 品牌覆盖层
 
-`<app>/brand/customui/` 与包内 `_resources/customui/` 同构，自动进入资源解析链，且优先级高于基座：
+`<app>/brand/sllkgui/` 与包内 `_resources/sllkgui/` 同构，自动进入资源解析链，且优先级高于基座：
 
 ```text
-brand/customui/
+brand/sllkgui/
 ├── themes/brand.yaml          # 覆盖或新增主题
 ├── languages/zh_cn.yaml       # 覆盖基座文案
 └── images/svg_icons/...       # 覆盖图标
@@ -216,5 +216,5 @@ brand/customui/
 | `APP_PAGE_EMPTY` | `build()` 返回 `None` | 返回一个 `QWidget` |
 | `YAML_FILE_NOT_FOUND` | 清单/语言文件路径解析失败 | 确认 `app_name` 与目录一致；`--apps-dir` 用绝对路径 |
 
-页面没出现时按顺序排查：`customgui doctor` 是否 `发现应用` > 0 → `成功加载` 是否等于发现数 →
+页面没出现时按顺序排查：`sllkgui doctor` 是否 `发现应用` > 0 → `成功加载` 是否等于发现数 →
 清单 `page_object` 与页面 `setObjectName` 是否一致 → `build()` 是否返回控件。

@@ -2,9 +2,9 @@
 
 import pytest
 
-import customgui
-from customgui import package_root
-from customgui.appcore import (
+import sllkgui
+from sllkgui import package_root
+from sllkgui.appcore import (
     AppLanguages,
     AppSettings,
     AppThemes,
@@ -12,9 +12,9 @@ from customgui.appcore import (
     YamlHandler,
     get_app_context,
 )
-from customgui.appcore.sysx.config.mapping import deep_merge, to_attrs, to_dict
-from customgui.appcore.sysx.config.registry import ConfigFile, ConfigRegistry
-from customgui.appcore.sysx.config.schema import (
+from sllkgui.appcore.sysx.config.mapping import deep_merge, to_attrs, to_dict
+from sllkgui.appcore.sysx.config.registry import ConfigFile, ConfigRegistry
+from sllkgui.appcore.sysx.config.schema import (
     AppSettingsModel,
     SizeRange,
     from_mapping,
@@ -22,8 +22,8 @@ from customgui.appcore.sysx.config.schema import (
     validate_settings_data,
     validate_theme_data,
 )
-from customgui.appcore.sysx.config.yaml_io import dump_yaml_file, load_yaml_file
-from customgui.appcore.sysx.modules.error_module import DomainErrorBoundary, IOErrorBoundary
+from sllkgui.appcore.sysx.config.yaml_io import dump_yaml_file, load_yaml_file
+from sllkgui.appcore.sysx.modules.error_module import DomainErrorBoundary, IOErrorBoundary
 
 # ---------------------------------------------------------------------------
 # Attrs（属性访问映射）
@@ -439,15 +439,15 @@ def test_registry_settings_merge_across_files(tmp_path):
 def brand_layer(tmp_path):
     """把配置指向只带品牌覆盖层的临时 apps 目录；用例结束后复原。"""
     apps = tmp_path / "apps"
-    brand = apps / "overlay_demo" / "brand" / "customui"
+    brand = apps / "overlay_demo" / "brand" / "sllkgui"
     (brand / "settings").mkdir(parents=True)
     (apps / "overlay_demo" / "config.yml").write_text("app_name: overlay_demo\n", encoding="utf-8")
 
-    customgui.configure(apps_dir=apps, data_dir=tmp_path / "data", force_reload=True)
+    sllkgui.configure(apps_dir=apps, data_dir=tmp_path / "data", force_reload=True)
     try:
         yield brand
     finally:
-        customgui.configure(apps_dir=package_root().parent.parent / "apps", force_reload=True)
+        sllkgui.configure(apps_dir=package_root().parent.parent / "apps", force_reload=True)
 
 
 def test_settings_layer_merges_with_base_instead_of_replacing(brand_layer):
@@ -533,7 +533,7 @@ def test_yaml_handler_dot_path_and_merge(tmp_path):
 def test_yaml_handler_root_relative_resolution(tmp_path, monkeypatch):
     # 相对路径始终基于项目根目录解析，与 cwd 无关
     monkeypatch.chdir(tmp_path)
-    handler = YamlHandler("resource/customui/settings/config.yaml")
+    handler = YamlHandler("resource/sllkgui/settings/config.yaml")
 
     assert handler.data.language == "zh_cn"
     assert handler.data.theme_name == "default"

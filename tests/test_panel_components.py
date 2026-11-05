@@ -10,7 +10,7 @@ from PySide6.QtGui import QColor
 from PySide6.QtTest import QTest
 from PySide6.QtWidgets import QApplication, QLabel, QWidget
 
-from customgui.guicore import (
+from sllkgui.guicore import (
     CAccordion,
     CBreadcrumb,
     CButton,
@@ -25,7 +25,7 @@ from customgui.guicore import (
     CTabs,
     CToolbar,
 )
-from customgui.guicore.custom_ui.icon_utils import render_icon
+from sllkgui.guicore.custom_ui.icon_utils import render_icon
 
 
 @pytest.fixture(scope="module")

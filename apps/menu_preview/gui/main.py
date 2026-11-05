@@ -2,7 +2,7 @@
 
 from PySide6.QtWidgets import QHBoxLayout, QLabel, QVBoxLayout, QWidget
 
-from customgui.guicore import (
+from sllkgui.guicore import (
     CButton,
     CContextMenu,
     CMegaMenu,

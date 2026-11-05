@@ -7,7 +7,7 @@ import sys
 import pytest
 from PySide6.QtWidgets import QApplication
 
-from customgui.guicore import install_fonts, install_system_fonts
+from sllkgui.guicore import install_fonts, install_system_fonts
 
 
 @pytest.fixture(scope="module")

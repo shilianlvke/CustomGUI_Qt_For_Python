@@ -14,10 +14,10 @@ from pathlib import Path
 import pytest
 import yaml
 
-from customgui import package_root
-from customgui.appcore import LANGUAGE_OPTIONS
+from sllkgui import package_root
+from sllkgui.appcore import LANGUAGE_OPTIONS
 
-LANGUAGES_DIR = package_root() / "_resources" / "customui" / "languages"
+LANGUAGES_DIR = package_root() / "_resources" / "sllkgui" / "languages"
 REFERENCE = "zh_cn"
 EXPECTED_LANGUAGES = ("zh_cn", "en_us", "zh_tw", "ja_jp")
 SECTIONS = ("custom_ui", "UI", "TEXT")
@@ -75,7 +75,7 @@ def test_overlay_languages_have_no_brand_fields(language):
     """反哺到基座的语言文件只允许基座字段，不得夹带应用品牌信息。"""
     data = _load(language)
     custom_ui = data.get("custom_ui") or {}
-    assert custom_ui.get("sys_name") == "CustomGUI"
+    assert custom_ui.get("sys_name") == "SllkGUI"
     assert custom_ui.get("sys_author") == "shilianlvke"
     assert custom_ui.get("sys_license") == "MulanPSL-2.0"
     # 不得出现应用名/应用专属文案

@@ -3,7 +3,7 @@
 from PySide6.QtCore import Qt
 from PySide6.QtWidgets import QLabel, QVBoxLayout, QWidget
 
-from customgui.guicore import (
+from sllkgui.guicore import (
     CAccordion,
     CBreadcrumb,
     CButton,

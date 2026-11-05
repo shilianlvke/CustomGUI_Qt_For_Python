@@ -7,9 +7,9 @@ from types import SimpleNamespace
 import pytest
 import yaml
 
-from customgui.appcore import Language, get_theme_manager, user_settings
-from customgui.guis.windows.main_window import setup_main_window as setup_window_module
-from customgui.guis.windows.main_window.setup_main_window import SetupMainWindow
+from sllkgui.appcore import Language, get_theme_manager, user_settings
+from sllkgui.guis.windows.main_window import setup_main_window as setup_window_module
+from sllkgui.guis.windows.main_window.setup_main_window import SetupMainWindow
 
 
 @pytest.fixture(autouse=True)
@@ -229,7 +229,7 @@ def test_restore_menu_mode_ignores_invalid_value(monkeypatch):
 
 
 def test_restore_appearance_applies_and_syncs_panel():
-    from customgui.guicore import acrylic_transparency, glass_strength, reset_appearance_overrides
+    from sllkgui.guicore import acrylic_transparency, glass_strength, reset_appearance_overrides
 
     synced = {}
 

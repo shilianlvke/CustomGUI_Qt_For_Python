@@ -1,5 +1,5 @@
-from customgui.appcore import Language, get_plugin_registry
-from customgui.guis.windows.main_window.registry import (
+from sllkgui.appcore import Language, get_plugin_registry
+from sllkgui.guis.windows.main_window.registry import (
     get_default_page_object,
     get_page_routes,
 )

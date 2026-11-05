@@ -13,7 +13,7 @@ import pytest
 from PySide6.QtSvgWidgets import QSvgWidget
 from PySide6.QtWidgets import QApplication
 
-from customgui.guicore.window.title_bar.title_bar import fit_logo_size
+from sllkgui.guicore.window.title_bar.title_bar import fit_logo_size
 
 
 @pytest.fixture(scope="module")

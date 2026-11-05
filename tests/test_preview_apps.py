@@ -10,7 +10,7 @@ os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
 import pytest
 from PySide6.QtWidgets import QApplication, QStackedWidget
 
-from customgui.guis.app_manifest import load_app_manifest
+from sllkgui.guis.app_manifest import load_app_manifest
 
 ROOT = Path(__file__).resolve().parents[1]
 APPS = ROOT / "apps"

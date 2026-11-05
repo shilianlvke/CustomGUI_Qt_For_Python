@@ -12,7 +12,7 @@ from pathlib import Path
 
 import pytest
 
-from customgui import cli
+from sllkgui import cli
 
 
 def test_doctor_runs_and_reports_version(capsys):
@@ -20,13 +20,13 @@ def test_doctor_runs_and_reports_version(capsys):
     output = capsys.readouterr().out
 
     assert code == 0
-    assert "CustomGUI doctor" in output
+    assert "SllkGUI doctor" in output
     assert "应用目录" in output
     assert "当前主题" in output
 
 
 def test_doctor_reports_missing_apps_dir(tmp_path, monkeypatch, capsys):
-    monkeypatch.setenv("CUSTOMGUI_APPS_DIR", str(tmp_path / "nope"))
+    monkeypatch.setenv("SLLKGUI_APPS_DIR", str(tmp_path / "nope"))
     code = cli.main(["doctor"])
     output = capsys.readouterr().out
 
@@ -58,7 +58,7 @@ def test_doctor_accepts_relative_apps_dir(tmp_path, monkeypatch, capsys):
 
 
 def test_bundled_dirs_resolve_without_wheel_install(capsys):
-    """源码树里没有 ``customgui/apps``，也要回落到仓库 ``apps/`` 与 ``examples/``。"""
+    """源码树里没有 ``sllkgui/apps``，也要回落到仓库 ``apps/`` 与 ``examples/``。"""
     demo = cli._demo_source()
     example = cli._example_source()
 
@@ -121,29 +121,29 @@ def test_version_comes_from_version_file():
     回归：以前优先读 ``importlib.metadata``，源码树里改了 ``_version.py``
     却还显示 site-packages 里那个旧 wheel 的版本号。
     """
-    import customgui
-    from customgui._version import __version__ as source_version
+    import sllkgui
+    from sllkgui._version import __version__ as source_version
 
-    assert customgui.__version__ == source_version
+    assert sllkgui.__version__ == source_version
 
 
 def test_module_entry_point_matches_cli():
-    """``python -m customgui`` 必须与 ``customgui`` 命令同源。"""
+    """``python -m sllkgui`` 必须与 ``sllkgui`` 命令同源。"""
     result = subprocess.run(
-        [sys.executable, "-m", "customgui", "--version"],
+        [sys.executable, "-m", "sllkgui", "--version"],
         capture_output=True,
         text=True,
         check=False,
     )
     assert result.returncode == 0
-    assert "customgui" in result.stdout.lower()
+    assert "sllkgui" in result.stdout.lower()
 
 
 def test_py_typed_is_packaged():
     """PEP 561 标记必须存在于包内，否则类型检查器不认。"""
-    import customgui
+    import sllkgui
 
-    assert (Path(customgui.__file__).parent / "py.typed").is_file()
+    assert (Path(sllkgui.__file__).parent / "py.typed").is_file()
 
 
 @pytest.mark.parametrize("command", ["run", "install-demo", "examples", "doctor"])

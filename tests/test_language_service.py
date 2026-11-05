@@ -4,8 +4,8 @@ from types import SimpleNamespace
 
 import pytest
 
-from customgui.appcore import Language
-from customgui.guis.language_service import apply_language, current_language, switch_language
+from sllkgui.appcore import Language
+from sllkgui.guis.language_service import apply_language, current_language, switch_language
 
 
 @pytest.fixture(scope="module")
@@ -45,7 +45,7 @@ def test_switch_language_cycles():
     ``LANGUAGE_OPTIONS`` 决定，不该在测试里硬编码某一种排序结果——
     这条测试断言的是「按当前顺序走到下一个」，语言增减都仍然成立。
     """
-    from customgui.appcore import LANGUAGE_OPTIONS
+    from sllkgui.appcore import LANGUAGE_OPTIONS
 
     apply_language("zh_cn")
     options = list(LANGUAGE_OPTIONS)
@@ -84,7 +84,7 @@ def test_refresh_window_updates_menu_title_and_window_title():
 
     apply_language("en_us", window)
 
-    assert calls["win_title"] == "CustomGUI"
+    assert calls["win_title"] == "SllkGUI"
 
 
 def test_refresh_window_missing_ui_is_safe():
@@ -98,7 +98,7 @@ def test_language_subscription_notifies_listeners():
     def _listener():
         calls.append(True)
 
-    from customgui.appcore import Language
+    from sllkgui.appcore import Language
 
     Language.subscribe(_listener)
     try:
@@ -117,7 +117,7 @@ def test_apply_same_language_is_idempotent():
     def _listener():
         calls.append(True)
 
-    from customgui.appcore import Language
+    from sllkgui.appcore import Language
 
     Language.subscribe(_listener)
     try:
@@ -167,9 +167,9 @@ def test_scroll_positions_survive_page_rebuild(qapp, monkeypatch):
     from PySide6.QtTest import QTest
     from PySide6.QtWidgets import QScrollArea, QStackedWidget, QVBoxLayout, QWidget
 
-    from customgui.guicore import CScrollArea
-    from customgui.guis import language_service
-    from customgui.guis.windows.main_window import registry
+    from sllkgui.guicore import CScrollArea
+    from sllkgui.guis import language_service
+    from sllkgui.guis.windows.main_window import registry
 
     stack = QStackedWidget()
     stack.resize(400, 300)

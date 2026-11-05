@@ -8,8 +8,8 @@ import pytest
 from PySide6.QtCore import QPointF
 from PySide6.QtWidgets import QApplication
 
-from customgui.guicore.custom_ui.chart.chart import CHART_TYPES, CChart
-from customgui.guicore.custom_ui.upload.file_upload import CFileUpload
+from sllkgui.guicore.custom_ui.chart.chart import CHART_TYPES, CChart
+from sllkgui.guicore.custom_ui.upload.file_upload import CFileUpload
 
 
 @pytest.fixture(scope="module")

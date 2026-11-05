@@ -1,6 +1,6 @@
 from types import SimpleNamespace
 
-from customgui.guis.windows.main_window.controller import MainWindowController, PageRouterController, ThemeController
+from sllkgui.guis.windows.main_window.controller import MainWindowController, PageRouterController, ThemeController
 
 
 class _StubMainFunctions:
@@ -68,7 +68,7 @@ def test_theme_controller_cycles_expected_theme_sequence():
         ui=SimpleNamespace(window=SimpleNamespace(setStyleSheet=lambda style: style_calls.append(style)))
     )
 
-    from customgui.appcore import ThemeManager
+    from sllkgui.appcore import ThemeManager
 
     manager = ThemeManager()  # 独立实例，不污染全局单例
     controller = ThemeController(window=window, theme_manager=manager, style_factory=_Styles)

@@ -1,13 +1,22 @@
 # 更新日志
 
-项目处于**内测阶段**（`0.x`），遵循[语义化版本](https://semver.org/lang/zh-CN/)的 `0.x` 约定：
-minor 版本可能包含破坏性变更，均在本文件显式列出；patch 只做修复。
+项目遵循[语义化版本](https://semver.org/lang/zh-CN/)：major 版本允许破坏性变更并显式列出；
+minor 与 patch 保持向后兼容。
 
-当前版本：`0.6.0`（见 `src/customgui/_version.py`），对应 tag `base-v0.6.0`。
+当前版本：`1.0.0`（见 `src/sllkgui/_version.py`），对应 tag `base-v1.0.0`。
 
 ---
 
-## 未发布
+## 1.0.0（2026-11-05）
+
+### 项目更名
+
+- 分发名、顶层包名、模块导入名与命令行统一由 `customgui` 改为 `sllkgui`
+  （PyPI 上的 `customgui` 已被无关项目占用）。
+- 环境变量统一改为 `SLLKGUI_*`；资源命名空间由 `customui/` 改为 `sllkgui/`；
+  插件品牌覆盖层改为 `<app>/brand/sllkgui/`。
+- 应用私有命名空间由 `_customgui_apps` 改为 `_sllkgui_apps`；日志文件改为
+  `logs/sllkgui.log`。旧安装需重新执行 `uv sync` / `pip install -e .`。
 
 ### 个性化背景图
 
@@ -163,7 +172,7 @@ minor 版本可能包含破坏性变更，均在本文件显式列出；patch �
 - **相对路径**：`--apps-dir` / `--data-dir` 在 CLI 入口统一 `Path(...).resolve()`，
   应用清单不再被当成包内资源路径解析；`install-demo` / `examples --copy` 在源码树回落到仓库
   `apps/` 与 `examples/`。
-- **版本号**：`customgui.__version__` 改为以 `_version.py` 为唯一来源，源码树不再显示
+- **版本号**：`sllkgui.__version__` 改为以 `_version.py` 为唯一来源，源码树不再显示
   site-packages 里旧 wheel 的版本；0.6.0 同时更新四套语言包中的 `sys_version`。
 - **模块拆分**：`custom_ui/data/tree.py` / `data/table.py` 按角色常量、列定义、模型、委托、视图拆分；
   `guis/app_loader.py` 拆成编排、清单、命名空间、上下文、协议 v2、状态六个模块。对外导出面不变。
@@ -219,7 +228,7 @@ minor 版本可能包含破坏性变更，均在本文件显式列出；patch �
 
 | 变更 | 迁移方式 |
 | --- | --- |
-| 移除浮层版 `CDrawer`（`customgui.guicore.CDrawer`） | 改用四向栏目：左右列由主窗口装配，顶/底列用 `CTopColumn` / `CBottomColumn`；开合用 `MainFunctions.toggle_*_column(window)` |
+| 移除浮层版 `CDrawer`（`sllkgui.guicore.CDrawer`） | 改用四向栏目：左右列由主窗口装配，顶/底列用 `CTopColumn` / `CBottomColumn`；开合用 `MainFunctions.toggle_*_column(window)` |
 
 ### 主要变更
 
@@ -292,7 +301,7 @@ minor 版本可能包含破坏性变更，均在本文件显式列出；patch �
 
 ### 同版本新增
 
-- `customgui.window` 门面、`customgui.configure()`、`customgui` 命令行（`run` / `install-demo` /
+- `sllkgui.window` 门面、`sllkgui.configure()`、`sllkgui` 命令行（`run` / `install-demo` /
   `examples` / `doctor`）、`AppHandle`、`py.typed`。
 - 内置示例与最小工程随 wheel 分发（`force-include`）。
 

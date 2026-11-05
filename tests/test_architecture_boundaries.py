@@ -1,6 +1,6 @@
 """架构边界守卫：用 AST 扫描 import 根，防止分层依赖被悄悄破坏。
 
-> 注意：src layout 下运行时包在 ``src/customgui``，这里的路径必须跟着走，
+> 注意：src layout 下运行时包在 ``src/sllkgui``，这里的路径必须跟着走，
 > 否则 ``rglob`` 会扫空、断言永远通过（假绿）。
 """
 
@@ -8,7 +8,7 @@ import ast
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
-SRC = ROOT / "src" / "customgui"
+SRC = ROOT / "src" / "sllkgui"
 
 
 def _iter_python_files(*folders: Path):
@@ -41,10 +41,10 @@ def test_appcore_does_not_depend_on_presentation_layers():
     violations = []
     for path in _iter_python_files(SRC / "appcore"):
         for module in _extract_import_roots(path):
-            if _matches(module, "customgui.guis") or _matches(module, "customgui.guicore"):
+            if _matches(module, "sllkgui.guis") or _matches(module, "sllkgui.guicore"):
                 violations.append(f"{path.relative_to(ROOT).as_posix()} -> {module}")
 
-    assert not violations, "customgui.appcore must not import presentation layers:\n" + "\n".join(violations)
+    assert not violations, "sllkgui.appcore must not import presentation layers:\n" + "\n".join(violations)
 
 
 def test_guicore_does_not_depend_on_guis():
@@ -52,17 +52,17 @@ def test_guicore_does_not_depend_on_guis():
     violations = []
     for path in _iter_python_files(SRC / "guicore"):
         for module in _extract_import_roots(path):
-            if _matches(module, "customgui.guis"):
+            if _matches(module, "sllkgui.guis"):
                 violations.append(f"{path.relative_to(ROOT).as_posix()} -> {module}")
 
-    assert not violations, "customgui.guicore must not import customgui.guis:\n" + "\n".join(violations)
+    assert not violations, "sllkgui.guicore must not import sllkgui.guis:\n" + "\n".join(violations)
 
 
 def test_presentation_layer_uses_appcore_public_api_only():
     violations = []
     for path in _iter_python_files(SRC / "guis", SRC / "guicore"):
         for module in _extract_import_roots(path):
-            if _matches(module, "customgui.appcore.sysx"):
+            if _matches(module, "sllkgui.appcore.sysx"):
                 violations.append(f"{path.relative_to(ROOT).as_posix()} -> {module}")
 
     assert not violations, "Presentation code must not import appcore internals:\n" + "\n".join(violations)
@@ -71,11 +71,11 @@ def test_presentation_layer_uses_appcore_public_api_only():
 def test_fake_app_namespace_is_private():
     """应用模组的伪造命名空间必须带下划线（私有、不构成公开契约）。
 
-    允许 ``_customgui_apps``（私有），禁止裸 ``customgui_apps``（旧名）。
+    允许 ``_sllkgui_apps``（私有），禁止裸 ``sllkgui_apps``（旧名）。
     """
     import re
 
-    forbidden = re.compile(r"(?<![_A-Za-z])customgui_apps\b")
+    forbidden = re.compile(r"(?<![_A-Za-z])sllkgui_apps\b")
     violations = []
     for path in _iter_python_files(SRC, ROOT / "tests", ROOT / "apps", ROOT / "examples", ROOT / "scripts"):
         if path.name == "test_architecture_boundaries.py":
@@ -85,7 +85,7 @@ def test_fake_app_namespace_is_private():
             if isinstance(node, ast.Constant) and isinstance(node.value, str) and forbidden.search(node.value):
                 violations.append(f"{path.relative_to(ROOT).as_posix()}:{node.lineno}: {node.value[:60]!r}")
 
-    assert not violations, "Legacy fake package name 'customgui_apps' is not allowed:\n" + "\n".join(violations)
+    assert not violations, "Legacy fake package name 'sllkgui_apps' is not allowed:\n" + "\n".join(violations)
 
 
 def test_no_dunder_file_parents_depth():
@@ -93,7 +93,7 @@ def test_no_dunder_file_parents_depth():
 
     源码运行、wheel 安装、PyInstaller 收集三种形态的目录深度各不相同，
     按层数回溯路径是最隐蔽的「装完就崩」来源。资源定位一律走
-    ``customgui.config.paths``。
+    ``sllkgui.config.paths``。
     """
     violations = []
     for path in _iter_python_files(SRC):

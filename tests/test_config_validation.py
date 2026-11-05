@@ -1,6 +1,6 @@
 import pytest
 
-from customgui.appcore.sysx.config.schema import (
+from sllkgui.appcore.sysx.config.schema import (
     validate_language_data,
     validate_settings_data,
     validate_theme_data,
@@ -88,7 +88,7 @@ def _base_theme():
 def _base_language():
     return {
         "custom_ui": {
-            "sys_name": "CustomGUI",
+            "sys_name": "SllkGUI",
             "sys_version": "1.0.0",
             "sys_copyright": "MIT",
             "sys_github": "https://example.com",

@@ -10,9 +10,9 @@ from PySide6.QtGui import QColor
 from PySide6.QtTest import QTest
 from PySide6.QtWidgets import QApplication, QVBoxLayout, QWidget
 
-from customgui.appcore import ColorPalette, get_theme_manager
-from customgui.guicore import CButton, CButtonGroup, CPushButton, CSplitButton
-from customgui.guicore.custom_ui.button.severity import Severity, Variant, colors_for, is_dark_theme
+from sllkgui.appcore import ColorPalette, get_theme_manager
+from sllkgui.guicore import CButton, CButtonGroup, CPushButton, CSplitButton
+from sllkgui.guicore.custom_ui.button.severity import Severity, Variant, colors_for, is_dark_theme
 
 
 @pytest.fixture(scope="module")

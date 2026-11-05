@@ -9,8 +9,8 @@ from PySide6.QtCore import Qt
 from PySide6.QtTest import QTest
 from PySide6.QtWidgets import QApplication, QLabel
 
-from customgui.guicore import CDataTable, CPaginator, CTableColumn, CTableModel
-from customgui.guicore.custom_ui.data.table import DETAIL_ROLE, GROUP_ROLE, TAG_ROLE
+from sllkgui.guicore import CDataTable, CPaginator, CTableColumn, CTableModel
+from sllkgui.guicore.custom_ui.data.table import DETAIL_ROLE, GROUP_ROLE, TAG_ROLE
 
 
 @pytest.fixture(scope="module")

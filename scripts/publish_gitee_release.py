@@ -48,7 +48,7 @@ def _request(method: str, url: str, *, params: dict | None = None, json_body: di
 
 def _encode_multipart(fields: dict[str, str], file_path: Path) -> tuple[bytes, str]:
     """构造 multipart/form-data：普通字段 + 单个 file 字段。"""
-    boundary = "----CustomGUI" + os.urandom(16).hex()
+    boundary = "----SllkGUI" + os.urandom(16).hex()
     lines = []
     for key, value in fields.items():
         lines.append(f"--{boundary}\r\nContent-Disposition: form-data; name=\"{key}\"\r\n\r\n{value}\r\n".encode())

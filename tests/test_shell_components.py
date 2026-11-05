@@ -14,10 +14,10 @@ from PySide6.QtGui import QColor
 from PySide6.QtTest import QTest
 from PySide6.QtWidgets import QApplication, QVBoxLayout, QWidget
 
-from customgui.appcore import get_theme_manager
-from customgui.guicore.window.app_configurator import CAppConfigurator
-from customgui.guicore.window.app_menu import CAppMenu
-from customgui.guicore.window.app_topbar import CAppTopbar
+from sllkgui.appcore import get_theme_manager
+from sllkgui.guicore.window.app_configurator import CAppConfigurator
+from sllkgui.guicore.window.app_menu import CAppMenu
+from sllkgui.guicore.window.app_topbar import CAppTopbar
 
 
 @pytest.fixture(scope="module")
@@ -135,7 +135,7 @@ def test_configurator_menu_mode_and_dark_mode(host):
 
 
 def test_configurator_language_selection_and_retranslate(host):
-    from customgui.appcore import LANGUAGE_OPTIONS, Language
+    from sllkgui.appcore import LANGUAGE_OPTIONS, Language
 
     panel = CAppConfigurator(host)
     picked = []
@@ -155,7 +155,7 @@ def test_configurator_language_selection_and_retranslate(host):
 
 
 def test_configurator_appearance_sliders(host):
-    from customgui.guicore import (
+    from sllkgui.guicore import (
         MIN_WINDOW_GLASS_ALPHA,
         acrylic_transparency,
         glass_alpha,
@@ -203,9 +203,9 @@ def test_configurator_appearance_sliders(host):
 
 
 def test_menu_colors_theme_contrast_and_glass_surface(monkeypatch):
-    import customgui.guicore.acrylic as acrylic_module
-    from customgui.guicore import glass_surface, reset_appearance_overrides, set_glass_strength
-    from customgui.guicore.custom_ui.menu.menu_list import menu_colors
+    import sllkgui.guicore.acrylic as acrylic_module
+    from sllkgui.guicore import glass_surface, reset_appearance_overrides, set_glass_strength
+    from sllkgui.guicore.custom_ui.menu.menu_list import menu_colors
 
     try:
         for theme in ("bright", "dracula"):

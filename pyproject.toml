@@ -3,14 +3,14 @@ requires = ["hatchling>=1.27"]
 build-backend = "hatchling.build"
 
 [project]
-name = "customgui"
+name = "sllkgui"
 dynamic = ["version"]
 description = "基于 PySide6 的开源 UI 基座：窗口框架、组件库、主题、语言与插件加载"
 readme = "README.md"
 license = "MulanPSL-2.0"
 license-files = ["LICENSE"]
 requires-python = ">=3.12"
-authors = [{ name = "CustomGUI Contributors" }]
+authors = [{ name = "SllkGUI Contributors" }]
 keywords = ["pyside6", "qt", "ui", "desktop", "widgets", "theme", "plugin", "framework"]
 classifiers = [
     "Development Status :: 4 - Beta",
@@ -41,20 +41,20 @@ dev = [
 ]
 
 [project.urls]
-Homepage = "https://gitee.com/shilianlvke/CustomGUI_Qt_For_Python"
-Repository = "https://gitee.com/shilianlvke/CustomGUI_Qt_For_Python"
-Issues = "https://gitee.com/shilianlvke/CustomGUI_Qt_For_Python/issues"
-Changelog = "https://gitee.com/shilianlvke/CustomGUI_Qt_For_Python/blob/main/CHANGELOG.md"
+Homepage = "https://gitee.com/shilianlvke/SllkGui"
+Repository = "https://gitee.com/shilianlvke/SllkGui"
+Issues = "https://gitee.com/shilianlvke/SllkGui/issues"
+Changelog = "https://gitee.com/shilianlvke/SllkGui/blob/main/CHANGELOG.md"
 
 [project.scripts]
-customgui = "customgui.cli:main"
+sllkgui = "sllkgui.cli:main"
 
 [[tool.uv.index]]
 url = "https://pypi.tuna.tsinghua.edu.cn/simple"
 default = true
 
 [tool.hatch.version]
-path = "src/customgui/_version.py"
+path = "src/sllkgui/_version.py"
 
 [tool.ruff]
 line-length = 120
@@ -65,7 +65,7 @@ select = ["E", "F", "W", "I", "UP", "B"]
 ignore = ["E501", "TID252"]
 
 [tool.ruff.lint.per-file-ignores]
-# 示例脚本必须在导入 Qt / customgui 之前写入演示目录环境变量，导入顺序即语义。
+# 示例脚本必须在导入 Qt / sllkgui 之前写入演示目录环境变量，导入顺序即语义。
 "examples/hello_world/main.py" = ["E402"]
 
 [tool.pytest.ini_options]
@@ -73,7 +73,7 @@ testpaths = ["tests"]
 addopts = "-q"
 
 [tool.coverage.run]
-source = ["customgui"]
+source = ["sllkgui"]
 branch = true
 
 [tool.coverage.report]
@@ -90,10 +90,10 @@ exclude_lines = [
 [tool.mypy]
 python_version = "3.12"
 files = [
-    "src/customgui/config.py",
-    "src/customgui/guicore/callbacks.py",
-    "src/customgui/guicore/task.py",
-    "src/customgui/appcore/user_settings.py",
+    "src/sllkgui/config.py",
+    "src/sllkgui/guicore/callbacks.py",
+    "src/sllkgui/guicore/task.py",
+    "src/sllkgui/appcore/user_settings.py",
 ]
 ignore_missing_imports = true
 follow_imports = "skip"
@@ -101,13 +101,13 @@ check_untyped_defs = true
 warn_unused_ignores = false
 
 [tool.hatch.build.targets.sdist]
-include = ["src/customgui", "apps", "examples", "docs", "tests", "scripts"]
+include = ["src/sllkgui", "apps", "examples", "docs", "tests", "scripts"]
 
 [tool.hatch.build.targets.wheel]
-packages = ["src/customgui"]
+packages = ["src/sllkgui"]
 
-# 内置示例随 wheel 分发，让 `customgui install-demo` / `customgui examples`
+# 内置示例随 wheel 分发，让 `sllkgui install-demo` / `sllkgui examples`
 # 在只装了 wheel 的机器上也能用（"开箱即用"的关键一环）。
 [tool.hatch.build.targets.wheel.force-include]
-"apps" = "customgui/apps"
-"examples/hello_world" = "customgui/examples/hello_world"
+"apps" = "sllkgui/apps"
+"examples/hello_world" = "sllkgui/examples/hello_world"

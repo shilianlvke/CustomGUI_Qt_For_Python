@@ -12,7 +12,7 @@ from PySide6.QtCore import Qt
 from PySide6.QtTest import QTest
 from PySide6.QtWidgets import QApplication, QGridLayout, QLabel, QVBoxLayout
 
-from customgui.guicore.custom_ui.data import CDataView, COrderList, CPickList
+from sllkgui.guicore.custom_ui.data import CDataView, COrderList, CPickList
 
 
 @pytest.fixture(scope="module")

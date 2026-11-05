@@ -9,9 +9,9 @@ from PySide6.QtCore import Qt
 from PySide6.QtTest import QTest
 from PySide6.QtWidgets import QApplication
 
-from customgui.guicore.custom_ui.data import CTimeline, CTree, CTreeTable
-from customgui.guicore.custom_ui.data.table import CTableColumn
-from customgui.guicore.custom_ui.data.tree import KEY_ROLE
+from sllkgui.guicore.custom_ui.data import CTimeline, CTree, CTreeTable
+from sllkgui.guicore.custom_ui.data.table import CTableColumn
+from sllkgui.guicore.custom_ui.data.tree import KEY_ROLE
 
 
 @pytest.fixture(scope="module")
