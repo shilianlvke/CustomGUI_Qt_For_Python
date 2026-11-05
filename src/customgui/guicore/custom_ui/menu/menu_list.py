@@ -82,13 +82,16 @@ def menu_font(size: int = 14, weight: QFont.Weight = QFont.Weight.Normal) -> QFo
     return font
 
 
-def menu_colors() -> dict[str, str | QColor]:
+def menu_colors() -> dict[str, str]:
     """当前主题下的菜单配色（全部取自调色板或中性色令牌）。
 
     - 底色跟随亚克力配置，并受「质感强度」影响；用高不透明度下限保证浮层
       文字不会与下层页面互相干扰。
     - hover/选中底色取 ``custom_dark_four``：浅色主题下比页面更深、深色主题
       下比页面更亮，避免旧实现（亮色主题用纯白）把悬停行"隐"进背景。
+
+    返回值为 ``#AARRGGBB`` / 主题色字符串，既可直接交给 ``QColor`` 绘制，
+    也可拼接进样式表，保持调用方原有的字符串约定。
     """
     base = tokens()
     accent = QColor(base["accent"])
@@ -97,10 +100,13 @@ def menu_colors() -> dict[str, str | QColor]:
     # 延迟导入：button 包会反向依赖菜单浮层，模块级导入会形成循环。
     from ..button.severity import contrast_text
 
+    def to_text(color: QColor) -> str:
+        return color.name(QColor.NameFormat.HexArgb)
+
     return {
-        "background": glass_surface(ColorPalette.custom_dark_one, AppSettings.glass.menu, minimum=0.85),
-        "header": header,
-        "hover": QColor(ColorPalette.custom_dark_four),
+        "background": to_text(glass_surface(ColorPalette.custom_dark_one, AppSettings.glass.menu, minimum=0.85)),
+        "header": to_text(header),
+        "hover": ColorPalette.custom_dark_four,
         "border": base["border"],
         "divider": base["border"],
         "text": base["text"],
@@ -109,7 +115,7 @@ def menu_colors() -> dict[str, str | QColor]:
         "track": base["surface_strong"],
         # 强调色在 dracula 等主题中是浅粉/浅蓝，固定白字对比度不足；
         # 按实际亮度自动选择黑/白前景。
-        "on_accent": contrast_text(accent),
+        "on_accent": to_text(contrast_text(accent)),
     }
 
 
