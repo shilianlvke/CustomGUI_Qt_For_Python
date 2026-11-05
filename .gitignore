@@ -9,6 +9,8 @@ output/
 .file-status/
 files/
 logs/
+# 程序运行根目录下的用户配置（数据根默认落点，不应进入版本库）
+/settings/
 Data/
 !src/customgui/guicore/custom_ui/data/
 
