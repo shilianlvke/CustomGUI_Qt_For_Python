@@ -133,6 +133,12 @@ UI:
   ui_AppearanceHint: 主题、语言与界面布局
   ui_Theme: 主题
   ui_ThemeHint: 选择一套内置配色方案
+  ui_Material: 材质与通透度
+  ui_MaterialHint: 实时调整窗口透明度与亚克力质感
+  ui_Transparency: 窗口透明度
+  ui_TransparencyHint: 数值越大，桌面内容透出越明显
+  ui_GlassStrength: 亚克力质感强度
+  ui_GlassStrengthHint: 数值越大，界面上的模糊材质越明显
   ui_Language: 语言
   ui_LanguageHint: 选择界面显示语言
   ui_MenuMode: 菜单模式

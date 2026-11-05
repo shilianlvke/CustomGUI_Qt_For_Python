@@ -3,7 +3,7 @@ from PySide6.QtGui import QColor
 
 from customgui.appcore import AppSettings, Logger, PathFactory, get_design_tokens
 
-from .acrylic import acrylic_active
+from .acrylic import acrylic_active, glass_alpha
 
 # ----------------------------------------------------------------------
 # 亚克力玻璃层的不透明度
@@ -66,8 +66,8 @@ def region_card_background() -> str:
         return tint
     colors = get_design_tokens().colors
     glass_cfg = AppSettings.glass
-    window = _composite(colors.surface_app, glass_cfg.window, colors.surface_app)
-    return _composite(tint, glass_cfg.region, window)
+    window = _composite(colors.surface_app, glass_alpha(glass_cfg.window), colors.surface_app)
+    return _composite(tint, glass_alpha(glass_cfg.region), window)
 
 
 class Styles:
@@ -103,13 +103,15 @@ class Styles:
         self.glass = glass
         glass_cfg = AppSettings.glass
 
-        # 各层表面：玻璃模式下使用半透明写法，否则保持不透明主题色
-        self._window_bg = _rgba(colors.surface_app, glass_cfg.window) if glass else colors.surface_app
-        self._sidebar_bg = _rgba(colors.surface_sidebar, glass_cfg.sidebar) if glass else colors.surface_sidebar
-        self._panel_bg = _rgba(colors.surface_panel, glass_cfg.panel) if glass else colors.surface_panel
-        self._card_bg = _rgba(colors.surface_card, glass_cfg.card) if glass else colors.surface_card
-        self._region_bg = _rgba(region_card_tint(), glass_cfg.region) if glass else region_card_tint()
-        self._control_bg = _rgba(colors.surface_sidebar, glass_cfg.control) if glass else colors.surface_sidebar
+        # 各层表面：玻璃模式下使用半透明写法，否则保持不透明主题色。
+        # 表面层统一乘上运行期「亚克力质感强度」，滑块调节后重建样式即可生效；
+        # 浮层/工具提示保持原配置不缩放，避免菜单文字与页面互相穿透。
+        self._window_bg = _rgba(colors.surface_app, glass_alpha(glass_cfg.window)) if glass else colors.surface_app
+        self._sidebar_bg = _rgba(colors.surface_sidebar, glass_alpha(glass_cfg.sidebar)) if glass else colors.surface_sidebar
+        self._panel_bg = _rgba(colors.surface_panel, glass_alpha(glass_cfg.panel)) if glass else colors.surface_panel
+        self._card_bg = _rgba(colors.surface_card, glass_alpha(glass_cfg.card)) if glass else colors.surface_card
+        self._region_bg = _rgba(region_card_tint(), glass_alpha(glass_cfg.region)) if glass else region_card_tint()
+        self._control_bg = _rgba(colors.surface_sidebar, glass_alpha(glass_cfg.control)) if glass else colors.surface_sidebar
         self._menu_bg = _rgba(colors.surface_interactive, glass_cfg.menu) if glass else colors.surface_interactive
         # Overlay 左菜单浮在内容之上，需要接近不透明的面板底色；沿用侧栏的
         # 0 透明度会让菜单和页面文字互相穿透。

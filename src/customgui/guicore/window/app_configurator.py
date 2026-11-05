@@ -20,9 +20,16 @@ from customgui.appcore import (
     get_theme_manager,
 )
 
+from ..acrylic import (
+    acrylic_transparency,
+    glass_strength,
+    set_acrylic_transparency,
+    set_glass_strength,
+)
 from ..custom_ui.close_button import CCloseButton
 from ..custom_ui.line_edit.choice import CToggleSwitch
 from ..custom_ui.line_edit.select import CSelect
+from ..custom_ui.line_edit.slider import CSlider
 from ..custom_ui.line_edit.toggle_button import CSelectButton
 from ..custom_ui.scroll.scroll_area import CScrollArea
 
@@ -151,6 +158,11 @@ class CAppConfigurator(QFrame):
     languageChanged = Signal(str)
     menuModeChanged = Signal(str)
     darkModeChanged = Signal(bool)
+    #: 实时预览：透明度（0-100）与亚克力质感强度（0-100）变化
+    transparencyChanged = Signal(int)
+    glassStrengthChanged = Signal(int)
+    #: 滑块拖动结束：宿主可在此一次性落盘，避免拖动过程中频繁写文件
+    appearanceCommitted = Signal()
     closed = Signal()
     #: 嵌入右侧抽屉时，标题栏关闭按钮请求外层收起抽屉。
     closeRequested = Signal()
@@ -231,6 +243,8 @@ class CAppConfigurator(QFrame):
 
         self._build_theme_section(content)
         self._add_divider(content)
+        self._build_material_section(content)
+        self._add_divider(content)
         self._build_language_section(content)
         self._add_divider(content)
         self._build_menu_mode_section(content)
@@ -240,7 +254,7 @@ class CAppConfigurator(QFrame):
         root.addWidget(self.content_scroll, 1)
 
     def _make_label(self, text: str, role: str) -> QLabel:
-        """创建一个随主题刷新颜色的标签；role 为 header / title / hint。"""
+        """创建一个随主题刷新颜色的标签；role 为 header / title / hint / value。"""
         label = QLabel(text, self)
         font = QFont(AppSettings.family)
         if role == "header":
@@ -248,6 +262,9 @@ class CAppConfigurator(QFrame):
             font.setWeight(QFont.Weight.DemiBold)
         elif role == "title":
             font.setPixelSize(13)
+            font.setWeight(QFont.Weight.DemiBold)
+        elif role == "value":
+            font.setPixelSize(12)
             font.setWeight(QFont.Weight.DemiBold)
         else:
             font.setPixelSize(12)
@@ -316,6 +333,67 @@ class CAppConfigurator(QFrame):
         self.dark_switch.toggled.connect(self._on_dark_toggled)
         row_layout.addWidget(self.dark_switch, 0, Qt.AlignRight | Qt.AlignVCenter)
         layout.addWidget(row)
+
+    def _build_material_section(self, content: QWidget) -> None:
+        """材质与通透度：透明度 / 亚克力质感强度两枚实时滑块。"""
+        layout = self._add_section(
+            content,
+            "language.UI.ui_Material",
+            "材质与通透度",
+            "language.UI.ui_MaterialHint",
+            "实时调整窗口透明度与亚克力质感",
+        )
+        self.transparency_slider, self.transparency_value = self._add_slider_row(
+            layout,
+            "language.UI.ui_Transparency",
+            "窗口透明度",
+            "language.UI.ui_TransparencyHint",
+            "数值越大，桌面内容透出越明显",
+            acrylic_transparency(),
+        )
+        self.transparency_slider.valueChanged.connect(self._on_transparency_changed)
+        self.transparency_slider.sliderReleased.connect(lambda _value: self.appearanceCommitted.emit())
+
+        self.glass_strength_slider, self.glass_strength_value = self._add_slider_row(
+            layout,
+            "language.UI.ui_GlassStrength",
+            "亚克力质感强度",
+            "language.UI.ui_GlassStrengthHint",
+            "数值越大，界面上的模糊材质越明显",
+            glass_strength(),
+        )
+        self.glass_strength_slider.valueChanged.connect(self._on_glass_strength_changed)
+        self.glass_strength_slider.sliderReleased.connect(lambda _value: self.appearanceCommitted.emit())
+
+    def _add_slider_row(
+        self,
+        layout: QVBoxLayout,
+        title_key: str,
+        title_fallback: str,
+        hint_key: str,
+        hint_fallback: str,
+        value: int,
+    ) -> tuple[CSlider, QLabel]:
+        """一行滑块：标题 + 百分比数值 + 说明 + 控件本身。"""
+        row = QWidget()
+        row_layout = QVBoxLayout(row)
+        row_layout.setContentsMargins(0, 0, 0, 0)
+        row_layout.setSpacing(4)
+
+        head = QWidget()
+        head_layout = QHBoxLayout(head)
+        head_layout.setContentsMargins(0, 0, 0, 0)
+        head_layout.setSpacing(8)
+        head_layout.addWidget(self._register_text(title_key, title_fallback, "title"), 1)
+        value_label = self._make_label(f"{int(value)}%", "value")
+        head_layout.addWidget(value_label, 0, Qt.AlignRight | Qt.AlignVCenter)
+        row_layout.addWidget(head)
+        row_layout.addWidget(self._register_text(hint_key, hint_fallback, "hint"))
+
+        slider = CSlider(value=int(value), minimum=0, maximum=100, step=1)
+        row_layout.addWidget(slider)
+        layout.addWidget(row)
+        return slider, value_label
 
     def _build_language_section(self, content: QWidget) -> None:
         layout = self._add_section(
@@ -435,6 +513,38 @@ class CAppConfigurator(QFrame):
         finally:
             self._suppress_dark_sync = False
         self.darkModeChanged.emit(bool(checked))
+
+    # ------------------------------------------------------------------
+    # 材质与通透度
+    # ------------------------------------------------------------------
+    def transparency(self) -> int:
+        """当前窗口透明度（0-100）。"""
+        return self.transparency_slider.value()
+
+    def appearance_strength(self) -> int:
+        """当前亚克力质感强度（0-100）。"""
+        return self.glass_strength_slider.value()
+
+    def set_appearance(self, transparency: int | None = None, strength: int | None = None) -> None:
+        """静默同步滑块与运行期外观值（启动恢复 / 外部调用）。"""
+        if transparency is not None:
+            value = set_acrylic_transparency(int(transparency))
+            self.transparency_slider.setValue(value, emit=False)
+            self.transparency_value.setText(f"{value}%")
+        if strength is not None:
+            value = set_glass_strength(int(strength))
+            self.glass_strength_slider.setValue(value, emit=False)
+            self.glass_strength_value.setText(f"{value}%")
+
+    def _on_transparency_changed(self, value: int) -> None:
+        set_acrylic_transparency(value)
+        self.transparency_value.setText(f"{int(value)}%")
+        self.transparencyChanged.emit(int(value))
+
+    def _on_glass_strength_changed(self, value: int) -> None:
+        set_glass_strength(value)
+        self.glass_strength_value.setText(f"{int(value)}%")
+        self.glassStrengthChanged.emit(int(value))
 
     # ------------------------------------------------------------------
     # 语言
@@ -618,6 +728,8 @@ class CAppConfigurator(QFrame):
         self.language_select.update()
         self.menu_mode_select.update()
         self.dark_switch.update()
+        self.transparency_slider.update()
+        self.glass_strength_slider.update()
         self.update()
 
     def paintEvent(self, event):  # noqa: N802 - 覆写 Qt 命名

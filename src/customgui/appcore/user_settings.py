@@ -47,7 +47,14 @@ _FILE_NAME = "user.yaml"
 _LEGACY_FILE = "ui_state.json"
 _SUBDIR = "settings"
 #: 允许持久化的字段（与 AppSettings / 外观配置一一对应）
-SUPPORTED_FIELDS = ("theme_name", "language", "menu_mode", "startup_size")
+SUPPORTED_FIELDS = (
+    "theme_name",
+    "language",
+    "menu_mode",
+    "startup_size",
+    "acrylic_transparency",
+    "glass_strength",
+)
 
 _LOCK = threading.Lock()
 _CACHE: dict[str, Any] | None = None
@@ -66,6 +73,10 @@ def _normalize_field(key: str, value: Any) -> Any | None:
         return None
     if key == "menu_mode":
         return value if value in ("static", "overlay") else None
+    if key in ("acrylic_transparency", "glass_strength"):
+        if isinstance(value, bool) or not isinstance(value, int):
+            return None
+        return value if 0 <= value <= 100 else None
     if key == "startup_size":
         if not isinstance(value, (list, tuple)) or len(value) != 2:
             return None

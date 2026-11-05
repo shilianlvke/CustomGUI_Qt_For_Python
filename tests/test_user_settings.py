@@ -85,7 +85,18 @@ def test_invalid_values_are_not_written():
     assert not user_settings.save_user_settings(theme_name="")
     assert not user_settings.save_user_settings(startup_size=[0, 10])
     assert not user_settings.save_user_settings(menu_mode="unknown")
+    assert not user_settings.save_user_settings(acrylic_transparency=-5)
+    assert not user_settings.save_user_settings(glass_strength=101)
     assert not user_settings.user_settings_path().exists()
+
+
+def test_appearance_fields_roundtrip():
+    assert user_settings.save_user_settings(acrylic_transparency=35, glass_strength=80)
+
+    assert user_settings.load_user_settings() == {
+        "acrylic_transparency": 35,
+        "glass_strength": 80,
+    }
 
 
 def test_unsupported_key_is_ignored():

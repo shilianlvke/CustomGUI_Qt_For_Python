@@ -22,6 +22,8 @@ class CSlider(QWidget):
     """水平滑块：点击跳转、拖动改值，按 step 量化。"""
 
     valueChanged = Signal(int)
+    #: 拖动结束（松开鼠标）后发出最终值，供宿主做落盘等一次性动作
+    sliderReleased = Signal(int)
 
     def __init__(self, value: int = 0, minimum: int = 0, maximum: int = 100, step: int = 1, parent=None):
         super().__init__(parent)
@@ -134,8 +136,12 @@ class CSlider(QWidget):
             self.setValue(self._value_at(event.position().x()))
 
     def mouseReleaseEvent(self, event):  # noqa: N802 - 覆写 Qt 命名
+        was_dragging = self._dragging
         self._dragging = False
         self.update()
+        if was_dragging and event.button() == Qt.LeftButton:
+            self.sliderReleased.emit(self._value)
+        super().mouseReleaseEvent(event)
 
     def enterEvent(self, event):  # noqa: N802 - 覆写 Qt 命名
         self._hover = True

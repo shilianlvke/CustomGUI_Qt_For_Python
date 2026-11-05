@@ -15,7 +15,7 @@ from customgui.appcore import (
     get_theme_manager,
     load_user_settings,
 )
-from customgui.guicore import CGrips
+from customgui.guicore import CGrips, set_acrylic_transparency, set_glass_strength
 from customgui.guis.app_loader import load_apps
 
 from .functions import MainFunctions
@@ -141,7 +141,7 @@ class SetupMainWindow:
 
     @staticmethod
     def restore_ui_state(window) -> dict:
-        """恢复用户上次保存的主题 / 语言 / 窗口尺寸，返回读取到的用户配置。
+        """恢复用户上次保存的主题 / 语言 / 窗口尺寸 / 材质参数。
 
         用户配置是 ``<data_root>/settings/user.yaml`` 增量覆盖层，优先级高于
         基座默认值与品牌层；缺失或非法的字段保持下层配置。窗口尺寸会在
@@ -149,13 +149,15 @@ class SetupMainWindow:
         """
         state = load_user_settings()
 
+        # 材质参数必须在主题之前恢复：主题切换会重建全局样式，样式里的
+        # 玻璃层透明度直接读取当前强度。
+        appearance_applied = SetupMainWindow.restore_appearance(window, state)
+
+        theme_applied = False
         theme = state.get("theme_name")
         if isinstance(theme, str) and theme in AppThemes:
             get_theme_manager().apply(theme)
-            # 窗口已按配置主题构建过一次，恢复后要立刻重建样式
-            apply_style = getattr(getattr(window.ui, "window", None), "apply_style", None)
-            if callable(apply_style):
-                apply_style()
+            theme_applied = True
 
         language = state.get("language")
         if isinstance(language, str) and language in LANGUAGE_OPTIONS and language != Language.current():
@@ -169,7 +171,32 @@ class SetupMainWindow:
                 width = height = 0
             if width > 0 and height > 0:
                 window.resize(width, height)
+
+        # 主题变更会重建样式；只恢复了材质参数时也要立即重建一次，
+        # 否则启动后要等到下一次主题切换才生效。
+        if theme_applied or appearance_applied:
+            apply_style = getattr(getattr(window.ui, "window", None), "apply_style", None)
+            if callable(apply_style):
+                apply_style()
         return state
+
+    @staticmethod
+    def restore_appearance(window, state: dict) -> bool:
+        """恢复窗口透明度与亚克力质感强度，返回是否读到了合法配置。"""
+        transparency = state.get("acrylic_transparency")
+        strength = state.get("glass_strength")
+        transparency = transparency if isinstance(transparency, int) and not isinstance(transparency, bool) else None
+        strength = strength if isinstance(strength, int) and not isinstance(strength, bool) else None
+        applied = transparency is not None or strength is not None
+        if transparency is not None:
+            set_acrylic_transparency(transparency)
+        if strength is not None:
+            set_glass_strength(strength)
+        config = getattr(getattr(window, "ui", None), "theme_config", None)
+        setter = getattr(config, "set_appearance", None)
+        if callable(setter):
+            setter(transparency=transparency, strength=strength)
+        return applied
 
     @staticmethod
     def restore_menu_mode(window, state: dict) -> None:

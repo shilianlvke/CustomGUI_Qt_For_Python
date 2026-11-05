@@ -9,7 +9,7 @@ from PySide6.QtGui import QColor, QFont, QPainterPath
 
 from customgui.appcore import AppSettings, ColorPalette, get_design_tokens
 
-from ...acrylic import acrylic_active, glass_tint
+from ...acrylic import acrylic_active, glass_alpha, glass_tint
 
 
 @dataclass(frozen=True)
@@ -76,7 +76,7 @@ def colors() -> dict[str, str | QColor]:
     tokens = get_design_tokens().colors
     dark = is_dark_theme()
     if acrylic_active():
-        background = glass_tint(tokens.surface_sidebar, AppSettings.glass.control)
+        background = glass_tint(tokens.surface_sidebar, glass_alpha(AppSettings.glass.control))
         disabled_background = glass_tint(tokens.surface_app, 0.10)
         border = glass_tint(tokens.text_primary, 0.14)
         hover_border = glass_tint(tokens.text_primary, 0.28)

@@ -1,4 +1,4 @@
-from PySide6.QtCore import QEvent, QObject
+from PySide6.QtCore import QEvent, QObject, QTimer
 from PySide6.QtWidgets import QPushButton, QWidget
 
 from customgui.appcore import (
@@ -11,7 +11,7 @@ from customgui.appcore import (
     record_event,
     save_user_settings,
 )
-from customgui.guicore import Styles
+from customgui.guicore import Styles, acrylic_active, apply_acrylic
 
 from .functions import MainFunctions
 from .registry import ensure_registered_page, get_page_routes
@@ -154,7 +154,8 @@ class ThemeController:
         )
         button.set_active(active)
 
-    def _apply_styles(self):
+    def refresh_styles(self):
+        """按当前主题与外观参数重建全局样式（滑块实时预览也走这里）。"""
         window_widget = self._window.ui.window
         # 优先委托 CWindow.apply_style（内部重建样式，并保留最大化等框架样式覆盖）
         apply_style = getattr(window_widget, "apply_style", None)
@@ -164,6 +165,19 @@ class ThemeController:
             # 旧组件/测试桩：回落到直接设置样式（样式仅在此处构造一次）
             now = self._style_factory()
             window_widget.setStyleSheet(now.style)
+
+    def refresh_acrylic(self):
+        """重新应用亚克力色调（透明度滑块实时生效，开销约 0.15ms）。"""
+        window_widget = getattr(getattr(self._window, "ui", None), "window", None)
+        sync = getattr(window_widget, "_sync_acrylic", None)
+        if callable(sync):
+            sync()
+            return
+        if acrylic_active():
+            apply_acrylic(self._window)
+
+    def _apply_styles(self):
+        self.refresh_styles()
         save_user_settings(theme_name=self._theme_manager.current())
 
 
@@ -256,11 +270,62 @@ class MainWindowController:
         language_changed = getattr(config, "languageChanged", None)
         if language_changed is not None:
             language_changed.connect(self._apply_language)
+        transparency_changed = getattr(config, "transparencyChanged", None)
+        if transparency_changed is not None:
+            transparency_changed.connect(self._apply_transparency)
+        strength_changed = getattr(config, "glassStrengthChanged", None)
+        if strength_changed is not None:
+            strength_changed.connect(self._apply_glass_strength)
+        appearance_committed = getattr(config, "appearanceCommitted", None)
+        if appearance_committed is not None:
+            appearance_committed.connect(self._flush_appearance)
+        # 滑块连续拖动时重建整棵控件树的样式代价较高，用 60ms 节流合并；
+        # 透明度只需重挂系统材质，可以每次立即生效。
+        self._appearance_style_dirty = False
+        self._appearance_timer: QTimer | None = None
+        if isinstance(window, QObject):
+            timer = QTimer(window)
+            timer.setInterval(60)
+            timer.timeout.connect(self._flush_appearance)
+            self._appearance_timer = timer
         # 关闭窗口时把正常尺寸写入用户配置 user.yaml，下次启动恢复
         # （测试桩可能只提供 SimpleNamespace，不是 QObject，跳过即可）
         if isinstance(window, QObject):
             self._window_state_tracker = _WindowStateTracker(window)
             window.installEventFilter(self._window_state_tracker)
+
+    def _apply_transparency(self, value: int) -> None:
+        """窗口透明度滑块：立即重挂亚克力色调，并节流写入用户配置。"""
+        self.theme_controller.refresh_acrylic()
+        self._schedule_appearance_flush()
+
+    def _apply_glass_strength(self, value: int) -> None:
+        """亚克力质感强度滑块：标记需要重建样式，由节流器统一刷新。"""
+        self._appearance_style_dirty = True
+        self._schedule_appearance_flush()
+
+    def _schedule_appearance_flush(self) -> None:
+        if self._appearance_timer is None:
+            self._flush_appearance()
+            return
+        if not self._appearance_timer.isActive():
+            self._appearance_timer.start()
+
+    def _flush_appearance(self) -> None:
+        """应用待处理的样式重建并持久化当前外观参数。"""
+        if self._appearance_timer is not None:
+            self._appearance_timer.stop()
+        if self._appearance_style_dirty:
+            self._appearance_style_dirty = False
+            self.theme_controller.refresh_styles()
+        config = getattr(getattr(self._window, "ui", None), "theme_config", None)
+        transparency = getattr(config, "transparency", None)
+        strength = getattr(config, "appearance_strength", None)
+        if callable(transparency) and callable(strength):
+            save_user_settings(
+                acrylic_transparency=transparency(),
+                glass_strength=strength(),
+            )
 
     def _apply_menu_mode(self, mode: str) -> None:
         """外观配置里的 Static / Overlay 菜单模式：应用并写入用户配置。"""

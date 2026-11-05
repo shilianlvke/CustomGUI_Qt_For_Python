@@ -2,9 +2,15 @@ from .acrylic import acrylic_active as acrylic_active
 from .acrylic import acrylic_opacity as acrylic_opacity
 from .acrylic import acrylic_supported as acrylic_supported
 from .acrylic import acrylic_tint as acrylic_tint
+from .acrylic import acrylic_transparency as acrylic_transparency
 from .acrylic import apply_acrylic as apply_acrylic
+from .acrylic import glass_alpha as glass_alpha
+from .acrylic import glass_strength as glass_strength
 from .acrylic import glass_tint as glass_tint
 from .acrylic import remove_acrylic as remove_acrylic
+from .acrylic import reset_appearance_overrides as reset_appearance_overrides
+from .acrylic import set_acrylic_transparency as set_acrylic_transparency
+from .acrylic import set_glass_strength as set_glass_strength
 from .app_ui import CPreviewPage as CPreviewPage
 from .callbacks import is_deleted_qt_error as is_deleted_qt_error
 from .callbacks import safe_callback as safe_callback
@@ -246,7 +252,13 @@ __all__ = [
     "acrylic_opacity",
     "acrylic_supported",
     "acrylic_tint",
+    "acrylic_transparency",
+    "glass_alpha",
+    "glass_strength",
     "glass_tint",
+    "reset_appearance_overrides",
+    "set_acrylic_transparency",
+    "set_glass_strength",
     "install_fonts",
     "install_system_fonts",
     "is_deleted_qt_error",

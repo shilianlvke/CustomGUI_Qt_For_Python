@@ -134,6 +134,12 @@ UI:
   ui_AppearanceHint: テーマ・言語・レイアウト
   ui_Theme: テーマ
   ui_ThemeHint: 内蔵の配色を選択
+  ui_Material: マテリアルと透過度
+  ui_MaterialHint: ウィンドウの透明度とアクリル質感をリアルタイム調整
+  ui_Transparency: ウィンドウ透明度
+  ui_TransparencyHint: 値を大きくするとデスクトップがより透けて見えます
+  ui_GlassStrength: アクリル質感の強さ
+  ui_GlassStrengthHint: 値を大きくするとぼかし素材がより強調されます
   ui_Language: 言語
   ui_LanguageHint: 表示言語を選択
   ui_MenuMode: メニューモード

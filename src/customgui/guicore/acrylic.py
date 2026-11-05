@@ -45,6 +45,13 @@ _DWMWA_USE_IMMERSIVE_DARK_MODE_LEGACY = 19
 
 #: 未配置或配置不可用时的兜底色调不透明度（0-100）
 _DEFAULT_OPACITY = 60
+#: 未配置或配置不可用时的兜底玻璃层强度（0-100）
+_DEFAULT_GLASS_STRENGTH = 100
+
+#: 运行期覆盖值：``None`` 表示沿用配置文件里的 acrylic.opacity
+_ACRYLIC_TRANSPARENCY: int | None = None
+#: 运行期玻璃层强度：按百分比缩放 settings/window.yaml 的 glass 分组
+_GLASS_STRENGTH = _DEFAULT_GLASS_STRENGTH
 
 
 class _AccentPolicy(ctypes.Structure):
@@ -124,9 +131,61 @@ def acrylic_active() -> bool:
 
 
 def acrylic_opacity() -> int:
-    """亚克力色调不透明度（0-100）。"""
+    """亚克力色调不透明度（0-100，越大越接近实色）。"""
+    if _ACRYLIC_TRANSPARENCY is not None:
+        return 100 - _ACRYLIC_TRANSPARENCY
     _, opacity = acrylic_options()
     return max(0, min(100, opacity))
+
+
+def acrylic_transparency() -> int:
+    """亚克力透明度（0-100，越大桌面内容透出越明显）。
+
+    未设置运行期覆盖时由 ``acrylic.opacity`` 反推，保证配置默认值与滑块
+    初始值一致；运行期覆盖只影响本次会话，持久化由用户配置层负责。
+    """
+    if _ACRYLIC_TRANSPARENCY is not None:
+        return _ACRYLIC_TRANSPARENCY
+    _, opacity = acrylic_options()
+    return 100 - max(0, min(100, opacity))
+
+
+def set_acrylic_transparency(value: int | None) -> int:
+    """设置运行期亚克力透明度；``None`` 表示恢复配置默认值。"""
+    global _ACRYLIC_TRANSPARENCY
+    if value is None:
+        _ACRYLIC_TRANSPARENCY = None
+    else:
+        _ACRYLIC_TRANSPARENCY = max(0, min(100, int(value)))
+    return acrylic_transparency()
+
+
+def glass_strength() -> int:
+    """玻璃层强度（0-100）：按百分比缩放 ``glass`` 分组的不透明度。
+
+    100 表示完全沿用配置值；调低后窗口/侧栏/面板/卡片更接近实色，
+    浮层菜单与工具提示不参与缩放，保证可读性。
+    """
+    return _GLASS_STRENGTH
+
+
+def set_glass_strength(value: int | None) -> int:
+    """设置运行期玻璃层强度；``None`` 表示恢复配置默认值（100）。"""
+    global _GLASS_STRENGTH
+    _GLASS_STRENGTH = _DEFAULT_GLASS_STRENGTH if value is None else max(0, min(100, int(value)))
+    return _GLASS_STRENGTH
+
+
+def glass_alpha(alpha: float) -> float:
+    """把配置里的玻璃层不透明度按当前强度缩放（0-1）。"""
+    return max(0.0, min(1.0, float(alpha))) * (_GLASS_STRENGTH / 100.0)
+
+
+def reset_appearance_overrides() -> None:
+    """清除运行期外观覆盖（配置重载或测试使用）。"""
+    global _ACRYLIC_TRANSPARENCY, _GLASS_STRENGTH
+    _ACRYLIC_TRANSPARENCY = None
+    _GLASS_STRENGTH = _DEFAULT_GLASS_STRENGTH
 
 
 def glass_tint(value: str, alpha: float) -> QColor:
@@ -287,5 +346,11 @@ __all__ = [
     "acrylic_options",
     "acrylic_supported",
     "acrylic_tint",
+    "acrylic_transparency",
+    "glass_alpha",
+    "glass_strength",
     "glass_tint",
+    "reset_appearance_overrides",
+    "set_acrylic_transparency",
+    "set_glass_strength",
 ]

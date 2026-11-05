@@ -133,6 +133,12 @@ UI:
   ui_AppearanceHint: Themes, language and layout
   ui_Theme: Theme
   ui_ThemeHint: Choose a built-in color scheme
+  ui_Material: Material & Transparency
+  ui_MaterialHint: Adjust window transparency and acrylic texture live
+  ui_Transparency: Window Transparency
+  ui_TransparencyHint: Higher values reveal more of the desktop behind the window
+  ui_GlassStrength: Acrylic Strength
+  ui_GlassStrengthHint: Higher values make the frosted material more visible
   ui_Language: Language
   ui_LanguageHint: Choose the interface language
   ui_MenuMode: Menu Mode

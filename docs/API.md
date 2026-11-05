@@ -85,6 +85,8 @@ apps_root()                             # -> Path
 | `language` | 外观配置语言选择 | 语言切换完成后立即写入 |
 | `menu_mode` | Static / Overlay | 切换后立即写入 |
 | `startup_size` | 窗口尺寸 | 正常关闭窗口时写入（最大化/最小化/全屏跳过） |
+| `acrylic_transparency` | 外观配置「窗口透明度」滑块 | 拖动过程中节流写入，松手再落盘一次 |
+| `glass_strength` | 外观配置「亚克力质感强度」滑块 | 拖动过程中节流写入，松手再落盘一次 |
 
 ```python
 from customgui.appcore import load_user_settings, save_user_settings, user_settings_path

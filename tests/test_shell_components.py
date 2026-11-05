@@ -116,6 +116,46 @@ def test_configurator_language_selection_and_retranslate(host):
     panel.deleteLater()
 
 
+def test_configurator_appearance_sliders(host):
+    from customgui.guicore import (
+        acrylic_transparency,
+        glass_strength,
+        reset_appearance_overrides,
+    )
+
+    reset_appearance_overrides()
+    panel = CAppConfigurator(host)
+    transparency_changes = []
+    strength_changes = []
+    committed = []
+    panel.transparencyChanged.connect(transparency_changes.append)
+    panel.glassStrengthChanged.connect(strength_changes.append)
+    panel.appearanceCommitted.connect(lambda: committed.append(True))
+    try:
+        panel.transparency_slider.setValue(35)
+        assert acrylic_transparency() == 35
+        assert transparency_changes[-1] == 35
+        assert panel.transparency_value.text() == "35%"
+
+        panel.glass_strength_slider.setValue(60)
+        assert glass_strength() == 60
+        assert strength_changes[-1] == 60
+        assert panel.glass_strength_value.text() == "60%"
+
+        # 静默同步：只更新控件与运行期值，不再发预览信号
+        panel.set_appearance(transparency=70, strength=80)
+        assert panel.transparency() == 70
+        assert panel.appearance_strength() == 80
+        assert transparency_changes[-1] == 35
+        assert strength_changes[-1] == 60
+
+        panel.appearanceCommitted.emit()
+        assert committed == [True]
+    finally:
+        reset_appearance_overrides()
+        panel.deleteLater()
+
+
 # ----------------------------------------------------------------------
 # Topbar
 # ----------------------------------------------------------------------
