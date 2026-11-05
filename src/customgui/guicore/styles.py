@@ -104,7 +104,7 @@ class Styles:
         glass_cfg = AppSettings.glass
 
         # 各层表面：玻璃模式下使用半透明写法，否则保持不透明主题色。
-        # 表面层统一乘上运行期「亚克力质感强度」，滑块调节后重建样式即可生效；
+        # 表面层按运行期「亚克力质感强度」降低不透明度，让系统模糊材质透出更多；
         # 浮层/工具提示保持原配置不缩放，避免菜单文字与页面互相穿透。
         self._window_bg = _rgba(colors.surface_app, glass_alpha(glass_cfg.window)) if glass else colors.surface_app
         self._sidebar_bg = _rgba(colors.surface_sidebar, glass_alpha(glass_cfg.sidebar)) if glass else colors.surface_sidebar

@@ -45,12 +45,12 @@ _DWMWA_USE_IMMERSIVE_DARK_MODE_LEGACY = 19
 
 #: 未配置或配置不可用时的兜底色调不透明度（0-100）
 _DEFAULT_OPACITY = 60
-#: 未配置或配置不可用时的兜底玻璃层强度（0-100）
-_DEFAULT_GLASS_STRENGTH = 100
+#: 未配置或配置不可用时的兜底玻璃层强度（0 表示沿用配置值）
+_DEFAULT_GLASS_STRENGTH = 0
 
 #: 运行期覆盖值：``None`` 表示沿用配置文件里的 acrylic.opacity
 _ACRYLIC_TRANSPARENCY: int | None = None
-#: 运行期玻璃层强度：按百分比缩放 settings/window.yaml 的 glass 分组
+#: 运行期玻璃层强度：0 沿用配置值，100 时表面层完全透明
 _GLASS_STRENGTH = _DEFAULT_GLASS_STRENGTH
 
 
@@ -161,24 +161,27 @@ def set_acrylic_transparency(value: int | None) -> int:
 
 
 def glass_strength() -> int:
-    """玻璃层强度（0-100）：按百分比缩放 ``glass`` 分组的不透明度。
+    """玻璃层强度（0-100）：降低表面不透明度以透出更多亚克力材质。
 
-    100 表示完全沿用配置值；调低后窗口/侧栏/面板/卡片更接近实色，
-    浮层菜单与工具提示不参与缩放，保证可读性。
+    0 表示完全沿用配置值；数值越大，窗口/侧栏/面板/卡片越透明，模糊材质
+    越明显。浮层菜单与工具提示不参与缩放，保证可读性。
     """
     return _GLASS_STRENGTH
 
 
 def set_glass_strength(value: int | None) -> int:
-    """设置运行期玻璃层强度；``None`` 表示恢复配置默认值（100）。"""
+    """设置运行期玻璃层强度；``None`` 表示恢复配置默认值（0）。"""
     global _GLASS_STRENGTH
     _GLASS_STRENGTH = _DEFAULT_GLASS_STRENGTH if value is None else max(0, min(100, int(value)))
     return _GLASS_STRENGTH
 
 
 def glass_alpha(alpha: float) -> float:
-    """把配置里的玻璃层不透明度按当前强度缩放（0-1）。"""
-    return max(0.0, min(1.0, float(alpha))) * (_GLASS_STRENGTH / 100.0)
+    """把配置里的玻璃层不透明度按当前强度缩放（0-1）。
+
+    强度越高，表面层越透明，从而露出更多系统级模糊材质。
+    """
+    return max(0.0, min(1.0, float(alpha))) * (1.0 - _GLASS_STRENGTH / 100.0)
 
 
 def reset_appearance_overrides() -> None:

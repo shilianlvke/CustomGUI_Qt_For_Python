@@ -138,7 +138,7 @@ UI:
   ui_Transparency: 窗口透明度
   ui_TransparencyHint: 数值越大，桌面内容透出越明显
   ui_GlassStrength: 亚克力质感强度
-  ui_GlassStrengthHint: 数值越大，界面上的模糊材质越明显
+  ui_GlassStrengthHint: 在默认观感基础上增强模糊材质的透出程度
   ui_Language: 语言
   ui_LanguageHint: 选择界面显示语言
   ui_MenuMode: 菜单模式

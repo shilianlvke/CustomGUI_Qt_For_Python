@@ -138,7 +138,7 @@ UI:
   ui_Transparency: Window Transparency
   ui_TransparencyHint: Higher values reveal more of the desktop behind the window
   ui_GlassStrength: Acrylic Strength
-  ui_GlassStrengthHint: Higher values make the frosted material more visible
+  ui_GlassStrengthHint: Boosts the frosted material beyond the default look
   ui_Language: Language
   ui_LanguageHint: Choose the interface language
   ui_MenuMode: Menu Mode

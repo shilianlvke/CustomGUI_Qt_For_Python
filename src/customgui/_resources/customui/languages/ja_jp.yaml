@@ -139,7 +139,7 @@ UI:
   ui_Transparency: ウィンドウ透明度
   ui_TransparencyHint: 値を大きくするとデスクトップがより透けて見えます
   ui_GlassStrength: アクリル質感の強さ
-  ui_GlassStrengthHint: 値を大きくするとぼかし素材がより強調されます
+  ui_GlassStrengthHint: 既定の見た目からぼかし素材の透け感を強めます
   ui_Language: 言語
   ui_LanguageHint: 表示言語を選択
   ui_MenuMode: メニューモード
