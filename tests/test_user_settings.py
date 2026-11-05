@@ -220,3 +220,27 @@ def test_restore_menu_mode_ignores_invalid_value(monkeypatch):
     monkeypatch.setattr(setup_window_module, "MainFunctions", _Functions)
 
     SetupMainWindow.restore_menu_mode(window, {"menu_mode": "floating"})
+
+
+def test_restore_appearance_applies_and_syncs_panel():
+    from customgui.guicore import acrylic_transparency, glass_strength, reset_appearance_overrides
+
+    synced = {}
+
+    class _Config:
+        def set_appearance(self, transparency=None, strength=None):
+            synced["transparency"] = transparency
+            synced["strength"] = strength
+
+    window = SimpleNamespace(ui=SimpleNamespace(theme_config=_Config()))
+    try:
+        applied = SetupMainWindow.restore_appearance(
+            window,
+            {"acrylic_transparency": 72, "glass_strength": 35},
+        )
+        assert applied
+        assert acrylic_transparency() == 72
+        assert glass_strength() == 35
+        assert synced == {"transparency": 72, "strength": 35}
+    finally:
+        reset_appearance_overrides()
