@@ -260,3 +260,20 @@ FIX-07 并发与订阅一致性：`ThemeManager._lock` 为 `threading.RLock`，`
   整文件 skip 的 `tests/test_example_paradigm.py`、`guicore/app_ui/dialog/` 的重复
   `CDialog` 均已删除，`windows-hardware` 可选依赖与对应的多语言键一并移除。
 
+本轮（1.0.0 后续修复）已清项（原「已知架构债」后续登记的 12 项 P0/P1 修复，留档备查）：
+
+- **FIX-01**：`install-demo --force` 覆盖前校验源/目标不相交、拒绝符号链接，失败返回非 0。
+- **FIX-02**：用户配置回写保留高版本与未知键，原子写补齐 `fsync` 与 v1→v3 迁移。
+- **FIX-03**：`doctor` 默认只发现不执行插件代码，新增 `--load` / `--allow-external` 与目录归属校验。
+- **FIX-04**：发布流水线改用 `base-v*` 触发，与质量门禁对齐同一套命令，不删历史 tag。
+- **FIX-05**：移除运行时 `cwd` 兜底、Logger 惰性初始化，架构守卫补「扫到东西」自检。
+- **FIX-06**：`configure()` 时机、`env_fallback` 哨兵与 `resolved_*()` 解析 helper 语义统一修正。
+- **FIX-07**：主题退订等价比较、失效引用清理、`RLock` 与 `ConfigContext` 一次性快照发布。
+- **FIX-08**：`AppError.args` 非空、错误边界统一包装与遥测事件轮转/序列化兜底。
+- **FIX-09**：应用重载幂等，失败应用的菜单与 `sys.modules` 半初始化模块回滚隔离。
+- **FIX-10**：移除零读取的插件严格校验参数与字段，并在 CHANGELOG 登记迁移方式。
+- **FIX-11**：语言切换 `retranslateUi` 适配、失败回滚不落盘，补齐 v2 生命周期钩子。
+- **FIX-12**：清单布尔严格解析、`app_name` 回退值写回、重复 `button_id` 显式报错。
+
+逐项证据与 commit 见 `docs/CHANGE_PLAN.md`。
+

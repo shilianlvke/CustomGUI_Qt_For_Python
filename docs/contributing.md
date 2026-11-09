@@ -10,16 +10,17 @@
 
 ```powershell
 uv sync --extra dev
-uv run ruff check src tests
-uv run pytest
+uv run ruff check src tests apps examples scripts
+uv run mypy
+uv run pytest --cov=sllkgui --cov-report=term-missing --cov-fail-under=70
 ```
 
-两条命令都必须干净：`ruff check` 零告警，`pytest` 零失败、skip 只允许平台相关的用例。
-测试数量随代码变化，以实际输出为准，不要写进文档。
+三条命令都必须干净：`ruff check` 零告警，`mypy` 零错误，`pytest` 零失败、覆盖率不低于
+70%、skip 只允许平台相关的用例。测试数量随代码变化，以实际输出为准，不要写进文档。
 
-这两条就是 CI 的判定标准：向 `main` 提 PR（以及推送 `main`）会触发 `.workflow/QualityGate.yml`，
-跑的命令与上面完全一致——本地过了 CI 就不会挂。打 `v*` tag 触发的
-`.workflow/ReleasePipeline.yml` 会再跑一遍，然后才打包。
+本地命令只便于自查，CI 的判定标准以 `.workflow/*.yml` 里的实际命令为准：向 `main` 提 PR
+（以及推送 `main`）会触发 `.workflow/QualityGate.yml`；打 `base-v*` tag 触发
+`.workflow/ReleasePipeline.yml`，发布侧复跑同一套门禁后才打包。两处命令若有调整，以文件为准同步本地。
 
 窗口类测试统一走 `QT_QPA_PLATFORM=offscreen`（`tests/conftest.py` 已设置），
 本地与无头容器都不需要真实显示。`ruff` 的规则集在 `pyproject.toml` 的
@@ -95,7 +96,7 @@ uv run pytest
 - 一次提交做一件事。重构与功能分开，格式化与逻辑分开。
 - 提交信息说明**为什么**，不只是**改了什么**；沿用 `type(scope): 中文描述` 风格。
 - 破坏性变更必须同步更新 `CHANGELOG.md` 的「破坏性变更」。
-- 版本号只在 `src/sllkgui/_version.py` 一处改，git tag 与之保持一致（`v1.0.0` / `base-v1.0.0`）。
+- 版本号只在 `src/sllkgui/_version.py` 一处改，git tag 命名统一为 `base-vX.Y.Z`（如 `base-v1.0.0`）并与之保持一致。
 
 ## 发版
 
@@ -120,3 +121,5 @@ git push origin main --tags
 
 第 3 步是唯一能验证「开箱即用」的环节。`sllkgui doctor` 里任一 `✗` 都不要发；它默认不执行插件代码，需要验证加载时加 `--load`。
 1.x 暂不发 PyPI，只走 wheel + tag。
+
+`base-v*` 触发发布流水线；历史 `v*` tag 不再触发，保留但不使用。

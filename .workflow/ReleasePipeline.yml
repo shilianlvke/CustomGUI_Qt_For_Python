@@ -2,10 +2,10 @@
 # Gitee Go 原生流水线：版本发布（ReleasePipeline）
 # =============================================================================
 # 【文件位置】仓库根目录 .workflow/ 下（Gitee Go 只读取该目录的 YAML）。
-# 【触发】推送 v* tag（如 v1.2.3）自动执行；也可在平台手动运行。
+# 【触发】推送 base-v* tag（如 base-v1.2.3）自动执行；也可在平台手动运行。
 # 【流程】质量检查（ruff + pytest）→ Linux 打包（PyInstaller）→ 暂存产物。
-# 【PR 阶段的质量门禁】见同目录 QualityGate.yml：main 的 PR / 推送即跑 ruff + pytest，
-#   不构建产物。本流水线只在打 tag 时跑，负责打包与产物，两者规则集一致。
+# 【PR 阶段的质量门禁】见同目录 QualityGate.yml：main 的 PR / 推送即跑质量检查，
+#   不构建产物。本流水线只在打 base-v* tag 时跑，发布侧复跑同一套门禁后才打包与暂存产物。
 # =============================================================================
 # 【为什么发布 Release 需要令牌（RELEASE_TOKEN）？】
 #   流水线容器没有你的 Gitee 登录态。要把刚构建出的 zip 自动挂到
@@ -36,12 +36,12 @@ name: release-pipeline
 # 流水线展示名称（支持中文）
 displayName: 版本发布
 
-# 触发规则：推送 v* tag 时自动触发
+# 触发规则：推送 base-v* tag 时自动触发
 triggers:
   push:
     tags:
       prefix:
-        - v
+        - base-v
 
 # 阶段定义
 stages:
@@ -73,8 +73,9 @@ stages:
           # ---- 质量检查 ----
           # 与 QualityGate.yml 用同一套规则集；这里再跑一遍是为了保证「能发布」的前提是
           # 打 tag 的那次提交本身就干净，不依赖 PR 阶段是否走过门禁。
-          - uv run ruff check src tests
-          - uv run pytest -q
+          - uv run ruff check src tests apps examples scripts
+          - uv run mypy
+          - uv run pytest --cov=sllkgui --cov-report=term-missing --cov-fail-under=70
           # ---- wheel 构建 + 干净环境冒烟（验证「开箱即用」）----
           - uv run python -m build --wheel
           - uv run twine check dist/*.whl

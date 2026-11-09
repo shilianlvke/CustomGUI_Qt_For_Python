@@ -107,6 +107,7 @@ minor 与 patch 保持向后兼容。
 - **应用重载幂等与失败隔离（FIX-09）**：`reset_apps_cache()` / `load_apps(force=True)` 改为按本轮登记的 `plugin_id` 定向清理全局 `PluginRegistry`（禁止整体 reset，保住内置菜单），重载不再触发 `PLUGIN_DUPLICATE_MENU`；菜单注册后置到入口 `exec_module` 成功之后、失败应用按差集回收已注册项避免孤儿菜单，入口导入失败回滚 `sys.modules` 半初始化模块。
 - **清单校验与路由去重（FIX-12）**：缺 `app_name` 的回退值写回 `config`；`show_top` / `is_active` / `is_default` 统一走 `_as_bool()`（`show_top: "false"` 正确解析为 `False`）；`build_page_routes()` 遇到重复 `button_id` 抛 `PLUGIN_DUPLICATE_BUTTON_ID`，并重写 `test_page_registry.py` 恒真断言为带自检的真实列表比对。
 - **语言切换页面重翻译与失败回滚（FIX-11）**：`_retranslate_pages()` 跳过 `Main_Page` / `widget_show` 两个占位 QWidget，并为实现 `retranslateUi()` 的第三方页面提供按签名适配的局部刷新（基座内置预览页未提供 `retranslate()`，默认仍走整页重建）；`apply_language()` 改为刷新成功才写 `user.yaml`，失败回滚到 `Language.apply(previous)`、记录 warning、不落盘并返回旧语言名；`AppContext.language` 回落 `Language.current()` 而非静态配置值；补齐 v2 的 `on_language_changed` / `on_unload` 调用点并做异常隔离。
+- **CI 触发与发布门禁对齐（FIX-04）**：发布流水线 tag 前缀由 `v*` 改为 `base-v*`，与 `CHANGELOG.md` 的 `base-v1.0.0` 及 `docs/contributing.md` 的 `git tag base-v1.0.0` 对齐；发布侧质量检查改为与 `.workflow/QualityGate.yml` 完全一致的全仓 ruff + mypy + pytest 覆盖率 70% 门禁。历史 `v*` tag 保留、不删除，也不再触发发布。
 
 #### 破坏性变更（B4）
 
@@ -119,6 +120,8 @@ minor 与 patch 保持向后兼容。
 > 需改在 `get_app_context()` 之前配置，或显式传 `force_reload=True`。
 
 本轮修复详见 docs/CHANGE_PLAN.md。
+
+本轮 12 项修复全部完成，逐项 commit 与验证结果见 `docs/CHANGE_PLAN.md` §7。
 
 ---
 
