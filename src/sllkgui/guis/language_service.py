@@ -5,13 +5,19 @@
    并广播通知（左菜单/标题栏/左列等组件订阅后自动刷新文本与提示）；
 2. 窗口级刷新：窗口标题、当前页标题；
 3. **页面刷新（两条路径）**：
-   - 局部刷新：若页面栈中**所有已加载页面**都提供可调用的 ``retranslate()``，
-     逐个调用后直接刷新标题，不重建页面栈（保留页面内状态与滚动位置）；
-   - 整页重建：任一页面缺少 ``retranslate()`` 或调用失败时，清空页面容器
-     并重新加载全部页面，使页面内文本完整切换；重建前捕获所有
-     ``QScrollArea`` 的滚动位置，重建后按稳定键恢复，减少状态丢失；
-4. 目标语言写入用户配置覆盖层（``<data_root>/settings/user.yaml``），
-   下次启动由 ``SetupMainWindow.restore_ui_state`` 读取。
+   - 局部刷新：先跳过 ``Main_Page`` / ``widget_show`` 两个占位 QWidget，
+     栈内**所有真实页面**都提供可调用的 ``retranslate()``（无参）或
+     ``retranslateUi()``（按签名适配）时逐个重翻译，直接刷新标题，
+     不重建页面栈（保留页面内状态与滚动位置）；
+   - 整页重建：任一真实页面缺少重翻译方法或调用失败、或跳过占位页后
+     没有任何真实页面时，清空页面容器并重新加载全部页面；重建前捕获
+     所有 ``QScrollArea`` 的滚动位置，重建后按稳定键恢复，减少状态丢失；
+   - 基座内置预览页未提供 ``retranslate()``，故默认仍走整页重建；局部刷新
+     只对实现了 ``retranslate()`` / ``retranslateUi()`` 的第三方页面生效；
+4. **刷新成功**才把目标语言写入用户配置覆盖层
+   （``<data_root>/settings/user.yaml``），下次启动由
+   ``SetupMainWindow.restore_ui_state`` 读取；**刷新失败**则回滚到切换前的
+   语言、记录 warning、不写 ``user.yaml``，并返回旧语言名（不抛异常）。
 """
 
 from __future__ import annotations
@@ -21,6 +27,9 @@ from PySide6.QtWidgets import QScrollArea, QWidget
 from sllkgui.appcore import LANGUAGE_OPTIONS, Language, Logger, save_user_settings
 
 from .windows.main_window.functions import MainFunctions
+
+#: 内置占位页（uic 生成的容器 QWidget），不是应用页面、永远不提供重翻译方法
+_PLACEHOLDER_PAGES = frozenset({"Main_Page", "widget_show"})
 
 
 def current_language() -> str:
@@ -33,26 +42,53 @@ def available_languages() -> tuple[str, ...]:
 
 
 def apply_language(language: str, window=None) -> str:
-    """整体切换到指定语言并刷新 UI，返回新语言名。
+    """整体切换到指定语言并刷新 UI，返回新语言名（失败时返回旧语言名）。
 
     页面刷新有两条路径（见模块顶部说明）：
 
-    - **局部刷新**：页面栈中所有已加载页面都实现 ``retranslate()`` 时逐个
-      调用，只刷新窗口标题与当前页标题，页面实例与滚动状态保持不变；
-    - **整页重建**：任一页面缺少 ``retranslate()`` 或调用失败时回退到重建
-      页面栈；重建前记录各 ``QScrollArea`` 的滚动位置并在重建后恢复。
+    - **局部刷新**：跳过占位页后，栈内所有真实页面都实现 ``retranslate()``
+      或 ``retranslateUi()`` 时逐个调用，只刷新窗口标题与当前页标题，
+      页面实例与滚动状态保持不变；基座内置预览页未提供这两个方法，
+      默认走整页重建，局部刷新只对第三方页面生效；
+    - **整页重建**：任一真实页面缺少可调用的重翻译方法或调用失败时回退到
+      重建页面栈；重建前记录各 ``QScrollArea`` 的滚动位置并在重建后恢复。
+
+    窗口级刷新抛异常时回滚 ``Language.apply(previous)``、记录 warning、
+    **不写 user.yaml**，并返回 ``previous``（不抛异常）；成功时才通知 v2
+    插件的 ``on_language_changed`` 并持久化选择。
     """
+    previous = Language.current()
     # 1. 状态 + 广播（组件自刷新）
     Language.apply(language)
-    # 2. 窗口级刷新（标题 + 页面局部刷新或整页重建）
+    # 2. 窗口级刷新（标题 + 页面局部刷新或整页重建）；失败则回滚且不落盘
     if window is not None:
         try:
             _refresh_window(window)
         except Exception as exc:
-            Logger.warning(f"语言刷新部分失败: {exc}")
-    # 3. 记住用户选择，下次启动由 SetupMainWindow.restore_ui_state 恢复
+            Logger.warning(f"语言刷新失败，回滚到 {previous}: {exc}")
+            Language.apply(previous)
+            return previous
+    # 3. 成功分支：通知 v2 插件，再记住用户选择
+    _notify_plugins_language_changed(language)
     save_user_settings(language=language)
     return language
+
+
+def _notify_plugins_language_changed(language: str) -> None:
+    """语言切换成功后通知所有 v2 插件；单个钩子异常被隔离，不影响切换。
+
+    延迟导入 ``app_state`` 避免加载器与语言服务之间的循环 import。
+    """
+    from . import app_state
+
+    for handle in app_state.handles:
+        plugin = handle.plugin
+        if plugin is None:
+            continue
+        try:
+            plugin.on_language_changed(language)
+        except Exception as exc:
+            Logger.warning(f"应用 on_language_changed 失败: {handle.name}: {exc}")
 
 
 def switch_language(window=None) -> str:
@@ -87,11 +123,32 @@ def _page_stack(window):
     return getattr(getattr(window.ui, "load_pages", None), "pages", None)
 
 
-def _retranslate_pages(window) -> bool:
-    """尝试页面局部刷新：全部已加载页面都实现 ``retranslate()`` 时返回 True。
+def _call_retranslate_ui(page, handler) -> bool:
+    """按签名安全调用 uic 生成的 ``retranslateUi``。
 
-    先确认所有页面都提供可调用的 ``retranslate()`` 再逐个调用，避免只刷新
-    一半就中断；任一页面缺失或调用抛异常都返回 False，由调用方回退整页重建。
+    uic 生成的方法通常带一个参数（传页面自身）；若它是无参形式，
+    ``handler(page)`` 会抛 ``TypeError``，此时退回 ``handler()``。
+    其它异常或两种形式都失败时返回 False，由调用方回退整页重建。
+    """
+    try:
+        try:
+            handler(page)
+        except TypeError:
+            handler()
+    except Exception as exc:
+        Logger.debug(f"页面 retranslateUi 失败，回退整页重建: {exc}")
+        return False
+    return True
+
+
+def _retranslate_pages(window) -> bool:
+    """尝试页面局部刷新：所有真实页面都能重翻译时返回 True。
+
+    跳过 objectName 为 ``Main_Page`` / ``widget_show`` 的占位 QWidget；先确认
+    每个真实页面都提供可调用的 ``retranslate()``（无参）或 ``retranslateUi()``
+    （按签名适配）再逐个调用，避免只刷新一半就中断；缺失方法或调用失败都返回
+    False，由调用方回退整页重建。跳过占位页后栈里没有真实页面时同样返回
+    False，保持整页重建语义。
     """
     pages = _page_stack(window)
     if pages is None:
@@ -100,19 +157,35 @@ def _retranslate_pages(window) -> bool:
     if count <= 0:
         return False
 
-    handlers = []
+    targets: list[tuple[object, object, bool]] = []
     for index in range(count):
         page = pages.widget(index)
-        handler = getattr(page, "retranslate", None)
-        if not callable(handler):
-            return False
-        handlers.append(handler)
+        if page.objectName() in _PLACEHOLDER_PAGES:
+            continue
+        retranslate = getattr(page, "retranslate", None)
+        if callable(retranslate):
+            targets.append((page, retranslate, False))
+            continue
+        retranslate_ui = getattr(page, "retranslateUi", None)
+        if callable(retranslate_ui):
+            targets.append((page, retranslate_ui, True))
+            continue
+        return False
 
-    for handler in handlers:
+    if not targets:
+        return False
+
+    for page, handler, is_retranslate_ui in targets:
         try:
-            handler()
+            if is_retranslate_ui:
+                ok = _call_retranslate_ui(page, handler)
+            else:
+                handler()
+                ok = True
         except Exception as exc:
-            Logger.debug(f"页面 retranslate 失败，回退整页重建: {exc}")
+            Logger.debug(f"页面重翻译失败，回退整页重建: {exc}")
+            return False
+        if not ok:
             return False
     return True
 
@@ -196,10 +269,15 @@ def _rebuild_pages(window) -> None:
     """清空并重新加载全部页面，使页面内文本随语言切换而更新。
 
     拆除页面前先捕获滚动位置，重建并按稳定键恢复，避免语言切换后用户
-    原来滚动到的位置被重置到顶部。
+    原来滚动到的位置被重置到顶部。宿主没有页面栈时（如无 UI 的桩窗口）
+    直接跳过：没有可重建的页面，不应被当成刷新失败而回滚语言切换。
     """
-    pages = window.ui.load_pages.pages
-    left_menu = getattr(window.ui, "left_menu", None)
+    ui = getattr(window, "ui", None)
+    load_pages = getattr(ui, "load_pages", None)
+    pages = getattr(load_pages, "pages", None)
+    if pages is None:
+        return
+    left_menu = getattr(ui, "left_menu", None)
     current_btn = left_menu.active_button_id() if callable(getattr(left_menu, "active_button_id", None)) else None
     scroll_positions = _capture_scroll_positions(pages)
 

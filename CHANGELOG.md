@@ -106,6 +106,7 @@ minor 与 patch 保持向后兼容。
 - **配置契约修正（FIX-06）**：`configure()` 在上下文已加载时（含 `reset_config()` 后的首次调用）即抛 `ConfigAlreadyLoadedError`，不再静默失效；`env_fallback` 改用 `None` 哨兵保留上次值；`resource_dirs` 传空序列可清空覆盖层；`apps_root()` 与遥测目录统一走 `resolved_*()` helper，不再绕过开关直读环境变量。
 - **应用重载幂等与失败隔离（FIX-09）**：`reset_apps_cache()` / `load_apps(force=True)` 改为按本轮登记的 `plugin_id` 定向清理全局 `PluginRegistry`（禁止整体 reset，保住内置菜单），重载不再触发 `PLUGIN_DUPLICATE_MENU`；菜单注册后置到入口 `exec_module` 成功之后、失败应用按差集回收已注册项避免孤儿菜单，入口导入失败回滚 `sys.modules` 半初始化模块。
 - **清单校验与路由去重（FIX-12）**：缺 `app_name` 的回退值写回 `config`；`show_top` / `is_active` / `is_default` 统一走 `_as_bool()`（`show_top: "false"` 正确解析为 `False`）；`build_page_routes()` 遇到重复 `button_id` 抛 `PLUGIN_DUPLICATE_BUTTON_ID`，并重写 `test_page_registry.py` 恒真断言为带自检的真实列表比对。
+- **语言切换页面重翻译与失败回滚（FIX-11）**：`_retranslate_pages()` 跳过 `Main_Page` / `widget_show` 两个占位 QWidget，并为实现 `retranslateUi()` 的第三方页面提供按签名适配的局部刷新（基座内置预览页未提供 `retranslate()`，默认仍走整页重建）；`apply_language()` 改为刷新成功才写 `user.yaml`，失败回滚到 `Language.apply(previous)`、记录 warning、不落盘并返回旧语言名；`AppContext.language` 回落 `Language.current()` 而非静态配置值；补齐 v2 的 `on_language_changed` / `on_unload` 调用点并做异常隔离。
 
 #### 破坏性变更（B4）
 

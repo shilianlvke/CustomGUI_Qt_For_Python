@@ -8,7 +8,7 @@ from pathlib import Path
 from types import ModuleType
 from typing import Any
 
-from sllkgui.appcore import AppPlugin, AppSettings, Attrs, Language
+from sllkgui.appcore import AppPlugin, Attrs, Language
 
 from .app_namespace import _APP_NAMESPACE
 
@@ -18,7 +18,8 @@ class AppContext:
     """传递给应用页面代码的上下文。
 
     - 清单：``config``（config.yml 全部字段）；
-    - 语言：``lang_text(key)``（应用内 language 命名空间）；
+    - 语言：``language``（跟随 ``Language.current()``，可用 setter 显式覆盖）、
+      ``lang_text(key)``（应用内 language 命名空间）；
     - 资源：``resource(*parts)`` / ``icon(name)`` / ``image(name)`` /
       ``voice(name)`` / ``lang_file(lang)`` —— 全部解析到应用内
       ``resource/`` 目录，插件自包含、与基座资源互不干扰；
@@ -44,10 +45,14 @@ class AppContext:
 
     @property
     def language(self) -> str:
-        """当前语言。**每次读取都取最新值**，不要缓存到应用侧。"""
+        """当前语言。**每次读取都取最新值**，不要缓存到应用侧。
+
+        未显式设置 ``_language`` 时跟随全局 ``Language.current()``：语言切换后
+        立即返回新值，而不是回落到静态的 ``AppSettings.language``。
+        """
         if self._language:
             return self._language
-        return AppSettings.language
+        return Language.current()
 
     @language.setter
     def language(self, value: str) -> None:

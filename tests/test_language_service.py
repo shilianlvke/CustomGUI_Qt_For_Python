@@ -5,6 +5,7 @@ from types import SimpleNamespace
 import pytest
 
 from sllkgui.appcore import Language
+from sllkgui.guis import language_service
 from sllkgui.guis.language_service import apply_language, current_language, switch_language
 
 
@@ -217,3 +218,109 @@ def test_scroll_positions_survive_page_rebuild(qapp, monkeypatch):
     assert new_area is not None
     assert new_area.verticalScrollBar().value() == 500
     stack.close()
+
+
+# ==========================================================================
+# FIX-11：占位页、retranslateUi 适配、失败回滚、v2 生命周期钩子
+# ==========================================================================
+def test_placeholder_pages_do_not_block_retranslate(qapp):
+    """占位 QWidget 不阻断局部刷新：跳过两个占位页后只对真实页面重翻译。"""
+    # FIX-11: Main_Page / widget_show 不是应用页面且永远没有 retranslate()，必须跳过。
+    from PySide6.QtWidgets import QStackedWidget, QWidget
+
+    calls = []
+    pages = QStackedWidget()
+    for name in ("Main_Page", "widget_show"):
+        placeholder = QWidget()
+        placeholder.setObjectName(name)
+        placeholder.retranslate = lambda: calls.append("placeholder")
+        pages.addWidget(placeholder)
+    real = QWidget()
+    real.setObjectName("home_page")
+    real.retranslate = lambda: calls.append("home_page")
+    pages.addWidget(real)
+
+    window = SimpleNamespace(ui=SimpleNamespace(load_pages=SimpleNamespace(pages=pages)))
+
+    assert language_service._retranslate_pages(window) is True
+    assert calls == ["home_page"], "placeholder pages must be skipped"
+
+    # 跳过占位页后没有任何真实页面时，仍回退整页重建
+    only_placeholders = QStackedWidget()
+    placeholder = QWidget()
+    placeholder.setObjectName("Main_Page")
+    only_placeholders.addWidget(placeholder)
+    empty_window = SimpleNamespace(ui=SimpleNamespace(load_pages=SimpleNamespace(pages=only_placeholders)))
+    assert language_service._retranslate_pages(empty_window) is False
+
+
+def test_retranslateui_adapter_is_invoked(qapp):
+    """实现了 retranslateUi(widget) 的页面也能走局部刷新。"""
+    # FIX-11: uic 生成的方法带一个参数，适配层须把页面自身传进去；无参形式也要兜底。
+    from PySide6.QtWidgets import QStackedWidget, QWidget
+
+    calls = []
+    pages = QStackedWidget()
+    with_arg = QWidget()
+    with_arg.setObjectName("page_home")
+    with_arg.retranslateUi = lambda widget: calls.append(widget)
+    no_arg = QWidget()
+    no_arg.setObjectName("page_settings")
+    no_arg.retranslateUi = lambda: calls.append("no_arg")
+    pages.addWidget(with_arg)
+    pages.addWidget(no_arg)
+
+    window = SimpleNamespace(ui=SimpleNamespace(load_pages=SimpleNamespace(pages=pages)))
+
+    assert language_service._retranslate_pages(window) is True
+    assert calls == [with_arg, "no_arg"], "retranslateUi adapter must handle both signatures"
+
+
+def test_apply_language_rolls_back_user_settings_on_refresh_failure(monkeypatch):
+    """窗口刷新失败时回滚语言、不写 user.yaml，并返回旧语言名。"""
+    # FIX-11: 旧实现无论刷新成败都无条件写 user.yaml，重启会恢复到未生效的语言。
+    apply_language("zh_cn")
+    saved = []
+
+    def _boom(_window):
+        raise RuntimeError("refresh boom")
+
+    monkeypatch.setattr(language_service, "_refresh_window", _boom)
+    monkeypatch.setattr(language_service, "save_user_settings", lambda **kwargs: saved.append(kwargs))
+    try:
+        result = apply_language("en_us", window=object())
+        assert result == "zh_cn", "failure must return the previous language"
+        assert Language.current() == "zh_cn", "language must roll back on refresh failure"
+        assert saved == [], "user.yaml must not be written on refresh failure"
+    finally:
+        apply_language("zh_cn")
+
+
+def test_language_hooks_are_invoked():
+    """语言切换成功后调用 v2 插件的 on_language_changed，单个钩子失败被隔离。"""
+    # FIX-11: 协议声明了钩子但全库零调用点；成功分支须触发且失败隔离。
+    from sllkgui.guis import app_state
+
+    calls = []
+
+    class _Plugin:
+        def on_language_changed(self, language):
+            calls.append(language)
+
+    class _BoomPlugin:
+        def on_language_changed(self, language):
+            raise RuntimeError("hook boom")
+
+    original = app_state.handles
+    app_state.handles = [
+        SimpleNamespace(name="boom", plugin=_BoomPlugin()),
+        SimpleNamespace(name="ok", plugin=_Plugin()),
+        SimpleNamespace(name="v1", plugin=None),
+    ]
+    try:
+        result = apply_language("en_us")
+        assert result == "en_us", "a failing hook must not break the switch"
+        assert calls == ["en_us"], "on_language_changed must be invoked on success"
+    finally:
+        app_state.handles = original
+        apply_language("zh_cn")

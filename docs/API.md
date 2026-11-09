@@ -151,6 +151,13 @@ available_languages()                # -> ("en_us", "ja_jp", "zh_cn", "zh_tw")
 
 `LANGUAGE_OPTIONS` 按资源根惰性发现：`languages/*.yaml` 有几个就有几种，`configure()` 后缓存失效。
 
+`AppContext.language` 每次读取都取最新值：未显式赋值时跟随 `Language.current()`，
+语言切换后立即返回新语言名；`ctx.language = "ja_jp"` 可显式覆盖并优先于全局值。
+旧实现回落静态的 `AppSettings.language`，切语言后会读到陈旧值（FIX-11 已修正）。
+
+`apply_language()` 只在窗口级刷新成功后才把目标语言写入 `user.yaml`；刷新抛异常时
+回滚到切换前的语言、记录 warning、**不落盘**，并返回旧语言名（不抛异常）。
+
 ## 6. 插件
 
 ```python

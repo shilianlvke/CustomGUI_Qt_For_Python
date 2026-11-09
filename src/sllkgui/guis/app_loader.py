@@ -356,10 +356,19 @@ def get_app_handle(name: str, root: str | Path | None = None) -> AppHandle | Non
 def reset_apps_cache() -> None:
     """重置加载标记（测试/热重载场景使用）。
 
-    按 ``registered_plugin_ids`` 定向清理全局 registry 里本加载器上一轮的注册项，
-    再清空 ``app_state`` 缓存；**不整体 reset**（builtin 菜单等由其它持有者维护，
-    整体 reset 会让它们丢失）。
+    清理前对所有 v2 句柄调用 ``on_unload()``（单个钩子异常只记录 warning，
+    不影响其余应用）；随后按 ``registered_plugin_ids`` 定向清理全局 registry
+    里本加载器上一轮的注册项，再清空 ``app_state`` 缓存；**不整体 reset**
+    （builtin 菜单等由其它持有者维护，整体 reset 会让它们丢失）。
     """
+    for handle in app_state.handles:
+        plugin = handle.plugin
+        if plugin is None:
+            continue
+        try:
+            plugin.on_unload()
+        except Exception as exc:
+            Logger.warning(f"应用 on_unload 失败: {handle.name}: {exc}")
     _cleanup_registered_plugins(get_plugin_registry())
     app_state.loaded = False
     app_state.app_dirs = []

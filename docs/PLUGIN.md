@@ -131,8 +131,17 @@ class HelloApp(AppPlugin):
 | `icon` / `tooltip` | 图标资源键 / 提示文本 |
 | `default` / `show_top` / `is_active` | 与清单同义，用于多页面应用逐页声明 |
 
-生命周期钩子：`on_load(ctx)`、`on_language_changed(language)`、`on_unload()`。多数应用不需要覆写
-`on_language_changed`，页面标题由基座按 `title_key` 自动刷新。
+生命周期钩子：`on_load(ctx)`、`on_language_changed(language)`、`on_unload()`。
+
+- `on_load(ctx)`：应用加载完成、页面构建之前调用一次。
+- `on_language_changed(language)`：基座在**语言切换成功后**（窗口级刷新成功、写入
+  `user.yaml` 之前）调用；刷新失败并回滚时不调用。多数应用不需要覆写，页面标题由基座按
+  `title_key` 自动刷新。
+- `on_unload()`：基座在 `reset_apps_cache()` 清理应用缓存**之前**调用（测试 / 热重载场景）。
+
+每个钩子都在基座的异常隔离块里执行：单个应用的钩子抛异常只记 `Logger.warning`，
+不影响其它应用、不中断本次语言切换或缓存清理。`handle.plugin` 为空的 v1 应用不触发
+`on_language_changed` / `on_unload`。
 
 ## 4. 协议 v1（兼容）
 
