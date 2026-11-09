@@ -1,5 +1,8 @@
 """配置系统重构后的新框架测试：Attrs、类型化模型、注册表、YamlHandler。"""
 
+import dataclasses
+import inspect
+
 import pytest
 
 import sllkgui
@@ -558,3 +561,37 @@ def test_registry_wraps_io_error_boundary(tmp_path):
     with pytest.raises(DomainErrorBoundary, match="THEME_CONFIG_INVALID") as themes_exc:
         registry.load_themes()
     assert "YAML_PARSE_ERROR" in str(themes_exc.value), "IO error code must be preserved in details"
+
+
+# ---------------------------------------------------------------------------
+# FIX-10: 死配置 strict_plugins 的破坏性移除
+# ---------------------------------------------------------------------------
+
+
+def test_configure_has_no_strict_plugins_param():
+    """FIX-10: strict_plugins 从公开 API、AppConfig 与源码/文档中被彻底移除。"""
+    # FIX-10: 该参数全库零读取点，B4 作为本轮唯一的破坏性 API 变更删除。
+    assert "strict_plugins" not in inspect.signature(sllkgui.configure).parameters, (
+        "configure() must not expose the removed strict_plugins parameter"
+    )
+    assert "strict_plugins" not in {f.name for f in dataclasses.fields(sllkgui.AppConfig)}, (
+        "AppConfig must not keep the removed strict_plugins field"
+    )
+
+    # FIX-10: grep 等价扫描 —— src/sllkgui 的 .py、README.md 与 docs/*.md 零命中。
+    root = package_root().parent.parent
+    scan_files = [p for p in (root / "src" / "sllkgui").rglob("*.py") if "__pycache__" not in p.parts]
+    scan_files.append(root / "README.md")
+    # docs/CHANGE_PLAN.md §1/§2/§6 的历史问题描述按约定保留该字样，不纳入零命中范围。
+    scan_files.extend(p for p in (root / "docs").glob("*.md") if p.name != "CHANGE_PLAN.md")
+    scan_files = [p for p in scan_files if p.is_file()]
+
+    # 「扫到东西」自检：扫描器必须真的扫到文件，否则零命中只是 rglob 扫空造成的假绿。
+    matched = False
+    hits = []
+    for path in scan_files:
+        matched = True
+        if "strict_plugins" in path.read_text(encoding="utf-8"):
+            hits.append(path.name)
+    assert matched, "source/doc scanner matched nothing (stale or empty directory list)"
+    assert not hits, f"strict_plugins must not appear in source/docs, found in: {hits}"

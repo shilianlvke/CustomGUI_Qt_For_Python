@@ -160,12 +160,13 @@ def source_root() -> Path | None:
 def apps_root() -> Path:
     """返回应用模组目录（``configure(apps_dir=...)`` / ``SLLKGUI_APPS_DIR`` 优先）。
 
-    未显式配置时按「由近及远」探测，第一个存在的目录胜出：
+    显式配置与环境变量兜底统一由 ``current_config().resolved_apps_dir()``
+    处理（``env_fallback`` 关闭时不读环境变量）；两者都未命中时再按
+    「由近及远」探测，第一个存在的目录胜出：
 
-    1. 环境变量 ``SLLKGUI_APPS_DIR``
-    2. ``data_root()/apps`` —— 用户运行 ``sllkgui install-demo`` 的落地位置
-    3. ``<仓库根>/apps`` / ``<src>/apps`` / ``<包>/apps``（存在即用）
-    4. 兜底返回仓库根 ``apps/``（可能不存在，调用方自行判断空目录）
+    1. ``data_root()/apps`` —— 用户运行 ``sllkgui install-demo`` 的落地位置
+    2. ``<仓库根>/apps`` / ``<src>/apps`` / ``<包>/apps``（存在即用）
+    3. 兜底返回仓库根 ``apps/``（可能不存在，调用方自行判断空目录）
 
     注意：src layout 下 ``package_root()`` 是 ``src/sllkgui``，
     它的上两级才是仓库根，所以探测表里要带上 ``parent.parent``。
@@ -173,9 +174,6 @@ def apps_root() -> Path:
     configured = _cfg().resolved_apps_dir()
     if configured is not None:
         return configured
-    custom_apps = _env_path(_APPS_ENV)
-    if custom_apps:
-        return custom_apps
 
     candidates = [
         data_root() / "apps",

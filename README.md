@@ -282,12 +282,13 @@ sllkgui.configure(
     data_dir="~/.myapp",                  # 可写数据根（日志、遥测）
     diagnostics_dir="~/.myapp/diagnostics",
     builtin_menus=False,                  # 不注入基座自带的「软件信息」菜单
-    strict_plugins=False,                 # True 时插件错误直接抛出
 )
 ```
 
-优先级：**显式参数 > `SLLKGUI_*` 环境变量 > 内置默认值**。
-环境变量仍可用，且不再要求「必须在 import 之前设置」。
+优先级：**显式参数 > `SLLKGUI_*` 环境变量 > 内置默认值**（环境变量仅在 `env_fallback` 打开时兜底）。
+环境变量仍可用，且不再要求「必须在 import 之前设置」；`env_fallback=False` 可关闭环境变量兜底。
+字段传 `None` 时保留上次 `configure()` 的值（首次回落环境变量/默认值）；`resource_dirs` 传空序列清空覆盖层；
+`env_fallback` 传 `None` 保留上次值。
 
 | 环境变量 | 作用 | 默认 |
 | --- | --- | --- |

@@ -137,6 +137,10 @@ flowchart LR
 ## 5. 配置与资源解析
 
 - **优先级**：`configure()` 显式参数 > `SLLKGUI_*` 环境变量 > 内置默认值。
+- **解析入口统一**（FIX-06）：应用目录与遥测诊断目录统一经
+  `current_config().resolved_apps_dir()` / `resolved_diagnostics_dir()` 取值，
+  `SLLKGUI_APPS_DIR` / `SLLKGUI_DIAGNOSTICS_DIR` 的环境变量兜底只由 `env_fallback`
+  统一开关；`apps_root()` 与 `telemetry_module` 不再绕过 helper 直读这两个变量。
 - **资源根顺序**：`resource_dirs` / `SLLKGUI_RESOURCE_DIR` → 各应用 `<app>/brand/` → 包内 `_resources/`。
 - **配置是深合并**：`settings/` / `themes/` / `languages/` 下同名 YAML 逐层 `deep_merge`，
   品牌层只写要改的键；其他资源（图标/图片/字体）同名整份替换。

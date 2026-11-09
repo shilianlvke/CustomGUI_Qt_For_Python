@@ -41,7 +41,6 @@ class AppConfig:
     data_dir: Path | None = None
     diagnostics_dir: Path | None = None
     builtin_menus: bool | None = None
-    strict_plugins: bool = False
     env_fallback: bool = True
 
     def resolved_apps_dir(self) -> Path | None:
@@ -130,35 +129,36 @@ def configure(
     data_dir: str | os.PathLike[str] | None = None,
     diagnostics_dir: str | os.PathLike[str] | None = None,
     builtin_menus: bool | None = None,
-    strict_plugins: bool | None = None,
-    env_fallback: bool = True,
+    env_fallback: bool | None = None,
     force_reload: bool = False,
 ) -> AppConfig:
     """设置全局配置并返回生效值。
 
-    参数为 ``None`` 的字段保持默认（或环境变量兜底），不会被清空。
+    ``apps_dir`` / ``data_dir`` / ``diagnostics_dir`` / ``builtin_menus`` 传
+    ``None`` 时保留上次调用的值（首次为 ``None``，由环境变量或默认值回落）；
+    ``resource_dirs`` 传 ``None`` 保留、传空序列清空覆盖层；``env_fallback``
+    传 ``None`` 保留上次值（打开时以 ``SLLKGUI_*`` 环境变量兜底）。
     """
     global _ACTIVE, _CONFIGURED
 
-    if _CONFIGURED and not force_reload:
-        # 已加载过上下文：重载才能生效，避免"设了但没起作用"的静默失败。
+    if not force_reload:
+        # 上下文已加载时普通 configure() 不会生效，直接报错避免"设了但没起作用"。
         from .appcore.sysx.config import registry as _registry
 
         if _registry.is_context_loaded():
             raise ConfigAlreadyLoadedError(
-                "configure() 在配置上下文已加载后才会生效；请在 get_app_context() 之前调用，"
+                "配置上下文已加载，configure() 不会生效；请在 get_app_context() 之前调用，"
                 "或传 force_reload=True 重新加载。"
             )
 
     _ACTIVE = replace(
         _ACTIVE,
         apps_dir=_as_path(apps_dir) or _ACTIVE.apps_dir,
-        resource_dirs=_as_paths(resource_dirs) if resource_dirs else _ACTIVE.resource_dirs,
+        resource_dirs=_as_paths(resource_dirs) if resource_dirs is not None else _ACTIVE.resource_dirs,
         data_dir=_as_path(data_dir) or _ACTIVE.data_dir,
         diagnostics_dir=_as_path(diagnostics_dir) or _ACTIVE.diagnostics_dir,
         builtin_menus=_ACTIVE.builtin_menus if builtin_menus is None else builtin_menus,
-        strict_plugins=_ACTIVE.strict_plugins if strict_plugins is None else strict_plugins,
-        env_fallback=env_fallback,
+        env_fallback=_ACTIVE.env_fallback if env_fallback is None else env_fallback,
     )
     _CONFIGURED = True
 

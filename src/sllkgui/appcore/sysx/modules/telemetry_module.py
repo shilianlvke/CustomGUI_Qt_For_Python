@@ -6,7 +6,6 @@ from contextlib import contextmanager
 from datetime import UTC, datetime
 from pathlib import Path
 
-from ..config.paths import data_root
 from .logger_module import Logger
 
 # 遥测写入使用进程内互斥锁，避免并发写文件时数据竞争。
@@ -28,21 +27,11 @@ def _utc_now_iso() -> str:
 
 
 def _resolve_diagnostics_dir() -> Path:
-    """解析遥测目录。
-
-    优先使用环境变量 SLLKGUI_DIAGNOSTICS_DIR，
-    未设置时回落到项目 logs/diagnostics 目录。
-    """
+    """解析遥测目录，统一由 ``current_config().resolved_diagnostics_dir()`` 决定。"""
     from sllkgui.config import current_config
 
     configured = current_config().resolved_diagnostics_dir()
-    custom_dir = os.getenv("SLLKGUI_DIAGNOSTICS_DIR", "").strip()
-    if configured is not None:
-        path = Path(configured)
-    elif custom_dir:
-        path = Path(custom_dir)
-    else:
-        path = data_root() / "logs" / "diagnostics"
+    path = Path(configured)
     path.mkdir(parents=True, exist_ok=True)
     return path
 

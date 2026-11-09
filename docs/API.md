@@ -29,14 +29,14 @@ def configure(
     data_dir: str | os.PathLike | None = None,
     diagnostics_dir: str | os.PathLike | None = None,
     builtin_menus: bool | None = None,
-    strict_plugins: bool | None = None,
-    env_fallback: bool = True,
+    env_fallback: bool | None = None,
     force_reload: bool = False,
 ) -> AppConfig: ...
 ```
 
-- 传 `None` 的字段保持默认（或环境变量兜底），不会被清空。
-- 优先级：显式参数 > `SLLKGUI_*` 环境变量 > 内置默认值。
+- `apps_dir` / `data_dir` / `diagnostics_dir` / `builtin_menus` 传 `None` 时保留上次 `configure()` 的值（首次为 `None`，由环境变量或默认值回落）。
+- `resource_dirs` 传 `None` 保留上次值，传空序列清空覆盖层；`env_fallback` 传 `None` 保留上次值，设为 `False` 时不再用 `SLLKGUI_*` 环境变量兜底。
+- 优先级：显式参数 > `SLLKGUI_*` 环境变量 > 内置默认值（环境变量仅在 `env_fallback` 打开时兜底）。
 - 配置上下文已加载后再调用且未传 `force_reload=True`，抛 `ConfigAlreadyLoadedError`。
 
 ```python

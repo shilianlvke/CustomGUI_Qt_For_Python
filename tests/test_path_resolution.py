@@ -297,3 +297,93 @@ def test_language_cycle_works(tmp_path):
         assert first != second
     finally:
         Language.apply(original)
+
+
+# -- FIX-06: configure() 契约 ------------------------------------------------
+def test_configure_after_context_loaded_raises_on_first_call(tmp_path):
+    """FIX-06: 上下文已加载后，reset_config() 之后的首次 configure() 也必须抛错。"""
+    # FIX-06: 旧实现只在 _CONFIGURED 为真时检查；reset_config() 清掉该标志后首次调用静默失效。
+    from sllkgui.appcore import get_app_context
+
+    try:
+        get_app_context(force_reload=True)
+        sllkgui.reset_config()
+        with pytest.raises(sllkgui.ConfigAlreadyLoadedError):
+            sllkgui.configure(apps_dir=tmp_path)
+    finally:
+        # 复原全局配置：清掉临时字段并用 force_reload 重建上下文（与 autouse fixture 一致）。
+        sllkgui.reset_config()
+        sllkgui.configure(env_fallback=True, force_reload=True)
+
+
+def test_env_fallback_false_disables_env_paths(tmp_path, monkeypatch):
+    """FIX-06: env_fallback=False 时 apps/诊断目录都不得读 SLLKGUI_* 环境变量。"""
+    # FIX-06: 环境变量兜底只由 env_fallback 控制，apps_root/遥测不得绕过它直读。
+    env_apps = tmp_path / "env_apps"
+    env_diag = tmp_path / "env_diagnostics"
+    monkeypatch.setenv("SLLKGUI_APPS_DIR", str(env_apps))
+    monkeypatch.setenv("SLLKGUI_DIAGNOSTICS_DIR", str(env_diag))
+
+    try:
+        sllkgui.reset_config()
+        sllkgui.configure(env_fallback=False, force_reload=True)
+
+        from sllkgui.appcore.sysx.config.paths import apps_root
+
+        assert sllkgui.current_config().resolved_apps_dir() is None, (
+            "resolved_apps_dir must ignore SLLKGUI_APPS_DIR when env_fallback is False"
+        )
+        assert apps_root() != env_apps.resolve(), (
+            "apps_root must ignore SLLKGUI_APPS_DIR when env_fallback is False"
+        )
+        assert sllkgui.current_config().resolved_diagnostics_dir() != env_diag.resolve(), (
+            "resolved_diagnostics_dir must ignore SLLKGUI_DIAGNOSTICS_DIR when env_fallback is False"
+        )
+    finally:
+        sllkgui.reset_config()
+        sllkgui.configure(env_fallback=True, force_reload=True)
+
+
+def test_configure_preserves_env_fallback_when_not_passed(tmp_path):
+    """FIX-06: 后续 configure() 不传 env_fallback 时保留上次的 False，不被默认 True 覆盖。"""
+    # FIX-06: env_fallback 改用 None 哨兵保留历史值，不再每次调用覆盖回 True。
+    try:
+        sllkgui.configure(env_fallback=False, force_reload=True)
+        assert sllkgui.current_config().env_fallback is False, (
+            "env_fallback=False must take effect on the first configure call"
+        )
+
+        sllkgui.configure(data_dir=tmp_path, force_reload=True)
+        assert sllkgui.current_config().env_fallback is False, (
+            "configure without env_fallback must preserve the previous False value"
+        )
+    finally:
+        sllkgui.reset_config()
+        sllkgui.configure(env_fallback=True, force_reload=True)
+
+
+def test_resource_dirs_empty_tuple_clears_previous(tmp_path):
+    """FIX-06: resource_dirs 传空元组要清空上一次配置的覆盖根。"""
+    # FIX-06: 旧实现用 `if resource_dirs` 判断，空序列无法清空历史值。
+    overlay = tmp_path / "overlay"
+    (overlay / "resource" / "sllkgui" / "languages").mkdir(parents=True)
+
+    try:
+        sllkgui.configure(resource_dirs=[overlay], force_reload=True)
+
+        from sllkgui.appcore.sysx.config.paths import resource_roots
+
+        assert (overlay / "resource").resolve() in resource_roots(), (
+            "precondition: the overlay root must be active before clearing"
+        )
+
+        sllkgui.configure(resource_dirs=(), force_reload=True)
+        assert sllkgui.current_config().resource_dirs == (), (
+            "an empty resource_dirs sequence must clear all configured overlays"
+        )
+        assert (overlay / "resource").resolve() not in resource_roots(), (
+            "the cleared overlay must no longer appear in resource_roots()"
+        )
+    finally:
+        sllkgui.reset_config()
+        sllkgui.configure(env_fallback=True, force_reload=True)
