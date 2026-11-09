@@ -14,8 +14,8 @@
 ``sllkgui/examples``），源码树运行时回落到仓库根的 ``apps/`` 与
 ``examples/hello_world/`` —— 两种形态下命令行为一致。
 
-设计约定：本模块只做命令行编排，不 import PySide6（``run`` 里延迟导入），
-这样 ``sllkgui doctor`` 在没有显示环境的服务器上也能跑。
+设计约定：模块顶层只依赖标准库、不导入 PySide6；``doctor`` 在加载应用或读取配置时会
+传递导入 Qt，但不创建 QApplication，因此没有显示环境的服务器上也能跑。
 """
 
 from __future__ import annotations
@@ -82,17 +82,41 @@ def _cmd_install_demo(args: argparse.Namespace) -> int:
     from sllkgui.appcore.sysx.config.paths import data_root
 
     dest = Path(args.dest).expanduser().resolve() if args.dest else data_root() / "apps"
+    # 只有 --force 会删除目标目录，相交校验也只在此时需要：源码树里
+    # _demo_source() 回落到 source_root()/apps，而默认 dest 恰为
+    # data_root()/apps，不带 --force 时只是「已存在，跳过」，并无删除风险。
+    if args.force:
+        src_resolved, dest_resolved = source.resolve(), dest.resolve()
+        if (
+            src_resolved == dest_resolved
+            or src_resolved.is_relative_to(dest_resolved)
+            or dest_resolved.is_relative_to(src_resolved)
+        ):
+            print("✗ 目标目录与内置示例源目录相同或互相包含，拒绝覆盖以免删除内置示例。")
+            print(f"  源目录：{src_resolved}")
+            print(f"  目标目录：{dest_resolved}")
+            return 1
+
     dest.mkdir(parents=True, exist_ok=True)
 
     copied, skipped = [], []
     for app_dir in sorted(p for p in source.iterdir() if p.is_dir()):
         target = dest / app_dir.name
+        if target.is_symlink():
+            print(f"✗ 目标为符号链接，拒绝覆盖：{target}")
+            return 1
         if target.exists() and not args.force:
             skipped.append(app_dir.name)
             continue
-        if target.exists():
-            shutil.rmtree(target)
-        shutil.copytree(app_dir, target)
+        try:
+            if target.exists():
+                shutil.rmtree(target)
+            shutil.copytree(app_dir, target)
+        except OSError as exc:
+            print(f"✗ 复制应用 {app_dir.name} 失败：{exc}")
+            if target.exists():
+                shutil.rmtree(target, ignore_errors=True)
+            return 1
         copied.append(app_dir.name)
 
     print(f"示例应用目录：{dest}")
@@ -169,6 +193,20 @@ def _cmd_doctor(args: argparse.Namespace) -> int:
     # ``--apps-dir`` 显式指定时以它为准：默认应用目录不存在、但用户指了别的
     # 目录时，仍然要打印「发现/加载」结果，否则排查信息在最需要的时候缺席。
     explicit = _absolute(args.apps_dir)
+
+    # 归属校验：显式路径必须位于已配置的应用根或数据根之下，避免 doctor
+    # 顺手扫描/执行外部目录里的插件代码；--allow-external 显式放行。
+    if explicit and not args.allow_external:
+        resolved = Path(explicit).resolve()
+        owned_roots = [Path(root).resolve() for root in (apps_root(), data_root()) if root is not None]
+        if not any(resolved.is_relative_to(root) for root in owned_roots):
+            print(f"✗ --apps-dir 指向已配置应用根之外的目录：{resolved}")
+            print("  已拒绝诊断；如确需诊断该目录，请加 --allow-external（仅用于可信目录）。")
+            return 1
+    if explicit and args.allow_external:
+        print(f"⚠ 警告：--allow-external 已启用，--apps-dir 可指向任意目录：{Path(explicit).resolve()}")
+        print("  请确认目录可信；加 --load 会执行其中的应用入口代码。")
+
     apps = Path(explicit) if explicit else apps_root()
     apps_ok = apps.is_dir()
     print(f"{_mark(apps_ok)} 应用目录      : {apps}{'' if explicit else '（默认）'}")
@@ -178,19 +216,25 @@ def _cmd_doctor(args: argparse.Namespace) -> int:
     print("-" * 56)
     if apps_ok:
         try:
-            from sllkgui.window import discover_app_dirs, load_app_handles
+            from sllkgui.window import discover_app_dirs
 
             dirs = discover_app_dirs(explicit)
             print(f"发现应用      : {len(dirs)} 个")
             for app_dir in dirs:
                 print(f"  - {app_dir.name}")
-            handles = load_app_handles(explicit)
-            print(f"成功加载      : {len(handles)} 个")
-            for handle in handles:
-                module = handle.module.__name__ if handle.module else "（无 gui/main.py）"
-                print(f"  + {handle.name}  ->  {module}")
+            if args.load:
+                from sllkgui.window import load_app_handles
+
+                handles = load_app_handles(explicit)
+                print(f"成功加载      : {len(handles)} 个")
+                for handle in handles:
+                    module = handle.module.__name__ if handle.module else "（无 gui/main.py）"
+                    print(f"  + {handle.name}  ->  {module}")
+            else:
+                print("提示：默认不执行应用代码；需要加载请加 --load")
         except Exception as exc:  # noqa: BLE001 - doctor 只做展示，不能自己崩
-            print(f"✗ 应用加载失败  : {exc}")
+            print(f"✗ 应用发现/加载失败  : {exc}")
+            return 1
         print("-" * 56)
 
     try:
@@ -307,6 +351,8 @@ def build_parser() -> argparse.ArgumentParser:
 
     doctor = sub.add_parser("doctor", help="打印路径与配置诊断信息")
     doctor.add_argument("--apps-dir", help="检查指定应用目录")
+    doctor.add_argument("--load", action="store_true", help="显式加载并执行应用入口代码，仅用于可信目录")
+    doctor.add_argument("--allow-external", action="store_true", help="允许 --apps-dir 指向已配置应用根之外的目录")
     doctor.set_defaults(func=_cmd_doctor)
 
     return parser

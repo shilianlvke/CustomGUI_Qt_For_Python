@@ -121,9 +121,9 @@
 
 | 编号 | commit | 变更文件 | 验证结果 | 状态 |
 | --- | --- | --- | --- | --- |
-| FIX-01 | — | — | — | 计划中 |
+| FIX-01 | `fix(cli): install-demo 覆盖前安全校验与 doctor 安全诊断 (FIX-01, FIX-03)` | `cli.py` `test_cli.py` `README.md` `PLUGIN.md` `MANUAL_QA.md` `contributing.md` `CHANGELOG.md` `CHANGE_PLAN.md` | ruff 0 / mypy 0 / CLI 专项 24 passed / 全量 535 passed, 1 skipped, 覆盖率 72% | 已修复 |
 | FIX-02 | — | — | — | 计划中 |
-| FIX-03 | — | — | — | 计划中 |
+| FIX-03 | `fix(cli): install-demo 覆盖前安全校验与 doctor 安全诊断 (FIX-01, FIX-03)` | `cli.py` `test_cli.py` `README.md` `PLUGIN.md` `MANUAL_QA.md` `contributing.md` `CHANGELOG.md` `CHANGE_PLAN.md` | ruff 0 / mypy 0 / CLI 专项 24 passed / 全量 535 passed, 1 skipped, 覆盖率 72% | 已修复 |
 | FIX-04 | — | — | — | 计划中 |
 | FIX-05 | `fix(paths): 移除运行时 cwd 兜底并加固架构守卫自检与规划矩阵 (FIX-05)` | `paths.py` `logger_module.py` `test_no_cwd_runtime_dependency.py` `test_architecture_boundaries.py` `test_legacy_import_policy.py` `docs/CHANGE_PLAN.md` `docs/README.md` `docs/ARCHITECTURE.md` | ruff 0 / mypy 0 / 守卫专项 9 passed / 全量 526 passed, 1 skipped, 覆盖率 72% | 已修复 |
 | FIX-06 | — | — | — | 计划中 |

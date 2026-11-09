@@ -26,7 +26,7 @@
 >
 > - 公开 API 以 `__all__` 为准，`1.x` 内保持向后兼容；破坏性变更只在新的 major 版本引入，并记录在 [CHANGELOG](CHANGELOG.md)。
 > - 主要验证环境是 **Windows + Python 3.12 + PySide6 6.10**；其他平台可用但未纳入回归。
-> - 发现的问题请提 issue，并附上 `sllkgui doctor` 的完整输出——它比「窗口是黑的」有用得多。
+> - 发现的问题请提 issue，并附上 `sllkgui doctor` 的完整输出——它比「窗口是黑的」有用得多；`doctor` 默认不执行应用代码。
 
 ---
 
@@ -127,9 +127,7 @@ SllkGUI doctor
   - panel_preview
   - shell_preview
   - table_preview
-成功加载      : 10 个
-  + button_preview  ->  _sllkgui_apps.button_preview.gui.main
-  ...
+提示：默认不执行应用代码；需要加载请加 --load
 --------------------------------------------------------
 ✓ 当前主题      : default（共 4 套）
 ✓ 当前语言      : zh_cn（共 4 种）
@@ -152,12 +150,12 @@ uv run python examples/hello_world/main.py   # 最小宿主骨架（自身不含
 | 子命令 | 作用 | 关键参数 |
 | --- | --- | --- |
 | `sllkgui run` | 启动主窗口 | `--apps-dir DIR`、`--data-dir DIR` |
-| `sllkgui install-demo` | 安装包内示例应用到 `<data_root>/apps` | `--dest DIR`、`--force` |
+| `sllkgui install-demo` | 安装包内示例应用到 `<data_root>/apps` | `--dest DIR`、`--force`（覆盖前校验源/目标不相交、拒绝符号链接，失败返回非 0） |
 | `sllkgui examples [--copy DIR]` | 查看或导出最小工程骨架 | `--copy DIR`（目标目录须为空） |
-| `sllkgui doctor` | 打印版本、资源根、数据根、应用发现与加载结果 | `--apps-dir DIR` |
+| `sllkgui doctor` | 打印版本、资源根、数据根与应用发现结果（默认不执行应用代码） | `--apps-dir DIR`、`--load`（执行入口代码）、`--allow-external`（放行外部目录） |
 | `sllkgui --version` | 打印版本号 | — |
 
-`--apps-dir` 请传**绝对路径**：应用清单会经由资源解析器读取，相对路径会被解析到资源根下（已知问题，见文末）。
+`--apps-dir` 显式路径需位于已配置应用根（`apps_root()` / `data_root()`）之下，否则 `doctor` 会拒绝诊断；确需指向外部目录时加 `--allow-external`（仅用于可信目录）。
 
 ## 目录结构
 
@@ -213,6 +211,7 @@ apps/<app_name>/
 
 > **信任边界**：`apps/` 里的入口代码会在宿主进程内直接执行，拥有与宿主相同的权限。
 > 只加载可信插件，不要把不受信任的目录放进 `apps/` 或 `SLLKGUI_APPS_DIR`。
+> `sllkgui doctor` 默认不执行应用代码，只有加 `--load` 才会加载并执行入口。
 > 详见 [PLUGIN.md](docs/PLUGIN.md) 的“信任边界”。
 
 清单字段（`config.yml`）：

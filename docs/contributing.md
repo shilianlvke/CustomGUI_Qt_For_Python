@@ -111,11 +111,12 @@ uv run twine check dist/*.whl
 uv venv /tmp/smoke --python 3.12
 uv pip install --python /tmp/smoke/bin/python dist/sllkgui-1.0.0-py3-none-any.whl
 /tmp/smoke/bin/sllkgui doctor
+# doctor 默认不执行插件代码；需要验证加载时改跑：/tmp/smoke/bin/sllkgui doctor --load
 
 # 4. 打 tag 并推送
 git tag base-v1.0.0
 git push origin main --tags
 ```
 
-第 3 步是唯一能验证「开箱即用」的环节。`sllkgui doctor` 里任一 `✗` 都不要发。
+第 3 步是唯一能验证「开箱即用」的环节。`sllkgui doctor` 里任一 `✗` 都不要发；它默认不执行插件代码，需要验证加载时加 `--load`。
 1.x 暂不发 PyPI，只走 wheel + tag。

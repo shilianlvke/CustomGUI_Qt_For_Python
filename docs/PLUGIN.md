@@ -10,6 +10,7 @@ SllkGUI 把「一个页面/一组页面」封装成目录：**放进 `apps/` 即
 
 - 只加载可信来源的插件；不要把不受信任的第三方目录放进 `apps/`，也不要让
   `SLLKGUI_APPS_DIR` 指向可被他人写入的位置。
+- `sllkgui doctor` 默认只发现应用、不执行入口代码；只有加 `--load` 才会加载并执行插件。
 - `strict_plugins` 只做清单/协议校验，不提供代码隔离。
 - 便携分发时建议在启动日志中打印实际生效的 `apps` 目录（`configure()` 会输出）。
 
@@ -216,5 +217,6 @@ brand/sllkgui/
 | `APP_PAGE_EMPTY` | `build()` 返回 `None` | 返回一个 `QWidget` |
 | `YAML_FILE_NOT_FOUND` | 清单/语言文件路径解析失败 | 确认 `app_name` 与目录一致；`--apps-dir` 用绝对路径 |
 
-页面没出现时按顺序排查：`sllkgui doctor` 是否 `发现应用` > 0 → `成功加载` 是否等于发现数 →
-清单 `page_object` 与页面 `setObjectName` 是否一致 → `build()` 是否返回控件。
+页面没出现时按顺序排查：`sllkgui doctor` 是否 `发现应用` > 0 → 加 `--load` 后 `成功加载` 是否等于发现数
+（doctor 默认不执行入口代码，不加 `--load` 不会有「成功加载」这一行）→ 清单 `page_object` 与页面
+`setObjectName` 是否一致 → `build()` 是否返回控件。

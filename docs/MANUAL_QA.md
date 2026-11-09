@@ -418,7 +418,7 @@
 
 | 编号 | 目的 | 前置 | 步骤 | 预期 | 实际（本轮） |
 | --- | --- | --- | --- | --- | --- |
-| O-01 | 插件清单非法 | 修改 `apps/<app>/config.yml` | 1) 删字段/写错类型；2) 启动；3) `sllkgui doctor` | 错误被隔离，doctor 指出具体应用 | 正常：坏 YAML 被隔离，doctor 显示发现 1/成功加载 0，并给出解析错误 |
+| O-01 | 插件清单非法 | 修改 `apps/<app>/config.yml` | 1) 删字段/写错类型；2) 启动；3) `sllkgui doctor`（默认不加载，仅发现） | 错误被隔离，doctor 指出具体应用 | 正常：坏 YAML 被隔离，加 `--load` 后 doctor 显示发现 1/成功加载 0，并给出解析错误 |
 | O-02 | 插件图标/语言缺失 | 移除资源 | 1) 启动；2) 观察左菜单/页面 | 回退占位，不阻塞其他应用 | 部分通过：缺图标/语言插件仍加载 1/1，不阻塞其他应用；菜单显示原始 key，缺友好回退（F-34） |
 | O-03 | 品牌覆盖层 | 配置 `resource_dirs` | 1) 覆盖 window.yaml 三行；2) 观察合并结果 | 深合并生效，其他资源整份替换 | 正常：品牌层 window.yaml 只写 2 个键，`right_column_size.maximum=320`、`window_border_radius=14` 生效，其余默认保留 |
 | O-04 | 数据目录只读 | 设置只读 data_dir | 1) 启动；2) 切主题/语言 | 只读不崩溃，有明确日志/提示 | **异常**：data_dir 指向文件时启动直接抛 `FileNotFoundError`（logs 目录），无降级提示（F-33） |
@@ -461,7 +461,7 @@
 | --- | --- | --- | --- |
 | 第一批（2026-11-04） | 标题栏、抽屉、页面切换、按钮焦点、`CTextarea`/`CInputNumber`/`CMultiSelect`/`CDatePicker`/`CColorPicker`/`CSlider`/`CKnob`、DataView/PickList/OrderList/TreeTable、表格分页/选择/冻结/主题语言、Stepper、确认对话框、主题与深色开关、主题切换耗时 | Python + PySide6 QTest、控件几何、状态回读、屏幕截图 | 已回填 34 项；新增 F-23~F-28 |
 | 第二批（2026-11-04） | 菜单提示/边缘、按钮长文本/loading/分体/状态/菜单按钮、AutoComplete/SelectButton、表格 loading/单选、CMenu/ContextMenu、大尺寸对话框/浮层/多浮层、Progress/反馈主题语言、Galleria/FileUpload/媒体窄窗/空图、Fieldset/Splitter/Steps、Topbar、主题 swatches、四主题×10 页、多浮层语言、键盘焦点 | Python + PySide6 QTest、组件级构造、CPopover/菜单几何、截图 | 已回填 35 项；新增 F-29~F-31 |
-| 第三批（2026-11-04） | 四语言×关键页、高 DPI 125%/150%、亚克力关闭、设置持久化、Chart 降级、空 apps、内置菜单关闭、坏插件/缺资源/品牌深合并/非法数据目录 | 独立进程 + 环境变量 + 临时资源/应用目录 + CLI doctor | 已回填 16 项；新增 F-32~F-35 |
+| 第三批（2026-11-04） | 四语言×关键页、高 DPI 125%/150%、亚克力关闭、设置持久化、Chart 降级、空 apps、内置菜单关闭、坏插件/缺资源/品牌深合并/非法数据目录 | 独立进程 + 环境变量 + 临时资源/应用目录 + CLI doctor（默认不加载，加载诊断需 `--load`） | 已回填 16 项；新增 F-32~F-35 |
 | 补充（2026-11-04） | `CLineEdit` 尺寸、长菜单文本、对话框+Toast 层级、切换中滚动 | 组件级构造 + 截图 + 几何 | 回填 E-02/G-11/H-10/I-09/C-03；新增 F-36/F-37 |
 | 人工确认（环境相关） | Win10/RDP、多显示器、真实触控板/低端 GPU、屏幕阅读器、原生文件选择器/资源管理器拖放、主观视觉取舍 | 人工 | 未执行（需要真实设备/使用者判断） |
 
