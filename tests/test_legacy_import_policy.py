@@ -36,14 +36,19 @@ ALLOWED_FILES = {
 
 
 def _iter_runtime_files():
+    found = False
     for rel in RUNTIME_DIRS:
         base = ROOT / rel
         for path in base.rglob("*.py"):
+            found = True
             yield path
     for rel in RUNTIME_FILES:
         path = ROOT / rel
         if path.exists():
+            found = True
             yield path
+    # 自检：一个文件都没扫到时必须报错，不能静默通过。
+    assert found, "runtime file scanner matched nothing (stale or empty directory list)"
 
 
 def test_runtime_code_does_not_add_new_legacy_imports():

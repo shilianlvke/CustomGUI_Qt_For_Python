@@ -197,7 +197,7 @@ def program_root() -> Path:
     1. 环境变量 ``SLLKGUI_PROGRAM_DIR``（便携/测试显式指定）；
     2. 源码树仓库根（``src`` 的上一级存在 ``pyproject.toml``）；
     3. PyInstaller 等冻结形态：可执行文件所在目录；
-    4. 其它安装形态：当前工作目录。
+    4. 其它安装形态：可执行文件所在目录（与冻结分支一致，稳定可写、与 cwd 无关）。
 
     与 :func:`resource_root`（只读默认资源）区分：这里专门用于**可写**的
     运行期数据，避免落到 ``%APPDATA%`` 等用户系统目录。
@@ -210,7 +210,7 @@ def program_root() -> Path:
         return source
     if getattr(sys, "frozen", False):
         return Path(sys.executable).resolve().parent
-    return Path.cwd().resolve()
+    return Path(sys.executable).resolve().parent
 
 
 def data_root() -> Path:

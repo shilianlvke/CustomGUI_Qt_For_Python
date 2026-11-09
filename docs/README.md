@@ -11,6 +11,7 @@
 | [COMPONENTS.md](COMPONENTS.md) | 组件分类、常用签名、窗口部件、设计令牌、设置项速查 | 写界面的人 |
 | [API.md](API.md) | 门面 API 速查：配置、主题、语言、插件、遥测、存储、任务 | 集成基座的人 |
 | [contributing.md](contributing.md) | 环境、分层规则、代码约定、测试、提交与发版 | 贡献者 |
+| [CHANGE_PLAN.md](CHANGE_PLAN.md) | 一次性规划矩阵：修复项、扩展项、优先级与变更追溯（结论归档后合入 CHANGELOG 等） | 做技术评审与变更追溯的人 |
 | [icons/README.md](icons/README.md) | 图标资源库说明（2481 个通用 SVG，不随包分发） | 找图标的人 |
 
 ## 建议阅读顺序

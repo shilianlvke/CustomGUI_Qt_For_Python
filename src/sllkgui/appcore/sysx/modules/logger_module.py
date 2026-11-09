@@ -58,9 +58,16 @@ class _Logger:
         self._logger = logging.getLogger("SllkGUI")
         self._logger.propagate = False
         self._configured = False
-        self._configure_logging()
+        # FIX-05: 导入期不做 I/O；日志目录与滚动文件在首次公开方法调用时才创建，
+        # 避免模块导入即按当前工作目录建目录。
+
+    def _ensure_configured(self):
+        """惰性入口：首次使用日志时才执行完整配置（含 ``logs/`` 目录创建）。"""
+        if not self._configured:
+            self._configure_logging()
 
     def set_level(self, level: str):
+        self._ensure_configured()
         level_name = (level or "info").lower()
         target_level = self.LEVELS.get(level_name, logging.INFO)
         self._logger.setLevel(target_level)
@@ -70,6 +77,9 @@ class _Logger:
     def _configure_logging(self):
         if self._configured:
             return
+        # FIX-05: 提前置位，避免末尾调用公开 set_level 时其开头的
+        # _ensure_configured() 再次递归触发本方法。
+        self._configured = True
 
         if just_fix_windows_console:
             just_fix_windows_console()
@@ -117,7 +127,6 @@ class _Logger:
                 self._logger.warning(f"日志目录不可写，已回退为仅控制台输出: {log_dir} ({failure})")
 
         self.set_level(self._read_level_from_console_config())
-        self._configured = True
 
     @staticmethod
     def _read_console_config() -> dict:
@@ -178,25 +187,32 @@ class _Logger:
         return name, max_bytes, backup_count
 
     def info(self, msg: str):
+        self._ensure_configured()
         self._logger.info(msg)
 
     def debug(self, msg: str):
+        self._ensure_configured()
         self._logger.debug(msg)
 
     def warning(self, msg: str):
+        self._ensure_configured()
         self._logger.warning(msg)
 
     def error(self, msg: str):
+        self._ensure_configured()
         self._logger.error(msg)
 
     def critical(self, msg: str):
+        self._ensure_configured()
         self._logger.critical(msg)
 
     def exception(self, msg: str):
         """记录错误信息并附带当前异常堆栈（请在 except 块内调用）。"""
+        self._ensure_configured()
         self._logger.exception(msg)
 
     def tool(self, msg: str):
+        self._ensure_configured()
         self._logger.info(f"[TOOL] ====={msg}=====")
 
 

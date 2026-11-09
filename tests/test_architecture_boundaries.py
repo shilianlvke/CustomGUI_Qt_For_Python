@@ -7,29 +7,47 @@
 import ast
 from pathlib import Path
 
+import pytest
+
 ROOT = Path(__file__).resolve().parents[1]
 SRC = ROOT / "src" / "sllkgui"
 
 
 def _iter_python_files(*folders: Path):
+    found = False
     for base in folders:
         for path in base.rglob("*.py"):
             if "__pycache__" in path.parts:
                 continue
+            found = True
             yield path
+    # FIX-05: 一个文件都没扫到时必须报错，不能静默通过（防止 rglob 扫空造成假绿）。
+    assert found, "Python file scanner matched nothing (stale or empty directory list)"
 
 
 def _extract_import_roots(file_path: Path) -> list[str]:
     tree = ast.parse(file_path.read_text(encoding="utf-8"), filename=str(file_path))
     imports: list[str] = []
+    # FIX-05: 相对导入若被跳过，``from ..guis import x`` 之类写法即可绕过分层守卫。
+    # 按 src layout 还原文件所属包，再把 level>0 的相对导入折算成绝对模块名
+    # 纳入检查，确保「相对导入绕过守卫」不再成立。
+    sub_parts = file_path.relative_to(SRC).parts[:-1]
+    package = "sllkgui" + ("." + ".".join(sub_parts) if sub_parts else "")
+    package_parts = package.split(".")
 
     for node in ast.walk(tree):
         if isinstance(node, ast.Import):
             for alias in node.names:
                 imports.append(alias.name)
         elif isinstance(node, ast.ImportFrom):
-            if node.level == 0 and node.module:
-                imports.append(node.module)
+            if node.level == 0:
+                if node.module:
+                    imports.append(node.module)
+            else:
+                # 按 level 从当前包回溯到基准包，再拼上 node.module（可为空）。
+                base = package_parts[: max(1, len(package_parts) - (node.level - 1))]
+                resolved = ".".join(base) if node.module is None else ".".join(base) + "." + node.module
+                imports.append(resolved)
     return imports
 
 
@@ -109,3 +127,12 @@ def test_no_dunder_file_parents_depth():
                 violations.append(f"{path.relative_to(ROOT).as_posix()}:{node.lineno}: parents[{index.value}]")
 
     assert not violations, "Use resource resolution helpers instead of parents[N]:\n" + "\n".join(violations)
+
+
+def test_python_file_scanner_rejects_empty_dir(tmp_path):
+    """扫描器在空目录时必须失败，避免 rglob 扫空导致断言假绿。"""
+    # FIX-05: 空目录应触发 found 自检 assert，而不是静默返回空结果。
+    empty = tmp_path / "empty"
+    empty.mkdir()
+    with pytest.raises(AssertionError):
+        list(_iter_python_files(empty))

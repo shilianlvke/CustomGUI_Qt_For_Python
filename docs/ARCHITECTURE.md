@@ -141,9 +141,11 @@ flowchart LR
 - **配置是深合并**：`settings/` / `themes/` / `languages/` 下同名 YAML 逐层 `deep_merge`，
   品牌层只写要改的键；其他资源（图标/图片/字体）同名整份替换。
 - **路径解析**：`find_resource()` 只在资源根里找；`resolve_path()` 找不到时回落到包内稳定位置，
-  便于报错与写操作定位。运行时不得使用 `os.getcwd()`（有测试守）。
+  便于报错与写操作定位。运行时不得使用 `os.getcwd()` / `Path.cwd()`（有 AST 测试守）。
 - **可写数据**：日志、遥测与用户配置写到 `data_root()`（默认程序运行根目录，
   可用 `configure(data_dir=...)` / `SLLKGUI_DATA_DIR` 覆盖），绝不写安装目录或用户系统目录。
+  `program_root()` 的解析顺序为 `SLLKGUI_PROGRAM_DIR` → 源码树仓库根 → 冻结形态可执行文件目录 →
+  其它安装形态下的可执行文件目录；**不以当前工作目录为兜底**，且 `Logger` 在首次写日志时才建立目录。
 
 ## 6. 应用装载与页面路由
 
@@ -190,8 +192,8 @@ flowchart LR
 
 | 测试 | 守什么 |
 | --- | --- |
-| `test_architecture_boundaries.py` | 三层依赖方向、公开面导入、私有命名空间、禁止 `parents[N]` |
-| `test_no_cwd_runtime_dependency.py` | 运行时代码不得调用 `os.getcwd()` |
+| `test_architecture_boundaries.py` | 三层依赖方向（含相对导入）、公开面导入、私有命名空间、禁止 `parents[N]`，且扫描器有「扫到东西」自检 |
+| `test_no_cwd_runtime_dependency.py` | 运行时代码不得调用 `os.getcwd()` / `Path.cwd()` |
 | `test_removed_entry_points.py` | 已下线入口不得复活 |
 | `test_naming_consistency.py` | 包/模块命名规范 |
 | `test_language_coverage.py` | 四套语言键逐键对齐 |
