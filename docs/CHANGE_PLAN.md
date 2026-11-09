@@ -122,13 +122,13 @@
 | 编号 | commit | 变更文件 | 验证结果 | 状态 |
 | --- | --- | --- | --- | --- |
 | FIX-01 | `fix(cli): install-demo 覆盖前安全校验与 doctor 安全诊断 (FIX-01, FIX-03)` | `cli.py` `test_cli.py` `README.md` `PLUGIN.md` `MANUAL_QA.md` `contributing.md` `CHANGELOG.md` `CHANGE_PLAN.md` | ruff 0 / mypy 0 / CLI 专项 24 passed / 全量 535 passed, 1 skipped, 覆盖率 72% | 已修复 |
-| FIX-02 | — | — | — | 计划中 |
+| FIX-02 | `fix(appcore): 用户配置高版本回写、错误边界与主题订阅一致性 (FIX-02, FIX-07, FIX-08)` | `user_settings.py` `error_module.py` `telemetry_module.py` `theme_module.py` `color_module.py` `registry.py` `test_user_settings.py` `test_error_boundaries.py` `test_config_framework.py` `test_theme_module.py` `test_telemetry_module.py` `test_telemetry_integration.py` `API.md` `ARCHITECTURE.md` `CHANGELOG.md` `CHANGE_PLAN.md` | ruff 0 / mypy 0 / 专项 82 passed / 全量 549 passed, 1 skipped, 覆盖率 72% | 已修复 |
 | FIX-03 | `fix(cli): install-demo 覆盖前安全校验与 doctor 安全诊断 (FIX-01, FIX-03)` | `cli.py` `test_cli.py` `README.md` `PLUGIN.md` `MANUAL_QA.md` `contributing.md` `CHANGELOG.md` `CHANGE_PLAN.md` | ruff 0 / mypy 0 / CLI 专项 24 passed / 全量 535 passed, 1 skipped, 覆盖率 72% | 已修复 |
 | FIX-04 | — | — | — | 计划中 |
 | FIX-05 | `fix(paths): 移除运行时 cwd 兜底并加固架构守卫自检与规划矩阵 (FIX-05)` | `paths.py` `logger_module.py` `test_no_cwd_runtime_dependency.py` `test_architecture_boundaries.py` `test_legacy_import_policy.py` `docs/CHANGE_PLAN.md` `docs/README.md` `docs/ARCHITECTURE.md` | ruff 0 / mypy 0 / 守卫专项 9 passed / 全量 526 passed, 1 skipped, 覆盖率 72% | 已修复 |
 | FIX-06 | — | — | — | 计划中 |
-| FIX-07 | — | — | — | 计划中 |
-| FIX-08 | — | — | — | 计划中 |
+| FIX-07 | `fix(appcore): 用户配置高版本回写、错误边界与主题订阅一致性 (FIX-02, FIX-07, FIX-08)` | `user_settings.py` `error_module.py` `telemetry_module.py` `theme_module.py` `color_module.py` `registry.py` `test_user_settings.py` `test_error_boundaries.py` `test_config_framework.py` `test_theme_module.py` `test_telemetry_module.py` `test_telemetry_integration.py` `API.md` `ARCHITECTURE.md` `CHANGELOG.md` `CHANGE_PLAN.md` | ruff 0 / mypy 0 / 专项 82 passed / 全量 549 passed, 1 skipped, 覆盖率 72% | 已修复 |
+| FIX-08 | `fix(appcore): 用户配置高版本回写、错误边界与主题订阅一致性 (FIX-02, FIX-07, FIX-08)` | `user_settings.py` `error_module.py` `telemetry_module.py` `theme_module.py` `color_module.py` `registry.py` `test_user_settings.py` `test_error_boundaries.py` `test_config_framework.py` `test_theme_module.py` `test_telemetry_module.py` `test_telemetry_integration.py` `API.md` `ARCHITECTURE.md` `CHANGELOG.md` `CHANGE_PLAN.md` | ruff 0 / mypy 0 / 专项 82 passed / 全量 549 passed, 1 skipped, 覆盖率 72% | 已修复 |
 | FIX-09 | — | — | — | 计划中 |
 | FIX-10 | — | — | — | 计划中 |
 | FIX-11 | — | — | — | 计划中 |

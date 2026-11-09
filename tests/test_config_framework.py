@@ -537,3 +537,24 @@ def test_yaml_handler_root_relative_resolution(tmp_path, monkeypatch):
 
     assert handler.data.language == "zh_cn"
     assert handler.data.theme_name == "default"
+
+
+def test_registry_wraps_io_error_boundary(tmp_path):
+    """FIX-08: 坏 YAML 触发的 IOErrorBoundary 被注册表统一包装为 DomainErrorBoundary。"""
+    # FIX-08: load_yaml_file 抛 YAML_PARSE_ERROR 时不得裸穿透，须带分组错误码。
+    class _TmpRegistry(ConfigRegistry):
+        pass
+
+    registry = _TmpRegistry()
+    registry.SETTINGS_DIR = str(tmp_path)
+    registry.THEMES_DIR = str(tmp_path)
+
+    (tmp_path / "broken.yaml").write_text("a: [unclosed\n", encoding="utf-8")
+
+    with pytest.raises(DomainErrorBoundary, match="SETTINGS_CONFIG_INVALID") as settings_exc:
+        registry.load_settings()
+    assert "YAML_PARSE_ERROR" in str(settings_exc.value), "IO error code must be preserved in details"
+
+    with pytest.raises(DomainErrorBoundary, match="THEME_CONFIG_INVALID") as themes_exc:
+        registry.load_themes()
+    assert "YAML_PARSE_ERROR" in str(themes_exc.value), "IO error code must be preserved in details"

@@ -180,12 +180,30 @@ flowchart LR
 `ThemeManager.subscribe(callback)` 支持弱引用/控件销毁自动解绑，切换后只 `update()`，
 不重建整窗样式表。
 
+FIX-07 并发与订阅一致性：`ThemeManager._lock` 为 `threading.RLock`，`apply()` 在锁内
+完成 `ColorPalette.update(...)`、强调色派生与 `_current` 赋值，`current()` / `_notify()`
+共享同一把锁；`_notify()`、日志与遥测在锁外执行，避免持锁回调死锁或重入。
+`unsubscribe()` 对 `WeakMethod` 用 `==` 等价比较（新 bound method 对象的 `is` 恒 False），
+`_notify()` 遍历后统一清理失效弱引用，订阅列表不再单调增长；`cycle()` 对不在
+`THEME_SEQUENCE` 的主题（如 dracula）回退序列首项。`ColorHandler.update()` 在模块级
+`RLock` 内逐字段写入，读侧 `paintEvent` 不加锁。`ConfigContext.load()` 先把 4 组配置
+加载进局部变量，再以 `_ContextData` 不可变快照单次引用赋值发布，`_ContextView` 读侧
+不持锁也只会看到完整旧/新快照，不会读到 `None` 或半初始化状态。
+
 ## 8. 错误边界与遥测
 
 - `AppError` 携带 `code`、`layer`、`details`；`DomainErrorBoundary` / `IOErrorBoundary` / `UIErrorBoundary`
   把底层异常统一成带错误码的领域异常，`to_user_message()` 负责转成可展示文案。
+  dataclass 的 `__post_init__` 补调 `Exception.__init__` 使 `args` 非空，而 `__str__()`
+  仍固定输出 `[layer:code] message (details)`。
+- 配置注册表把 `load_yaml_file()` 抛出的 `IOErrorBoundary`（`YAML_FILE_NOT_FOUND` /
+  `YAML_PARSE_ERROR`）与校验 `ValueError` 统一包装为带分组错误码的 `DomainErrorBoundary`
+  （`SETTINGS_CONFIG_INVALID` / `THEME_CONFIG_INVALID` 等），坏 YAML 不再裸穿透。
 - `record_event(name, category=..., level=..., payload=...)` 写入诊断目录；
-  `track_timing()` 记录耗时；`read_recent_events()` 供诊断页/测试读取。
+  `track_timing()` 记录耗时；`read_recent_events()` 供诊断页/测试读取。`events.jsonl`
+  超过 `MAX_EVENT_FILE_BYTES`（1 MiB）时轮转为 `.1` 且只保留 1 份备份；`record_event()`
+  对 `OSError` / `TypeError` / `ValueError`（含 `json.dumps` 不可序列化、`int()` 转换失败）
+  尽力而为吞掉，不影响主流程。
 - UI 回调统一走 `guicore.callbacks`，控件已析构时不再刷异常。
 
 ## 9. 架构守卫与测试

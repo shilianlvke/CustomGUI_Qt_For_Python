@@ -35,6 +35,7 @@ from __future__ import annotations
 
 import json
 import os
+import tempfile
 import threading
 from pathlib import Path
 from typing import Any
@@ -65,6 +66,20 @@ SUPPORTED_FIELDS = (
 
 #: 背景图的适应模式（与 Windows 个性化设置一致）
 BACKGROUND_FIT_MODES = ("fill", "fit", "stretch", "tile", "center")
+
+# FIX-02: v3 新增的背景字段默认值，供 v2→v3 迁移按需补齐。
+V3_BACKGROUND_DEFAULTS: dict[str, Any] = {
+    "background_image": "",
+    "background_fit": BACKGROUND_FIT_MODES[0],
+    "background_recent": [],
+}
+
+# FIX-02: 显式记录版本跃迁计划：(目标版本, 该版本新增字段默认值, 跃迁说明)。
+# 迁移按序跨过每个目标版本，从旧版本一路演进到 SCHEMA_VERSION。
+MIGRATION_STEPS: tuple[tuple[int, dict[str, Any], str], ...] = (
+    (2, {}, "v1→v2：引入显式 schema_version，字段语义不变"),
+    (3, V3_BACKGROUND_DEFAULTS, "v2→v3：新增 background_image / background_fit / background_recent"),
+)
 
 _LOCK = threading.Lock()
 _CACHE: dict[str, Any] | None = None
@@ -105,6 +120,25 @@ def _normalize_field(key: str, value: Any) -> Any | None:
         paths = [str(item).strip() for item in value if isinstance(item, str) and str(item).strip()]
         return list(dict.fromkeys(paths))[:5]
     return None
+
+
+def _read_raw() -> dict[str, Any]:
+    """读取磁盘上的原始 YAML 字典（不做字段白名单过滤）。
+
+    FIX-02: 供 :func:`save_user_settings` 回写时保留未知键与原版本号；
+    文件缺失、读取失败、解析失败或顶层不是字典时一律回退为空字典，
+    不记录日志（读取路径的告警仍由 :func:`_read_file` 负责）。
+    """
+    path = user_settings_path()
+    try:
+        text = path.read_text(encoding="utf-8")
+    except OSError:  # FileNotFoundError 是 OSError 子类，缺失同样视为「无原始内容」
+        return {}
+    try:
+        raw = yaml.safe_load(text)
+    except yaml.YAMLError:
+        return {}
+    return raw if isinstance(raw, dict) else {}
 
 
 def _read_file() -> dict[str, Any]:
@@ -157,17 +191,33 @@ def _read_file() -> dict[str, Any]:
     return _migrate_state(state, version)
 
 
-def _migrate_state(state: dict[str, Any], version: int) -> dict[str, Any]:
-    """把旧版本字段迁移为当前版本。
+def _migrate_state(
+    state: dict[str, Any],
+    version: int,
+    *,
+    fill_defaults: bool = False,
+    transitions: list[str] | None = None,
+) -> dict[str, Any]:
+    """把旧版本字段按 :data:`MIGRATION_STEPS` 迁移到当前 :data:`SCHEMA_VERSION`。
 
-    v1 → v2：仅引入显式版本号，字段语义不变。
-    v2 → v3：新增背景图路径、适应模式与最近使用列表；缺失时保持默认。
-    后续破坏性变更在这里追加迁移分支，并在 *version* 小于目标版本时补齐
-    默认值或重命名字段。
+    FIX-02: 显式记录 v1→v2→v3 的版本跃迁——每跨过一个目标版本就把该步说明
+    追加到 ``transitions``（供测试/诊断核对），并在 ``fill_defaults=True`` 时
+    为该版新增字段补默认值。迁移只「补」不「删」：已有键一律保留且不被默认值
+    覆盖，返回新字典，不修改入参。
+
+    增量覆盖层读取时保持 ``fill_defaults=False``：user.yaml 只记录改动过的键，
+    缺失字段继续由下层配置提供，避免把空默认值写回用户文件污染数据。
     """
-    if version < SCHEMA_VERSION:
-        state = dict(state)
-    return state
+    migrated = dict(state)
+    for target_version, defaults, step in MIGRATION_STEPS:
+        if version >= target_version:
+            continue
+        if transitions is not None:
+            transitions.append(step)
+        if fill_defaults:
+            for key, default in defaults.items():
+                migrated.setdefault(key, default)
+    return migrated
 
 
 def _read_legacy_state() -> dict[str, Any]:
@@ -209,7 +259,8 @@ def load_user_settings() -> dict[str, Any]:
                 legacy = _read_legacy_state()
                 if legacy:
                     try:
-                        _write_atomic(user_settings_path(), legacy)
+                        # FIX-02: _write_atomic 现在直接写完整 payload，旧状态迁移需自带版本号。
+                        _write_atomic(user_settings_path(), {_SCHEMA_KEY: SCHEMA_VERSION, **legacy})
                     except (OSError, yaml.YAMLError) as exc:
                         Logger.warning(f"旧 UI 状态迁移失败，本次仍按内存值生效: {exc}")
                     state = legacy
@@ -217,20 +268,29 @@ def load_user_settings() -> dict[str, Any]:
         return dict(_CACHE)
 
 
-def _write_atomic(path: Path, state: dict[str, Any]) -> None:
-    """写入临时文件后原子替换；失败清理临时文件并抛出原异常。"""
+def _write_atomic(path: Path, payload: dict[str, Any]) -> None:
+    """把完整 payload 写入唯一临时文件、fsync 后原子替换；失败清理并抛原异常。
+
+    FIX-02: 临时文件由 ``tempfile.mkstemp`` 生成，避免固定 ``.<pid>.tmp``
+    在并发/多进程下相撞；写入后 ``os.fsync`` 再 ``os.replace``，保证落盘。
+    payload 由调用方构造（已含 schema_version 与未知键），本函数不再注入版本，
+    因此不会把高版本文件降级、也不会丢弃未知字段。
+    """
+    body = "# SllkGUI 用户配置（运行时自动维护，可手动编辑）\n"
+    body += yaml.safe_dump(
+        payload,
+        allow_unicode=True,
+        default_flow_style=False,
+        sort_keys=True,
+    )
     path.parent.mkdir(parents=True, exist_ok=True)
-    temp = path.with_name(f".{path.name}.{os.getpid()}.tmp")
+    fd, temp_name = tempfile.mkstemp(dir=path.parent, prefix=f".{path.name}.", suffix=".tmp")
+    temp = Path(temp_name)
     try:
-        body = "# SllkGUI 用户配置（运行时自动维护，可手动编辑）\n"
-        payload = {_SCHEMA_KEY: SCHEMA_VERSION, **state}
-        body += yaml.safe_dump(
-            payload,
-            allow_unicode=True,
-            default_flow_style=False,
-            sort_keys=True,
-        )
-        temp.write_text(body, encoding="utf-8")
+        with os.fdopen(fd, "w", encoding="utf-8") as stream:
+            stream.write(body)
+            stream.flush()
+            os.fsync(stream.fileno())
         os.replace(temp, path)
     except Exception:
         try:
@@ -245,6 +305,9 @@ def save_user_settings(**updates: Any) -> bool:
 
     只接受 :data:`SUPPORTED_FIELDS` 中的键；非法键 / 非法值会被忽略。
     写入失败时保留内存值以便后续重试，磁盘上的旧文件保持原样。
+
+    FIX-02: 回写前读取磁盘原始 YAML，payload 以原始内容打底、叠加内存态，
+    并沿用原文件的 ``schema_version``；高版本不降级、未知键不丢失。
     """
     global _CACHE
     clean: dict[str, Any] = {}
@@ -268,10 +331,22 @@ def save_user_settings(**updates: Any) -> bool:
         state = {**previous, **clean}
         # 先入内存：即便本次落盘失败，后续任一成功的保存也会把这次改动带上
         _CACHE = state
+        # FIX-02: 以磁盘原始内容打底，叠加内存里已合并的干净已知字段（含本次
+        # clean），既保留 raw 的未知键，也不丢历史/重试的已知字段改动。
+        raw = _read_raw()
+        original_version: int = SCHEMA_VERSION
+        candidate = raw.get(_SCHEMA_KEY)
+        if isinstance(candidate, int) and not isinstance(candidate, bool) and candidate >= 1:
+            original_version = candidate  # 原文件版本（含高版本），绝不降级
+        payload: dict[str, Any] = {**raw, **state, _SCHEMA_KEY: original_version}
         try:
-            _write_atomic(user_settings_path(), state)
+            _write_atomic(user_settings_path(), payload)
         except (OSError, yaml.YAMLError) as exc:
-            Logger.warning(f"用户配置保存失败，将在下次保存时重试: {user_settings_path()}: {exc}")
+            # FIX-02: fsync / replace 的 OSError 仍返回 False，但日志保留异常类型与消息。
+            Logger.warning(
+                f"用户配置保存失败，将在下次保存时重试: "
+                f"{user_settings_path()}: {type(exc).__name__}: {exc}"
+            )
             return False
         return True
 

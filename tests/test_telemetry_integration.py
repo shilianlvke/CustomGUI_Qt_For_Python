@@ -31,9 +31,12 @@ def _event_names(limit: int = 50) -> list[str]:
 # ---------------------------------------------------------------------------
 
 
-def test_record_event_swallows_write_failures(diagnostics_dir, monkeypatch):
+@pytest.mark.parametrize("error", [OSError("disk full"), TypeError("bad type"), ValueError("bad value")])
+def test_record_event_swallows_write_failures(diagnostics_dir, monkeypatch, error):
+    """FIX-08: 写/序列化阶段的 OSError/TypeError/ValueError 均被尽力而为吞掉。"""
+    # FIX-08: 把原单一 OSError 路径参数化为三种异常，覆盖 json.dumps 与 int() 的异常。
     def _boom(*_args, **_kwargs):
-        raise OSError("disk full")
+        raise error
 
     monkeypatch.setattr(telemetry, "_update_metrics", _boom)
 
@@ -41,7 +44,7 @@ def test_record_event_swallows_write_failures(diagnostics_dir, monkeypatch):
     record_event("test.safe_event", payload={"k": "v"})
     record_event("test.safe_event_again")
 
-    assert "test.safe_event" in _event_names()
+    assert "test.safe_event" in _event_names(), "event append must still succeed"
 
 
 # ---------------------------------------------------------------------------

@@ -12,6 +12,11 @@ from .logger_module import Logger
 # 遥测写入使用进程内互斥锁，避免并发写文件时数据竞争。
 _LOCK = threading.Lock()
 
+# FIX-08: events.jsonl 大小轮转阈值（1 MiB）与备份后缀，只保留 1 份备份。
+# 阈值足够大，普通会话不会触发轮转，read_recent_events() 与 limit 查询不受影响。
+MAX_EVENT_FILE_BYTES = 1_048_576
+EVENT_BACKUP_SUFFIX = ".1"
+
 # 遥测属于「尽力而为」能力：写失败只降级记录一次日志，
 # 绝不向上抛出而影响主程序运行。
 _write_failure_reported = False
@@ -74,9 +79,24 @@ def _read_metrics(path: Path) -> dict:
         return {"updated_at": _utc_now_iso(), "events": {}, "categories": {}}
 
 
+def _rotate_event_file_if_needed(event_path: Path) -> None:
+    """FIX-08: events.jsonl 达到阈值时重命名为 .1（覆盖旧备份），只保留 1 份。
+
+    轮转失败按「尽力而为」处理：不向上抛，继续写入当前文件。
+    """
+    try:
+        if not event_path.is_file() or event_path.stat().st_size < MAX_EVENT_FILE_BYTES:
+            return
+        backup = event_path.with_name(event_path.name + EVENT_BACKUP_SUFFIX)
+        os.replace(event_path, backup)  # 覆盖已有 .1，始终只保留 1 份备份
+    except OSError:
+        return
+
+
 def _append_event(payload: dict):
-    """追加单条事件到 events.jsonl。"""
+    """追加单条事件到 events.jsonl；写入前按需轮转旧文件。"""
     event_path = _event_file_path()
+    _rotate_event_file_if_needed(event_path)
     line = json.dumps(payload, ensure_ascii=False)
     with event_path.open("a", encoding="utf-8") as f:
         f.write(line + "\n")
@@ -123,7 +143,9 @@ def record_event(name: str, category: str = "app", level: str = "info", payload:
         try:
             _append_event(event_payload)
             _update_metrics(name=name, category=category)
-        except OSError as exc:
+        except (OSError, TypeError, ValueError) as exc:
+            # FIX-08: 覆盖 json.dumps 的 TypeError 与 int() 的 ValueError，
+            # 保留「尽力而为、不影响主流程」语义。
             _notify_write_failure("events/metrics", exc)
 
 

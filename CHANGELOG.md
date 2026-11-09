@@ -100,6 +100,9 @@ minor 与 patch 保持向后兼容。
 
 - **install-demo 覆盖前安全校验（FIX-01）**：`--force` 覆盖前校验源/目标目录不相交、拒绝符号链接目标，复制失败返回非 0 且不残留半截目录，避免源码树默认路径自毁内置示例。
 - **doctor 安全诊断（FIX-03）**：默认只发现应用、不执行插件入口代码，新增 `--load`（显式加载）与 `--allow-external`（放行外部目录）；`--apps-dir` 归属校验、加载/发现失败返回非 0，并修正模块 docstring 对 PySide6 传递导入的说明。
+- **用户配置高版本回写与完整性（FIX-02）**：`save_user_settings()` 回写保留磁盘原 `schema_version` 与所有未知键、绝不降级；`_migrate_state()` 补 v1→v2→v3 迁移与 v3 背景字段默认值；`_write_atomic()` 改用 `mkstemp` 唯一临时文件 + `fsync` + `os.replace`，落盘失败日志保留具体异常类型与消息。
+- **主题订阅与配置上下文一致性（FIX-07）**：`unsubscribe()` 对绑定方法改用等价比较、`_notify()` 清理失效弱引用、`_lock` 改 `RLock` 且 `apply()` 锁内更新状态/锁外通知、`cycle()` 对非序列主题回退首项；`ColorHandler.update()` 持模块级 `RLock`；`ConfigContext` 改用 `_ContextData` 快照一次性发布，读侧不再看到 `None` 或半初始化状态。
+- **错误协议与遥测健壮性（FIX-08）**：`AppError` 补 `Exception.__init__` 使 `args` 非空且 `__str__` 格式不变；配置注册表把 `IOErrorBoundary` 统一包装为 `DomainErrorBoundary`；`events.jsonl` 超阈值轮转并只留 1 份备份，`record_event()` 兜底 `OSError` / `TypeError` / `ValueError`。
 
 本轮修复详见 docs/CHANGE_PLAN.md。
 

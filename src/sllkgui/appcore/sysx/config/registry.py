@@ -30,7 +30,7 @@ from ..config.schema import (
     validate_theme_data,
 )
 from ..config.yaml_io import load_yaml_file
-from ..modules.error_module import DomainErrorBoundary
+from ..modules.error_module import DomainErrorBoundary, IOErrorBoundary
 from ..modules.logger_module import Logger
 
 
@@ -78,16 +78,18 @@ def _load_group(
     group = ConfigGroup()
     for key, paths in sorted(iter_file_layers(directory, ".yaml").items()):
         name = Path(key).stem.lower()
-        data = _merge_layers(paths)
-        if validator is not None:
-            try:
+        try:
+            # FIX-08: load_yaml_file() 会抛 IOErrorBoundary（文件缺失/解析失败），
+            # 与校验的 ValueError 一起统一包装为带错误码的 DomainErrorBoundary。
+            data = _merge_layers(paths)
+            if validator is not None:
                 validator(data, **{validator_arg: name})
-            except ValueError as exc:
-                raise DomainErrorBoundary(
-                    code=error_code,
-                    message=error_message,
-                    details=str(exc),
-                ) from exc
+        except (ValueError, IOErrorBoundary) as exc:
+            raise DomainErrorBoundary(
+                code=error_code,
+                message=error_message,
+                details=str(exc),
+            ) from exc
         group[name] = ConfigFile(name=name, path=paths[-1], data=data, sources=paths)
 
     Logger.debug(f"{log_label}: {sorted(group.keys())}")
@@ -131,14 +133,15 @@ class ConfigRegistry:
         崩在 :class:`DomainErrorBoundary`（``SETTINGS_CONFIG_INVALID``）。
         """
         merged: dict = {}
-        for key, paths in sorted(iter_file_layers(self.SETTINGS_DIR, ".yaml").items()):
-            for path in paths:
-                deep_merge(merged, load_yaml_file(path))
-            Logger.debug(f"系统设置层: {key} <- {[path.name for path in paths]}")
-
         try:
+            # FIX-08: 逐层 load_yaml_file() 抛出的 IOErrorBoundary 也要包装，
+            # 不再裸穿透；与 validate_settings_data 的 ValueError 统一处理。
+            for key, paths in sorted(iter_file_layers(self.SETTINGS_DIR, ".yaml").items()):
+                for path in paths:
+                    deep_merge(merged, load_yaml_file(path))
+                Logger.debug(f"系统设置层: {key} <- {[path.name for path in paths]}")
             model = validate_settings_data(merged)
-        except ValueError as exc:
+        except (ValueError, IOErrorBoundary) as exc:
             raise DomainErrorBoundary(
                 code="SETTINGS_CONFIG_INVALID",
                 message="系统配置校验失败",
@@ -171,31 +174,73 @@ class ConfigRegistry:
         return _load_group(self.OTHERS_DIR, log_label="其他配置")
 
 
+@dataclass(frozen=True)
+class _ContextData:
+    """一次加载的 4 组配置快照（FIX-07）。
+
+    :meth:`ConfigContext.load` 把 4 组配置先全部装进这个不可变快照，再以**单次
+    引用赋值**发布。读侧（:class:`_ContextView`）不持锁，因此永远只能看到
+    完整的旧快照或完整的新快照，不会读到 ``None`` 或半初始化状态。
+    """
+
+    settings: AppSettingsModel
+    themes: ConfigGroup
+    languages: ConfigGroup
+    others: ConfigGroup
+
+
 class ConfigContext:
     """已加载的配置上下文（settings / themes / languages / others）。
 
     注意与 :class:`sllkgui.guis.app_loader.AppContext`（应用插件上下文）区分：
     本类是配置框架内部对象，不对外导出。
+
+    FIX-07: 4 个分组通过 :class:`_ContextData` 快照整体发布，避免
+    ``load(force_reload=True)`` 并发时读侧看到逐字段赋值的中间状态。
     """
 
     def __init__(self, registry: ConfigRegistry):
         self._registry = registry
         self._loaded = False
         self._load_lock = threading.Lock()
-        self.settings: AppSettingsModel | None = None
-        self.themes: ConfigGroup | None = None
-        self.languages: ConfigGroup | None = None
-        self.others: ConfigGroup | None = None
+        self._data: _ContextData | None = None
+
+    def _snapshot(self) -> _ContextData:
+        data = self._data
+        if data is None:  # pragma: no cover - get_app_context() 总是先 load()
+            raise RuntimeError("配置上下文尚未加载")
+        return data
+
+    @property
+    def settings(self) -> AppSettingsModel:
+        return self._snapshot().settings
+
+    @property
+    def themes(self) -> ConfigGroup:
+        return self._snapshot().themes
+
+    @property
+    def languages(self) -> ConfigGroup:
+        return self._snapshot().languages
+
+    @property
+    def others(self) -> ConfigGroup:
+        return self._snapshot().others
 
     def load(self, force_reload: bool = False) -> ConfigContext:
         with self._load_lock:
             if self._loaded and not force_reload:
                 return self
 
-            self.settings = self._registry.load_settings()
-            self.themes = self._registry.load_themes()
-            self.languages = self._registry.load_languages()
-            self.others = self._registry.load_others()
+            # FIX-07: 先把 4 组配置全部加载进局部变量，再一次性覆盖快照；
+            # 全过程绝不清空 self._data，加载失败时旧快照继续可用。
+            settings = self._registry.load_settings()
+            themes = self._registry.load_themes()
+            languages = self._registry.load_languages()
+            others = self._registry.load_others()
+            self._data = _ContextData(
+                settings=settings, themes=themes, languages=languages, others=others
+            )
             self._loaded = True
         return self
 

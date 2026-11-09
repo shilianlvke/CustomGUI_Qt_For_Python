@@ -83,8 +83,8 @@ apps_root()                             # -> Path
 运行时修改的外观偏好写入 `<data_root>/settings/user.yaml`（默认落在程序运行
 根目录下的 `settings/user.yaml`，可用 `configure(data_dir=...)` 或
 `SLLKGUI_DATA_DIR` 覆盖），只记录改动过的键。文件首行带
-`schema_version`（当前为 `2`）；缺失该键按 v1 读取，高于当前版本时只读取
-已知字段并告警：
+`schema_version`（当前为 `3`）；缺失该键按 v1 读取，高于当前版本时只读取
+已知字段并告警，**回写时保留原版本号与所有未知键、绝不降级**：
 
 | 字段 | 来源 | 写入时机 |
 | --- | --- | --- |
@@ -108,8 +108,11 @@ user_settings_path()                        # -> Path
 
 优先级：**user.yaml > 品牌覆盖层（`apps/<app>/brand`）> 基座默认 `settings/*.yaml`**。
 用户文件缺失、YAML 损坏、顶层不是字典或字段值非法时回退下层配置；写入使用
-临时文件 + 原子替换，失败只记录告警。首次读取且 `user.yaml` 不存在时，会
-自动迁移旧版 `ui_state.json` 中的主题 / 语言 / 窗口尺寸。
+`mkstemp` 生成的同目录唯一临时文件 + `fsync` + `os.replace` 原子替换，失败记录
+告警（含具体异常类型与消息）且不影响当前会话，回写保留磁盘原始版本与未知键。
+首次读取且 `user.yaml` 不存在时，会自动迁移旧版 `ui_state.json` 中的主题 /
+语言 / 窗口尺寸。`_migrate_state()` 显式记录 v1→v2→v3 跃迁，v3 的
+`background_*` 默认值按需补齐且不覆盖已有键。
 
 ## 4. 主题与令牌
 
@@ -180,8 +183,12 @@ raise AppError("APP_CORE_MISSING", "缺少逻辑层", layer="domain", details="c
 to_user_message(exc)     # -> 可直接展示的中文文案
 ```
 
-`AppError` 字段：`code`、`message`、`layer`、`details`（字符串）。三个边界分别负责领域错误、IO 错误、
-UI 错误；边界内部记录遥测，但不吞掉 `KeyboardInterrupt` / `SystemExit`。
+`AppError` 字段：`code`、`message`、`layer`、`details`（字符串）。dataclass 的
+`__post_init__` 会调用 `Exception.__init__`，因此 `args` 非空；`__str__()` 固定输出
+`[layer:code] message (details)`，不受 `args` 影响。三个边界分别负责领域错误、IO 错误、
+UI 错误；配置注册表把 `load_yaml_file()` 的 `IOErrorBoundary`（`YAML_FILE_NOT_FOUND` /
+`YAML_PARSE_ERROR`）与校验 `ValueError` 统一包装为带错误码的 `DomainErrorBoundary`；
+边界内部记录遥测，但不吞掉 `KeyboardInterrupt` / `SystemExit`。
 
 ## 8. 遥测与日志
 
@@ -196,7 +203,10 @@ Logger.debug("...") / Logger.warning("...") / Logger.error("...") / Logger.excep
 ```
 
 事件写到 `diagnostics_dir`（默认 `<data_root>/logs/diagnostics`），JSONL 追加；
-日志写到 `<data_root>/logs/`。数据目录不可写时降级到控制台，不阻塞启动。
+`events.jsonl` 超过 `MAX_EVENT_FILE_BYTES`（1 MiB）时轮转为 `.1` 且只保留 1 份备份，
+`record_event()` 对 `OSError` / `TypeError` / `ValueError`（含 `json.dumps` 序列化异常）
+一律尽力而为吞掉；日志写到 `<data_root>/logs/`。数据目录不可写时降级到控制台，
+不阻塞启动。
 
 ## 9. 存储与并发
 

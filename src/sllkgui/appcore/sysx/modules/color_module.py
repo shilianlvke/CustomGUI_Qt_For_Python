@@ -1,4 +1,9 @@
+import threading
 from dataclasses import dataclass
+
+# FIX-07: 调色板写入使用模块级可重入锁：主题切换时 update() 整体生效；
+# 读侧（自绘组件在 paintEvent 中直接读属性）不加锁，避免影响高频绘制。
+_PALETTE_LOCK = threading.RLock()
 
 
 @dataclass
@@ -44,8 +49,10 @@ class ColorHandler:
 
     def update(self, new_colors: dict) -> None:
         # 注册颜色，允许用自定义颜色
-        for key, value in new_colors.items():
-            setattr(self, key, value)
+        # FIX-07: 逐字段 setattr 期间持锁，避免并发主题切换读到半更新调色板。
+        with _PALETTE_LOCK:
+            for key, value in new_colors.items():
+                setattr(self, key, value)
 
 
 ColorPalette = ColorHandler()
