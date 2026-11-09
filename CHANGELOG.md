@@ -104,6 +104,8 @@ minor 与 patch 保持向后兼容。
 - **主题订阅与配置上下文一致性（FIX-07）**：`unsubscribe()` 对绑定方法改用等价比较、`_notify()` 清理失效弱引用、`_lock` 改 `RLock` 且 `apply()` 锁内更新状态/锁外通知、`cycle()` 对非序列主题回退首项；`ColorHandler.update()` 持模块级 `RLock`；`ConfigContext` 改用 `_ContextData` 快照一次性发布，读侧不再看到 `None` 或半初始化状态。
 - **错误协议与遥测健壮性（FIX-08）**：`AppError` 补 `Exception.__init__` 使 `args` 非空且 `__str__` 格式不变；配置注册表把 `IOErrorBoundary` 统一包装为 `DomainErrorBoundary`；`events.jsonl` 超阈值轮转并只留 1 份备份，`record_event()` 兜底 `OSError` / `TypeError` / `ValueError`。
 - **配置契约修正（FIX-06）**：`configure()` 在上下文已加载时（含 `reset_config()` 后的首次调用）即抛 `ConfigAlreadyLoadedError`，不再静默失效；`env_fallback` 改用 `None` 哨兵保留上次值；`resource_dirs` 传空序列可清空覆盖层；`apps_root()` 与遥测目录统一走 `resolved_*()` helper，不再绕过开关直读环境变量。
+- **应用重载幂等与失败隔离（FIX-09）**：`reset_apps_cache()` / `load_apps(force=True)` 改为按本轮登记的 `plugin_id` 定向清理全局 `PluginRegistry`（禁止整体 reset，保住内置菜单），重载不再触发 `PLUGIN_DUPLICATE_MENU`；菜单注册后置到入口 `exec_module` 成功之后、失败应用按差集回收已注册项避免孤儿菜单，入口导入失败回滚 `sys.modules` 半初始化模块。
+- **清单校验与路由去重（FIX-12）**：缺 `app_name` 的回退值写回 `config`；`show_top` / `is_active` / `is_default` 统一走 `_as_bool()`（`show_top: "false"` 正确解析为 `False`）；`build_page_routes()` 遇到重复 `button_id` 抛 `PLUGIN_DUPLICATE_BUTTON_ID`，并重写 `test_page_registry.py` 恒真断言为带自检的真实列表比对。
 
 #### 破坏性变更（B4）
 

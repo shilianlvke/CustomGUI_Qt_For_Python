@@ -293,3 +293,31 @@ def test_plugin_protocol_adapter_failure_raises_boundary():
         raise AssertionError("Expected protocol adapt failure")
     except DomainErrorBoundary as exc:
         assert exc.code == "PLUGIN_PROTOCOL_ADAPT_FAILED"
+
+
+def test_duplicate_button_id_is_rejected():
+    """两个页面共享 button_id 时 build_page_routes 必须报错（FIX-12）。
+
+    旧实现静默 last-wins，重复 ID 只留最后一个页面，路由悄悄丢失。
+    """
+    # FIX-12: 重复 button_id 不能再静默覆盖，必须抛 PLUGIN_DUPLICATE_BUTTON_ID。
+    # 用独立实例，避免把重复页面留在全局单例里污染后续文件的路由构建。
+    from sllkgui.appcore import PluginRegistry
+
+    registry = PluginRegistry()
+    shared = "btn_duplicate"
+    for page_object in ("page_one", "page_two"):
+        registry.register_page(
+            PagePlugin(
+                plugin_id=f"test.page.{page_object}",
+                button_id=shared,
+                page_object=page_object,
+                title_getter=lambda _language, _p=page_object: _p,
+            )
+        )
+
+    try:
+        registry.build_page_routes(language=None, title_fallback=lambda _bid: "fallback")
+        raise AssertionError("Expected duplicate button_id to raise")
+    except DomainErrorBoundary as exc:
+        assert exc.code == "PLUGIN_DUPLICATE_BUTTON_ID", "duplicate button_id must raise"

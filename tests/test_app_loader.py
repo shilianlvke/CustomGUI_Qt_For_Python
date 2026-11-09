@@ -10,6 +10,7 @@ from sllkgui.guis.app_loader import (
     AppContext,
     apply_apps_language,
     discover_app_dirs,
+    load_app_handles,
     load_app_manifest,
     load_apps,
     register_app,
@@ -654,3 +655,113 @@ def test_v2_app_py_takes_priority_over_gui_main(apps_root):
     assert handle.module.__name__.endswith(".app")
     # app.py 里是 SoloPlugin，只有一个页面
     assert [p.page_object for p in registry.page_plugins()] == ["pageSolo"]
+
+
+# ==========================================================================
+# FIX-09：重载幂等、孤儿菜单、模块回滚
+# ==========================================================================
+def test_reset_apps_cache_reload_has_no_duplicate_menu(apps_root):
+    """reset 后两次 force 重载不触发重复菜单，句柄数稳定（FIX-09 核心复现）。
+
+    旧实现 ``reset_apps_cache()`` 不清全局 registry，第二次 load 会触发
+    ``PLUGIN_DUPLICATE_MENU`` 并被 except 吞掉，应用全部消失。
+    """
+    # FIX-09: 按 plugin_id 定向清理全局 registry（禁止整体 reset），重载必须幂等。
+    from sllkgui.appcore import get_plugin_registry
+
+    app_dir = apps_root / "demo"
+    _write_app(app_dir, PAGE_CODE)
+    reset_apps_cache()
+    try:
+        load_apps(force=True)
+        first_handles = len(load_app_handles())
+        first_menus = len(get_plugin_registry()._menus)
+
+        load_apps(force=True)
+        second_handles = len(load_app_handles())
+        second_menus = len(get_plugin_registry()._menus)
+
+        assert first_handles == 1, "demo app should load exactly once"
+        assert second_handles == first_handles, "reload must keep the same number of handles"
+        assert first_menus == second_menus, "reload must not accumulate duplicate menu plugins"
+        assert "app.menu.left.demo" in get_plugin_registry()._menus, "demo menu must survive reload"
+    finally:
+        # 复位全局状态，避免污染后续文件（如 test_page_registry 依赖内置应用注册）。
+        reset_apps_cache()
+
+
+def test_failed_entry_leaves_no_orphan_menu(apps_root):
+    """入口模块执行失败时不留下孤儿菜单（FIX-09）。"""
+    # FIX-09: 菜单注册后置到 exec_module 成功之后；入口崩溃不得残留菜单。
+    app_dir = apps_root / "demo"
+    _write_app(app_dir, 'raise RuntimeError("entry boom")\n')
+    registry = PluginRegistry()
+
+    with pytest.raises(RuntimeError):
+        register_app(app_dir, registry=registry)
+
+    assert "app.menu.left.demo" not in registry._menus, "failed entry must not leave an orphan menu"
+
+
+def test_failed_exec_module_rolls_back_sys_modules(apps_root):
+    """exec_module 失败时回滚 sys.modules，不留半初始化模块（FIX-09）。"""
+    # FIX-09: exec_module 抛错必须 sys.modules.pop，否则后续 import 命中残骸。
+    import sys
+
+    from sllkgui.guis.app_loader import _APP_NAMESPACE
+
+    app_dir = apps_root / "demo"
+    _write_app(app_dir, 'raise RuntimeError("exec boom")\n')
+
+    with pytest.raises(RuntimeError):
+        register_app(app_dir, registry=PluginRegistry())
+
+    failed_module = f"{_APP_NAMESPACE}.demo.gui.main"
+    assert failed_module not in sys.modules, "failed entry module must be removed from sys.modules"
+
+
+# ==========================================================================
+# FIX-12：清单校验
+# ==========================================================================
+def test_manifest_missing_app_name_falls_back_and_writes_config(tmp_path):
+    """清单缺 app_name 时回退目录名并写回 config（FIX-12）。"""
+    # FIX-12: 缺字段回退值必须写回 config，供 _resolve_icon / app_v2 二次读取。
+    from sllkgui.guis.app_manifest import _check_name
+
+    app_dir = tmp_path / "noname"
+    app_dir.mkdir()
+    config = Attrs({"app_target": "LeftMenu"})  # 故意不写 app_name
+
+    name = _check_name(config, app_dir)
+
+    assert name == "noname", "fallback should use the directory name"
+    assert config["app_name"] == "noname", "fallback must be written back into config"
+
+
+def test_boolean_manifest_flags_parse_false_string(apps_root):
+    """清单字符串 "false" 必须解析为 False（FIX-12）。"""
+    # FIX-12: show_top: "false" 曾因 bool("false") 为 True 而把按钮放到顶部。
+    app_dir = apps_root / "demo"
+    (app_dir / "gui").mkdir(parents=True)
+    (app_dir / "resource" / "icon").mkdir(parents=True)
+    (app_dir / "resource" / "icon" / "app_icon.svg").write_text("<svg/>", encoding="utf-8")
+    (app_dir / "gui" / "main.py").write_text(PAGE_CODE, encoding="utf-8")
+    (app_dir / "config.yml").write_text(
+        'app_name: "demo"\n'
+        'app_id: "app.menu.left.demo"\n'
+        'button_id: "btn_demo"\n'
+        'page_object: "demoPage"\n'
+        'app_target: "LeftMenu"\n'
+        'show_top: "false"\n'
+        'is_active: "false"\n'
+        'is_default: "false"\n',
+        encoding="utf-8",
+    )
+
+    registry = PluginRegistry()
+    register_app(app_dir, registry=registry)
+
+    item = registry._menus["app.menu.left.demo"].item
+    assert item["show_top"] is False, '"false" string must parse to False for show_top'
+    assert item["is_active"] is False, '"false" string must parse to False for is_active'
+    assert registry.page_plugins()[0].default is False, '"false" string must parse to False for is_default'

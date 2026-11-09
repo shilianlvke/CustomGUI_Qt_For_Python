@@ -23,3 +23,5 @@ app_dirs: list[Path] = []
 handles: list[AppHandle] = []
 #: 是否已完成加载（``load_apps`` 幂等标记）
 loaded: bool = False
+#: 本轮 ``load_apps`` 登记到全局 registry 的插件 id（供定向清理，避免重载重复注册）
+registered_plugin_ids: set[str] = set()

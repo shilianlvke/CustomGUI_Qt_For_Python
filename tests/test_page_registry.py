@@ -6,8 +6,13 @@ from sllkgui.guis.windows.main_window.registry import (
 
 
 def test_registry_button_ids_unique():
+    """页面路由的 button_id 必须与已注册页面一一对应（FIX-12）。"""
+    # FIX-12: 旧断言 len(routes) == len(set(routes)) 恒真（dict 键天然唯一），
+    # 改用真实 page_plugins 的 button_id 列表比对，并自检确实扫描到路由。
     routes = get_page_routes(Language)
-    assert len(routes) == len(set(routes))
+    button_ids = [plugin.button_id for plugin in get_plugin_registry().page_plugins()]
+    assert len(routes) > 0, "should scan at least one page route"
+    assert len(routes) == len(button_ids), "every registered page must map to exactly one route"
 
 
 def test_page_routes_contains_core_entries():

@@ -54,6 +54,7 @@
 from __future__ import annotations
 
 from pathlib import Path
+from types import ModuleType
 
 from sllkgui.appcore import (
     PROTOCOL_VERSION,
@@ -64,6 +65,7 @@ from sllkgui.appcore import (
     Logger,
     MenuPlugin,
     PagePlugin,
+    PluginRegistry,
     get_plugin_registry,
     record_event,
     to_attrs,
@@ -92,15 +94,63 @@ from .app_namespace import _import_app_module
 from .app_namespace import _NamespacePackageFinder as _NamespacePackageFinder
 from .app_v2 import _instantiate_plugin, _register_v2_pages
 
+#: 清单布尔字段的「假」字符串（大小写与首尾空白不敏感）
+_FALSE_LITERALS = frozenset({"false", "0", "no", "off", ""})
+#: 清单布尔字段的「真」字符串（大小写与首尾空白不敏感）
+_TRUE_LITERALS = frozenset({"true", "1", "yes", "on"})
+
+
+def _as_bool(value: object, default: bool = False) -> bool:
+    """把清单里的布尔字段宽松解析为 ``bool``。
+
+    YAML 写 ``show_top: "false"`` 时 ``bool("false")`` 会得到 ``True``，按钮会
+    错误地出现在顶部。规则：``None`` → ``default``；``bool`` → 原样；字符串按
+    :data:`_FALSE_LITERALS` / :data:`_TRUE_LITERALS` 判定；其余走 ``bool(value)``。
+    """
+    if value is None:
+        return default
+    if isinstance(value, bool):
+        return value
+    if isinstance(value, str):
+        normalized = value.strip().lower()
+        if normalized in _FALSE_LITERALS:
+            return False
+        if normalized in _TRUE_LITERALS:
+            return True
+    return bool(value)
+
+
+def _snapshot_plugin_ids(registry: PluginRegistry) -> set[str]:
+    """拍下 registry 三类插件的全部 ``plugin_id``，供前后差集推断本轮新增项。
+
+    不用 ``page_plugins()`` / ``command_plugins()``（只返回 enabled）与
+    ``menu_plugins(target)``（按 target 过滤）——差集必须覆盖本轮新增的**每一个**
+    id，否则 ``force`` 重载会漏清理，再次触发 ``PLUGIN_DUPLICATE_MENU``。
+    """
+    return set(registry._pages) | set(registry._menus) | set(registry._commands)
+
+
+def _cleanup_registered_plugins(registry: PluginRegistry) -> None:
+    """按 ``app_state.registered_plugin_ids`` 定向清理上一轮注册项并清空集合。
+
+    全局 ``_PLUGIN_REGISTRY`` 是单例，还持有 builtin 菜单、模块导入期快照等
+    其它来源的注册项；这里**绝不整体 reset**，只回收本加载器自己登记的 id。
+    """
+    ids = app_state.registered_plugin_ids
+    if ids:
+        registry.unregister_plugin_ids(ids)
+    ids.clear()
+
 
 def register_app(app_dir: Path, registry=None, *, with_handle: bool = False) -> AppContext | AppHandle | None:
-    """注册单个应用：解析清单 -> 校验 -> 注册菜单插件 -> 装载页面协议 -> 注册页面插件。
+    """注册单个应用：解析清单 -> 校验 -> 装载页面协议 -> 注册菜单/页面插件。
 
     支持两种协议（由清单 ``protocol`` 字段选择，缺省 ``1``）：
 
     - **v2**：入口模块导出 ``AppPlugin`` 子类（见 :mod:`app_protocol`）；
     - **v1**：``register_plugins`` / ``PAGE`` / ``build_page`` 三选一（保持原样）。
 
+    菜单插件在入口模块**成功导入之后**才注册：入口崩溃时不会留下孤儿菜单。
     返回 AppContext（应用无页面入口时仍注册菜单并返回上下文）。
     """
     app_dir = _absolute_dir(app_dir)
@@ -115,7 +165,7 @@ def register_app(app_dir: Path, registry=None, *, with_handle: bool = False) -> 
     text_key = config.get("app_text") or f"language.app.{name}.app_text"
     tooltip_key = config.get("app_tooltip") or f"language.app.{name}.app_tooltip"
     icon_path = _resolve_icon(config, app_dir)
-    is_default = bool(config.get("is_default", False))
+    is_default = _as_bool(config.get("is_default"), False)
 
     # 注入本应用语言：保证 app.lang_text 与菜单文本解析立即可用
     # （语言切换时由 Language.apply -> _app_language_provider 整体重建）
@@ -123,20 +173,20 @@ def register_app(app_dir: Path, registry=None, *, with_handle: bool = False) -> 
     app_node[name] = to_attrs(_load_app_lang_data(app_dir, AppSettings.language))
     Language.app = app_node
 
-    registry.register_menu(
-        MenuPlugin(
-            plugin_id=config.get("app_id") or f"app.menu.{target.lower()}.{name}",
-            target=target,
-            item={
-                "btn_icon": icon_path,
-                "btn_id": button_id,
-                "btn_text": text_key,
-                "btn_text_fallback": name,
-                "btn_tooltip": tooltip_key,
-                "show_top": bool(config.get("show_top", True)),
-                "is_active": bool(config.get("is_active", False)),
-            },
-        )
+    # 只构造、先不注册：等入口模块 exec_module 成功后再 register_menu，
+    # 入口崩溃时不会留下孤儿菜单（FIX-09）。
+    menu_plugin = MenuPlugin(
+        plugin_id=config.get("app_id") or f"app.menu.{target.lower()}.{name}",
+        target=target,
+        item={
+            "btn_icon": icon_path,
+            "btn_id": button_id,
+            "btn_text": text_key,
+            "btn_text_fallback": name,
+            "btn_tooltip": tooltip_key,
+            "show_top": _as_bool(config.get("show_top"), True),
+            "is_active": _as_bool(config.get("is_active"), False),
+        },
     )
 
     context = AppContext(
@@ -148,14 +198,20 @@ def register_app(app_dir: Path, registry=None, *, with_handle: bool = False) -> 
     )
 
     entry_file, entry_module_name = _resolve_entry(protocol, app_dir, name)
-    if entry_file is None:
-        Logger.warning(f"应用缺少页面实现: {name} (app.py 或 gui/main.py)")
-        return AppHandle(name=name, module=None, context=context) if with_handle else context
-
-    module = _import_app_module(entry_module_name, app_dir, entry_file)
-    context.module_name = entry_module_name
+    module: ModuleType | None = None
+    if entry_file is not None:
+        # 入口模块崩溃会在这里抛出：此时菜单尚未注册，不会留下孤儿菜单。
+        module = _import_app_module(entry_module_name, app_dir, entry_file)
+        context.module_name = entry_module_name
     handle = AppHandle(name=name, module=module, context=context)
     finish = (lambda: handle) if with_handle else (lambda: context)
+
+    # 入口模块成功导入（或本就无入口模块）后才注册菜单，内容与顺序保持不变。
+    registry.register_menu(menu_plugin)
+
+    if module is None:
+        Logger.warning(f"应用缺少页面实现: {name} (app.py 或 gui/main.py)")
+        return finish()
 
     # --------------------------------------------------------------
     # 协议 v2：AppPlugin 类入口
@@ -229,7 +285,9 @@ def register_app(app_dir: Path, registry=None, *, with_handle: bool = False) -> 
 def load_apps(root: str | Path | None = None, force: bool = False) -> list[Path]:
     """发现并注册全部应用（幂等：重复调用直接返回缓存），返回应用目录列表。
 
-    - 单个应用加载失败不影响其余应用；
+    - 单个应用加载失败不影响其余应用，且失败前已注册的插件会被回收；
+    - ``force=True`` 重载前按上一轮登记的 plugin_id 定向清理全局 registry，
+      不整体 reset（builtin 菜单等其它持有者的注册项原样保留）；
     - 完成后注入当前语言的全部应用语言包。
 
     需要按名字取应用模块时用 :func:`load_app_handles`——不要自己拼模块路径，
@@ -242,15 +300,22 @@ def load_apps(root: str | Path | None = None, force: bool = False) -> list[Path]
     app_state.app_dirs = app_dirs
 
     registry = get_plugin_registry()
+    _cleanup_registered_plugins(registry)
+
     loaded = 0
     handles: list[AppHandle] = []
     for app_dir in app_dirs:
+        before = _snapshot_plugin_ids(registry)
         try:
             handle = register_app(app_dir, registry=registry, with_handle=True)
+            # 不改 register_app 签名：用前后差集推断本轮新增的 plugin_id
+            app_state.registered_plugin_ids |= _snapshot_plugin_ids(registry) - before
             if isinstance(handle, AppHandle):
                 handles.append(handle)
             loaded += 1
         except Exception as exc:
+            # 失败应用可能在崩溃前已注册菜单/页面：按差集回收，避免孤儿注册项
+            registry.unregister_plugin_ids(_snapshot_plugin_ids(registry) - before)
             Logger.error(f"应用加载失败: {app_dir.name}: {exc}")
             record_event(
                 "app.load_error",
@@ -289,7 +354,13 @@ def get_app_handle(name: str, root: str | Path | None = None) -> AppHandle | Non
 
 
 def reset_apps_cache() -> None:
-    """重置加载标记（测试/热重载场景使用）。"""
+    """重置加载标记（测试/热重载场景使用）。
+
+    按 ``registered_plugin_ids`` 定向清理全局 registry 里本加载器上一轮的注册项，
+    再清空 ``app_state`` 缓存；**不整体 reset**（builtin 菜单等由其它持有者维护，
+    整体 reset 会让它们丢失）。
+    """
+    _cleanup_registered_plugins(get_plugin_registry())
     app_state.loaded = False
     app_state.app_dirs = []
     app_state.handles = []

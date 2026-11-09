@@ -11,7 +11,7 @@ SllkGUI 把「一个页面/一组页面」封装成目录：**放进 `apps/` 即
 - 只加载可信来源的插件；不要把不受信任的第三方目录放进 `apps/`，也不要让
   `SLLKGUI_APPS_DIR` 指向可被他人写入的位置。
 - `sllkgui doctor` 默认只发现应用、不执行入口代码；只有加 `--load` 才会加载并执行插件。
-- 插件在宿主进程内直接执行（见上文 `exec_module`），没有代码隔离；单个插件加载失败会被记录并跳过，不影响其他应用装载。
+- 插件在宿主进程内直接执行（见上文 `exec_module`），没有代码隔离；单个应用加载失败会被记录并跳过，不影响其他应用装载。失败前已注册的菜单/页面按 `plugin_id` 定向回收，不留下孤儿入口；入口模块 `exec_module` 失败还会回滚 `sys.modules`，不残留半初始化模块。
 - 便携分发时建议在启动日志中打印实际生效的 `apps` 目录（`configure()` 会输出）。
 
 ## 1. 目录结构
@@ -40,7 +40,7 @@ apps/<app_name>/
 | --- | --- | --- |
 | `app_name` | ✅ | **必须等于目录名**，否则抛 `APP_NAME_MISMATCH`（不一致会让应用内导入静默失效） |
 | `app_id` | | 菜单插件 ID，缺省 `app.menu.<target>.<name>` |
-| `button_id` | | 左侧菜单按钮对象名，缺省 `app_<name>` |
+| `button_id` | | 左侧菜单按钮/页面路由对象名，缺省 `app_<name>`；**全局唯一**，重复时启动抛 `PLUGIN_DUPLICATE_BUTTON_ID` |
 | `page_object` | | 页面控件对象名，缺省 `<name>Page` |
 | `app_icon` | | 图标资源键，配合 `resource/icon/` |
 | `app_text` | | 菜单文本语言键，缺省 `language.app.<name>.app_text` |
@@ -63,6 +63,22 @@ app_text: "language.app.hello.app_text"
 app_target: "LeftMenu"
 is_default: true
 ```
+
+> `app_name` 缺失时以目录名回退，并把回退值**写回清单 `config`**（保证图标解析
+> 与页面注册读到同一个名字）；仍建议显式声明，一旦声明就必须与目录名一致，
+> 否则抛 `APP_NAME_MISMATCH`。
+
+#### 布尔字段解析
+
+`show_top` / `is_active` / `is_default` 三个布尔字段统一解析（大小写与首尾空白不敏感）：
+
+- 原生 YAML 布尔 `true` / `false` 直接使用；
+- 字符串 `"false"` `"0"` `"no"` `"off"` `""` → `False`，`"true"` `"1"` `"yes"` `"on"` → `True`；
+- 缺字段按各自默认值（`show_top: true`，`is_active` / `is_default: false`）；
+- 其它类型走 `bool(value)`。
+
+因此 `show_top: "false"`（带引号的字符串）会被正确解析为 `False`，不会被
+`bool("false")` 误判为真而把按钮放到顶部。
 
 ## 3. 协议 v2（推荐）
 
@@ -215,6 +231,7 @@ brand/sllkgui/
 | `APP_PLUGIN_AMBIGUOUS` | 入口有多个子类且未指定 | 写 `PLUGIN = MyApp()` |
 | `APP_CORE_MISSING` | 清单 `core` 指向的目录不存在 | 修正目录名或删掉该字段 |
 | `APP_PAGE_EMPTY` | `build()` 返回 `None` | 返回一个 `QWidget` |
+| `PLUGIN_DUPLICATE_BUTTON_ID` | 两个页面插件的 `button_id` 相同，页面路由重复 | 给每个页面/应用分配唯一 `button_id` |
 | `YAML_FILE_NOT_FOUND` | 清单/语言文件路径解析失败 | 确认 `app_name` 与目录一致；`--apps-dir` 用绝对路径 |
 
 页面没出现时按顺序排查：`sllkgui doctor` 是否 `发现应用` > 0 → 加 `--load` 后 `成功加载` 是否等于发现数

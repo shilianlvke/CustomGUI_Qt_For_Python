@@ -1,5 +1,5 @@
 import importlib
-from collections.abc import Callable
+from collections.abc import Callable, Iterable
 from dataclasses import dataclass, replace
 from pathlib import Path
 from typing import Any
@@ -142,6 +142,20 @@ class PluginRegistry:
         if plugin_id in self._commands:
             del self._commands[plugin_id]
             removed = True
+        return removed
+
+    def unregister_plugin_ids(self, ids: Iterable[str]) -> int:
+        """按 ``plugin_id`` 定向移除页面/菜单/命令插件，返回被移除的条目数。
+
+        仅清理注册项本身，不触碰 ``load_errors`` 与协议适配器；供应用热重载
+        按上一轮登记的 id 精确回收，避免整体 reset 波及其它持有者的注册项。
+        """
+        removed = 0
+        for plugin_id in ids:
+            for store in (self._pages, self._menus, self._commands):
+                if plugin_id in store:
+                    del store[plugin_id]
+                    removed += 1
         return removed
 
     def set_plugin_enabled(self, plugin_id: str, enabled: bool) -> bool:
@@ -350,6 +364,14 @@ class PluginRegistry:
             except Exception as exc:
                 Logger.warning(f"插件标题获取失败: {plugin.button_id}: {exc}")
                 title = title_fallback(plugin.button_id)
+            # 重复的 button_id 会让后一个页面静默覆盖前一个路由；显式报错，
+            # 避免应用启动时才发现某个页面点不开（错误码与其它插件错误一致）。
+            if plugin.button_id in routes:
+                raise DomainErrorBoundary(
+                    code="PLUGIN_DUPLICATE_BUTTON_ID",
+                    message="页面路由按钮 ID 重复",
+                    details=f"{plugin.button_id}: {routes[plugin.button_id][0]} vs {plugin.page_object}",
+                )
             routes[plugin.button_id] = (plugin.page_object, title)
         return routes
 

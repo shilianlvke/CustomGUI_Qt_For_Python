@@ -149,8 +149,15 @@ def _check_name(config: Attrs, app_dir: Path) -> str:
 
     不一致时命名空间 Finder 会用目录名登记、而模块名用 ``app_name``，
     导致应用内部 ``import`` 静默失效——宁可这里显式报错。
+
+    缺字段时以目录名回退，并把回退值**写回** ``config["app_name"]``：
+    ``_resolve_icon`` 与 ``app_v2`` 会二次读取该字段，不写回会让回退名与
+    清单里的空值出现两套名字（图标资源键、语言键解析不一致）。
     """
-    name = str(config.get("app_name") or app_dir.name).strip()
+    raw_name = config.get("app_name")
+    name = str(raw_name or app_dir.name).strip()
+    if not raw_name:
+        config["app_name"] = name
     if name != app_dir.name:
         raise AppPluginError(
             "APP_NAME_MISMATCH",

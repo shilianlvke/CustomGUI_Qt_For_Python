@@ -114,7 +114,12 @@ def _import_app_module(module_name: str, app_dir: Path, file_path: Path) -> Modu
         raise ImportError(f"无法加载应用模块: {file_path}")
     module = importlib.util.module_from_spec(spec)
     sys.modules[module_name] = module
-    spec.loader.exec_module(module)
+    try:
+        spec.loader.exec_module(module)
+    except BaseException:
+        # 入口模块执行失败：回滚 sys.modules，避免半初始化模块被后续 import 命中
+        sys.modules.pop(module_name, None)
+        raise
     return module
 
 

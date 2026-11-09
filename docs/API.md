@@ -251,6 +251,12 @@ get_app_handle("button_preview")           # 按名字取已加载应用（不�
 discover_app_dirs(root=None)               # 只发现，不注册
 ```
 
+`reset_apps_cache()` 的语义（B5 起）：除复位加载标记外，还会按本轮 `load_apps()`
+登记的 `plugin_id` **定向清理**全局 `PluginRegistry` 中应用自己注册的菜单/页面，
+再清空 `app_state` 缓存。它**不会整体 reset**（`builtin` 菜单、模块导入期快照等
+其它持有者的注册项原样保留）。因此 `reset_apps_cache()` → `load_apps(force=True)`
+可安全重复重载，不会触发 `PLUGIN_DUPLICATE_MENU` 而让应用消失。
+
 窗口装配顺序（`sllkgui run` 与宿主 `main.py` 一致）：
 
 ```python
