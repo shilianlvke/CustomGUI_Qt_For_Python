@@ -77,7 +77,6 @@ class CLeftMenuButton(QPushButton):
         self._maximum_width = maximum_width
         # 选中态过渡：0 = 普通，1 = 选中；构造时直接到位，不播放入场动画
         self._active_progress = 1.0 if (is_active or is_active_tab) else 0.0
-        self._active_kind = "tab" if is_active_tab else "page"
         self._active_animation = None
         # TOOLTIP
         self._tooltip_text = tooltip_text
@@ -111,21 +110,21 @@ class CLeftMenuButton(QPushButton):
         rect_text = QRect(45, 0, self.width() - 50, self.height())
 
         progress = self._active_progress
-        is_tab = self._active_kind == "tab"
 
         # NORMAL BG：先铺普通底，选中块画在其上（两者同色系，边角不会露出色差）
         p.setBrush(QColor(self._normal_bg_color()))
         p.drawRoundedRect(rect_inside, 4, 4)
 
         # ACTIVE BG：用剪裁从左向右展开，比透明度叠色更干净
-        # 玻璃模式下选中块也保持半透明，避免在亚克力底上出现一整块实色
+        # 玻璃模式下选中块也保持半透明，避免在亚克力底上出现一整块实色。
+        # 页面按钮与设置入口（tab）统一用主题强调色：否则底部齿轮只剩一块
+        # 灰白底，和悬停态几乎分不出来，看起来像没激活。
         if progress > 0:
             p.save()
             p.setClipRect(QRect(0, 0, round(self.width() * progress), self.height()))
-            accent = ColorPalette.custom_dark_four if is_tab else ColorPalette.custom_context_color
             p.setBrush(QColor(glass_tint(ColorPalette.custom_dark_four, 0.55)))
             p.drawRoundedRect(rect_inside, 4, 4)
-            p.setBrush(QColor(glass_tint(accent, 0.90)))
+            p.setBrush(QColor(glass_tint(ColorPalette.custom_context_color, 0.90)))
             p.drawRoundedRect(rect_blue, 1.5, 1.5)
             p.restore()
 
@@ -133,12 +132,11 @@ class CLeftMenuButton(QPushButton):
         p.setPen(_mix_color(ColorPalette.custom_text_foreground, ColorPalette.custom_text_active, progress))
         p.drawText(rect_text, Qt.AlignVCenter, self.text())
 
-        # DRAW ICONS：普通色 -> 选中色（页面选中偏蓝，导航 tab 偏亮）
+        # DRAW ICONS：普通色 -> 强调色（与页面选中一致）
         if self._is_toggle_active and progress <= 0:
             icon_color = ColorPalette.custom_context_color
         else:
-            target = ColorPalette.custom_icon_active if is_tab else ColorPalette.custom_context_color
-            icon_color = _mix_color(self._normal_icon_color(), target, progress)
+            icon_color = _mix_color(self._normal_icon_color(), ColorPalette.custom_context_color, progress)
         self.icon_paint(p, self._icon_path, rect_icon, icon_color)
 
         # Fluent 选中态已由左侧强调条表达，不再绘制 Sakai 的右侧缺口标记
@@ -182,8 +180,6 @@ class CLeftMenuButton(QPushButton):
     # 归一化选中进度：页面选中与导航 tab 共用同一套过渡
     def _sync_active_progress(self):
         selected = self._is_active or self._is_active_tab
-        if selected:
-            self._active_kind = "tab" if self._is_active_tab else "page"
         self._animate_active(1.0 if selected else 0.0)
 
     # 选中态过渡动画

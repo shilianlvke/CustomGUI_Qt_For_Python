@@ -71,6 +71,23 @@ def test_initial_progress_matches_state(host):
     assert tab._active_progress == pytest.approx(1.0)
 
 
+def test_tab_active_shares_page_accent(host):
+    """设置入口（tab）与页面按钮的激活强调条同色，避免被看成悬停态。"""
+    widget, layout = host
+    page = _button(widget, layout, "page", is_active=True)
+    tab = _button(widget, layout, "tab", is_active_tab=True)
+    widget.show()
+    QTest.qWait(60)
+
+    image = widget.grab().toImage()
+
+    def bar_color(btn):
+        origin = btn.mapTo(widget, btn.rect().topLeft())
+        return image.pixelColor(origin.x() + 3, origin.y() + btn.height() // 2)
+
+    assert bar_color(page) == bar_color(tab)
+
+
 def test_selection_transitions_smoothly(host):
     widget, layout = host
     old = _button(widget, layout, "old", is_active=True)
