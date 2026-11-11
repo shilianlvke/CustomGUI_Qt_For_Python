@@ -100,6 +100,17 @@ uv run pytest --cov=sllkgui --cov-report=term-missing --cov-fail-under=70
 
 ## 发版
 
+改动基座代码后必须补一次补丁发布（`base-vX.Y.Z`），下游 py-rm 固定依赖 tag 而不是分支。
+
+一键发布（bump patch → 质量门禁 → 提交 → tag → 推送）：
+
+```powershell
+uv run python scripts/release_base.py --dry-run             # 预览
+uv run python scripts/release_base.py --message "fix: ..."   # 正式发布
+```
+
+手工发布：
+
 ```powershell
 # 1. 改版本号（唯一一处）
 #    src/sllkgui/_version.py  ->  __version__ = "1.0.0"
