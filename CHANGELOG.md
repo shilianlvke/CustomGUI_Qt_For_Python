@@ -39,6 +39,16 @@ minor 与 patch 保持向后兼容。
 - 外观配置仍由标题栏色盘独立入口负责，设置页不重复放置主题/语言控件。
 - 四语言新增设置页文案；补充 `btn_info` 开合与切换回归测试。
 
+### 内存优化
+
+- `install_system_fonts()` 改为按字体族按需注册：系统已能发现
+  Microsoft YaHei / Segoe UI 时不再重复加载字体文件。旧实现无条件注册
+  5 个 Windows 字体，实测常驻内存多占约 270 MB。
+- 移除全局 QSS 中 `QFrame { font: ... }` 兜底规则：Qt 会为被样式化的
+  QFrame/QLabel 建立字体解析缓存，首次应用样式表时多占约 65 MB。
+- 最近背景缩略图改用 `QImageReader` 按 2 倍目标尺寸解码，不再为 64×40
+  的缩略图完整加载 4K 原图；5 张最近背景由上百 MB 降到约 5 MB。
+
 ### 四向抽屉模式
 
 - 新增全局 `drawer_mode`（`static` / `overlay`），统一控制左 / 右 / 上 / 下四个

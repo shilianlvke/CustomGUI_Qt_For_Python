@@ -35,3 +35,17 @@ def test_install_fonts_accepts_str_and_path(qapp, tmp_path):
 def test_install_system_fonts_is_noop_on_linux(qapp):
     """Linux 无 Windows 系统字体目录时返回 0 且不抛异常。"""
     assert install_system_fonts() == 0
+
+
+def test_select_system_fonts_skips_available_families(tmp_path):
+    """系统已能发现的字体族不再注册，避免重复加载整套 CJK 字体。"""
+    from sllkgui.guicore.fonts import _select_system_fonts
+
+    (tmp_path / "msyh.ttc").write_bytes(b"font")
+    (tmp_path / "msyhbd.ttc").write_bytes(b"font")
+    (tmp_path / "segoeui.ttf").write_bytes(b"font")
+
+    assert _select_system_fonts(tmp_path, {"Microsoft YaHei", "Segoe UI"}) == []
+    assert [path.name for path in _select_system_fonts(tmp_path, set())] == ["msyh.ttc", "segoeui.ttf"]
+    # 只要组内任一字体族可用就整组跳过（CJK 覆盖字体不重复注册）
+    assert [path.name for path in _select_system_fonts(tmp_path, {"Noto Sans SC"})] == ["segoeui.ttf"]

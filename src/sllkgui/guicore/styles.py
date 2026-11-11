@@ -251,6 +251,8 @@ class Styles(_ComponentStyles):
             }}
             QFrame {{
                 color: {self.tokens.colors.text_primary};
-                font: {self.tokens.typography.family};
             }}
+            /* 不给 QFrame 设全局 font：Qt 会为每个被样式化的 QFrame/QLabel
+               建立字体解析缓存，首次应用样式表时实测多占约 65 MB。
+               需要字体的组件都在自身局部设置（菜单按钮、标题、设置页等）。 */
         """

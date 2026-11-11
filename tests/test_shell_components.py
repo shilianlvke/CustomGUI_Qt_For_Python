@@ -115,6 +115,28 @@ def test_configurator_background_accordion_expand_and_apply(host, tmp_path):
     assert changed[-1][0] == ""
 
 
+def test_recent_background_thumb_decodes_at_thumbnail_size(qapp, tmp_path):
+    """最近背景缩略图只按 2 倍目标尺寸解码，不把整张原图读进内存。"""
+    from PySide6.QtGui import QImage
+
+    from sllkgui.guicore.window.app_configurator_sections import _RecentThumb
+
+    image = QImage(1600, 900, QImage.Format.Format_RGB32)
+    image.fill(Qt.GlobalColor.darkCyan)
+    path = tmp_path / "wallpaper.png"
+    assert image.save(str(path))
+
+    thumb = _RecentThumb(str(path))
+    try:
+        assert not thumb._pixmap.isNull()
+        # 2 倍目标（128×80）等比扩展后的上限；原图 1600×900 不在内存里
+        assert thumb._pixmap.width() <= 144
+        assert thumb._pixmap.height() <= 80
+        assert thumb._pixmap.width() * thumb._pixmap.height() < 1600 * 900 / 10
+    finally:
+        thumb.deleteLater()
+
+
 def test_configurator_menu_mode_and_dark_mode(host):
     panel = CAppConfigurator(host)
     modes = []

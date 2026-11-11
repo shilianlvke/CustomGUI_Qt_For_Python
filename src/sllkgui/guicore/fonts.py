@@ -17,13 +17,14 @@ from pathlib import Path
 
 from sllkgui.appcore import Logger
 
-#: Windows 系统字体候选（按优先级；存在即注册）
-_WINDOWS_FONT_CANDIDATES = (
-    "msyh.ttc",  # 微软雅黑（简体/繁体覆盖最好）
-    "msyhbd.ttc",  # 微软雅黑粗体
-    "NotoSansSC-VF.ttf",  # 思源黑体（可变字重）
-    "segoeui.ttf",  # Segoe UI（拉丁）
-    "segoeuib.ttf",  # Segoe UI 粗体
+#: Windows 系统字体候选：按「字体族 → 候选文件」分组，每组只注册一个文件。
+#:
+#: 逐个文件无条件注册会让 Qt 把整套字体展开到内存：微软雅黑 + 粗体 +
+#: 思源黑体三份 CJK 字体合计约 50 MB 文件，实测常驻内存会增加约 270 MB。
+#: Windows 原生平台本来就能发现这些字体，因此只在字体族缺失时才补一份。
+_WINDOWS_FONT_GROUPS = (
+    (("Microsoft YaHei", "Noto Sans SC"), ("msyh.ttc", "msyhbd.ttc", "NotoSansSC-VF.ttf")),
+    (("Segoe UI",), ("segoeui.ttf", "segoeuib.ttf")),
 )
 
 
@@ -54,15 +55,52 @@ def install_fonts(paths) -> int:
     return registered
 
 
+def _available_families() -> set[str]:
+    """当前 Qt 已能发现的字体族（小写）；无 Qt 环境时返回空集合。"""
+    try:
+        from PySide6.QtGui import QFontDatabase
+    except Exception as exc:  # noqa: BLE001 - 无 Qt 环境时按“全部缺失”处理
+        Logger.debug(f"无法导入 QFontDatabase，按字体缺失处理: {exc}")
+        return set()
+    try:
+        return {str(name).casefold() for name in QFontDatabase.families()}
+    except Exception as exc:  # noqa: BLE001 - 查询失败时按“全部缺失”处理
+        Logger.debug(f"读取字体族失败，按字体缺失处理: {exc}")
+        return set()
+
+
+def _select_system_fonts(font_dir: Path, available: set[str]) -> list[Path]:
+    """按字体族补齐缺失字体：每组最多选一个已存在的文件。
+
+    Windows 正常桌面环境里 CJK 与拉丁字体都已由系统提供，返回空列表；
+    只有 offscreen / 精简打包环境缺少字体族时才返回需要补注册的文件。
+    """
+    normalized = {str(name).casefold() for name in available}
+    selected: list[Path] = []
+    for families, candidates in _WINDOWS_FONT_GROUPS:
+        if any(family.casefold() in normalized for family in families):
+            continue
+        for name in candidates:
+            path = font_dir / name
+            if path.is_file():
+                selected.append(path)
+                break
+    return selected
+
+
 def install_system_fonts() -> int:
-    """注册常见系统字体（Windows 优先），返回成功数量。
+    """按需注册系统字体，返回成功数量。
 
     Qt 的 offscreen 平台（测试与远程会话）常无法自动发现系统字体；此函数
-    在那些环境下仍能保持 CJK/Latin 文本可读。
+    只在这些字体族确实缺失时才注册一个替代文件，避免 Windows 桌面上重复
+    加载整套 CJK 字体（实测可省下约 270 MB 常驻内存）。
     """
     windir = Path(os.environ.get("WINDIR", r"C:\Windows")) / "Fonts"
-    candidates = [windir / name for name in _WINDOWS_FONT_CANDIDATES]
-    return install_fonts(candidates)
+    selected = _select_system_fonts(windir, _available_families())
+    if not selected:
+        Logger.debug("系统字体族齐全，跳过字体文件注册")
+        return 0
+    return install_fonts(selected)
 
 
 __all__ = ["install_fonts", "install_system_fonts"]

@@ -13,7 +13,7 @@ from __future__ import annotations
 from pathlib import Path
 
 from PySide6.QtCore import QRectF, QSize, QStandardPaths, Qt, Signal
-from PySide6.QtGui import QColor, QFont, QPainter, QPainterPath, QPen, QPixmap
+from PySide6.QtGui import QColor, QFont, QImageReader, QPainter, QPainterPath, QPen, QPixmap
 from PySide6.QtWidgets import (
     QFileDialog,
     QFrame,
@@ -158,6 +158,23 @@ class _ThemeCard(QWidget):
 _BACKGROUND_FIT_CODES = ("fill", "fit", "stretch", "tile", "center")
 
 
+def _load_thumbnail(path: str) -> QPixmap:
+    """按缩略图目标尺寸解码图片，避免把整张 4K 壁纸读进内存。
+
+    直接 ``QPixmap(path)`` 会完整解码原图：5 张最近背景就可能常驻上百 MB。
+    这里用 ``QImageReader`` 在解码阶段就缩放；按 2 倍目标尺寸读取，兼顾
+    高 DPI 清晰度。
+    """
+    reader = QImageReader(path)
+    reader.setAutoTransform(True)
+    natural = reader.size()
+    if natural.isValid() and natural.width() > 0 and natural.height() > 0:
+        target = QSize(64 * 2, 40 * 2)
+        reader.setScaledSize(natural.scaled(target, Qt.AspectRatioMode.KeepAspectRatioByExpanding))
+    image = reader.read()
+    return QPixmap.fromImage(image) if not image.isNull() else QPixmap()
+
+
 class _RecentThumb(QWidget):
     """最近使用背景缩略图：圆角裁切、选中描边、点击回调。"""
 
@@ -168,7 +185,7 @@ class _RecentThumb(QWidget):
         self._path = str(path)
         self._selected = bool(selected)
         self._hover = False
-        self._pixmap = QPixmap(self._path)
+        self._pixmap = _load_thumbnail(self._path)
         self.setFixedSize(64, 40)
         self.setCursor(Qt.PointingHandCursor)
         self.setToolTip(self._path)
