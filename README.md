@@ -281,7 +281,7 @@ sllkgui.configure(
     resource_dirs=["./brand"],            # 覆盖资源（其下有 sllkgui/ 或 resource/sllkgui/）
     data_dir="~/.myapp",                  # 可写数据根（日志、遥测）
     diagnostics_dir="~/.myapp/diagnostics",
-    builtin_menus=False,                  # 不注入基座自带的「软件信息」菜单
+    builtin_menus=False,                  # 不注入基座自带的「软件信息 / 设置」入口
 )
 ```
 

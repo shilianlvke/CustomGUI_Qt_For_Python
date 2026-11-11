@@ -187,3 +187,46 @@ def test_unhandled_button_falls_back_to_plugin_command_chain():
     controller.handle_button(_FakeButton("cmd_custom"))
 
     assert plugin_calls == ["cmd_custom"]
+
+
+def _settings_controller(window, main_functions):
+    return ColumnController(
+        window=window,
+        main_functions=main_functions,
+        language=SimpleNamespace(UI=SimpleNamespace(ui_Settings="Settings")),
+    )
+
+
+def test_info_button_switches_to_settings_from_other_left_menu():
+    window, left_menu, _title_state = _build_window()
+    window.ui.left_column.menus = SimpleNamespace(
+        menu_1="menu_1",
+        menu_2="menu_2",
+        currentWidget=lambda: "menu_1",
+    )
+    main_functions = _MainFunctionStub()
+    main_functions.left_visible = True
+
+    _settings_controller(window, main_functions).handle_info_button("btn_info")
+
+    assert main_functions.left_toggle_count == 0
+    assert main_functions.left_menu_payloads[-1][0] == "menu_2"
+    assert left_menu.selected_tab_btn == "btn_info"
+
+
+def test_info_button_closes_settings_drawer_when_already_open():
+    window, left_menu, _title_state = _build_window()
+    window.ui.left_column.menus = SimpleNamespace(
+        menu_1="menu_1",
+        menu_2="menu_2",
+        currentWidget=lambda: "menu_2",
+    )
+    main_functions = _MainFunctionStub()
+    main_functions.left_visible = True
+
+    _settings_controller(window, main_functions).handle_info_button("btn_info")
+
+    assert main_functions.left_toggle_count == 1
+    assert main_functions.left_visible is False
+    assert main_functions.left_menu_payloads == []
+    assert left_menu.deselect_count == 1

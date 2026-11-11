@@ -48,6 +48,18 @@ UI:
   ui_Property: Property
   # Others
   ui_Settings: Settings
+  ui_SettingsSoftware: Software info
+  ui_SettingsOverview: Overview
+  ui_SettingsEnvironment: Environment
+  ui_SettingsFolders: Folders
+  ui_SettingsVersion: Version
+  ui_SettingsStatus: Status
+  ui_SettingsPages: Pages
+  ui_SettingsDataDir: Data folder
+  ui_SettingsLogDir: Logs folder
+  ui_SettingsOpenData: Open data folder
+  ui_SettingsOpenLogs: Open logs folder
+  ui_SettingsAppearanceHint: Adjust appearance from the title bar palette
   ui_OpenFile: Open File
   ui_UpdateLogs: Update Logs
   ui_Welcome: Welcome!

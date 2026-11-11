@@ -6,6 +6,7 @@ from sllkgui.appcore import ColorPalette, Language, get_design_tokens, get_theme
 from ..column_geometry import title_strip_style
 from .icon import PyIcon
 from .left_button import PyLeftButton
+from .settings_panel import CSettingsPanel
 from .ui import Ui_LeftColumn
 
 
@@ -40,6 +41,15 @@ class CLeftColumn(QWidget):
         # 在 BG 框架中添加左列布局（同包 ui.py，由 left_column.ui 生成）
         self.menus = Ui_LeftColumn()
         self.menus.setupUi(self.content_frame)
+
+        # menu_2 是“设置”抽屉页：替换 uic 生成的占位滚动区，避免滚动条，
+        # 并暴露 settings_page 供宿主追加自己的设置区块。
+        placeholder = getattr(self.menus, "scrollArea", None)
+        if placeholder is not None:
+            placeholder.setParent(None)
+            placeholder.deleteLater()
+        self.settings_page = CSettingsPanel(self.menus.menu_2)
+        self.menus.verticalLayout_2.addWidget(self.settings_page)
 
         # CONNECT SIGNALS
         self.btn_close.clicked.connect(self.btn_clicked)

@@ -82,7 +82,7 @@ apps/*  ──────────────┐
 | 模块 | 内容 |
 | --- | --- |
 | `custom_ui/` | 91 个组件 + 3 个模型/枚举，按 `button` / `line_edit` / `data` / `menu` / `display` / `overlay` / `feedback` / `panels` / `layout` / `media` / `chart` / `upload` / `scroll` / `picture` / `card` / `div` / `tooltip` / `page_transition` 分包 |
-| `window/` | `CWindow`、`CTitleBar`、`CLeftMenu`、`CLeftColumn`、`CTopColumn`、`CBottomColumn`、`CGrips`、`CCredits` 与壳层 `CAppTopbar` / `CAppMenu` / `CAppConfigurator` |
+| `window/` | `CWindow`、`CTitleBar`、`CLeftMenu`、`CLeftColumn`（含 `CSettingsPanel` 设置页）、`CTopColumn`、`CBottomColumn`、`CGrips`、`CCredits` 与壳层 `CAppTopbar` / `CAppMenu` / `CAppConfigurator` |
 | `styles.py` | 令牌 → QSS；`Styles()` 生成全局样式表，`region_card_background()` 提供区域卡片底色 |
 | `fonts.py` | `install_fonts()` / `install_system_fonts()`，解决 offscreen / 远程会话的 CJK 豆腐块 |
 | `callbacks.py` | `safe_callback()` / `ui_callback()` / `single_shot()` / `is_deleted_qt_error()` |
@@ -235,6 +235,7 @@ FIX-07 并发与订阅一致性：`ThemeManager._lock` 为 `threading.RLock`，`
 | 加主题 | `_resources/sllkgui/themes/<name>.yaml`，重启后出现在主题循环 |
 | 加语言 | `_resources/sllkgui/languages/<code>.yaml`，`LANGUAGE_OPTIONS` 自动发现 |
 | 调窗口/动画/提示参数 | `_resources/sllkgui/settings/window.yaml` |
+| 改设置抽屉内容 | `window.ui.left_column.settings_page.add_section(widget, page="overview" / "folders")` |
 | 接管按钮行为 | `MainWindowButtonUseCase.ACTION_MAP` 或自定义 `controller` |
 | 后台任务 | `guicore.run_task()` + `TaskWorker` |
 | 遥测落盘 | `record_event()` / `track_timing` |

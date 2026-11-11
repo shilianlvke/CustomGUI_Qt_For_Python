@@ -204,22 +204,36 @@ class ColumnController:
         self._language = language
 
     def handle_info_button(self, btn_name: str):
-        if not self._main_functions.left_column_is_visible(self._window):
-            self._window.ui.left_menu.select_only_one_tab(btn_name)
+        """「软件信息」是设置的唯一入口：打开/关闭左侧设置抽屉。
+
+        与标题栏外观按钮保持一致：抽屉已停在该页时再次点击收起；
+        抽屉停在别的左列页时只切到设置页，不收起。
+        """
+        ui = self._window.ui
+        menus = ui.left_column.menus
+        menu = menus.menu_2
+        visible = self._main_functions.left_column_is_visible(self._window)
+        stack = getattr(menus, "menus", menus)
+        current_getter = getattr(stack, "currentWidget", None)
+        if callable(current_getter):
+            try:
+                current_widget = current_getter()
+            except Exception:
+                current_widget = None
+        if visible and current_widget is menu:
+            ui.left_menu.deselect_all_tab()
             self._main_functions.toggle_left_column(self._window)
-            self._window.ui.left_menu.select_only_one_tab(btn_name)
-        else:
-            if btn_name == "btn_close_left_column":
-                self._window.ui.left_menu.deselect_all_tab()
-                self._main_functions.toggle_left_column(self._window)
-            self._window.ui.left_menu.select_only_one_tab(btn_name)
-        if btn_name != "btn_close_left_column":
-            self._main_functions.set_left_column_menu(
-                self._window,
-                menu=self._window.ui.left_column.menus.menu_2,
-                title=self._language.UI.ui_Settings,
-                icon_path=PathFactory.set_svg_icon("icon_setting"),
-            )
+            return
+
+        self._main_functions.set_left_column_menu(
+            self._window,
+            menu=menu,
+            title="language.UI.ui_Settings",
+            icon_path=PathFactory.set_svg_icon("icon_setting"),
+        )
+        if not visible:
+            self._main_functions.toggle_left_column(self._window)
+        ui.left_menu.select_only_one_tab(btn_name)
 
     def handle_more_button(self, btn_name: str):
         if not self._main_functions.left_column_is_visible(self._window):

@@ -48,6 +48,18 @@ UI:
   ui_Property: 属性
   # 其他
   ui_Settings: 设置
+  ui_SettingsSoftware: 软件信息
+  ui_SettingsOverview: 概览
+  ui_SettingsEnvironment: 运行环境
+  ui_SettingsFolders: 目录
+  ui_SettingsVersion: 版本
+  ui_SettingsStatus: 状态
+  ui_SettingsPages: 页面
+  ui_SettingsDataDir: 数据目录
+  ui_SettingsLogDir: 日志目录
+  ui_SettingsOpenData: 打开数据目录
+  ui_SettingsOpenLogs: 打开日志目录
+  ui_SettingsAppearanceHint: 外观配置请使用标题栏色盘
   ui_OpenFile: 打开文件
   ui_UpdateLogs: 更新日志
   ui_Welcome: Welcome!

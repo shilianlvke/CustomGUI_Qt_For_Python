@@ -49,6 +49,18 @@ UI:
   ui_Property: プロパティ
   # その他
   ui_Settings: 設定
+  ui_SettingsSoftware: ソフトウェア情報
+  ui_SettingsOverview: 概要
+  ui_SettingsEnvironment: 実行環境
+  ui_SettingsFolders: フォルダー
+  ui_SettingsVersion: バージョン
+  ui_SettingsStatus: 状態
+  ui_SettingsPages: ページ
+  ui_SettingsDataDir: データフォルダー
+  ui_SettingsLogDir: ログフォルダー
+  ui_SettingsOpenData: データフォルダーを開く
+  ui_SettingsOpenLogs: ログフォルダーを開く
+  ui_SettingsAppearanceHint: 外観はタイトルバーのパレットで調整してください
   ui_OpenFile: ファイルを開く
   ui_UpdateLogs: 更新履歴
   ui_Welcome: ようこそ

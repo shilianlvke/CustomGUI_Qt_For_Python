@@ -49,6 +49,18 @@ UI:
   ui_Property: 屬性
   # 其他
   ui_Settings: 設定
+  ui_SettingsSoftware: 軟體資訊
+  ui_SettingsOverview: 概覽
+  ui_SettingsEnvironment: 執行環境
+  ui_SettingsFolders: 目錄
+  ui_SettingsVersion: 版本
+  ui_SettingsStatus: 狀態
+  ui_SettingsPages: 頁面
+  ui_SettingsDataDir: 資料目錄
+  ui_SettingsLogDir: 日誌目錄
+  ui_SettingsOpenData: 開啟資料目錄
+  ui_SettingsOpenLogs: 開啟日誌目錄
+  ui_SettingsAppearanceHint: 外觀設定請使用標題列色盤
   ui_OpenFile: 開啟檔案
   ui_UpdateLogs: 更新日誌
   ui_Welcome: 歡迎
