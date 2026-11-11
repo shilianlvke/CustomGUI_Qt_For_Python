@@ -1,9 +1,9 @@
-"""外观配置抽屉：主题、语言、菜单模式与深色模式。
+"""外观配置抽屉：主题、材质、背景与界面四个单屏子页。
 
 右侧滑入的浮层面板，所有配色在绘制或刷新时实时读取设计令牌与调色板，
 切换主题后重绘即生效；语言以目标语言直接选择，不再循环轮替。
 
-控件树（标题栏、滚动内容与四个配置分区）由
+控件树（标题栏、分段导航与四个配置子页）由
 :mod:`sllkgui.guicore.window.app_configurator_sections` 提供，本模块只负责
 状态、信号、主题/语言/菜单模式的运行期逻辑与抽屉开合动画。
 """
@@ -264,6 +264,7 @@ class CAppConfigurator(_ConfigSectionsMixin, QFrame):
         """语言切换后刷新标题、分区与选项文案（控件树不重建）。"""
         for key, (label, fallback) in self._texts.items():
             label.setText(Language.resolve_key(key, fallback))
+        self.tabs.set_options(self._tab_labels(), index=self.tabs.current_index(), emit=False)
         self.menu_mode_select.set_options(self._menu_mode_labels(), index=self.menu_mode_select.current_index(), emit=False)
         self._refresh_background_texts()
         self._sync_language()
@@ -387,6 +388,7 @@ class CAppConfigurator(_ConfigSectionsMixin, QFrame):
         )
         for card in self._theme_cards:
             card.update()
+        self.tabs.update()
         self.language_select.update()
         self.menu_mode_select.update()
         self.dark_switch.update()

@@ -143,8 +143,12 @@ UI:
   ui_SwitchLanguage: 言語を切り替える
   ui_SwitchTheme: 外観設定
   ui_Appearance: 外観設定
-  ui_AppearanceHint: テーマ・言語・レイアウト
+  ui_AppearanceHint: テーマ・マテリアル・背景・インターフェース
   ui_Theme: テーマ
+  ui_TabTheme: テーマ
+  ui_TabMaterial: マテリアル
+  ui_TabBackground: 背景
+  ui_TabInterface: インターフェース
   ui_ThemeHint: 内蔵の配色を選択
   ui_Material: マテリアルと透過度
   ui_MaterialHint: ウィンドウの透明度とアクリル質感をリアルタイム調整

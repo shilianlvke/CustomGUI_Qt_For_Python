@@ -147,16 +147,9 @@ class UiMainWindow:
         # ADD RIGHT PAGES TO RIGHT COLUMN
         self.right_column = Ui_RightColumn()
         self.right_column.setupUi(self.content_area_right_bg_frame)
-        # 右侧抽屉的“外观配置”页：复用 CAppConfigurator 的配置内容，但以嵌入
-        # 模式运行（无固定宽度、无滑入动画、无自身背景），开合交给右侧栏。
-        self.theme_menu = QWidget()
-        self.theme_menu.setObjectName("themeMenu")
-        self.theme_menu_layout = QVBoxLayout(self.theme_menu)
-        self.theme_menu_layout.setContentsMargins(0, 0, 0, 0)
-        self.theme_menu_layout.setSpacing(0)
-        self.theme_config = CAppConfigurator(self.theme_menu, embedded=True)
-        self.theme_menu_layout.addWidget(self.theme_config)
-        self.right_column.menus.addWidget(self.theme_menu)
+        # 右侧抽屉的“外观配置”页：使用 CAppConfigurator 的浮层模式覆盖在内容区
+        # 右侧，不再占用布局宽度，避免打开外观面板时压缩主页面产生横向滚动。
+        self.theme_config = CAppConfigurator(self.content_area_frame, embedded=False)
         # ADD TO LAYOUTS
         self.content_area_layout.addWidget(self.content_area_left_frame)
         self.content_area_layout.addWidget(self.right_column_frame)

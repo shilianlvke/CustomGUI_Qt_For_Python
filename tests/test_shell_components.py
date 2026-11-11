@@ -85,6 +85,10 @@ def test_configurator_background_accordion_expand_and_apply(host, tmp_path):
     assert not panel.is_background_expanded()
     assert not panel._background_content.isVisible()
 
+    # 背景是独立子页：先切到“背景”再测试手风琴展开。
+    panel.tabs.set_index(2)
+    QTest.qWait(50)
+    assert panel.stack.currentIndex() == 2
     panel.background_toggle.click()
     _wait_animation()
     assert panel.is_background_expanded()

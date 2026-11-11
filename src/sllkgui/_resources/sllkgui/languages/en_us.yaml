@@ -142,8 +142,12 @@ UI:
   ui_SwitchLanguage: Switch Language
   ui_SwitchTheme: Appearance
   ui_Appearance: Appearance
-  ui_AppearanceHint: Themes, language and layout
+  ui_AppearanceHint: Theme, material, background and interface
   ui_Theme: Theme
+  ui_TabTheme: Theme
+  ui_TabMaterial: Material
+  ui_TabBackground: Background
+  ui_TabInterface: Interface
   ui_ThemeHint: Choose a built-in color scheme
   ui_Material: Material & Transparency
   ui_MaterialHint: Adjust window transparency and acrylic texture live

@@ -143,8 +143,12 @@ UI:
   ui_SwitchLanguage: 切換語言
   ui_SwitchTheme: 外觀配置
   ui_Appearance: 外觀配置
-  ui_AppearanceHint: 主題、語言與介面版面
+  ui_AppearanceHint: 主題、材質、背景與介面
   ui_Theme: 主題
+  ui_TabTheme: 主題
+  ui_TabMaterial: 材質
+  ui_TabBackground: 背景
+  ui_TabInterface: 介面
   ui_ThemeHint: 選擇一套內建配色
   ui_Material: 材質與通透度
   ui_MaterialHint: 即時調整視窗透明度與亞克力質感

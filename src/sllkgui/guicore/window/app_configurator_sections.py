@@ -1,11 +1,11 @@
 """外观配置抽屉的控件树构建。
 
-把 ``CAppConfigurator`` 的界面装配拆出来：抽屉骨架（标题栏 + 滚动内容）、
-主题 / 材质 / 语言 / 菜单模式四个分区，以及主题卡片与分区专用的小工具方法。
+把 ``CAppConfigurator`` 的界面装配拆出来：抽屉骨架（标题栏 + 分段导航 +
+四个单屏子页）、主题 / 材质 / 背景 / 界面分区，以及主题卡片与分区专用的小工具方法。
 面板本身只保留状态、信号与交互逻辑。
 
 本模块不持有任何状态：``_ConfigSectionsMixin`` 依赖宿主提供的
-``_texts`` / ``_theme_cards`` / ``content_layout`` 等属性，方法名与拆分前一致。
+``_texts`` / ``_theme_cards`` 等属性，方法名与拆分前保持一致。
 """
 
 from __future__ import annotations
@@ -21,6 +21,7 @@ from PySide6.QtWidgets import (
     QHBoxLayout,
     QLabel,
     QSizePolicy,
+    QStackedWidget,
     QVBoxLayout,
     QWidget,
 )
@@ -29,7 +30,6 @@ from sllkgui.appcore import (
     LANGUAGE_OPTIONS,
     AppSettings,
     AppThemes,
-    ColorPalette,
     Language,
     get_design_tokens,
     load_user_settings,
@@ -45,7 +45,6 @@ from ..custom_ui.line_edit.select import CSelect
 from ..custom_ui.line_edit.slider import CSlider
 from ..custom_ui.line_edit.toggle_button import CSelectButton
 from ..custom_ui.panels.collapse import CollapseAnimator
-from ..custom_ui.scroll.scroll_area import CScrollArea
 
 #: 主题卡片预览所用的调色板键
 _PREVIEW_KEYS = ("custom_dark_one", "custom_bg_one", "custom_context_color", "custom_text_title")
@@ -111,7 +110,8 @@ class _ThemeCard(QWidget):
             painter.fillPath(path, fill)
             painter.setPen(QPen(accent, 1.5))
         else:
-            painter.fillPath(path, QColor(ColorPalette.custom_dark_two if self._hover else ColorPalette.custom_dark_one))
+            surface = colors.surface_interactive_hover if self._hover else colors.surface_card
+            painter.fillPath(path, QColor(surface))
             painter.setPen(QPen(QColor(colors.surface_interactive_pressed), 1))
         painter.drawPath(path)
 
@@ -229,10 +229,10 @@ class _RecentThumb(QWidget):
 
 
 class _ConfigSectionsMixin:
-    """把四个配置分区装配到宿主的 ``content_layout`` 上。
+    """把配置分区装配成四个单屏子页，由顶部分段导航切换。
 
-    宿主需提供 ``_texts`` / ``_theme_cards`` / ``content_layout`` 三个属性，
-    以及各分区的事件处理器与信号（见 ``CAppConfigurator``）。
+    宿主需提供 ``_texts`` / ``_theme_cards`` 两个属性，以及各分区的
+    事件处理器与信号（见 ``CAppConfigurator``）。
     """
 
     def _setup_ui(self) -> None:
@@ -250,7 +250,7 @@ class _ConfigSectionsMixin:
         title_column.setContentsMargins(0, 0, 0, 0)
         title_column.setSpacing(2)
         self.header_title = self._register_text("language.UI.ui_Appearance", "外观配置", "header")
-        self.header_subtitle = self._register_text("language.UI.ui_AppearanceHint", "主题、语言与界面布局", "hint")
+        self.header_subtitle = self._register_text("language.UI.ui_AppearanceHint", "主题、材质、背景与界面", "hint")
         title_column.addWidget(self.header_title)
         title_column.addWidget(self.header_subtitle)
         header_layout.addLayout(title_column, 1)
@@ -260,27 +260,53 @@ class _ConfigSectionsMixin:
         header_layout.addWidget(self.close_button, 0, Qt.AlignVCenter)
         root.addWidget(header)
 
-        self.content_scroll = CScrollArea(background="transparent", parent=self)
-        # 抽屉高度不足时需要明确的滚动位置提示，否则底部配置项不可发现。
-        self.content_scroll.setVerticalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAsNeeded)
-        content = QWidget()
-        self.content_layout = QVBoxLayout(content)
-        self.content_layout.setContentsMargins(20, 12, 20, 20)
-        self.content_layout.setSpacing(16)
-        self.content_layout.setAlignment(Qt.AlignTop)
+        tabs_wrap = QWidget(self)
+        tabs_layout = QHBoxLayout(tabs_wrap)
+        tabs_layout.setContentsMargins(20, 0, 20, 10)
+        tabs_layout.setSpacing(0)
+        self.tabs = CSelectButton(self._tab_labels(), index=0, size="sm")
+        self.tabs.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed)
+        self.tabs.selectionChanged.connect(self._switch_page)
+        tabs_layout.addWidget(self.tabs)
+        root.addWidget(tabs_wrap)
 
-        self._build_theme_section(content)
-        self._build_background_section(content)
-        self._add_divider(content)
-        self._build_material_section(content)
-        self._add_divider(content)
-        self._build_language_section(content)
-        self._add_divider(content)
-        self._build_menu_mode_section(content)
-        self.content_layout.addStretch(1)
+        self.stack = QStackedWidget(self)
+        theme_page, theme_layout = self._new_page()
+        material_page, material_layout = self._new_page()
+        background_page, background_layout = self._new_page()
+        interface_page, interface_layout = self._new_page()
 
-        self.content_scroll.setWidget(content)
-        root.addWidget(self.content_scroll, 1)
+        self._build_theme_section(theme_layout)
+        self._build_material_section(material_layout)
+        self._build_background_section(background_layout)
+        self._build_language_section(interface_layout)
+        self._add_divider(interface_layout)
+        self._build_menu_mode_section(interface_layout)
+        interface_layout.addStretch(1)
+
+        for page in (theme_page, material_page, background_page, interface_page):
+            self.stack.addWidget(page)
+        root.addWidget(self.stack, 1)
+
+    def _new_page(self) -> tuple[QWidget, QVBoxLayout]:
+        page = QWidget(self)
+        layout = QVBoxLayout(page)
+        layout.setContentsMargins(20, 8, 20, 20)
+        layout.setSpacing(14)
+        layout.setAlignment(Qt.AlignTop)
+        return page, layout
+
+    @staticmethod
+    def _tab_labels() -> list[str]:
+        return [
+            str(Language.resolve_key("language.UI.ui_TabTheme", "主题")),
+            str(Language.resolve_key("language.UI.ui_TabMaterial", "材质")),
+            str(Language.resolve_key("language.UI.ui_TabBackground", "背景")),
+            str(Language.resolve_key("language.UI.ui_TabInterface", "界面")),
+        ]
+
+    def _switch_page(self, index: int) -> None:
+        self.stack.setCurrentIndex(max(0, min(self.stack.count() - 1, int(index))))
 
     def _make_label(self, text: str, role: str) -> QLabel:
         """创建一个随主题刷新颜色的标签；role 为 header / title / hint / value。"""
@@ -308,25 +334,25 @@ class _ConfigSectionsMixin:
         self._texts[key] = (label, fallback)
         return label
 
-    def _add_section(self, content: QWidget, title_key: str, title_fallback: str, hint_key: str, hint_fallback: str):
-        box = QWidget(content)
+    def _add_section(self, target: QVBoxLayout, title_key: str, title_fallback: str, hint_key: str, hint_fallback: str):
+        box = QWidget()
         layout = QVBoxLayout(box)
         layout.setContentsMargins(0, 0, 0, 0)
         layout.setSpacing(6)
         layout.addWidget(self._register_text(title_key, title_fallback, "title"))
         layout.addWidget(self._register_text(hint_key, hint_fallback, "hint"))
-        self.content_layout.addWidget(box)
+        target.addWidget(box)
         return layout
 
-    def _add_divider(self, content: QWidget) -> None:
-        divider = QFrame(content)
+    def _add_divider(self, target: QVBoxLayout) -> None:
+        divider = QFrame()
         divider.setProperty("role", "divider")
         divider.setFixedHeight(1)
-        self.content_layout.addWidget(divider)
+        target.addWidget(divider)
 
-    def _build_theme_section(self, content: QWidget) -> None:
+    def _build_theme_section(self, target: QVBoxLayout) -> None:
         layout = self._add_section(
-            content,
+            target,
             "language.UI.ui_Theme",
             "主题",
             "language.UI.ui_ThemeHint",
@@ -363,10 +389,10 @@ class _ConfigSectionsMixin:
         row_layout.addWidget(self.dark_switch, 0, Qt.AlignRight | Qt.AlignVCenter)
         layout.addWidget(row)
 
-    def _build_material_section(self, content: QWidget) -> None:
+    def _build_material_section(self, target: QVBoxLayout) -> None:
         """材质与通透度：透明度 / 亚克力质感强度两枚实时滑块。"""
         layout = self._add_section(
-            content,
+            target,
             "language.UI.ui_Material",
             "材质与通透度",
             "language.UI.ui_MaterialHint",
@@ -424,9 +450,9 @@ class _ConfigSectionsMixin:
         layout.addWidget(row)
         return slider, value_label
 
-    def _build_language_section(self, content: QWidget) -> None:
+    def _build_language_section(self, target: QVBoxLayout) -> None:
         layout = self._add_section(
-            content,
+            target,
             "language.UI.ui_Language",
             "语言",
             "language.UI.ui_LanguageHint",
@@ -440,9 +466,9 @@ class _ConfigSectionsMixin:
         self.language_select.selectionChanged.connect(self._on_language_selected)
         layout.addWidget(self.language_select)
 
-    def _build_menu_mode_section(self, content: QWidget) -> None:
+    def _build_menu_mode_section(self, target: QVBoxLayout) -> None:
         layout = self._add_section(
-            content,
+            target,
             "language.UI.ui_MenuMode",
             "菜单模式",
             "language.UI.ui_MenuModeHint",
@@ -453,7 +479,7 @@ class _ConfigSectionsMixin:
         self.menu_mode_select.selectionChanged.connect(self._on_menu_mode_selected)
         layout.addWidget(self.menu_mode_select)
 
-    def _build_background_section(self, content: QWidget) -> None:
+    def _build_background_section(self, target: QVBoxLayout) -> None:
         """个性化背景手风琴：类型选择、最近图片、浏览、适应模式。
 
         结构对齐 Windows 设置：标题行常驻（图标 + 标题 + 说明 + 类型下拉 +
@@ -475,7 +501,7 @@ class _ConfigSectionsMixin:
             del self._background_recent[5:]
         self._recent_thumbs: list[_RecentThumb] = []
 
-        card = QFrame(content)
+        card = QFrame()
         card.setObjectName("CBackgroundAccordion_Frame")
         outer = QVBoxLayout(card)
         outer.setContentsMargins(0, 0, 0, 0)
@@ -593,7 +619,7 @@ class _ConfigSectionsMixin:
         self._sync_background_controls()
         self._sync_background_chevron()
         self._refresh_background_icon()
-        self.content_layout.addWidget(card)
+        target.addWidget(card)
 
     @staticmethod
     def _row_divider(parent: QWidget) -> QFrame:

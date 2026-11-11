@@ -111,6 +111,10 @@ class ThemeController:
         self._record_event = event_recorder
         # 主题变更 -> 重建全局样式并应用（弱引用订阅）
         self._theme_manager.subscribe(self._apply_styles)
+        config = getattr(getattr(window, "ui", None), "theme_config", None)
+        closed = getattr(config, "closed", None)
+        if closed is not None:
+            closed.connect(lambda: self._sync_theme_button(False))
 
     def cycle_theme(self):
         # Launcher applications may expose their own theme cycle (for example
@@ -127,11 +131,20 @@ class ThemeController:
     def toggle_theme_drawer(self) -> bool:
         """打开/收起右侧外观配置抽屉。
 
-        - 抽屉收起：切换到 ``theme_menu`` 并展开；
-        - 抽屉已展开且当前就是外观配置页：收起（Toggle）；
-        - 抽屉已展开但停在别的右侧页：只切到外观配置页，不收起。
+        浮层模式优先：外观面板覆盖在内容区右侧，不压缩主页面；没有浮层面板
+        的宿主回落到旧的右侧栏开合逻辑。
         """
         ui = getattr(self._window, "ui", None)
+        config = getattr(ui, "theme_config", None)
+        if (
+            config is not None
+            and callable(getattr(config, "toggle", None))
+            and not getattr(config, "_embedded", False)
+        ):
+            config.toggle()
+            self._sync_theme_button(bool(config.is_open()))
+            return True
+
         menu = getattr(ui, "theme_menu", None)
         if menu is None or not hasattr(ui, "right_column"):
             self._logger.warning("当前窗口没有外观配置抽屉页")
@@ -161,6 +174,9 @@ class ThemeController:
         button = ui.title_bar.findChild(QPushButton, "btn_themes")
         if button is None or not hasattr(button, "set_active"):
             return
+        config = getattr(ui, "theme_config", None)
+        if active is None and config is not None and callable(getattr(config, "is_open", None)):
+            active = bool(config.is_open())
         menu = getattr(ui, "theme_menu", None)
         if active is None:
             active = bool(
