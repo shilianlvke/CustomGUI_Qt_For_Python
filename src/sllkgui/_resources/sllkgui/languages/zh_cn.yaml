@@ -160,6 +160,8 @@ UI:
   ui_LanguageHint: 选择界面显示语言
   ui_MenuMode: 菜单模式
   ui_MenuModeHint: 固定展示在内容区旁，浮层覆盖在当前页面之上
+  ui_DrawerMode: 抽屉模式
+  ui_DrawerModeHint: 四个方向的抽屉统一固定占位，或浮层覆盖在当前页面之上
   ui_Background: 个性化设置背景
   ui_BackgroundHint: 图片背景仅作用于当前窗口。
   ui_BackgroundNone: 无

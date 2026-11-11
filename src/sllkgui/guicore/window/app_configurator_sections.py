@@ -282,6 +282,8 @@ class _ConfigSectionsMixin:
         self._build_language_section(interface_layout)
         self._add_divider(interface_layout)
         self._build_menu_mode_section(interface_layout)
+        self._add_divider(interface_layout)
+        self._build_drawer_mode_section(interface_layout)
         interface_layout.addStretch(1)
 
         for page in (theme_page, material_page, background_page, interface_page):
@@ -478,6 +480,20 @@ class _ConfigSectionsMixin:
         self.menu_mode_select.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed)
         self.menu_mode_select.selectionChanged.connect(self._on_menu_mode_selected)
         layout.addWidget(self.menu_mode_select)
+
+    def _build_drawer_mode_section(self, target: QVBoxLayout) -> None:
+        """四向抽屉（左 / 右 / 上 / 下）共用的布局模式：固定占位或浮层覆盖。"""
+        layout = self._add_section(
+            target,
+            "language.UI.ui_DrawerMode",
+            "抽屉模式",
+            "language.UI.ui_DrawerModeHint",
+            "四个方向的抽屉统一固定占位，或浮层覆盖在当前页面之上",
+        )
+        self.drawer_mode_select = CSelectButton(self._drawer_mode_labels(), index=0, size="sm")
+        self.drawer_mode_select.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed)
+        self.drawer_mode_select.selectionChanged.connect(self._on_drawer_mode_selected)
+        layout.addWidget(self.drawer_mode_select)
 
     def _build_background_section(self, target: QVBoxLayout) -> None:
         """个性化背景手风琴：类型选择、最近图片、浏览、适应模式。

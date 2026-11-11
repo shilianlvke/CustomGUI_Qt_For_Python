@@ -98,6 +98,56 @@ def test_invalid_values_are_not_written():
     assert not user_settings.user_settings_path().exists()
 
 
+def test_drawer_mode_roundtrip_and_validation():
+    assert user_settings.save_user_settings(drawer_mode="overlay")
+    assert user_settings.load_user_settings() == {"drawer_mode": "overlay"}
+    assert not user_settings.save_user_settings(drawer_mode="floating")
+
+
+def test_restore_drawer_mode_applies_and_syncs(monkeypatch):
+    applied = []
+
+    class _Functions:
+        @staticmethod
+        def set_drawer_mode(window, mode):
+            applied.append(mode)
+
+    class _Config:
+        def __init__(self):
+            self.value = None
+
+        def set_drawer_mode(self, mode):
+            self.value = mode
+
+    config = _Config()
+    window = SimpleNamespace(ui=SimpleNamespace(theme_config=config))
+    monkeypatch.setattr(setup_window_module, "MainFunctions", _Functions)
+
+    SetupMainWindow.restore_drawer_mode(window, {"drawer_mode": "overlay"})
+
+    assert applied == ["overlay"]
+    assert config.value == "overlay"
+
+
+def test_restore_drawer_mode_defaults_to_static(monkeypatch):
+    applied = []
+
+    class _Functions:
+        @staticmethod
+        def set_drawer_mode(window, mode):
+            applied.append(mode)
+
+    class _Config:
+        def set_drawer_mode(self, mode):
+            applied.append(mode)
+
+    window = SimpleNamespace(ui=SimpleNamespace(theme_config=_Config()))
+    monkeypatch.setattr(setup_window_module, "MainFunctions", _Functions)
+
+    SetupMainWindow.restore_drawer_mode(window, {"drawer_mode": "floating"})
+    assert applied == ["static", "static"], "非法值回退 static，并同步面板选中态"
+
+
 def test_appearance_fields_roundtrip():
     assert user_settings.save_user_settings(acrylic_transparency=35, glass_strength=80)
 
@@ -372,7 +422,7 @@ def test_migrate_state_fills_v2_v3_defaults():
         transitions=transitions,
     )
 
-    assert len(transitions) == 2, "v1->v2 and v2->v3 must be recorded"
+    assert len(transitions) == 3, "v1->v2 -> v3 -> v4 must be recorded"
     assert migrated["theme_name"] == "eye", "existing keys must be preserved"
     assert migrated["background_image"] == "/x.png", "existing keys must not be overwritten by defaults"
     assert migrated["background_fit"] == user_settings.BACKGROUND_FIT_MODES[0], "v3 default must be filled"
@@ -380,7 +430,7 @@ def test_migrate_state_fills_v2_v3_defaults():
 
     only_v3: list[str] = []
     from_v2 = user_settings._migrate_state({}, version=2, fill_defaults=True, transitions=only_v3)
-    assert len(only_v3) == 1, "only v2->v3 transition applies for v2 input"
+    assert len(only_v3) == 2, "v2->v3 and v3->v4 transitions apply for v2 input"
     assert set(from_v2) == set(user_settings.V3_BACKGROUND_DEFAULTS), "all v3 defaults must be filled"
     assert user_settings._migrate_state({"theme_name": "eye"}, version=1) == {
         "theme_name": "eye"

@@ -114,6 +114,8 @@ class SetupMainWindow:
         SetupMainWindow.menu_add_btn(self)
         # 菜单模式依赖菜单按钮已就位，放在按钮创建之后再恢复
         SetupMainWindow.restore_menu_mode(self, user_state)
+        # 抽屉模式决定四个抽屉的容器形态，须在任何抽屉打开之前应用
+        SetupMainWindow.restore_drawer_mode(self, user_state)
         # PAGES (default page only; others are built on first navigation)
         load_registered_pages(self, eager=False)
         # 设置初始页面/设置左右列菜单（无任何应用时内容区留空）
@@ -229,6 +231,26 @@ class SetupMainWindow:
             return
         config = getattr(getattr(window, "ui", None), "theme_config", None)
         setter = getattr(config, "set_menu_mode", None)
+        if callable(setter):
+            setter(mode)
+
+    @staticmethod
+    def restore_drawer_mode(window, state: dict) -> None:
+        """按用户配置恢复四向抽屉的 Static / Overlay 模式并同步选中态。
+
+        未配置时显式应用 ``static``：外观面板默认以浮层形态创建，必须在这里
+        统一收进右列，才能与「固定」的语义一致。
+        """
+        mode = state.get("drawer_mode")
+        if not isinstance(mode, str) or mode not in ("static", "overlay"):
+            mode = "static"
+        try:
+            MainFunctions.set_drawer_mode(window, mode)
+        except Exception as exc:  # noqa: BLE001 - 抽屉恢复失败不应阻断启动
+            Logger.warning(f"恢复抽屉模式失败，回退 Static: {exc}")
+            return
+        config = getattr(getattr(window, "ui", None), "theme_config", None)
+        setter = getattr(config, "set_drawer_mode", None)
         if callable(setter):
             setter(mode)
 

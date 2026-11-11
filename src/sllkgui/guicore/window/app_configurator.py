@@ -26,6 +26,9 @@ from sllkgui.appcore import (
 from ..acrylic import set_acrylic_transparency, set_glass_strength
 from .app_configurator_sections import _ConfigSectionsMixin, _ThemeCard
 
+#: QWidget 的尺寸上限（Qt 的 QWIDGETSIZE_MAX）
+_MAX_WIDGET_SIZE = 16777215
+
 
 class CAppConfigurator(_ConfigSectionsMixin, QFrame):
     """右侧滑入的外观配置抽屉。
@@ -44,6 +47,8 @@ class CAppConfigurator(_ConfigSectionsMixin, QFrame):
     themeChanged = Signal(str)
     languageChanged = Signal(str)
     menuModeChanged = Signal(str)
+    #: 四向抽屉统一布局模式：static（固定占位）/ overlay（浮层覆盖）
+    drawerModeChanged = Signal(str)
     darkModeChanged = Signal(bool)
     #: 实时预览：透明度（0-100）与亚克力质感强度（0-100）变化
     transparencyChanged = Signal(int)
@@ -72,6 +77,7 @@ class CAppConfigurator(_ConfigSectionsMixin, QFrame):
         self._closing = False
         self._animation: QPropertyAnimation | None = None
         self._menu_mode = "static"
+        self._drawer_mode = "static"
         self._suppress_dark_sync = False
         self._theme_cards: list[_ThemeCard] = []
         #: 需要随语言刷新的标签：资源键 -> (标签, 默认文案)
@@ -255,10 +261,37 @@ class CAppConfigurator(_ConfigSectionsMixin, QFrame):
 
     @staticmethod
     def _menu_mode_labels() -> list[str]:
+        return CAppConfigurator._mode_labels()
+
+    @staticmethod
+    def _drawer_mode_labels() -> list[str]:
+        return CAppConfigurator._mode_labels()
+
+    @staticmethod
+    def _mode_labels() -> list[str]:
+        """固定 / 浮层两种布局模式共用的选项文案。"""
         return [
             Language.resolve_key("language.UI.ui_ModeStatic", "固定"),
             Language.resolve_key("language.UI.ui_ModeOverlay", "浮层"),
         ]
+
+    # ------------------------------------------------------------------
+    # 抽屉模式（四向统一）
+    # ------------------------------------------------------------------
+    def drawer_mode(self) -> str:
+        return self._drawer_mode
+
+    def set_drawer_mode(self, mode: str) -> None:
+        """同步四向抽屉模式选中态；只在用户改选时发出 ``drawerModeChanged``。"""
+        value = "overlay" if str(mode).lower() == "overlay" else "static"
+        self.drawer_mode_select.set_index(1 if value == "overlay" else 0, emit=False)
+        if value == self._drawer_mode:
+            return
+        self._drawer_mode = value
+        self.drawerModeChanged.emit(value)
+
+    def _on_drawer_mode_selected(self, index: int) -> None:
+        self.set_drawer_mode("overlay" if index == 1 else "static")
 
     def _refresh_texts(self) -> None:
         """语言切换后刷新标题、分区与选项文案（控件树不重建）。"""
@@ -266,9 +299,47 @@ class CAppConfigurator(_ConfigSectionsMixin, QFrame):
             label.setText(Language.resolve_key(key, fallback))
         self.tabs.set_options(self._tab_labels(), index=self.tabs.current_index(), emit=False)
         self.menu_mode_select.set_options(self._menu_mode_labels(), index=self.menu_mode_select.current_index(), emit=False)
+        self.drawer_mode_select.set_options(
+            self._drawer_mode_labels(), index=self.drawer_mode_select.current_index(), emit=False
+        )
         self._refresh_background_texts()
         self._sync_language()
         self.update()
+
+    # ------------------------------------------------------------------
+    # 形态切换
+    # ------------------------------------------------------------------
+    def is_embedded(self) -> bool:
+        return self._embedded
+
+    def set_embedded(self, embedded: bool) -> None:
+        """运行期切换「嵌入右列」与「浮层滑入」两种形态。
+
+        抽屉模式切换时调用：嵌入形态不再固定宽度、不画自身面板底色，
+        由外层右列卡片提供背景；浮层形态恢复固定宽度与滑入动画。
+        容器（右列堆栈 / 内容区浮层）的重新挂载由调用方负责。
+        """
+        embedded = bool(embedded)
+        if embedded == self._embedded:
+            return
+        self._stop_animation()
+        self._open = False
+        self._closing = False
+        self._embedded = embedded
+        parent = self.parentWidget()
+        if embedded:
+            if parent is not None:
+                parent.removeEventFilter(self)
+            self.setMinimumWidth(0)
+            self.setMaximumWidth(_MAX_WIDGET_SIZE)
+            self.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
+            self.hide()
+            return
+        self.setSizePolicy(QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Expanding)
+        self.setFixedWidth(self._width)
+        if parent is not None:
+            parent.installEventFilter(self)
+        self.hide()
 
     # ------------------------------------------------------------------
     # 开关
@@ -391,6 +462,7 @@ class CAppConfigurator(_ConfigSectionsMixin, QFrame):
         self.tabs.update()
         self.language_select.update()
         self.menu_mode_select.update()
+        self.drawer_mode_select.update()
         self.dark_switch.update()
         self.transparency_slider.update()
         self.glass_strength_slider.update()

@@ -49,13 +49,14 @@ _FILE_NAME = "user.yaml"
 _LEGACY_FILE = "ui_state.json"
 _SUBDIR = "settings"
 #: 用户配置显式版本号；文件缺失该键时按 v1 处理
-SCHEMA_VERSION = 3
+SCHEMA_VERSION = 4
 _SCHEMA_KEY = "schema_version"
 #: 允许持久化的字段（与 AppSettings / 外观配置一一对应）
 SUPPORTED_FIELDS = (
     "theme_name",
     "language",
     "menu_mode",
+    "drawer_mode",
     "startup_size",
     "acrylic_transparency",
     "glass_strength",
@@ -79,6 +80,7 @@ V3_BACKGROUND_DEFAULTS: dict[str, Any] = {
 MIGRATION_STEPS: tuple[tuple[int, dict[str, Any], str], ...] = (
     (2, {}, "v1→v2：引入显式 schema_version，字段语义不变"),
     (3, V3_BACKGROUND_DEFAULTS, "v2→v3：新增 background_image / background_fit / background_recent"),
+    (4, {}, "v3→v4：新增 drawer_mode（四向抽屉的 Static / Overlay 布局模式）"),
 )
 
 _LOCK = threading.Lock()
@@ -96,7 +98,7 @@ def _normalize_field(key: str, value: Any) -> Any | None:
         if isinstance(value, str) and value.strip():
             return value.strip()
         return None
-    if key == "menu_mode":
+    if key in ("menu_mode", "drawer_mode"):
         return value if value in ("static", "overlay") else None
     if key in ("acrylic_transparency", "glass_strength"):
         if isinstance(value, bool) or not isinstance(value, int):

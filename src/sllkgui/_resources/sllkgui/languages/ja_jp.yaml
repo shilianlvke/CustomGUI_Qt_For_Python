@@ -161,6 +161,8 @@ UI:
   ui_LanguageHint: 表示言語を選択
   ui_MenuMode: メニューモード
   ui_MenuModeHint: コンテンツ横に固定表示、または現在のページに重ねて表示
+  ui_DrawerMode: ドロワーモード
+  ui_DrawerModeHint: 4 方向のドロワーを固定配置、または現在のページに重ねて表示
   ui_Background: 背景をカスタマイズ
   ui_BackgroundHint: 画像はこのウィンドウにのみ適用されます。
   ui_BackgroundNone: なし

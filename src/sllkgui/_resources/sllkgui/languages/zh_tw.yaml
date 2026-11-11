@@ -161,6 +161,8 @@ UI:
   ui_LanguageHint: 選擇介面顯示語言
   ui_MenuMode: 選單模式
   ui_MenuModeHint: 固定顯示於內容區旁，浮層覆蓋於目前頁面之上
+  ui_DrawerMode: 抽屜模式
+  ui_DrawerModeHint: 四個方向的抽屜統一固定佔位，或浮層覆蓋於目前頁面之上
   ui_Background: 個人化設定背景
   ui_BackgroundHint: 圖片背景僅作用於目前視窗。
   ui_BackgroundNone: 無

@@ -22,6 +22,8 @@ from sllkgui.guicore.window.left_menu.overlay import (
     overlay_scrim_rect,
 )
 
+from .drawers import DrawerLayout, normalize_drawer_mode
+
 
 # FUNCTIONS
 class MainFunctions:
@@ -171,6 +173,33 @@ class MainFunctions:
         ui.left_menu.set_overlay_appearance(False)
         frame.show()
 
+    # SET DRAWER MODE
+    # ///////////////////////////////////////////////////////////////
+    def _drawers(self) -> DrawerLayout:
+        """惰性创建四向抽屉布局策略（旧宿主/测试桩不会触发）。"""
+        layout = getattr(self, "_drawer_layout", None)
+        if layout is None:
+            layout = DrawerLayout(self)
+            self._drawer_layout = layout
+        return layout
+
+    def drawer_mode(self) -> str:
+        return getattr(self, "_drawer_mode", "static")
+
+    def set_drawer_mode(self, mode) -> None:
+        """切换四向抽屉模式：``static`` 布局占位，``overlay`` 浮层覆盖。
+
+        与 ``menu_mode`` 相互独立：后者只控制左侧图标菜单。运行期切换会保留
+        当前已展开的抽屉（记录状态 → 换容器 → 恢复）。
+        """
+        value = normalize_drawer_mode(mode)
+        drawer = MainFunctions._drawers(self)
+        drawer.set_mode(value)
+        self._drawer_mode = value
+
+    def is_drawer_overlay(self) -> bool:
+        return MainFunctions.drawer_mode(self) == "overlay"
+
     # SET LEFT COLUMN PAGES
     # ///////////////////////////////////////////////////////////////
     def set_left_column_menu(self, menu, title, icon_path):
@@ -182,20 +211,16 @@ class MainFunctions:
     # RETURN IF LEFT COLUMN IS VISIBLE
     # ///////////////////////////////////////////////////////////////
     def left_column_is_visible(self):
-        width = self.ui.left_column_frame.width()
-        if width == 0:
-            return False
-        else:
-            return True
+        if MainFunctions.is_drawer_overlay(self):
+            return MainFunctions._drawers(self).is_open("left")
+        return self.ui.left_column_frame.width() != 0
 
     # RETURN IF RIGHT COLUMN IS VISIBLE
     # ///////////////////////////////////////////////////////////////
     def right_column_is_visible(self):
-        width = self.ui.right_column_frame.width()
-        if width == 0:
-            return False
-        else:
-            return True
+        if MainFunctions.is_drawer_overlay(self):
+            return MainFunctions._drawers(self).right_is_open()
+        return self.ui.right_column_frame.width() != 0
 
     # SET RIGHT COLUMN PAGES
     # ///////////////////////////////////////////////////////////////
@@ -217,18 +242,14 @@ class MainFunctions:
     # RETURN IF TOP / BOTTOM COLUMN IS VISIBLE
     # ///////////////////////////////////////////////////////////////
     def top_column_is_visible(self):
-        height = self.ui.top_column_frame.height()
-        if height == 0:
-            return False
-        else:
-            return True
+        if MainFunctions.is_drawer_overlay(self):
+            return MainFunctions._drawers(self).is_open("top")
+        return self.ui.top_column_frame.height() != 0
 
     def bottom_column_is_visible(self):
-        height = self.ui.bottom_column_frame.height()
-        if height == 0:
-            return False
-        else:
-            return True
+        if MainFunctions.is_drawer_overlay(self):
+            return MainFunctions._drawers(self).is_open("bottom")
+        return self.ui.bottom_column_frame.height() != 0
 
     # GET TITLE BUTTON BY OBJECT NAME
     # ///////////////////////////////////////////////////////////////
@@ -243,6 +264,9 @@ class MainFunctions:
     # LEDT AND RIGHT COLUMNS / SHOW / HIDE
     # ///////////////////////////////////////////////////////////////
     def toggle_left_column(self):
+        if MainFunctions.is_drawer_overlay(self):
+            MainFunctions._drawers(self).toggle("left")
+            return
         # GET ACTUAL CLUMNS SIZE
         width = self.ui.left_column_frame.width()
         right_column_width = self.ui.right_column_frame.width()
@@ -255,12 +279,29 @@ class MainFunctions:
         MainFunctions.start_box_animation(self, left_column_width, width, "right")
 
     def toggle_top_column(self):
+        if MainFunctions.is_drawer_overlay(self):
+            drawer = MainFunctions._drawers(self)
+            if drawer.is_open("top"):
+                drawer.close("top")
+            else:
+                # 与 Static 一致：同一主轴只保留一个抽屉
+                drawer.close("bottom", animate=False)
+                drawer.open("top")
+            return
         # GET ACTUAL COLUMNS SIZE
         top_column_height = self.ui.top_column_frame.height()
         bottom_column_height = self.ui.bottom_column_frame.height()
         MainFunctions.start_box_animation_vertical(self, top_column_height, bottom_column_height, "top")
 
     def toggle_bottom_column(self):
+        if MainFunctions.is_drawer_overlay(self):
+            drawer = MainFunctions._drawers(self)
+            if drawer.is_open("bottom"):
+                drawer.close("bottom")
+            else:
+                drawer.close("top", animate=False)
+                drawer.open("bottom")
+            return
         # GET ACTUAL COLUMNS SIZE
         top_column_height = self.ui.top_column_frame.height()
         bottom_column_height = self.ui.bottom_column_frame.height()

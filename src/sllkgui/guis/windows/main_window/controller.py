@@ -2,6 +2,7 @@ from PySide6.QtCore import QEvent, QObject, QTimer
 from PySide6.QtWidgets import QPushButton, QWidget
 
 from sllkgui.appcore import (
+    AppSettings,
     Language,
     Logger,
     MainWindowButtonUseCase,
@@ -131,13 +132,16 @@ class ThemeController:
     def toggle_theme_drawer(self) -> bool:
         """打开/收起右侧外观配置抽屉。
 
-        浮层模式优先：外观面板覆盖在内容区右侧，不压缩主页面；没有浮层面板
-        的宿主回落到旧的右侧栏开合逻辑。
+        ``drawer_mode=overlay``：外观面板浮在内容区右侧，不压缩主页面；
+        ``drawer_mode=static``：面板嵌入右列，展开时挤压内容区（既有行为）。
+        没有浮层面板的宿主始终回落到旧的右侧栏开合逻辑。
         """
         ui = getattr(self._window, "ui", None)
         config = getattr(ui, "theme_config", None)
+        overlay = getattr(self._window, "_drawer_mode", "static") == "overlay"
         if (
-            config is not None
+            overlay
+            and config is not None
             and callable(getattr(config, "toggle", None))
             and not getattr(config, "_embedded", False)
         ):
@@ -147,6 +151,11 @@ class ThemeController:
 
         menu = getattr(ui, "theme_menu", None)
         if menu is None or not hasattr(ui, "right_column"):
+            # 极旧宿主：没有外观页时回落到浮层 / 旧栏开合
+            if config is not None and callable(getattr(config, "toggle", None)):
+                config.toggle()
+                self._sync_theme_button(bool(config.is_open()))
+                return True
             self._logger.warning("当前窗口没有外观配置抽屉页")
             return False
         visible = MainFunctions.right_column_is_visible(self._window)
@@ -166,7 +175,8 @@ class ThemeController:
         """让标题栏外观配置按钮始终反映抽屉的展开状态。
 
         ``active`` 显式给出目标状态时以其为准（开合动画进行中的宽度不可靠）；
-        未给出时才按当前可见性推导。
+        未给出时按当前抽屉模式推导：浮层看面板自身的 ``is_open``，固定看
+        右列的占位宽度。
         """
         ui = getattr(self._window, "ui", None)
         if ui is None:
@@ -174,17 +184,28 @@ class ThemeController:
         button = ui.title_bar.findChild(QPushButton, "btn_themes")
         if button is None or not hasattr(button, "set_active"):
             return
-        config = getattr(ui, "theme_config", None)
-        if active is None and config is not None and callable(getattr(config, "is_open", None)):
-            active = bool(config.is_open())
-        menu = getattr(ui, "theme_menu", None)
         if active is None:
-            active = bool(
-                menu is not None
-                and MainFunctions.right_column_is_visible(self._window)
-                and ui.right_column.menus.currentWidget() is menu
-            )
+            active = self._theme_drawer_active()
         button.set_active(bool(active))
+
+    def _theme_drawer_active(self) -> bool:
+        ui = getattr(self._window, "ui", None)
+        if ui is None:
+            return False
+        config = getattr(ui, "theme_config", None)
+        if getattr(self._window, "_drawer_mode", "static") == "overlay":
+            if config is not None and callable(getattr(config, "is_open", None)):
+                return bool(config.is_open())
+            return False
+        menu = getattr(ui, "theme_menu", None)
+        frame = getattr(ui, "right_column_frame", None)
+        column = getattr(ui, "right_column", None)
+        if menu is None or frame is None or column is None:
+            return False
+        # 固定模式下宽度由动画驱动，用 minimumWidth 判断更可靠（动画一开始
+        # 就已是目标值，不会像 width 那样滞后一帧）。
+        opened = frame.minimumWidth() > int(AppSettings.right_column_size.minimum)
+        return opened and column.menus.currentWidget() is menu
 
     def refresh_styles(self):
         """按当前主题与外观参数重建全局样式（滑块实时预览也走这里）。"""
@@ -313,6 +334,9 @@ class MainWindowController:
         menu_mode_changed = getattr(config, "menuModeChanged", None)
         if menu_mode_changed is not None:
             menu_mode_changed.connect(self._apply_menu_mode)
+        drawer_mode_changed = getattr(config, "drawerModeChanged", None)
+        if drawer_mode_changed is not None:
+            drawer_mode_changed.connect(self._apply_drawer_mode)
         language_changed = getattr(config, "languageChanged", None)
         if language_changed is not None:
             language_changed.connect(self._apply_language)
@@ -389,6 +413,16 @@ class MainWindowController:
         if callable(setter):
             setter(self._window, mode)
         save_user_settings(menu_mode=mode)
+
+    def _apply_drawer_mode(self, mode: str) -> None:
+        """外观配置里的四向抽屉模式：统一换容器并写入用户配置。"""
+        setter = getattr(self._main_functions, "set_drawer_mode", None)
+        if callable(setter):
+            setter(self._window, mode)
+        save_user_settings(drawer_mode=mode)
+        sync = getattr(self.theme_controller, "_sync_theme_button", None)
+        if callable(sync):
+            sync()
 
     def _apply_language(self, language: str) -> None:
         """外观配置里直接选中的目标语言：整体切换并重建页面。"""
@@ -471,8 +505,8 @@ class MainWindowController:
             self.theme_controller.cycle_theme()
 
     def _handle_top_settings_button(self, btn):
-        """顶栏设置按钮开合右列时，外观抽屉会被切走/关闭，需同步按钮状态。"""
+        """顶栏设置按钮开合右列时，按抽屉的实际状态同步外观按钮。"""
         self.column_controller.handle_top_settings_button(btn)
         sync = getattr(self.theme_controller, "_sync_theme_button", None)
         if callable(sync):
-            sync(False)
+            sync()

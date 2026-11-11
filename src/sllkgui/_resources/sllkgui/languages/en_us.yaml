@@ -160,6 +160,8 @@ UI:
   ui_LanguageHint: Choose the interface language
   ui_MenuMode: Menu Mode
   ui_MenuModeHint: Dock beside the content, or overlay the current page
+  ui_DrawerMode: Drawer Mode
+  ui_DrawerModeHint: Dock all four drawers beside the content, or overlay them on the current page
   ui_Background: Personalize your background
   ui_BackgroundHint: Images apply to this window only.
   ui_BackgroundNone: None
