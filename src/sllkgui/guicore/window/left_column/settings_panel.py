@@ -48,7 +48,10 @@ class CSettingsPanel(QWidget):
     # 对外：宿主应用追加自己的设置区块
     # ------------------------------------------------------------------
     def add_section(self, widget: QWidget, page: str = "overview") -> None:
-        target = self._extra_folders if page == "folders" else self._extra_overview
+        target = {
+            "environment": self._extra_environment,
+            "folders": self._extra_folders,
+        }.get(page, self._extra_overview)
         target.addWidget(CHDiv())
         target.addWidget(widget)
 
@@ -57,30 +60,31 @@ class CSettingsPanel(QWidget):
     # ------------------------------------------------------------------
     def _build(self) -> None:
         self._layout.addWidget(self._label("SLLKGUI", "eyebrow"))
-        self._tabs = CSelectButton(
-            [self._keyed_text("language.UI.ui_SettingsOverview", "概览"), self._keyed_text("language.UI.ui_SettingsFolders", "目录")],
-            index=0,
-            size="sm",
-        )
+        self._tabs = CSelectButton(self._tab_labels(), index=0, size="sm")
         self._tabs.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed)
         self._layout.addWidget(self._tabs)
 
         self._stack = QStackedWidget()
         self._overview, self._overview_layout = self._page()
+        self._environment, self._environment_layout = self._page()
         self._folders, self._folders_layout = self._page()
-        self._stack.addWidget(self._overview)
-        self._stack.addWidget(self._folders)
+        for page in (self._overview, self._environment, self._folders):
+            self._stack.addWidget(page)
         self._layout.addWidget(self._stack, 1)
         self._tabs.selectionChanged.connect(self._stack.setCurrentIndex)
 
         self._extra_overview = QVBoxLayout()
         self._extra_overview.setContentsMargins(0, 0, 0, 0)
         self._extra_overview.setSpacing(6)
+        self._extra_environment = QVBoxLayout()
+        self._extra_environment.setContentsMargins(0, 0, 0, 0)
+        self._extra_environment.setSpacing(6)
         self._extra_folders = QVBoxLayout()
         self._extra_folders.setContentsMargins(0, 0, 0, 0)
         self._extra_folders.setSpacing(6)
 
         self._build_overview()
+        self._build_environment()
         self._build_folders()
 
     def _page(self) -> tuple[QWidget, QVBoxLayout]:
@@ -89,6 +93,14 @@ class CSettingsPanel(QWidget):
         layout.setContentsMargins(0, 0, 0, 0)
         layout.setSpacing(6)
         return page, layout
+
+    @staticmethod
+    def _tab_labels() -> list[str]:
+        return [
+            str(Language.resolve_key("language.UI.ui_SettingsOverview", "概览")),
+            str(Language.resolve_key("language.UI.ui_SettingsEnvironment", "环境")),
+            str(Language.resolve_key("language.UI.ui_SettingsFolders", "目录")),
+        ]
 
     def _build_overview(self) -> None:
         layout = self._overview_layout
@@ -101,12 +113,16 @@ class CSettingsPanel(QWidget):
         layout.addWidget(self._keyed_label("language.UI.ui_SettingsPages", "页面", "caption"))
         self._page_count = self._label("0", "value")
         layout.addWidget(self._page_count)
-        layout.addWidget(CHDiv())
+        layout.addLayout(self._extra_overview)
+        layout.addStretch(1)
+
+    def _build_environment(self) -> None:
+        layout = self._environment_layout
         layout.addWidget(self._keyed_label("language.UI.ui_SettingsEnvironment", "运行环境", "title"))
         layout.addWidget(self._label(f"Python {platform.python_version()}", "value"))
         layout.addWidget(self._label(f"PySide6 {PySide6.__version__}", "value"))
         layout.addWidget(self._label(f"{platform.system()} {platform.release()}", "value"))
-        layout.addLayout(self._extra_overview)
+        layout.addLayout(self._extra_environment)
         layout.addStretch(1)
 
     def _build_folders(self) -> None:
@@ -212,13 +228,7 @@ class CSettingsPanel(QWidget):
             label.setText(self._keyed_text(key, default))
         for button, key, default in self._buttons:
             button.setText(self._keyed_text(key, default))
-        self._tabs.set_options(
-            [
-                self._keyed_text("language.UI.ui_SettingsOverview", "概览"),
-                self._keyed_text("language.UI.ui_SettingsFolders", "目录"),
-            ],
-            index=self._tabs.current_index(),
-        )
+        self._tabs.set_options(self._tab_labels(), index=self._tabs.current_index())
         self._refresh_status()
 
     def _apply_theme(self) -> None:

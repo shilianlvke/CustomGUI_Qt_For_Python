@@ -206,6 +206,47 @@ def test_configurator_appearance_sliders(host):
         panel.deleteLater()
 
 
+def test_left_settings_panel_has_three_single_screen_tabs(qapp):
+    from PySide6.QtWidgets import QScrollArea
+
+    from sllkgui.guicore.window.left_column.settings_panel import CSettingsPanel
+
+    panel = CSettingsPanel()
+    try:
+        assert panel._stack.count() == 3
+        assert len(panel._tabs._options) == 3
+        assert not panel.findChildren(QScrollArea)
+        for index in range(3):
+            panel._tabs.set_index(index)
+            assert panel._stack.currentIndex() == index
+    finally:
+        panel.deleteLater()
+
+
+def test_left_column_supports_subtitle_and_language_key_title(qapp):
+    from sllkgui.appcore import AppSettings, Language
+    from sllkgui.guicore import CLeftColumn
+
+    host = QWidget()
+    column = CLeftColumn(
+        host,
+        "custom.title",
+        18,
+        "",
+        "",
+        AppSettings.family,
+        text_subtitle="custom.subtitle",
+    )
+    try:
+        assert column.title_label.text() == "custom.title"
+        assert column.subtitle_label.text() == "custom.subtitle"
+        column.set_title("language.UI.ui_Settings")
+        assert column._title_key == "language.UI.ui_Settings"
+        assert column.title_label.text() == Language.resolve_key("language.UI.ui_Settings")
+    finally:
+        column.deleteLater()
+
+
 def test_menu_colors_theme_contrast_and_glass_surface(monkeypatch):
     import sllkgui.guicore.acrylic as acrylic_module
     from sllkgui.guicore import glass_surface, reset_appearance_overrides, set_glass_strength

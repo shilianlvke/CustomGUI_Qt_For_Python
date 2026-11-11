@@ -49,6 +49,7 @@ UI:
   ui_Property: プロパティ
   # その他
   ui_Settings: 設定
+  ui_SettingsSubtitle: ソフトウェアと環境
   ui_SettingsSoftware: ソフトウェア情報
   ui_SettingsOverview: 概要
   ui_SettingsEnvironment: 実行環境

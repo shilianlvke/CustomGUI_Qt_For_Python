@@ -49,6 +49,7 @@ UI:
   ui_Property: 屬性
   # 其他
   ui_Settings: 設定
+  ui_SettingsSubtitle: 軟體與環境
   ui_SettingsSoftware: 軟體資訊
   ui_SettingsOverview: 概覽
   ui_SettingsEnvironment: 執行環境

@@ -48,6 +48,7 @@ UI:
   ui_Property: 属性
   # 其他
   ui_Settings: 设置
+  ui_SettingsSubtitle: 软件与环境
   ui_SettingsSoftware: 软件信息
   ui_SettingsOverview: 概览
   ui_SettingsEnvironment: 运行环境

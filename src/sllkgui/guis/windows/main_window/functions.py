@@ -175,7 +175,8 @@ class MainFunctions:
     # ///////////////////////////////////////////////////////////////
     def set_left_column_menu(self, menu, title, icon_path):
         self.ui.left_column.menus.menus.setCurrentWidget(menu)
-        self.ui.left_column.title_label.setText(title)
+        # 走 set_title 而不是直接写 label：保留语言键，切换语言后标题才会刷新。
+        self.ui.left_column.set_title(title)
         self.ui.left_column.icon.set_icon(icon_path)
 
     # RETURN IF LEFT COLUMN IS VISIBLE

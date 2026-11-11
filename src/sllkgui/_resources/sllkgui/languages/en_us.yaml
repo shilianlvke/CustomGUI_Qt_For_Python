@@ -48,6 +48,7 @@ UI:
   ui_Property: Property
   # Others
   ui_Settings: Settings
+  ui_SettingsSubtitle: Software & environment
   ui_SettingsSoftware: Software info
   ui_SettingsOverview: Overview
   ui_SettingsEnvironment: Environment

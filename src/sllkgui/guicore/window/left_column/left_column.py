@@ -1,4 +1,5 @@
 from PySide6.QtCore import Qt, Signal
+from PySide6.QtGui import QFont
 from PySide6.QtWidgets import QFrame, QHBoxLayout, QLabel, QVBoxLayout, QWidget
 
 from sllkgui.appcore import ColorPalette, Language, get_design_tokens, get_theme_manager
@@ -25,12 +26,14 @@ class CLeftColumn(QWidget):
         icon_close_path,
         font_family,
         radius=None,
+        text_subtitle: str = "",
     ):
         super().__init__()
 
         # 参数（颜色实时读取 ColorPalette，主题切换自动生效）
         self._app_parent = app_parent
         self._title_key = text_title
+        self._subtitle_key = text_subtitle
         self._text_title_size = text_title_size
         self._icon_path = icon_path
         self._icon_close_path = icon_close_path
@@ -70,15 +73,21 @@ class CLeftColumn(QWidget):
         """设置标题（支持 ``language.*`` 资源键，语言切换自动重新解析）。"""
         self._title_key = title
         self.title_label.setText(Language.resolve_key(title))
+        self.subtitle_label.setText(Language.resolve_key(self._subtitle_key) if self._subtitle_key else "")
 
     def apply_language(self):
         """语言切换回调：刷新标题与关闭按钮提示。"""
         self.title_label.setText(Language.resolve_key(self._title_key))
+        self.subtitle_label.setText(Language.resolve_key(self._subtitle_key) if self._subtitle_key else "")
         self.btn_close.set_tooltip(Language.resolve_key("language.UI.ui_Close"))
 
     def update_style(self):
         """主题切换回调：重新着色图标（颜色样式由全局样式表统一提供）。"""
         self.icon.set_icon(self._icon_path, ColorPalette.custom_icon_color)
+        self.subtitle_label.setStyleSheet(
+            f"#CLeftColumnTitle_Subtitle {{ color: {ColorPalette.custom_text_description};"
+            " background: transparent; }"
+        )
         self.repaint()
 
     def setup_ui(self):
@@ -128,6 +137,20 @@ class CLeftColumn(QWidget):
             f' font: {tokens.typography.weight_label} {tokens.typography.size_label}pt "{self._family}"; }}'
         )
 
+        # 副标题：与右侧外观抽屉的标题层级对齐，显示“设置”页的用途。
+        self.subtitle_label = QLabel()
+        self.subtitle_label.setObjectName("CLeftColumnTitle_Subtitle")
+        font = QFont(self._family)
+        font.setPointSize(8)
+        self.subtitle_label.setFont(font)
+        self.subtitle_label.setStyleSheet("background: transparent;")
+
+        title_column = QVBoxLayout()
+        title_column.setContentsMargins(0, 0, 0, 0)
+        title_column.setSpacing(0)
+        title_column.addWidget(self.title_label)
+        title_column.addWidget(self.subtitle_label)
+
         # 按钮框架
         self.btn_frame = QFrame()
         self.btn_frame.setObjectName("CLeftColumnBtn_Frame")
@@ -145,7 +168,7 @@ class CLeftColumn(QWidget):
 
         # 添加图标、标题、按钮到标题背景布局
         self.title_bg_layout.addWidget(self.icon_frame)
-        self.title_bg_layout.addWidget(self.title_label)
+        self.title_bg_layout.addLayout(title_column, 1)
         self.title_bg_layout.addWidget(self.btn_frame)
 
         # 添加标题背景到基础布局

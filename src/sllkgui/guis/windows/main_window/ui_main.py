@@ -94,11 +94,12 @@ class UiMainWindow:
         self.left_column = CLeftColumn(
             # parent,
             app_parent=self.central_widget,
-            text_title="",
+            text_title="language.UI.ui_Settings",
             text_title_size=AppSettings.title_size,
             icon_path=PathFactory.set_svg_icon("icon_setting"),
             icon_close_path=PathFactory.set_svg_icon("icon_close"),
             font_family=AppSettings.family,
+            text_subtitle="language.UI.ui_SettingsSubtitle",
         )
         self.left_column_layout.addWidget(self.left_column)
 
