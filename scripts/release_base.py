@@ -57,7 +57,7 @@ def _sync_changelog(old: str, new: str) -> None:
     CHANGELOG.write_text(text, encoding="utf-8")
 
 
-def _gate() -> None:
+def _gate(target: str) -> None:
     dist = ROOT / "dist"
     steps: tuple[tuple[str, tuple[str, ...]], ...] = (
         ("ruff", ("uv", "run", "ruff", "check", "src", "tests", "apps", "examples", "scripts")),
@@ -81,9 +81,9 @@ def _gate() -> None:
         if result.returncode != 0:
             raise SystemExit(f"质量门禁失败：{name}")
 
-    wheels = sorted(str(path) for path in dist.glob("*.whl"))
+    wheels = sorted(str(path) for path in dist.glob(f"sllkgui-{target}-*.whl"))
     if not wheels:
-        raise SystemExit("质量门禁失败：dist 中没有 wheel")
+        raise SystemExit(f"质量门禁失败：dist 中没有 sllkgui-{target} 的 wheel")
     print(f"[gate] twine: {' '.join(wheels)}")
     if subprocess.run(("uv", "run", "twine", "check", *wheels), cwd=ROOT).returncode != 0:
         raise SystemExit("质量门禁失败：twine")
@@ -119,7 +119,7 @@ def main(argv: list[str] | None = None) -> int:
         _sync_changelog(current, target)
 
     if not args.skip_gate:
-        _gate()
+        _gate(target)
 
     message = args.message or f"release: SllkGUI {target} ({tag})"
     _run("git", "add", "src/sllkgui/_version.py", "CHANGELOG.md")
