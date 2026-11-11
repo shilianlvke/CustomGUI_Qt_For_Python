@@ -66,7 +66,7 @@
 ### 装进你自己的项目（固定 tag）
 
 ```powershell
-uv add "sllkgui @ git+https://gitee.com/shilianlvke/SllkGui.git@base-v1.0.0"
+uv add "sllkgui @ git+https://gitee.com/shilianlvke/SllkGui.git@base-v1.0.1"
 ```
 
 固定到 tag 而不是分支，避免上游改动把你的构建搞红。

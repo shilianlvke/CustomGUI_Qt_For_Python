@@ -3,11 +3,11 @@
 项目遵循[语义化版本](https://semver.org/lang/zh-CN/)：major 版本允许破坏性变更并显式列出；
 minor 与 patch 保持向后兼容。
 
-当前版本：`1.0.0`（见 `src/sllkgui/_version.py`），对应 tag `base-v1.0.0`。
+当前版本：`1.0.1`（见 `src/sllkgui/_version.py`），对应 tag `base-v1.0.1`。
 
 ---
 
-## 未发布
+## 1.0.1（2026-11-11）
 
 ### 左侧抽屉
 

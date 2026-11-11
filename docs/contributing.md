@@ -96,7 +96,7 @@ uv run pytest --cov=sllkgui --cov-report=term-missing --cov-fail-under=70
 - 一次提交做一件事。重构与功能分开，格式化与逻辑分开。
 - 提交信息说明**为什么**，不只是**改了什么**；沿用 `type(scope): 中文描述` 风格。
 - 破坏性变更必须同步更新 `CHANGELOG.md` 的「破坏性变更」。
-- 版本号只在 `src/sllkgui/_version.py` 一处改，git tag 命名统一为 `base-vX.Y.Z`（如 `base-v1.0.0`）并与之保持一致。
+- 版本号只在 `src/sllkgui/_version.py` 一处改，git tag 命名统一为 `base-vX.Y.Z`（如 `base-v1.0.1`）并与之保持一致。
 
 ## 发版
 
@@ -115,7 +115,7 @@ uv pip install --python /tmp/smoke/bin/python dist/sllkgui-1.0.0-py3-none-any.wh
 # doctor 默认不执行插件代码；需要验证加载时改跑：/tmp/smoke/bin/sllkgui doctor --load
 
 # 4. 打 tag 并推送
-git tag base-v1.0.0
+git tag base-v1.0.1
 git push origin main --tags
 ```
 
