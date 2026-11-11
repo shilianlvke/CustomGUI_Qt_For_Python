@@ -58,7 +58,8 @@ def _sync_changelog(old: str, new: str) -> None:
 
 
 def _gate() -> None:
-    steps = (
+    dist = ROOT / "dist"
+    steps: tuple[tuple[str, tuple[str, ...]], ...] = (
         ("ruff", ("uv", "run", "ruff", "check", "src", "tests", "apps", "examples", "scripts")),
         ("mypy", ("uv", "run", "mypy")),
         (
@@ -73,13 +74,19 @@ def _gate() -> None:
             ),
         ),
         ("build", ("uv", "run", "python", "-m", "build", "--wheel")),
-        ("twine", ("uv", "run", "twine", "check", "dist/sllkgui-*.whl")),
     )
     for name, command in steps:
         print(f"[gate] {name}: {' '.join(command)}")
         result = subprocess.run(command, cwd=ROOT)
         if result.returncode != 0:
             raise SystemExit(f"质量门禁失败：{name}")
+
+    wheels = sorted(str(path) for path in dist.glob("*.whl"))
+    if not wheels:
+        raise SystemExit("质量门禁失败：dist 中没有 wheel")
+    print(f"[gate] twine: {' '.join(wheels)}")
+    if subprocess.run(("uv", "run", "twine", "check", *wheels), cwd=ROOT).returncode != 0:
+        raise SystemExit("质量门禁失败：twine")
 
 
 def main(argv: list[str] | None = None) -> int:

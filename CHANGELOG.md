@@ -7,6 +7,16 @@ minor 与 patch 保持向后兼容。
 
 ---
 
+## 1.0.2（2026-11-11）
+
+### 发布流程
+
+- 新增 `scripts/release_base.py`：一条命令完成补丁版本发布
+  （bump patch → ruff + mypy + pytest 70% + wheel + twine → 提交 → 打
+  `base-vX.Y.Z` tag → 推送）。任一步失败即退出，不会留下半发布状态。
+- `twine check` 改为在 Python 侧展开 `dist/*.whl`，Windows 下不再因 shell
+  不展开通配符而失败。
+
 ## 1.0.1（2026-11-11）
 
 ### 左侧抽屉
