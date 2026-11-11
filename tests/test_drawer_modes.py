@@ -22,7 +22,7 @@ from sllkgui.appcore import (
     get_app_context,
 )
 from sllkgui.guicore.window.app_configurator import CAppConfigurator
-from sllkgui.guis.windows.main_window.controller import ThemeController
+from sllkgui.guis.windows.main_window.controller import MainWindowController, ThemeController
 from sllkgui.guis.windows.main_window.functions import MainFunctions
 from sllkgui.guis.windows.main_window.ui_main import UiMainWindow
 
@@ -44,12 +44,41 @@ def window(qapp):
     ui = UiMainWindow()
     ui.setup_ui(host)
     host.ui = ui
+    host.controller = MainWindowController(host)
+    # 外观面板默认惰性创建；抽屉模式用例需要它立即存在
+    host.controller._ensure_theme_config()
     host.resize(1200, 760)
     host.show()
     QTest.qWait(80)
     yield host
     host.close()
     host.deleteLater()
+
+
+def test_appearance_panel_is_created_on_first_open(qapp):
+    """外观抽屉惰性创建：启动时为空，首次点击才构建并接入抽屉。"""
+    get_app_context()
+    ColorPalette.update(AppThemes[AppSettings.theme_name].data)
+    Language.update(AppLanguages[AppSettings.language].data)
+
+    host = QMainWindow()
+    ui = UiMainWindow()
+    ui.setup_ui(host)
+    host.ui = ui
+    host.controller = MainWindowController(host)
+    host.resize(1200, 760)
+    host.show()
+    QTest.qWait(80)
+    try:
+        assert ui.theme_config is None
+        host.controller.theme_controller.toggle_theme_drawer()
+        _wait_animation()
+        assert ui.theme_config is not None
+        assert ui.theme_config.isVisible()
+        assert ui.right_column_frame.minimumWidth() == AppSettings.right_column_size.maximum
+    finally:
+        host.close()
+        host.deleteLater()
 
 
 def _wait_animation():

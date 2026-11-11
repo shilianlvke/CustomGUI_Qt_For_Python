@@ -2,7 +2,6 @@ from PySide6.QtWidgets import QFrame, QHBoxLayout, QVBoxLayout, QWidget
 
 from sllkgui.appcore import AppSettings, PathFactory
 from sllkgui.guicore import (
-    CAppConfigurator,
     CBottomColumn,
     CCredits,
     CLeftColumn,
@@ -148,9 +147,11 @@ class UiMainWindow:
         # ADD RIGHT PAGES TO RIGHT COLUMN
         self.right_column = Ui_RightColumn()
         self.right_column.setupUi(self.content_area_right_bg_frame)
-        # 右侧抽屉的“外观配置”页：使用 CAppConfigurator 的浮层模式覆盖在内容区
-        # 右侧，不再占用布局宽度，避免打开外观面板时压缩主页面产生横向滚动。
-        self.theme_config = CAppConfigurator(self.content_area_frame, embedded=False)
+        # 右侧抽屉的“外观配置”页按需创建：CAppConfigurator 含 4 个单屏子页、
+        # 主题卡片与背景手风琴，启动即建约 10 MB。首次打开外观抽屉时由
+        # MainWindowController 创建并按当前抽屉模式挂到右列 / 浮层。
+        self.theme_config = None
+        self.theme_menu = None
         # ADD TO LAYOUTS
         self.content_area_layout.addWidget(self.content_area_left_frame)
         self.content_area_layout.addWidget(self.right_column_frame)

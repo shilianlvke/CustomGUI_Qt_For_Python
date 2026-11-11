@@ -162,6 +162,19 @@ class DrawerLayout:
         layout.insertWidget(index, frame)
         frame.show()
 
+    def attach_right(self, panel) -> None:
+        """外观面板首次创建后按当前模式挂载（惰性创建时调用）。
+
+        静态模式：收进右列堆栈，宽度保持收起态；浮层模式：保持为内容区的
+        浮层子控件并隐藏，等首次 open 时滑入。
+        """
+        if self._mode == "static":
+            self._apply_static_right(False)
+            return
+        if self._right_embedded:
+            self._float_right(panel)
+        panel.hide()
+
     def _apply_static_right(self, opened: bool) -> None:
         panel = self._panel()
         frame = self._frame("right")
@@ -190,9 +203,12 @@ class DrawerLayout:
         self._right_embedded = True
 
     def _float_right(self, panel) -> None:
-        if not self._right_embedded:
-            return
         stack = self._right_stack()
+        if not self._right_embedded:
+            # 面板可能由宿主提前嵌入右列（惰性创建发生在抽屉管理器之前）
+            if stack is None or panel.parentWidget() is not stack:
+                return
+            self._right_embedded = True
         if stack is not None:
             stack.removeWidget(panel)
         content = getattr(self.ui, "content_area_frame", None)

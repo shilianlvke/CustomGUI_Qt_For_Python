@@ -9,10 +9,11 @@ from sllkgui.appcore import (
     PathFactory,
     get_plugin_registry,
     get_theme_manager,
+    load_user_settings,
     record_event,
     save_user_settings,
 )
-from sllkgui.guicore import Styles, acrylic_active, apply_acrylic
+from sllkgui.guicore import CAppConfigurator, Styles, acrylic_active, apply_acrylic
 
 from .functions import MainFunctions
 from .registry import ensure_registered_page, get_page_routes
@@ -104,18 +105,36 @@ class ThemeController:
         style_factory=Styles,
         logger=Logger,
         event_recorder=record_event,
+        config_provider=None,
     ):
         self._window = window
         self._theme_manager = theme_manager or get_theme_manager()
         self._style_factory = style_factory
         self._logger = logger
         self._record_event = event_recorder
+        #: 外观面板惰性创建回调（由 MainWindowController 提供）
+        self._config_provider = config_provider
         # 主题变更 -> 重建全局样式并应用（弱引用订阅）
         self._theme_manager.subscribe(self._apply_styles)
-        config = getattr(getattr(window, "ui", None), "theme_config", None)
+        config = self._config(create=False)
+        if config is not None:
+            self.wire_config(config)
+
+    def wire_config(self, config) -> None:
+        """接通面板的关闭信号（幂等；惰性创建后调用）。"""
         closed = getattr(config, "closed", None)
-        if closed is not None:
-            closed.connect(lambda: self._sync_theme_button(False))
+        if closed is None or getattr(config, "_theme_controller_wired", False):
+            return
+        closed.connect(lambda: self._sync_theme_button(False))
+        config._theme_controller_wired = True
+
+    def _config(self, *, create: bool = True):
+        """当前外观面板；未创建时可请求控制器惰性构建。"""
+        ui = getattr(self._window, "ui", None)
+        config = getattr(ui, "theme_config", None)
+        if config is None and create and callable(self._config_provider):
+            config = self._config_provider()
+        return config
 
     def cycle_theme(self):
         # Launcher applications may expose their own theme cycle (for example
@@ -137,8 +156,9 @@ class ThemeController:
         没有浮层面板的宿主始终回落到旧的右侧栏开合逻辑。
         """
         ui = getattr(self._window, "ui", None)
-        config = getattr(ui, "theme_config", None)
         overlay = getattr(self._window, "_drawer_mode", "static") == "overlay"
+        # 惰性构建：只有真正打开外观抽屉时才付出控件树的构建成本
+        config = self._config()
         if (
             overlay
             and config is not None
@@ -192,7 +212,7 @@ class ThemeController:
         ui = getattr(self._window, "ui", None)
         if ui is None:
             return False
-        config = getattr(ui, "theme_config", None)
+        config = self._config(create=False)
         if getattr(self._window, "_drawer_mode", "static") == "overlay":
             if config is not None and callable(getattr(config, "is_open", None)):
                 return bool(config.is_open())
@@ -325,33 +345,8 @@ class MainWindowController:
         self._logger = logger
         self._button_use_case = button_use_case or MainWindowButtonUseCase()
         self.page_router = PageRouterController(window=window, main_functions=main_functions)
-        self.theme_controller = ThemeController(window=window)
+        self.theme_controller = ThemeController(window=window, config_provider=self._ensure_theme_config)
         self.column_controller = ColumnController(window=window, main_functions=main_functions)
-        config = getattr(getattr(window, "ui", None), "theme_config", None)
-        close_requested = getattr(config, "closeRequested", None)
-        if close_requested is not None:
-            close_requested.connect(self.theme_controller.toggle_theme_drawer)
-        menu_mode_changed = getattr(config, "menuModeChanged", None)
-        if menu_mode_changed is not None:
-            menu_mode_changed.connect(self._apply_menu_mode)
-        drawer_mode_changed = getattr(config, "drawerModeChanged", None)
-        if drawer_mode_changed is not None:
-            drawer_mode_changed.connect(self._apply_drawer_mode)
-        language_changed = getattr(config, "languageChanged", None)
-        if language_changed is not None:
-            language_changed.connect(self._apply_language)
-        transparency_changed = getattr(config, "transparencyChanged", None)
-        if transparency_changed is not None:
-            transparency_changed.connect(self._apply_transparency)
-        strength_changed = getattr(config, "glassStrengthChanged", None)
-        if strength_changed is not None:
-            strength_changed.connect(self._apply_glass_strength)
-        appearance_committed = getattr(config, "appearanceCommitted", None)
-        if appearance_committed is not None:
-            appearance_committed.connect(self._flush_appearance)
-        background_changed = getattr(config, "backgroundChanged", None)
-        if background_changed is not None:
-            background_changed.connect(self._apply_background)
         # 滑块连续拖动时重建整棵控件树的样式代价较高，用 60ms 节流合并；
         # 透明度只需重挂系统材质，可以每次立即生效。
         self._appearance_style_dirty = False
@@ -366,6 +361,75 @@ class MainWindowController:
         if isinstance(window, QObject):
             self._window_state_tracker = _WindowStateTracker(window)
             window.installEventFilter(self._window_state_tracker)
+        # 自定义宿主可能已提前创建面板：立即接线，行为与惰性创建一致
+        config = getattr(getattr(window, "ui", None), "theme_config", None)
+        if config is not None:
+            self._wire_theme_config(config)
+
+    def _ensure_theme_config(self):
+        """首次打开外观抽屉时创建 CAppConfigurator（启动内存优化）。
+
+        面板含 4 个单屏子页与大量自绘控件，启动即建约 10 MB。创建后先同步
+        用户配置（材质/菜单/抽屉模式），再接线信号，最后按当前抽屉模式挂载。
+        """
+        ui = getattr(self._window, "ui", None)
+        if ui is None:
+            return None
+        config = getattr(ui, "theme_config", None)
+        if config is not None:
+            return config
+        parent = getattr(ui, "content_area_frame", None)
+        if parent is None:
+            return None
+        config = CAppConfigurator(parent, embedded=False)
+        ui.theme_config = config
+        self._restore_theme_config_state(config)
+        self._wire_theme_config(config)
+        drawer = getattr(self._window, "_drawer_layout", None)
+        if drawer is not None:
+            drawer.attach_right(config)
+        elif getattr(self._window, "_drawer_mode", "static") == "static":
+            # 无抽屉管理器的自定义宿主：静态模式回落到右列堆栈
+            stack = getattr(getattr(ui, "right_column", None), "menus", None)
+            if stack is not None:
+                config.set_embedded(True)
+                if config.parentWidget() is not stack:
+                    stack.addWidget(config)
+                ui.theme_menu = config
+                stack.setCurrentWidget(config)
+        self._logger.debug("外观配置面板已按需创建")
+        return config
+
+    def _restore_theme_config_state(self, config) -> None:
+        """把启动时已恢复的用户偏好同步到新建面板（不触发落盘）。"""
+        state = load_user_settings()
+        transparency = state.get("acrylic_transparency")
+        strength = state.get("glass_strength")
+        if isinstance(transparency, int) or isinstance(strength, int):
+            config.set_appearance(transparency=transparency, strength=strength)
+        config.set_menu_mode(getattr(self._window, "_menu_mode", "static"))
+        config.set_drawer_mode(getattr(self._window, "_drawer_mode", "static"))
+
+    def _wire_theme_config(self, config) -> None:
+        """接通外观面板的全部信号（惰性创建后调用，幂等）。"""
+        self.theme_controller.wire_config(config)
+        if getattr(config, "_main_controller_wired", False):
+            return
+        connections = (
+            ("closeRequested", self.theme_controller.toggle_theme_drawer),
+            ("menuModeChanged", self._apply_menu_mode),
+            ("drawerModeChanged", self._apply_drawer_mode),
+            ("languageChanged", self._apply_language),
+            ("transparencyChanged", self._apply_transparency),
+            ("glassStrengthChanged", self._apply_glass_strength),
+            ("appearanceCommitted", self._flush_appearance),
+            ("backgroundChanged", self._apply_background),
+        )
+        for signal_name, slot in connections:
+            signal = getattr(config, signal_name, None)
+            if signal is not None:
+                signal.connect(slot)
+        config._main_controller_wired = True
 
     def _apply_transparency(self, value: int) -> None:
         """窗口透明度滑块：立即重挂亚克力色调，并节流写入用户配置。"""
