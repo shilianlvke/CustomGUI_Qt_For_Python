@@ -83,14 +83,15 @@ apps_root()                             # -> Path
 运行时修改的外观偏好写入 `<data_root>/settings/user.yaml`（默认落在程序运行
 根目录下的 `settings/user.yaml`，可用 `configure(data_dir=...)` 或
 `SLLKGUI_DATA_DIR` 覆盖），只记录改动过的键。文件首行带
-`schema_version`（当前为 `3`）；缺失该键按 v1 读取，高于当前版本时只读取
+`schema_version`（当前为 `4`）；缺失该键按 v1 读取，高于当前版本时只读取
 已知字段并告警，**回写时保留原版本号与所有未知键、绝不降级**：
 
 | 字段 | 来源 | 写入时机 |
 | --- | --- | --- |
 | `theme_name` | 主题卡片 / 深色模式 | 主题切换后立即写入 |
 | `language` | 外观配置语言选择 | 语言切换完成后立即写入 |
-| `menu_mode` | Static / Overlay | 切换后立即写入 |
+| `menu_mode` | 左菜单 Static / Overlay | 切换后立即写入 |
+| `drawer_mode` | 四向抽屉 Static / Overlay（外观「界面」页） | 切换后立即写入 |
 | `startup_size` | 窗口尺寸 | 正常关闭窗口时写入（最大化/最小化/全屏跳过） |
 | `acrylic_transparency` | 外观配置「窗口透明度」滑块 | 拖动过程中节流写入，松手再落盘一次 |
 | `glass_strength` | 外观配置「亚克力质感强度」滑块 | 拖动过程中节流写入，松手再落盘一次 |

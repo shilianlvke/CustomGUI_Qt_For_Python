@@ -102,6 +102,7 @@ apps/*  ──────────────┐
 | `windows/main_window/ui_main.py` | `UiMainWindow`：标题栏 / 左菜单 / 页面栈 / 右列 / 版权栏的静态布局 |
 | `windows/main_window/setup_main_window.py` | `SetupMainWindow`：信号连接、按钮总线、grips、初始页面 |
 | `windows/main_window/controller.py` | `MainWindowController` + `PageRouterController`：按钮路由、页面切换、主题循环 |
+| `windows/main_window/drawers.py` | `DrawerLayout`：四向抽屉共用的 Static（布局占位）/ Overlay（浮层覆盖）容器与开合策略 |
 | `windows/main_window/registry.py` | 页面注册表：`load_registered_pages(eager=False)`、`ensure_registered_page()`、`get_page_routes()` |
 | `pages/main_pages.py` | `Ui_MainPages` 页面栈容器 |
 | `language_service.py` | `apply_language()` / `switch_language()`：广播语言变化 → 重建页面 → 刷新标题 |
@@ -236,6 +237,7 @@ FIX-07 并发与订阅一致性：`ThemeManager._lock` 为 `threading.RLock`，`
 | 加语言 | `_resources/sllkgui/languages/<code>.yaml`，`LANGUAGE_OPTIONS` 自动发现 |
 | 调窗口/动画/提示参数 | `_resources/sllkgui/settings/window.yaml` |
 | 改设置抽屉内容 | `window.ui.left_column.settings_page.add_section(widget, page="overview" / "folders")` |
+| 切四向抽屉模式 | `MainFunctions.set_drawer_mode(window, "static" / "overlay")`；`menu_mode` 只控制左菜单，与前者的语义独立 |
 | 接管按钮行为 | `MainWindowButtonUseCase.ACTION_MAP` 或自定义 `controller` |
 | 后台任务 | `guicore.run_task()` + `TaskWorker` |
 | 遥测落盘 | `record_event()` / `track_timing` |
