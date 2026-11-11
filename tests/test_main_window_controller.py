@@ -90,7 +90,7 @@ def test_main_window_controller_dispatches_plugin_command_when_unhandled():
 
     window = SimpleNamespace(
         ui=SimpleNamespace(
-            left_menu=SimpleNamespace(deselect_all_tab=lambda: None),
+            left_menu=SimpleNamespace(deselect_all_tab=lambda *_args, **_kwargs: None),
             title_bar=SimpleNamespace(),
         )
     )

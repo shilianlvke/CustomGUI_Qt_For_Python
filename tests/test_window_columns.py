@@ -82,6 +82,67 @@ def test_top_bottom_columns_mirror_left_column(qapp, factory, prefix, close_name
     assert left.btn_close.objectName() == "btn_close_left_column"
 
 
+def test_left_close_button_matches_appearance_drawer(qapp):
+    """左列关闭按钮与右侧外观抽屉同款：28×28 的 CCloseButton，不再常亮方块。"""
+    from sllkgui.guicore.custom_ui.close_button import CCloseButton
+
+    host = QWidget()
+    column = CLeftColumn(host, "software.info", 18, "", "", AppSettings.family)
+    try:
+        assert isinstance(column.btn_close, CCloseButton)
+        assert column.btn_close.width() == 28
+        assert column.btn_close.height() == 28
+    finally:
+        column.deleteLater()
+
+
+def test_left_menu_keeps_one_active_tab_per_segment(qapp):
+    """左菜单上下两段各自保留一个激活项（打开设置抽屉不清掉页面高亮）。"""
+    from sllkgui.appcore import AppLanguages, Language
+    from sllkgui.guicore import CLeftMenu
+
+    Language.update(AppLanguages[AppSettings.language].data)
+    host = QWidget()
+    menu = CLeftMenu(parent=host, app_parent=host)
+    try:
+        menu.add_menus(
+            [
+                {
+                    "btn_icon": "icon_setting",
+                    "btn_id": "btn_top_a",
+                    "btn_text": "A",
+                    "btn_tooltip": "A",
+                    "show_top": True,
+                    "is_active": False,
+                },
+                {
+                    "btn_icon": "icon_setting",
+                    "btn_id": "btn_bottom_a",
+                    "btn_text": "B",
+                    "btn_tooltip": "B",
+                    "show_top": False,
+                    "is_active": False,
+                },
+            ]
+        )
+        menu.select_only_one("btn_top_a")
+        menu.select_only_one_tab("btn_bottom_a")
+        assert menu._menu_buttons["btn_top_a"].is_active()
+        assert menu._menu_buttons["btn_bottom_a"].is_active_tab()
+
+        menu.deselect_all_tab("bottom")
+        assert menu._menu_buttons["btn_top_a"].is_active()
+        assert not menu._menu_buttons["btn_bottom_a"].is_active_tab()
+    finally:
+        menu.deleteLater()
+
+
+def test_overlay_drawer_reuses_overlay_surface():
+    """浮层抽屉与浮层左菜单共用同一套玻璃表面规则。"""
+    style = Styles().style
+    assert '#CRegion_Card_Frame[overlay="true"]' in style
+
+
 def test_styles_cover_all_four_columns():
     style = Styles().style
     for prefix in ("CLeftColumn", "CTopColumn", "CBottomColumn"):

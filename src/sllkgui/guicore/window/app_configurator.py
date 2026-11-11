@@ -24,6 +24,7 @@ from sllkgui.appcore import (
 )
 
 from ..acrylic import set_acrylic_transparency, set_glass_strength
+from ..styles import overlay_border_color, overlay_surface_color
 from .app_configurator_sections import _ConfigSectionsMixin, _ThemeCard
 
 #: QWidget 的尺寸上限（Qt 的 QWIDGETSIZE_MAX）
@@ -480,7 +481,6 @@ class CAppConfigurator(_ConfigSectionsMixin, QFrame):
             # 画一层自己的面板底色，避免又出现"面板里再套一块背景"。
             return
         tokens = get_design_tokens()
-        colors = tokens.colors
         painter = QPainter(self)
         painter.setRenderHint(QPainter.Antialiasing)
 
@@ -496,9 +496,9 @@ class CAppConfigurator(_ConfigSectionsMixin, QFrame):
         path.arcTo(QRectF(rect.left(), rect.top(), 2 * radius, 2 * radius), 180, -90)
         path.closeSubpath()
 
-        painter.fillPath(path, QColor(colors.surface_panel))
+        painter.fillPath(path, overlay_surface_color())
         painter.setBrush(Qt.NoBrush)
-        painter.setPen(QPen(QColor(colors.surface_interactive_pressed), 1))
+        painter.setPen(QPen(overlay_border_color(), 1))
         painter.drawPath(path)
         painter.end()
 

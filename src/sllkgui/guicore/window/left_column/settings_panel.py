@@ -1,7 +1,10 @@
-"""左抽屉设置页：概览与目录两个单屏子页。
+"""左抽屉设置页：概览 / 运行环境 / 目录三个单屏子页。
 
-外观配置仍由标题栏色盘入口负责，这里只展示状态与目录，不重复放置
-主题/语言/强调色控件。
+排版按 Fluent 设置卡片组织：每页是一张圆角卡片，卡片内是「键（弱化）—值」
+信息行；分段控件已经表达当前页，页面内不再重复写大标题。外观配置仍由标题栏
+色盘入口负责，这里只展示状态与目录。
+
+宿主应用追加的区块（``add_section``）同样包进一张同款卡片，保证视觉一致。
 """
 
 from __future__ import annotations
@@ -12,32 +15,79 @@ from pathlib import Path
 
 import PySide6
 from PySide6.QtCore import Qt, QUrl
-from PySide6.QtGui import QDesktopServices, QFont, QFontMetrics
-from PySide6.QtWidgets import QHBoxLayout, QLabel, QSizePolicy, QStackedWidget, QVBoxLayout, QWidget
+from PySide6.QtGui import QDesktopServices, QFont
+from PySide6.QtWidgets import (
+    QFrame,
+    QHBoxLayout,
+    QLabel,
+    QSizePolicy,
+    QStackedWidget,
+    QVBoxLayout,
+    QWidget,
+)
 
 from sllkgui import __version__
 from sllkgui.appcore import (
     AppSettings,
-    ColorPalette,
     Language,
+    get_design_tokens,
     get_plugin_registry,
     get_theme_manager,
     user_settings_path,
 )
 
-from ...custom_ui import CButton, CHDiv, CSelectButton
+from ...custom_ui import CButton, CSelectButton
+from ...styles import card_stroke_color, card_surface_color, qss_color
+
+#: 信息行键列宽度：四种语言的最长键（「运行环境」等）都放得下
+_KEY_WIDTH = 76
+#: 卡片内边距（左、上、右、下）与行距
+_CARD_MARGINS = (12, 10, 12, 10)
+_CARD_SPACING = 8
+#: 主面板与页面间距
+_PANEL_MARGINS = (16, 12, 16, 16)
+_PANEL_SPACING = 12
+_ROW_SPACING = 6
+
+
+class _ElidedLabel(QLabel):
+    """按实际宽度中部省略的值标签，tooltip 保留全文。"""
+
+    def __init__(self, text: str = "", parent=None) -> None:
+        super().__init__(parent)
+        # 水平方向忽略 sizeHint：否则长路径会撑破信息行、把值列顶出卡片
+        self.setSizePolicy(QSizePolicy.Policy.Ignored, QSizePolicy.Policy.Preferred)
+        self.setMinimumWidth(0)
+        self.setTextInteractionFlags(Qt.TextInteractionFlag.TextSelectableByMouse)
+        self._full_text = ""
+        self.set_full_text(text)
+
+    def set_full_text(self, text: str) -> None:
+        self._full_text = str(text)
+        self.setToolTip(self._full_text)
+        self._apply_elide()
+
+    def full_text(self) -> str:
+        return self._full_text
+
+    def resizeEvent(self, event):  # noqa: N802 - 覆写 Qt 命名
+        super().resizeEvent(event)
+        self._apply_elide()
+
+    def _apply_elide(self) -> None:
+        width = max(0, self.width())
+        self.setText(self.fontMetrics().elidedText(self._full_text, Qt.TextElideMode.ElideMiddle, width))
 
 
 class CSettingsPanel(QWidget):
     def __init__(self, parent=None) -> None:
         super().__init__(parent)
         self.setObjectName("CSettingsPanel")
-        self._styled: list[tuple[QLabel, str]] = []
         self._keyed: list[tuple[QLabel, str, str]] = []
         self._buttons: list[tuple[QWidget, str, str]] = []
         self._layout = QVBoxLayout(self)
-        self._layout.setContentsMargins(12, 12, 12, 12)
-        self._layout.setSpacing(6)
+        self._layout.setContentsMargins(*_PANEL_MARGINS)
+        self._layout.setSpacing(_PANEL_SPACING)
         self._build()
         get_theme_manager().subscribe(self._apply_theme)
         Language.subscribe(self._apply_language)
@@ -48,18 +98,19 @@ class CSettingsPanel(QWidget):
     # 对外：宿主应用追加自己的设置区块
     # ------------------------------------------------------------------
     def add_section(self, widget: QWidget, page: str = "overview") -> None:
+        """把宿主区块包进一张设置卡片后追加到指定子页。"""
         target = {
             "environment": self._extra_environment,
             "folders": self._extra_folders,
         }.get(page, self._extra_overview)
-        target.addWidget(CHDiv())
-        target.addWidget(widget)
+        card, layout = self._new_card()
+        layout.addWidget(widget)
+        target.addWidget(card)
 
     # ------------------------------------------------------------------
     # 构建
     # ------------------------------------------------------------------
     def _build(self) -> None:
-        self._layout.addWidget(self._label("SLLKGUI", "eyebrow"))
         self._tabs = CSelectButton(self._tab_labels(), index=0, size="sm")
         self._tabs.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed)
         self._layout.addWidget(self._tabs)
@@ -73,26 +124,43 @@ class CSettingsPanel(QWidget):
         self._layout.addWidget(self._stack, 1)
         self._tabs.selectionChanged.connect(self._stack.setCurrentIndex)
 
-        self._extra_overview = QVBoxLayout()
-        self._extra_overview.setContentsMargins(0, 0, 0, 0)
-        self._extra_overview.setSpacing(6)
-        self._extra_environment = QVBoxLayout()
-        self._extra_environment.setContentsMargins(0, 0, 0, 0)
-        self._extra_environment.setSpacing(6)
-        self._extra_folders = QVBoxLayout()
-        self._extra_folders.setContentsMargins(0, 0, 0, 0)
-        self._extra_folders.setSpacing(6)
-
         self._build_overview()
         self._build_environment()
         self._build_folders()
+
+        # 宿主区块的插入位建在内置内容之后，保证卡片顺序与底部弹性空间正确
+        self._extra_overview = self._extra_slot(self._overview_layout)
+        self._extra_environment = self._extra_slot(self._environment_layout)
+        self._extra_folders = self._extra_slot(self._folders_layout)
 
     def _page(self) -> tuple[QWidget, QVBoxLayout]:
         page = QWidget()
         layout = QVBoxLayout(page)
         layout.setContentsMargins(0, 0, 0, 0)
-        layout.setSpacing(6)
+        layout.setSpacing(_PANEL_SPACING)
         return page, layout
+
+    def _extra_slot(self, page_layout: QVBoxLayout) -> QVBoxLayout:
+        """宿主区块的插入位：位于内置卡片之后、底部弹性空间之前。"""
+        layout = QVBoxLayout()
+        layout.setContentsMargins(0, 0, 0, 0)
+        layout.setSpacing(_PANEL_SPACING)
+        page_layout.addLayout(layout)
+        page_layout.addStretch(1)
+        return layout
+
+    def _new_card(self) -> tuple[QFrame, QVBoxLayout]:
+        card = QFrame()
+        card.setObjectName("CSettingsCard_Frame")
+        layout = QVBoxLayout(card)
+        layout.setContentsMargins(*_CARD_MARGINS)
+        layout.setSpacing(_CARD_SPACING)
+        return card, layout
+
+    def _card(self, page_layout: QVBoxLayout) -> QVBoxLayout:
+        card, layout = self._new_card()
+        page_layout.addWidget(card)
+        return layout
 
     @staticmethod
     def _tab_labels() -> list[str]:
@@ -103,93 +171,107 @@ class CSettingsPanel(QWidget):
         ]
 
     def _build_overview(self) -> None:
-        layout = self._overview_layout
-        layout.addWidget(self._keyed_label("language.UI.ui_SettingsSoftware", "软件信息", "title"))
-        layout.addWidget(self._keyed_label("language.UI.ui_SettingsVersion", "版本", "caption"))
-        layout.addWidget(self._label(__version__, "value"))
-        layout.addWidget(self._keyed_label("language.UI.ui_SettingsStatus", "状态", "caption"))
-        self._status = self._label("", "value")
-        layout.addWidget(self._status)
-        layout.addWidget(self._keyed_label("language.UI.ui_SettingsPages", "页面", "caption"))
-        self._page_count = self._label("0", "value")
-        layout.addWidget(self._page_count)
-        layout.addLayout(self._extra_overview)
-        layout.addStretch(1)
+        card = self._card(self._overview_layout)
+        self._add_row(card, self._key_label("language.UI.ui_SettingsVersion", "版本"), self._value(__version__))
+
+        self._status = self._value("")
+        self._add_row(card, self._key_label("language.UI.ui_SettingsStatus", "状态"), self._status)
+
+        self._page_count = self._value("0")
+        self._add_row(card, self._key_label("language.UI.ui_SettingsPages", "页面"), self._page_count)
 
     def _build_environment(self) -> None:
-        layout = self._environment_layout
-        layout.addWidget(self._keyed_label("language.UI.ui_SettingsEnvironment", "运行环境", "title"))
-        layout.addWidget(self._label(f"Python {platform.python_version()}", "value"))
-        layout.addWidget(self._label(f"PySide6 {PySide6.__version__}", "value"))
-        layout.addWidget(self._label(f"{platform.system()} {platform.release()}", "value"))
-        layout.addLayout(self._extra_environment)
-        layout.addStretch(1)
+        card = self._card(self._environment_layout)
+        self._add_row(card, self._key_label(None, "Python"), self._value(platform.python_version()))
+        self._add_row(card, self._key_label(None, "Qt"), self._value(f"PySide6 {PySide6.__version__}"))
+        system = f"{platform.system()} {platform.release()}".strip()
+        self._add_row(card, self._key_label(None, "OS"), self._value(system))
 
     def _build_folders(self) -> None:
-        layout = self._folders_layout
-        layout.addWidget(self._keyed_label("language.UI.ui_SettingsFolders", "目录", "title"))
-        layout.addWidget(self._keyed_label("language.UI.ui_SettingsDataDir", "数据目录", "caption"))
-        layout.addWidget(self._path_label(self._data_root()))
-        layout.addWidget(self._keyed_label("language.UI.ui_SettingsLogDir", "日志目录", "caption"))
-        layout.addWidget(self._path_label(self._data_root() / "logs"))
+        card = self._card(self._folders_layout)
+        self._add_row(
+            card,
+            self._key_label("language.UI.ui_SettingsDataDir", "数据目录"),
+            self._path_label(self._data_root()),
+        )
+        self._add_row(
+            card,
+            self._key_label("language.UI.ui_SettingsLogDir", "日志目录"),
+            self._path_label(self._data_root() / "logs"),
+        )
 
         buttons = QHBoxLayout()
-        buttons.setContentsMargins(0, 4, 0, 0)
+        buttons.setContentsMargins(0, 2, 0, 0)
         buttons.setSpacing(6)
-        open_data = CButton(
-            str(Language.resolve_key("language.UI.ui_SettingsOpenData", "打开数据目录")),
-            severity="secondary",
-            variant="outlined",
-            size="sm",
-        )
-        open_logs = CButton(
-            str(Language.resolve_key("language.UI.ui_SettingsOpenLogs", "打开日志目录")),
-            severity="secondary",
-            variant="outlined",
-            size="sm",
-        )
-        self._buttons.append((open_data, "language.UI.ui_SettingsOpenData", "打开数据目录"))
-        self._buttons.append((open_logs, "language.UI.ui_SettingsOpenLogs", "打开日志目录"))
+        open_data = self._button("language.UI.ui_SettingsOpenData", "打开数据目录")
+        open_logs = self._button("language.UI.ui_SettingsOpenLogs", "打开日志目录")
         open_data.clicked.connect(lambda: self._open(self._data_root()))
         open_logs.clicked.connect(lambda: self._open(self._data_root() / "logs"))
+        buttons.addStretch(1)
         buttons.addWidget(open_data)
         buttons.addWidget(open_logs)
-        layout.addLayout(buttons)
-        layout.addWidget(
-            self._keyed_label(
-                "language.UI.ui_SettingsAppearanceHint",
-                "外观配置请使用标题栏色盘",
-                "caption",
-            )
+        card.addLayout(buttons)
+
+        self._folders_layout.addWidget(
+            self._hint_label("language.UI.ui_SettingsAppearanceHint", "外观配置请使用标题栏色盘")
         )
-        layout.addLayout(self._extra_folders)
-        layout.addStretch(1)
 
-    def _keyed_text(self, key: str, default: str) -> str:
-        return str(Language.resolve_key(key, default))
-
+    # ------------------------------------------------------------------
+    # 小部件
+    # ------------------------------------------------------------------
     def _label(self, text: str, role: str) -> QLabel:
         label = QLabel(text)
-        label.setWordWrap(True)
-        label.setTextInteractionFlags(Qt.TextInteractionFlag.TextSelectableByMouse)
-        size = {"eyebrow": 8, "title": 10, "caption": 8, "value": 9}.get(role, 9)
-        weight = QFont.Weight.DemiBold if role in {"eyebrow", "title"} else QFont.Weight.Normal
-        label.setFont(QFont(AppSettings.family, size, weight))
-        self._styled.append((label, role))
+        label.setProperty("role", role)
+        label.setWordWrap(role == "hint")
+        font = QFont(AppSettings.family)
+        font.setPointSize(8 if role in {"key", "hint"} else 9)
+        label.setFont(font)
         return label
 
-    def _keyed_label(self, key: str, default: str, role: str) -> QLabel:
-        label = self._label(self._keyed_text(key, default), role)
+    def _value(self, text: str) -> QLabel:
+        label = self._label(text, "value")
+        label.setTextInteractionFlags(Qt.TextInteractionFlag.TextSelectableByMouse)
+        return label
+
+    def _key_label(self, key: str | None, default: str) -> QLabel:
+        text = str(Language.resolve_key(key, default)) if key else default
+        label = self._label(text, "key")
+        label.setFixedWidth(_KEY_WIDTH)
+        label.setAlignment(Qt.AlignLeft | Qt.AlignTop)
+        if key:
+            self._keyed.append((label, key, default))
+        return label
+
+    def _hint_label(self, key: str, default: str) -> QLabel:
+        label = self._label(str(Language.resolve_key(key, default)), "hint")
         self._keyed.append((label, key, default))
         return label
 
-    def _path_label(self, path: Path) -> QLabel:
-        full = str(path)
-        label = self._label(self._display_path(path), "value")
-        label.setToolTip(full)
-        metrics = QFontMetrics(label.font())
-        label.setText(metrics.elidedText(label.text(), Qt.TextElideMode.ElideMiddle, 185))
+    def _button(self, key: str, default: str) -> CButton:
+        button = CButton(
+            str(Language.resolve_key(key, default)),
+            severity="secondary",
+            variant="outlined",
+            size="sm",
+        )
+        self._buttons.append((button, key, default))
+        return button
+
+    def _path_label(self, path: Path) -> _ElidedLabel:
+        label = _ElidedLabel(self._display_path(path))
+        label.setProperty("role", "value")
+        font = QFont(AppSettings.family)
+        font.setPointSize(9)
+        label.setFont(font)
         return label
+
+    def _add_row(self, card_layout: QVBoxLayout, key_widget: QLabel, value_widget: QWidget) -> None:
+        row = QHBoxLayout()
+        row.setContentsMargins(0, 0, 0, 0)
+        row.setSpacing(_ROW_SPACING)
+        row.addWidget(key_widget, 0, Qt.AlignTop)
+        row.addWidget(value_widget, 1)
+        card_layout.addLayout(row)
 
     @staticmethod
     def _display_path(path: Path) -> str:
@@ -225,21 +307,25 @@ class CSettingsPanel(QWidget):
 
     def _apply_language(self) -> None:
         for label, key, default in self._keyed:
-            label.setText(self._keyed_text(key, default))
+            label.setText(str(Language.resolve_key(key, default)))
         for button, key, default in self._buttons:
-            button.setText(self._keyed_text(key, default))
+            button.setText(str(Language.resolve_key(key, default)))
         self._tabs.set_options(self._tab_labels(), index=self._tabs.current_index())
         self._refresh_status()
 
     def _apply_theme(self) -> None:
-        colors = {
-            "eyebrow": ColorPalette.custom_context_color,
-            "title": ColorPalette.custom_text_title,
-            "caption": ColorPalette.custom_text_description,
-            "value": ColorPalette.custom_text_foreground,
-        }
-        for label, role in self._styled:
-            label.setStyleSheet(f"color: {colors.get(role, ColorPalette.custom_text_foreground)}; background: transparent;")
+        """一条面板级样式表统一下发卡片与三种文字角色色（不逐个标签设样式）。"""
+        tokens = get_design_tokens()
+        colors = tokens.colors
+        self.setStyleSheet(
+            f"#CSettingsCard_Frame {{"
+            f" background-color: {qss_color(card_surface_color())};"
+            f" border: 1px solid {qss_color(card_stroke_color())};"
+            f" border-radius: {tokens.radius.control}px; }}"
+            f'#CSettingsPanel QLabel[role="key"] {{ color: {colors.text_muted}; background: transparent; }}'
+            f'#CSettingsPanel QLabel[role="value"] {{ color: {colors.text_primary}; background: transparent; }}'
+            f'#CSettingsPanel QLabel[role="hint"] {{ color: {colors.text_muted}; background: transparent; }}'
+        )
         self._refresh_status()
 
     # ------------------------------------------------------------------

@@ -304,11 +304,22 @@ class CLeftMenu(QWidget):
 
     # 仅选择一个选项卡BTN
     def select_only_one_tab(self, widget: str):
-        for btn in self.findChildren(QPushButton):
-            if btn.objectName() == widget:
-                btn.set_active_tab(True)
-            else:
-                btn.set_active_tab(False)
+        """在同一分段（顶部轨道 / 底部轨道）内互斥选中。
+
+        上下两段各自保留一个激活项：打开设置抽屉时底部齿轮高亮，
+        顶部当前页面按钮不应被清掉。
+        """
+        buttons = self.findChildren(QPushButton)
+        target = next((btn for btn in buttons if btn.objectName() == widget), None)
+        if target is None:
+            # 未找到目标（如抽屉自带的关闭按钮）时不做任何清除，
+            # 避免误伤另一分段；需要清空请显式调用 deselect_all_tab。
+            return
+        segment = self._segment_frame(target)
+        for btn in buttons:
+            if segment is not None and self._segment_frame(btn) is not segment:
+                continue
+            btn.set_active_tab(btn is target)
 
     # 取消选择所有BTN
     def deselect_all(self):
@@ -316,9 +327,23 @@ class CLeftMenu(QWidget):
             btn.set_active(False)
 
     # 取消选择所有标签
-    def deselect_all_tab(self):
+    def deselect_all_tab(self, segment: str | None = None):
+        """清除选项卡选中态；``segment`` 为 top / bottom 时只清该分段。"""
+        frame = {"top": self.top_frame, "bottom": self.bottom_frame}.get(str(segment or "").lower())
         for btn in self.findChildren(QPushButton):
+            if frame is not None and self._segment_frame(btn) is not frame:
+                continue
             btn.set_active_tab(False)
+
+    def _segment_frame(self, button):
+        """按钮所属分段的容器（顶部 / 底部轨道）；未归入两段时返回 None。"""
+        if button is None:
+            return None
+        parent = button.parentWidget()
+        for frame in (self.top_frame, self.bottom_frame):
+            if parent is frame:
+                return frame
+        return None
 
     # SETUP APP
     # ///////////////////////////////////////////////////////////////

@@ -47,6 +47,13 @@ class _ComponentStyles:
                 border: 0px solid transparent;
                 border-radius: {self.tokens.radius.window}px;
             }}
+            /* Overlay 抽屉：浮在内容区之上，与浮层菜单共用同一套玻璃表面，
+               避免出现「有的全透明、有的实色」的不一致观感 */
+            #CRegion_Card_Frame[overlay="true"] {{
+                background-color: {self._overlay_panel_bg};
+                border: 1px solid {self._overlay_panel_border};
+                border-radius: {self.tokens.radius.window}px;
+            }}
         """
 
     def update_btn_style(self):

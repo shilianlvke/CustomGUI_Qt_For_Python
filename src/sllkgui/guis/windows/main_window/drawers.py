@@ -240,6 +240,7 @@ class DrawerLayout:
                 layout.removeWidget(frame)
             frame.setParent(self.window.ui.window)
             self._set_overlay_size(name)
+            self._set_overlay_flag(name, True)
             self._apply_shadow(name, frame)
             frame.raise_()
 
@@ -267,6 +268,7 @@ class DrawerLayout:
             if frame is None:
                 continue
             self._clear_shadow(frame)
+            self._set_overlay_flag(name, False)
             frame.hide()
             layout = self._owner_layout(name)
             if layout is not None and layout.indexOf(frame) < 0:
@@ -450,6 +452,24 @@ class DrawerLayout:
         effect.setXOffset(8 if name == "left" else 0)
         effect.setYOffset(8 if name == "top" else (-8 if name == "bottom" else 0))
         frame.setGraphicsEffect(effect)
+
+    def _set_overlay_flag(self, name: str, enabled: bool) -> None:
+        """给抽屉框打/去 ``overlay`` 动态属性，切换到浮层玻璃表面。
+
+        与浮层左菜单同一套做法：只改动态属性并由全局样式表的属性选择器接管
+        颜色，切换模式时只重刷该控件，不重建样式表。
+        """
+        frame = self._frame(name)
+        if frame is None:
+            return
+        value = "true" if enabled else None
+        if frame.property("overlay") == value:
+            return
+        frame.setProperty("overlay", value)
+        style = frame.style()
+        style.unpolish(frame)
+        style.polish(frame)
+        frame.update()
 
     @staticmethod
     def _clear_shadow(frame) -> None:

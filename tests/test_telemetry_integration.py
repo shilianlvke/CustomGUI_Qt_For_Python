@@ -120,7 +120,7 @@ def test_controller_language_selection_is_recorded(diagnostics_dir):
 
     apply_language("zh_cn")  # 重置语言状态，确保切换方向确定
 
-    window = SimpleNamespace(ui=SimpleNamespace(left_menu=SimpleNamespace(deselect_all_tab=lambda: None)))
+    window = SimpleNamespace(ui=SimpleNamespace(left_menu=SimpleNamespace(deselect_all_tab=lambda *_args, **_kwargs: None)))
     controller = MainWindowController(
         window=window,
         main_functions=_StubMainFunctions,

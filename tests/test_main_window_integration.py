@@ -72,7 +72,7 @@ class _LeftMenuStub:
     def select_only_one_tab(self, btn_name):
         self.selected_tab_btn = btn_name
 
-    def deselect_all_tab(self):
+    def deselect_all_tab(self, segment=None):
         self.deselect_count += 1
 
 

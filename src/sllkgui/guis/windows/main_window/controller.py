@@ -278,7 +278,7 @@ class ColumnController:
             except Exception:
                 current_widget = None
         if visible and current_widget is menu:
-            ui.left_menu.deselect_all_tab()
+            ui.left_menu.deselect_all_tab("bottom")
             self._main_functions.toggle_left_column(self._window)
             return
 
@@ -298,7 +298,7 @@ class ColumnController:
             self._window.ui.left_menu.select_only_one_tab(btn_name)
         else:
             if btn_name == "btn_close_left_column":
-                self._window.ui.left_menu.deselect_all_tab()
+                self._window.ui.left_menu.deselect_all_tab("bottom")
                 self._main_functions.toggle_left_column(self._window)
             self._window.ui.left_menu.select_only_one_tab(btn_name)
         if btn_name != "btn_close_left_column":

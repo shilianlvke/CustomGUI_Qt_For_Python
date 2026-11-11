@@ -61,6 +61,70 @@ def region_card_background() -> str:
     return _composite(tint, glass_alpha(glass_cfg.region), window)
 
 
+def qss_color(color: QColor) -> str:
+    """QColor → QSS 颜色：不透明输出 ``#RRGGBB``，半透明输出 ``rgba(...)``。"""
+    if color.alpha() >= 255:
+        return color.name()
+    return f"rgba({color.red()}, {color.green()}, {color.blue()}, {color.alpha()})"
+
+
+def _glass_color(value: str, alpha: float, minimum: float = 0.0) -> QColor:
+    """按「亚克力质感强度」缩放不透明度的玻璃色（自绘组件与样式表共用）。"""
+    color = QColor(value)
+    color.setAlpha(max(0, min(255, round(255 * glass_alpha(alpha, minimum=minimum)))))
+    return color
+
+
+def glass_surfaces() -> bool:
+    """各层表面是否需要半透明：亚克力材质或窗口背景图任一启用。"""
+    return acrylic_active() or background_image_active()
+
+
+def card_surface_color() -> QColor:
+    """卡片层（设置卡片、分组卡）的玻璃色，与全局 ``#CCard_Frame`` 同值。"""
+    colors = get_design_tokens().colors
+    if not glass_surfaces():
+        return QColor(colors.surface_card)
+    # 背景图模式给一个可读性下限，避免正文压在复杂图案上发飘
+    minimum = 0.0 if acrylic_active() else 0.58
+    return _glass_color(colors.surface_card, AppSettings.glass.card, minimum)
+
+
+def overlay_surface_color() -> QColor:
+    """浮层表面（浮层菜单、浮层抽屉）的玻璃色。
+
+    浮层盖在正文之上，透明度保留 0.90 的下限，防止页面文字透上来干扰阅读。
+    """
+    colors = get_design_tokens().colors
+    if not glass_surfaces():
+        return QColor(colors.surface_panel)
+    return _glass_color(colors.surface_panel, AppSettings.glass.overlay_panel, 0.90)
+
+
+def overlay_border_color() -> QColor:
+    """浮层表面的描边色：玻璃模式取正文色 14%，实色模式取按下层色。"""
+    colors = get_design_tokens().colors
+    if not glass_surfaces():
+        return QColor(colors.surface_interactive_pressed)
+    color = QColor(colors.text_primary)
+    color.setAlpha(round(255 * 0.14))
+    return color
+
+
+def card_stroke_color() -> QColor:
+    """卡片描边：玻璃模式取正文色 14%，实色模式取一层极淡的正文色细分隔线。
+
+    实色模式不能用 ``border_transparent``：深色主题里卡片底与抽屉底只差
+    两个色阶，没有描边卡片就等于不可见。
+    """
+    colors = get_design_tokens().colors
+    if not glass_surfaces():
+        return QColor(_mix(colors.surface_app, colors.text_primary, 0.12))
+    color = QColor(colors.text_primary)
+    color.setAlpha(round(255 * 0.14))
+    return color
+
+
 class Styles(_ComponentStyles):
     """全局样式表：所有组件的**颜色 / 状态 / 字体**都集中在这里。
 
@@ -123,11 +187,7 @@ class Styles(_ComponentStyles):
             if glass
             else colors.surface_panel
         )
-        self._card_bg = (
-            _rgba(colors.surface_card, glass_alpha(glass_cfg.card, minimum=min_surface))
-            if glass
-            else colors.surface_card
-        )
+        self._card_bg = qss_color(card_surface_color())
         self._region_bg = (
             _rgba(region_card_tint(), glass_alpha(glass_cfg.region, minimum=min_surface))
             if glass
@@ -142,13 +202,9 @@ class Styles(_ComponentStyles):
             _rgba(colors.surface_interactive, glass_alpha(glass_cfg.menu, minimum=0.85)) if glass else colors.surface_interactive
         )
         # Overlay 左菜单浮在内容之上，需要接近不透明的面板底色；沿用侧栏的
-        # 0 透明度会让菜单和页面文字互相穿透。
-        self._overlay_panel_bg = (
-            _rgba(colors.surface_panel, glass_alpha(glass_cfg.overlay_panel, minimum=0.90))
-            if glass
-            else colors.surface_panel
-        )
-        self._overlay_panel_border = _rgba(colors.text_primary, 0.14) if glass else colors.surface_interactive_pressed
+        # 0 透明度会让菜单和页面文字互相穿透。浮层抽屉共用同一套取值。
+        self._overlay_panel_bg = qss_color(overlay_surface_color())
+        self._overlay_panel_border = qss_color(overlay_border_color())
         self._tooltip_bg = (
             _rgba(colors.surface_sidebar, glass_alpha(glass_cfg.tooltip, minimum=0.85)) if glass else colors.surface_sidebar
         )

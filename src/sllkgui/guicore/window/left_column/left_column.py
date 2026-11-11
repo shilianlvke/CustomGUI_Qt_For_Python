@@ -1,12 +1,12 @@
 from PySide6.QtCore import Qt, Signal
-from PySide6.QtGui import QFont
+from PySide6.QtGui import QColor, QFont
 from PySide6.QtWidgets import QFrame, QHBoxLayout, QLabel, QVBoxLayout, QWidget
 
 from sllkgui.appcore import ColorPalette, Language, get_design_tokens, get_theme_manager
 
+from ...custom_ui.close_button import CCloseButton
 from ..column_geometry import title_strip_style
 from .icon import PyIcon
-from .left_button import PyLeftButton
 from .settings_panel import CSettingsPanel
 from .ui import Ui_LeftColumn
 
@@ -79,11 +79,12 @@ class CLeftColumn(QWidget):
         """语言切换回调：刷新标题与关闭按钮提示。"""
         self.title_label.setText(Language.resolve_key(self._title_key))
         self.subtitle_label.setText(Language.resolve_key(self._subtitle_key) if self._subtitle_key else "")
-        self.btn_close.set_tooltip(Language.resolve_key("language.UI.ui_Close"))
+        self.btn_close.setToolTip(Language.resolve_key("language.UI.ui_Close"))
 
     def update_style(self):
-        """主题切换回调：重新着色图标（颜色样式由全局样式表统一提供）。"""
+        """主题切换回调：重新着色图标与关闭按钮（底色由控件自绘）。"""
         self.icon.set_icon(self._icon_path, ColorPalette.custom_icon_color)
+        self.btn_close.set_color(QColor(get_design_tokens().colors.text_primary))
         self.subtitle_label.setStyleSheet(
             f"#CLeftColumnTitle_Subtitle {{ color: {ColorPalette.custom_text_description};"
             " background: transparent; }"
@@ -151,25 +152,24 @@ class CLeftColumn(QWidget):
         title_column.addWidget(self.title_label)
         title_column.addWidget(self.subtitle_label)
 
-        # 按钮框架
+        # 按钮框架（与右侧外观抽屉同款：28×28、圆角 6、静止无底色）
         self.btn_frame = QFrame()
         self.btn_frame.setObjectName("CLeftColumnBtn_Frame")
-        self.btn_frame.setFixedSize(30, 30)
+        self.btn_frame.setFixedSize(28, 28)
         # 关闭按钮
-        self.btn_close = PyLeftButton(
-            # self._parent,
-            self._app_parent,
-            tooltip_text=Language.resolve_key("language.UI.ui_Close"),
-            icon_path=self._icon_close_path,
+        self.btn_close = CCloseButton(
+            QColor(get_design_tokens().colors.text_primary),
+            size=28,
             radius=6,
+            parent=self.btn_frame,
         )
-        self.btn_close.setParent(self.btn_frame)
         self.btn_close.setObjectName("btn_close_left_column")
+        self.btn_close.setToolTip(Language.resolve_key("language.UI.ui_Close"))
 
         # 添加图标、标题、按钮到标题背景布局
         self.title_bg_layout.addWidget(self.icon_frame)
         self.title_bg_layout.addLayout(title_column, 1)
-        self.title_bg_layout.addWidget(self.btn_frame)
+        self.title_bg_layout.addWidget(self.btn_frame, 0, Qt.AlignVCenter)
 
         # 添加标题背景到基础布局
         self.title_base_layout.addWidget(self.title_bg_frame)
