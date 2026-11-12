@@ -3,7 +3,41 @@
 项目遵循[语义化版本](https://semver.org/lang/zh-CN/)：major 版本允许破坏性变更并显式列出；
 minor 与 patch 保持向后兼容。
 
-当前版本：`1.0.5`（见 `src/sllkgui/_version.py`），对应 tag `base-v1.0.5`。
+当前版本：`2.0.0`（见 `src/sllkgui/_version.py`），对应 tag `base-v2.0.0`。
+
+---
+
+## 2.0.0（2026-11-12）
+
+### 破坏性变更
+
+- 删除 App 协议 v1/v2：`AppPlugin` / `AppPage` / `app_*` 加载器、`apps/`、
+  `config.yml`、`plugins.yml`、`SLLKGUI_APPS_DIR` 全部移除，不保留兼容层。
+- 基座版本升到 `2.0.0`，python 依赖新增 `packaging`。
+- `sllkgui run` 不再接受 `--apps-dir`，改用 `--gallery-dir` / `--plugin-dir`。
+
+### Gallery 插件运行时
+
+- 新增 `sllkgui.gallery`：清单校验、源索引、Git 安装、SemVer 依赖解析、
+  状态持久化、加载器、Surface 注册表、Gallery 外壳与 lint/scaffold。
+- 新增公开 API `sllkgui.plugin`：`Plugin` / `GalleryContext` / `Permission` /
+  `PLUGIN_API_VERSION`；上下文提供 `log` / `logger` / `event` / `timing` /
+  `report_error` / `text` / `data_dir` / `resource` / `open_surface`。
+- 新增命令：`gallery`、`source`、`plugin`、`scaffold`；`doctor` 支持 `--json`。
+- 插件规范：日志/遥测必须全量接入基座；`sllkgui plugin lint` 与源仓库 CI 检查。
+
+### 内置插件
+
+- `showcase/core_preview`：原 10 个组件预览 App 合并为一个插件、10 个 Surface，
+  仅 `sllkgui gallery` 加载。
+- `core_plugins/core_store`：已安装插件、搜索安装、源管理三个 Surface，
+  `sllkgui run` 始终加载（含 `--safe-mode`）。
+
+### 窗口与语言
+
+- 左菜单与页面路由改由 `GalleryRegistry` 提供，页面首次导航时懒构建。
+- 语言切换后通知插件的 `on_locale_changed`；主题订阅支持正确退订。
+- 设置页页面数改为 Gallery Surface 数量。
 
 ---
 

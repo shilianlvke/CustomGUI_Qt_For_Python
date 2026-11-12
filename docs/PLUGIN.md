@@ -1,248 +1,136 @@
-# 应用插件协议
+# 插件协议（SllkGUI 2.0）
 
-SllkGUI 把「一个页面/一组页面」封装成目录：**放进 `apps/` 即被发现，删除目录即下线**。
-本文件是清单字段、两套协议与装载行为的唯一说明。
+一个 Git 仓库 = 一个插件，插件通过 **Surface** 向 Gallery 贡献页面。插件代码运行在
+Gallery 进程内，清单里的权限用于安装前知情同意，不是沙箱。
 
-## 0. 信任边界
-
-加载器会对 `apps/<app>/app.py`（或 `gui/main.py`）执行 `exec_module`，插件代码与宿主
-运行在同一进程、拥有相同权限。**这不是沙箱**：
-
-- 只加载可信来源的插件；不要把不受信任的第三方目录放进 `apps/`，也不要让
-  `SLLKGUI_APPS_DIR` 指向可被他人写入的位置。
-- `sllkgui doctor` 默认只发现应用、不执行入口代码；只有加 `--load` 才会加载并执行插件。
-- 插件在宿主进程内直接执行（见上文 `exec_module`），没有代码隔离；单个应用加载失败会被记录并跳过，不影响其他应用装载。失败前已注册的菜单/页面按 `plugin_id` 定向回收，不留下孤儿入口；入口模块 `exec_module` 失败还会回滚 `sys.modules`，不残留半初始化模块。
-- 便携分发时建议在启动日志中打印实际生效的 `apps` 目录（`configure()` 会输出）。
-
-## 1. 目录结构
+## 1. 仓库结构
 
 ```text
-apps/<app_name>/
-├── config.yml                     # 必需：清单
-├── app.py                         # 可选：v2 插件入口（优先于 gui/main.py）
-├── gui/
-│   ├── main.py                    # v1/v2 入口，页面实现
-│   └── style.py                   # 可选：应用私有样式
-├── lib/                           # 可选：应用内共用代码
+sllkgui-notes/
+├── sllkgui-plugin.yml      # 必需：运行时清单
+├── plugin.py               # 必需：导出 PLUGIN 实例
+├── pages/                  # 可选：页面实现
 ├── resource/
-│   ├── icon/app_icon.svg          # 菜单图标
-│   ├── lang/{zh_cn,zh_tw,en_us,ja_jp}.yml
-│   ├── images/  voice/            # 其他资源
-└── brand/
-    └── sllkgui/                  # 可选：品牌覆盖层（themes / languages / settings / images）
+│   ├── icon/*.svg
+│   └── lang/{zh_cn,zh_tw,en_us,ja_jp}.yml
+├── README.md
+├── CHANGELOG.md
+└── LICENSE
 ```
 
-`app_name`、`resource/`、`brand/` 都由加载器识别，无需在代码里拼路径。
-
-## 2. 清单字段（`config.yml`）
-
-| 字段 | 必需 | 说明 |
-| --- | --- | --- |
-| `app_name` | ✅ | **必须等于目录名**，否则抛 `APP_NAME_MISMATCH`（不一致会让应用内导入静默失效） |
-| `app_id` | | 菜单插件 ID，缺省 `app.menu.<target>.<name>` |
-| `button_id` | | 左侧菜单按钮/页面路由对象名，缺省 `app_<name>`；**全局唯一**，重复时启动抛 `PLUGIN_DUPLICATE_BUTTON_ID` |
-| `page_object` | | 页面控件对象名，缺省 `<name>Page` |
-| `app_icon` | | 图标资源键，配合 `resource/icon/` |
-| `app_text` | | 菜单文本语言键，缺省 `language.app.<name>.app_text` |
-| `app_tooltip` | | 提示语言键 |
-| `app_target` | | 菜单容器，缺省 `LeftMenu` |
-| `show_top` | | 按钮是否放在菜单上部（`false` 放底部） |
-| `is_active` | | 是否参与初始高亮 |
-| `is_default` | | 是否作为默认页（首个 `true` 生效） |
-| `protocol` | | `1`（缺省）或 `2`；其他值抛 `APP_PROTOCOL_UNSUPPORTED` |
-| `plugin` | | v2 入口里有多个 `AppPlugin` 子类时，用符号名消歧 |
-| `core` | | 逻辑层目录名；声明后必须存在，否则抛 `APP_CORE_MISSING` |
-
-最小清单：
+## 2. 清单 `sllkgui-plugin.yml`
 
 ```yaml
-app_name: "hello"
-button_id: "btn_hello"
-page_object: "helloPage"
-app_text: "language.app.hello.app_text"
-app_target: "LeftMenu"
-is_default: true
+schema: 1
+api: 1
+id: com.example.notes
+name: Notes
+version: 1.2.0
+description: 通用便签
+license: MIT
+entry: plugin.py
+requires:
+  sllkgui: ">=2.0.0,<3.0.0"
+  python: ">=3.12"
+surfaces:
+  - id: notes
+    title: {zh_cn: 便签, zh_tw: 便籤, en_us: Notes, ja_jp: ノート}
+    icon: resource/icon/notes.svg
+    default: true
+    order: 10
+permissions:
+  - filesystem.write
 ```
 
-> `app_name` 缺失时以目录名回退，并把回退值**写回清单 `config`**（保证图标解析
-> 与页面注册读到同一个名字）；仍建议显式声明，一旦声明就必须与目录名一致，
-> 否则抛 `APP_NAME_MISMATCH`。
+- `id`：`^[a-z0-9][a-z0-9._-]{0,63}$`，全局唯一。
+- `version`：SemVer。
+- `surfaces`：至少一个；`default: true` 最多一个；`order` 越小越靠前。
+- `permissions`：`network`、`filesystem.read`、`filesystem.write`、`subprocess`、
+  `clipboard`、`notifications`、`autostart`、`system.info`。
 
-#### 布尔字段解析
-
-`show_top` / `is_active` / `is_default` 三个布尔字段统一解析（大小写与首尾空白不敏感）：
-
-- 原生 YAML 布尔 `true` / `false` 直接使用；
-- 字符串 `"false"` `"0"` `"no"` `"off"` `""` → `False`，`"true"` `"1"` `"yes"` `"on"` → `True`；
-- 缺字段按各自默认值（`show_top: true`，`is_active` / `is_default: false`）；
-- 其它类型走 `bool(value)`。
-
-因此 `show_top: "false"`（带引号的字符串）会被正确解析为 `False`，不会被
-`bool("false")` 误判为真而把按钮放到顶部。
-
-## 3. 协议 v2（推荐）
-
-清单写 `protocol: 2`，入口（`app.py` 优先，其次 `gui/main.py`）导出 `AppPlugin` 子类：
+## 3. 入口 `plugin.py`
 
 ```python
-from PySide6.QtWidgets import QLabel, QWidget
-
-from sllkgui.appcore import AppPage, AppPlugin
+from sllkgui.plugin import GalleryContext, Plugin
 
 
-def build_home(ctx, window) -> QWidget:
-    page = QWidget()
-    label = QLabel(ctx.lang_text("app_text"))
-    label.setParent(page)
+def build_notes(ctx: GalleryContext):
+    from .pages.list import NotesPage
+
+    with ctx.timing("notes.surface.build"):
+        page = NotesPage(ctx)
+    ctx.event("surface.ready", {"surface": "notes"})
     return page
 
 
-class HelloApp(AppPlugin):
-    def on_load(self, ctx) -> None:          # 可选：页面构建前调用一次
-        self.ready = True
+class NotesPlugin(Plugin):
+    def on_load(self, ctx: GalleryContext) -> None:
+        self.ctx = ctx
+        ctx.log("loading notes")
+        with ctx.timing("notes.load"):
+            self.data_file = ctx.data_dir / "notes.yaml"
+        ctx.event("notes.loaded")
 
-    def pages(self) -> list[AppPage]:
-        return [
-            AppPage(
-                button_id="btn_hello",
-                page_object="helloPage",
-                build=build_home,
-                title_key="language.app.hello.app_text",
-                default=True,
-            )
-        ]
+    def surfaces(self):
+        return {"notes": build_notes}
+
+    def on_locale_changed(self, locale: str) -> None:
+        self.ctx.log(f"locale -> {locale}")
+
+    def on_unload(self) -> None:
+        self.ctx.log("unloading notes")
+        self.ctx.event("notes.unloaded")
+
+
+PLUGIN = NotesPlugin()
 ```
 
-入口识别顺序：
+规则：
 
-1. 模块级 `PLUGIN = HelloApp()`（实例）；
-2. 模块级 `PLUGIN = HelloApp`（类，加载器实例化）；
-3. 模块内**唯一**的 `AppPlugin` 子类；
-4. 多个子类又没写 `PLUGIN` → `APP_PLUGIN_AMBIGUOUS`。
+- 必须导出模块级 `PLUGIN` **实例**；不接受 `PAGE`、`register_plugins` 等旧形式。
+- `surfaces()` 返回 `{surface_id: factory}`，factory 签名 `(GalleryContext) -> QWidget`。
+- 清单 `surfaces[].id` 与 factory 键一一对应；缺失会报 `PLUGIN_SURFACE_FACTORY_MISSING`。
+- 生命周期：`on_load` → `surfaces()` →（语言切换）`on_locale_changed` → `on_unload`。
 
-`AppPage` 字段：
-
-| 字段 | 说明 |
-| --- | --- |
-| `button_id` / `page_object` | 菜单按钮与页面对象名 |
-| `build(ctx, window)` | 返回页面 `QWidget`；基座负责 `setObjectName` 与 `addWidget` |
-| `title` | `str`、语言键或 `fn(language) -> str` |
-| `title_key` | 语言键，缺省 `language.app.<name>.<button_id>` |
-| `icon` / `tooltip` | 图标资源键 / 提示文本 |
-| `default` / `show_top` / `is_active` | 与清单同义，用于多页面应用逐页声明 |
-
-生命周期钩子：`on_load(ctx)`、`on_language_changed(language)`、`on_unload()`。
-
-- `on_load(ctx)`：应用加载完成、页面构建之前调用一次。
-- `on_language_changed(language)`：基座在**语言切换成功后**（窗口级刷新成功、写入
-  `user.yaml` 之前）调用；刷新失败并回滚时不调用。多数应用不需要覆写，页面标题由基座按
-  `title_key` 自动刷新。
-- `on_unload()`：基座在 `reset_apps_cache()` 清理应用缓存**之前**调用（测试 / 热重载场景）。
-
-每个钩子都在基座的异常隔离块里执行：单个应用的钩子抛异常只记 `Logger.warning`，
-不影响其它应用、不中断本次语言切换或缓存清理。`handle.plugin` 为空的 v1 应用不触发
-`on_language_changed` / `on_unload`。
-
-## 4. 协议 v1（兼容）
-
-清单不写 `protocol`（或写 `1`），入口固定为 `gui/main.py`，按优先级识别三种写法：
-
-| 优先级 | 写法 | 入栈由谁负责 | 能拿到 `AppContext` |
-| --- | --- | --- | --- |
-| 1 | `def register_plugins(registry, app)` | 应用自己 `addWidget` | 能 |
-| 2 | `PAGE = MyPage` / `PAGE = MyPage()`（含 `load_page(window)`） | 页面自己 | 不能 |
-
-> **`PAGE` 的 `self` 是陷阱**：加载器按 `PAGE.load_page(window)` 调用，`PAGE` 写成**类**时
-> `self` 拿到的是主窗口，写成**实例**时 `self` 是页面对象、`window` 才是窗口——同一份代码
-> 不能依赖 `self` 的含义。内置的 10 个预览应用统一继承 `sllkgui.guicore.CPreviewPage`，
-> 它的钩子全部是 `classmethod`，两种写法都成立，新页面建议直接以它为起点。
-| 3 | `def build_page(app) -> QWidget` | 基座 | 能 |
-
-```python
-# 协议 3：最简
-from PySide6.QtWidgets import QLabel, QWidget
-
-
-def build_page(app):
-    page = QWidget()
-    page.setObjectName(app.config.get("page_object") or "helloPage")
-    label = QLabel(app.lang_text("app_text", "你好"))
-    label.setParent(page)
-    return page
-```
-
-v1 的既有应用无需改动；新应用建议直接用 v2——v1 的三套写法在「谁入栈」「self 是谁」上语义不一致，
-是最常见的出错点。
-
-## 5. `AppContext`
-
-页面代码拿到的 `ctx`（v2 的 `build(ctx, window)` 第一参数，v1 的 `app`）：
+## 4. `GalleryContext`
 
 | 成员 | 说明 |
 | --- | --- |
-| `config` | 清单字段（`Attrs`，属性/字典双访问） |
-| `app_dir` / `core_dir` / `icon_path` | 应用根、逻辑层目录、默认图标（缺失为 `None`） |
-| `language` | 当前语言，**每次读取都取最新值** |
-| `lang_text(key, default=None)` | 读本应用语言命名空间 `app.<name>.<key>` |
-| `resource(*parts)` | `<app>/resource/...` 绝对路径 |
-| `icon(name)` / `image(name)` / `voice(name)` / `lang_file(lang)` | 应用内资源定位 |
-| `brand(*parts)` | `<app>/brand/...`，纳入基座资源解析链 |
-| `import_module("pages.home")` | 在应用命名空间内导入，无需拼 `_sllkgui_apps.<name>.` |
+| `plugin_id` / `plugin_version` | 插件元数据 |
+| `data_dir` / `cache_dir` | 可写目录，自动创建 |
+| `locale` / `theme` | 当前语言 / 主题名 |
+| `permissions` | 清单声明的权限 |
+| `resource(*parts)` | `resource/` 内只读路径 |
+| `open_surface(id)` | 跳转到本插件 Surface |
+| `text(key, default=None, **kwargs)` | 多语言文案，缺失回退 `en_us` |
+| `log(message, level="info")` | 基座日志，自动加插件前缀 |
+| `logger` | 标准库 `logging.Logger`，已桥接基座 |
+| `event(name, payload=None, level="info")` | 基座遥测 |
+| `timing(name, payload=None)` | 上下文计时，自动记录 `duration_ms` |
+| `report_error(code, message, detail=None)` | 日志 + 遥测 + 非阻塞错误提示 |
+| `parent_window()` | Gallery 主窗口（对话框父级） |
 
-## 6. 语言文件
+## 5. 多语言
 
-`resource/lang/<code>.yml` 是**扁平键值**，键名与代码里 `lang_text()` 的第二段对应：
+`resource/lang/<locale>.yml` 支持嵌套字典；四个语言文件必须齐全且键集合一致。
+`ctx.text("home.title")` 读取当前语言；切换语言后 Loader 会调用
+`on_locale_changed`，页面可自行刷新文案。
 
-```yaml
-# resource/lang/zh_cn.yml
-app_text: "你好"
-app_tooltip: "示例应用"
-greeting: "欢迎使用"
+## 6. 本地开发
+
+```powershell
+# 直接加载本地插件目录，不写 registry
+uv run sllkgui run --plugin-dir ..\my-plugin
+
+# 规范检查
+uv run sllkgui plugin lint ..\my-plugin
+
+# 运行仓库内最小示例
+uv run sllkgui run --plugin-dir examples\plugin-hello
 ```
 
-```python
-ctx.lang_text("greeting")   # -> "欢迎使用"
-```
+## 7. 发布
 
-切换语言时，`Language.apply()` 会重新装载所有应用的 `resource/lang/<code>.yml`，
-并整体重建页面栈，页面内文本随之更新。四套语言（`zh_cn` / `zh_tw` / `en_us` / `ja_jp`）
-的键必须逐键对齐，`test_language_coverage.py` 会检查。
-
-## 7. 品牌覆盖层
-
-`<app>/brand/sllkgui/` 与包内 `_resources/sllkgui/` 同构，自动进入资源解析链，且优先级高于基座：
-
-```text
-brand/sllkgui/
-├── themes/brand.yaml          # 覆盖或新增主题
-├── languages/zh_cn.yaml       # 覆盖基座文案
-└── images/svg_icons/...       # 覆盖图标
-```
-
-配置类文件（settings / themes / languages）**深合并**：只写要改的键即可，其余键由基座提供。
-图标、图片、字体同名时整份替换。
-
-## 8. 装载时序与懒加载
-
-1. `discover_app_dirs()` 扫描含 `config.yml` 的子目录，按名称排序。
-2. 每个应用：读清单 → 校验 `app_name` / `core` / `protocol` → 解析图标 → 注入语言命名空间
-   → 注册菜单插件 → 按协议注册页面插件。
-3. 首个 `is_default: true` 的页面立即构建；其余页面在首次导航时由 `ensure_registered_page()` 构建。
-4. 语言切换时清空页面栈，只重建默认页与当前页。
-
-## 9. 常见错误
-
-| 错误码 | 原因 | 处理 |
-| --- | --- | --- |
-| `APP_NAME_MISMATCH` | 清单 `app_name` 与目录名不一致 | 改成一致，或直接改名目录 |
-| `APP_PROTOCOL_UNSUPPORTED` | `protocol` 不是 `1` / `2` | 修正清单 |
-| `APP_PLUGIN_MISSING` | `protocol: 2` 但入口没有 `AppPlugin` 子类 | 定义子类或写 `PLUGIN = ...` |
-| `APP_PLUGIN_AMBIGUOUS` | 入口有多个子类且未指定 | 写 `PLUGIN = MyApp()` |
-| `APP_CORE_MISSING` | 清单 `core` 指向的目录不存在 | 修正目录名或删掉该字段 |
-| `APP_PAGE_EMPTY` | `build()` 返回 `None` | 返回一个 `QWidget` |
-| `PLUGIN_DUPLICATE_BUTTON_ID` | 两个页面插件的 `button_id` 相同，页面路由重复 | 给每个页面/应用分配唯一 `button_id` |
-| `YAML_FILE_NOT_FOUND` | 清单/语言文件路径解析失败 | 确认 `app_name` 与目录一致；`--apps-dir` 用绝对路径 |
-
-页面没出现时按顺序排查：`sllkgui doctor` 是否 `发现应用` > 0 → 加 `--load` 后 `成功加载` 是否等于发现数
-（doctor 默认不执行入口代码，不加 `--load` 不会有「成功加载」这一行）→ 清单 `page_object` 与页面
-`setObjectName` 是否一致 → `build()` 是否返回控件。
+1. 打 SemVer tag（如 `v1.2.0`）。
+2. 在官方源提交 `plugins/<id>/entry.yaml`（见 `docs/SOURCE.md`）。
+3. 用户执行 `sllkgui source refresh` 后即可搜索安装。
