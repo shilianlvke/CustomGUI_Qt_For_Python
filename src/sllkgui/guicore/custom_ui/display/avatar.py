@@ -7,7 +7,7 @@ from PySide6.QtGui import QColor, QFont, QPainter, QPainterPath, QPixmap
 from PySide6.QtWidgets import QSizePolicy, QWidget
 
 from .icon import tinted_pixmap
-from .palette import tokens
+from .palette import content_surface_color, tokens
 
 _SIZES = {"sm": 32, "md": 40, "lg": 48, "xl": 64}
 
@@ -95,7 +95,7 @@ class CAvatar(QWidget):
             painter.end()
             return
 
-        painter.fillPath(path, QColor(palette["surface_strong"]))
+        painter.fillPath(path, content_surface_color())
         if self._icon is not None:
             icon_size = int(self._size * 0.45)
             pixmap = tinted_pixmap(self._icon, palette["muted"], icon_size, self.devicePixelRatioF())

@@ -8,7 +8,7 @@ from PySide6.QtWidgets import QAbstractButton, QSizePolicy, QWidget
 
 from sllkgui.appcore import AppSettings, ColorPalette
 
-from ..display.palette import tokens
+from ..display.palette import content_surface_color, tokens
 from ..icon_utils import render_icon
 
 #: 圆角半径（几何量，与主题无关）
@@ -357,7 +357,7 @@ class CImage(QWidget):
         body = QRectF(self.rect()).adjusted(0.5, 0.5, -0.5, -0.5)
         path = QPainterPath()
         path.addRoundedRect(body, self._radius, self._radius)
-        painter.fillPath(path, QColor(palette["surface"]))
+        painter.fillPath(path, content_surface_color())
         painter.setBrush(Qt.NoBrush)
         painter.setPen(QPen(QColor(palette["border"]), 1))
         painter.drawPath(path)

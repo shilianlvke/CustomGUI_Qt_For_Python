@@ -37,4 +37,21 @@ def tokens() -> dict[str, str]:
     }
 
 
-__all__ = ["is_dark_theme", "tokens"]
+def content_surface_color() -> QColor:
+    """卡片内小表面（Chip、媒体占位、文件行等）的玻璃填充色。
+
+    这些小表面叠在卡片玻璃之上，若继续用不透明的 ``tokens()["surface"]``，
+    会在半透明卡片里留下补丁。这里与 ``CTimeline`` / 上传拖放区使用同一套
+    ``glass_surface`` 写法：亚克力开启时按 ``glass.card`` 降低不透明度并保留
+    0.10 下限，关闭时回落为原始实色。
+    """
+    # 延迟导入：acrylic 依赖 appcore 配置，palette 被大量组件在导入期引用，
+    # 模块级互相导入容易形成初始化顺序问题。
+    from sllkgui.appcore import AppSettings
+
+    from ...acrylic import glass_surface
+
+    return glass_surface(tokens()["surface"], AppSettings.glass.card, minimum=0.10)
+
+
+__all__ = ["content_surface_color", "is_dark_theme", "tokens"]

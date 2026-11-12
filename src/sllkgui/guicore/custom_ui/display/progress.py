@@ -9,6 +9,7 @@ from PySide6.QtWidgets import QSizePolicy, QWidget
 from sllkgui.appcore import AppSettings
 
 from ..button.severity import contrast_text
+from ..panels.style import panel_colors
 from .palette import tokens
 
 _INTERVAL = 33
@@ -126,7 +127,7 @@ class CProgressBar(QWidget):
         accent = QColor(palette["accent"])
         rect = QRectF(self.rect()).adjusted(0.5, 0.5, -0.5, -0.5)
 
-        painter.fillPath(self._path(rect), QColor(palette["surface_strong"]))
+        painter.fillPath(self._path(rect), QColor(panel_colors()["track"]))
 
         if self._vertical:
             if self._indeterminate:

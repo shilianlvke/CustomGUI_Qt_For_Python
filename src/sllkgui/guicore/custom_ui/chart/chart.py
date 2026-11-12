@@ -251,7 +251,7 @@ class CChart(QWidget):
             return
         palette = tokens()
         self._error_label.setStyleSheet(
-            f"color: {palette['muted']}; background: {palette['surface']};"
+            f"color: {palette['muted']}; background: transparent;"
             " padding: 12px; border: 1px solid transparent;"
         )
 
@@ -267,6 +267,12 @@ class CChart(QWidget):
         self._view = QChartView(self._chart, self)
         self._view.setRenderHint(QPainter.Antialiasing)
         self._view.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
+        # 图表不再自带底色：QChartView 的 viewport 默认会铺一层未填充背景，
+        # 与表格同理，会让宿主卡片的玻璃表面被整块实色挡住。
+        self._view.setBackgroundBrush(QBrush(Qt.BrushStyle.NoBrush))
+        self._view.setAutoFillBackground(False)
+        self._view.viewport().setAutoFillBackground(False)
+        self._view.setStyleSheet("background: transparent; border: none;")
         self._layout.addWidget(self._view)
         self._apply_animation()
         self._apply_theme()
@@ -470,14 +476,15 @@ class CChart(QWidget):
         if self._chart is None:
             return
         palette = tokens()
-        surface = QColor(palette["surface"])
         text = QColor(palette["text"])
         muted = QColor(palette["muted"])
         border = QColor(palette["border"])
 
         chart = self._chart
-        chart.setBackgroundBrush(QBrush(surface))
-        chart.setBackgroundPen(QPen(border, 1))
+        # 透出卡片玻璃；图表只负责数据层，不再画自己的实色背景。
+        chart.setBackgroundBrush(QBrush(Qt.BrushStyle.NoBrush))
+        chart.setBackgroundPen(QPen(Qt.PenStyle.NoPen))
+        chart.setPlotAreaBackgroundVisible(False)
         chart.setTitleBrush(QBrush(text))
         chart.setTitleFont(_font(15, QFont.Weight.DemiBold))
 
@@ -489,7 +496,7 @@ class CChart(QWidget):
         legend.setFont(_font(11))
 
         if self._view is not None:
-            self._view.setBackgroundBrush(QBrush(surface))
+            self._view.setBackgroundBrush(QBrush(Qt.BrushStyle.NoBrush))
 
         for axis in chart.axes():
             axis.setLabelsColor(muted)

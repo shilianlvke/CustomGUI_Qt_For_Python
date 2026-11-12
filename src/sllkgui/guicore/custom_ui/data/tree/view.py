@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from PySide6.QtCore import QEvent, QItemSelectionModel, QPointF, QRectF, QSize, Qt, Signal
+from PySide6.QtGui import QBrush, QPalette
 from PySide6.QtWidgets import (
     QAbstractItemView,
     QTreeWidget,
@@ -319,6 +320,19 @@ class CTree(QWidget):
         tree = getattr(self, "_tree", None)
         if tree is None:
             return
+        tree.setAutoFillBackground(False)
+        tree.viewport().setAutoFillBackground(False)
+        tree_palette = tree.palette()
+        tree_palette.setBrush(QPalette.ColorRole.Base, QBrush(Qt.BrushStyle.NoBrush))
+        tree_palette.setBrush(QPalette.ColorRole.Window, QBrush(Qt.BrushStyle.NoBrush))
+        tree.setPalette(tree_palette)
+        header = tree.header()
+        header.setAutoFillBackground(False)
+        header.viewport().setAutoFillBackground(False)
+        header_palette = header.palette()
+        header_palette.setBrush(QPalette.ColorRole.Base, QBrush(Qt.BrushStyle.NoBrush))
+        header_palette.setBrush(QPalette.ColorRole.Window, QBrush(Qt.BrushStyle.NoBrush))
+        header.setPalette(header_palette)
         colors = panel_colors()
         base = tokens()
         signature = (tuple(sorted(colors.items())), tuple(sorted(base.items())))
@@ -328,7 +342,7 @@ class CTree(QWidget):
         tree.setStyleSheet(
             f"""
             QTreeWidget#CTree_TreeWidget {{
-                background-color: {qss_color(colors["background"])};
+                background: transparent;
                 border: 1px solid {qss_color(colors["border"])};
                 border-radius: 6px;
                 outline: 0;

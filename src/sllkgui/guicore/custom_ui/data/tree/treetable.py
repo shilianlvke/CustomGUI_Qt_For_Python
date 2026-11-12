@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from PySide6.QtCore import QEvent, QItemSelectionModel, QModelIndex, QPointF, QRectF, QSize, Qt, Signal
-from PySide6.QtGui import QStandardItem, QStandardItemModel
+from PySide6.QtGui import QBrush, QPalette, QStandardItem, QStandardItemModel
 from PySide6.QtWidgets import (
     QAbstractItemView,
     QHeaderView,
@@ -406,6 +406,21 @@ class CTreeTable(QWidget):
         view = getattr(self, "_view", None)
         if view is None:
             return
+        # 与 CDataTable 一致：view / header 都不自动填不透明底色，
+        # 让 QSS 的半透明表面直接叠在宿主卡片玻璃上。
+        view.setAutoFillBackground(False)
+        view.viewport().setAutoFillBackground(False)
+        view_palette = view.palette()
+        view_palette.setBrush(QPalette.ColorRole.Base, QBrush(Qt.BrushStyle.NoBrush))
+        view_palette.setBrush(QPalette.ColorRole.Window, QBrush(Qt.BrushStyle.NoBrush))
+        view.setPalette(view_palette)
+        header = view.header()
+        header.setAutoFillBackground(False)
+        header.viewport().setAutoFillBackground(False)
+        header_palette = header.palette()
+        header_palette.setBrush(QPalette.ColorRole.Base, QBrush(Qt.BrushStyle.NoBrush))
+        header_palette.setBrush(QPalette.ColorRole.Window, QBrush(Qt.BrushStyle.NoBrush))
+        header.setPalette(header_palette)
         colors = panel_colors()
         base = tokens()
         signature = (tuple(sorted(colors.items())), tuple(sorted(base.items())))
@@ -415,7 +430,7 @@ class CTreeTable(QWidget):
         view.setStyleSheet(
             f"""
             QTreeView#CTreeTable_View {{
-                background-color: {qss_color(colors["background"])};
+                background: transparent;
                 border: 1px solid {qss_color(colors["border"])};
                 border-radius: 6px;
                 outline: 0;
@@ -425,10 +440,10 @@ class CTreeTable(QWidget):
                 border: none;
             }}
             QTreeView#CTreeTable_View QHeaderView {{
-                background-color: {qss_color(colors["header_solid"])};
+                background: transparent;
             }}
             QTreeView#CTreeTable_View QHeaderView::section {{
-                background-color: {qss_color(colors["header_solid"])};
+                background-color: {qss_color(colors["header"])};
                 color: {colors["text"]};
                 border: none;
                 border-bottom: 1px solid {qss_color(colors["border"])};

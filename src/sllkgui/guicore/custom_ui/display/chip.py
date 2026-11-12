@@ -10,7 +10,7 @@ from sllkgui.appcore import AppSettings
 
 from ..paint_utils import draw_cross
 from .icon import tinted_pixmap
-from .palette import tokens
+from .palette import content_surface_color, tokens
 
 HEIGHT = 28
 PADDING_X = 10
@@ -107,7 +107,7 @@ class CChip(QWidget):
         rect = QRectF(self.rect()).adjusted(0.5, 0.5, -0.5, -0.5)
         path = QPainterPath()
         path.addRoundedRect(rect, rect.height() / 2, rect.height() / 2)
-        painter.fillPath(path, QColor(palette["surface"]))
+        painter.fillPath(path, content_surface_color())
         painter.setBrush(Qt.NoBrush)
         painter.setPen(QColor(palette["border"]))
         painter.drawPath(path)
@@ -141,7 +141,7 @@ class CChip(QWidget):
             self._remove_rect = QRectF(self.width() - self._padding_x - 14, (self.height() - 16) / 2, 16, 16)
             if self._hover_remove:
                 painter.setPen(Qt.NoPen)
-                painter.setBrush(QColor(palette["surface_strong"]))
+                painter.setBrush(content_surface_color())
                 painter.drawEllipse(self._remove_rect)
             draw_cross(painter, self._remove_rect.adjusted(3, 3, -3, -3), palette["muted"], 1.4)
         painter.end()

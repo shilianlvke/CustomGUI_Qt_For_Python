@@ -33,7 +33,7 @@ from sllkgui.appcore import AppSettings
 from ...acrylic import glass_surface
 from ..button.button import CButton
 from ..button.severity import Severity, Variant, severity_color
-from ..display.palette import tokens
+from ..display.palette import content_surface_color, tokens
 from ..display.progress import CProgressBar
 from ..feedback.message import CMessage
 
@@ -292,7 +292,7 @@ class _FileRow(QFrame):
         rect = QRectF(self.rect()).adjusted(0.5, 0.5, -0.5, -0.5)
         path = QPainterPath()
         path.addRoundedRect(rect, 6, 6)
-        painter.fillPath(path, QColor(palette["surface"]))
+        painter.fillPath(path, content_surface_color())
         painter.setBrush(Qt.NoBrush)
         painter.setPen(QPen(QColor(palette["border"]), 1))
         painter.drawPath(path)

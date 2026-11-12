@@ -7,7 +7,7 @@ from PySide6.QtGui import QColor, QFont, QPainter, QPainterPath, QPen
 from PySide6.QtWidgets import QApplication, QStyle, QStyledItemDelegate, QStyleOptionViewItem
 
 from ...button.severity import contrast_text, normalize_severity, severity_color
-from ...display.palette import tokens
+from ...display.palette import content_surface_color, tokens
 from .roles import GROUP_ROLE, TAG_ROLE
 
 
@@ -30,7 +30,7 @@ class CTableDelegate(QStyledItemDelegate):
         painter.save()
         painter.setRenderHint(QPainter.Antialiasing)
         rect = QRectF(option.rect)
-        painter.fillRect(rect, QColor(colors["surface"]))
+        painter.fillRect(rect, content_surface_color())
         painter.setPen(QPen(QColor(colors["border"]), 1))
         painter.drawLine(rect.bottomLeft(), rect.bottomRight())
         font = QFont(option.font)

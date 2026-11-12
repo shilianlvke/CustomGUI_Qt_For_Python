@@ -7,7 +7,7 @@ from PySide6.QtGui import QColor, QFont, QPainter, QPen
 from PySide6.QtWidgets import QSizePolicy, QWidget
 
 from .avatar import CAvatar, _resolve_size
-from .palette import tokens
+from .palette import content_surface_color, tokens
 
 
 class _OverflowBubble(QWidget):
@@ -27,7 +27,7 @@ class _OverflowBubble(QWidget):
         palette = tokens()
         rect = QRectF(self.rect()).adjusted(1, 1, -1, -1)
         painter.setPen(QPen(QColor(palette["border"]), 1))
-        painter.setBrush(QColor(palette["surface_strong"]))
+        painter.setBrush(content_surface_color())
         painter.drawEllipse(rect)
         font = QFont(self.font())
         font.setPixelSize(max(11, int(self.width() * 0.34)))

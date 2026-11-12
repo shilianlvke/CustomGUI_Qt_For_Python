@@ -434,9 +434,11 @@ class _ComponentStyles:
         selection = self._accent_soft
         radius = self.tokens.radius.window
         self.style += f"""
+            /* 表格本体不再铺卡片色：viewport 透明，直接叠在宿主卡片/区域玻璃上，
+               否则背景图与模糊材质会被一块实色面板整块遮住。 */
             #CDataTable_View, #CDataTable_FrozenView {{
-                background-color: {self._card_bg};
-                alternate-background-color: {self._card_bg};
+                background: transparent;
+                alternate-background-color: {self._fill_rest};
                 color: {self.tokens.colors.text_primary};
                 border: 1px solid {self._control_stroke_secondary};
                 border-radius: {radius}px;
@@ -444,6 +446,10 @@ class _ComponentStyles:
                 selection-background-color: {selection};
                 selection-color: {self.tokens.colors.text_title};
                 outline: 0;
+            }}
+            #CDataTable_View QHeaderView,
+            #CDataTable_FrozenView QHeaderView {{
+                background: transparent;
             }}
             #CDataTable_View::item, #CDataTable_FrozenView::item {{
                 padding-left: 12px;
@@ -456,7 +462,7 @@ class _ComponentStyles:
             }}
             #CDataTable_View QHeaderView::section,
             #CDataTable_FrozenView QHeaderView::section {{
-                background-color: {self._card_bg};
+                background-color: {self._fill_rest};
                 color: {self.tokens.colors.text_muted};
                 border: none;
                 border-bottom: 1px solid {self._stroke};
@@ -465,11 +471,11 @@ class _ComponentStyles:
             }}
             #CDataTable_View QTableCornerButton::section,
             #CDataTable_FrozenView QTableCornerButton::section {{
-                background-color: {self._card_bg};
+                background: transparent;
                 border: none;
             }}
             #CDataTable_Empty, #CDataTable_Loading {{
-                background-color: {self._card_bg};
+                background-color: {self._fill_rest};
                 color: {self.tokens.colors.text_muted};
                 border: 1px solid {self._control_stroke_secondary};
                 border-radius: {radius}px;

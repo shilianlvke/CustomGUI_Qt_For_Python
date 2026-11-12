@@ -16,7 +16,7 @@ from sllkgui.appcore import AppSettings
 
 from ...button.severity import contrast_text
 from ...display.icon import tinted_pixmap
-from ...display.palette import tokens
+from ...display.palette import content_surface_color, tokens
 from ...paint_utils import draw_check
 from ...panels.style import panel_colors, with_alpha
 from .roles import NODE_ROLE
@@ -146,7 +146,7 @@ def _paint_checkbox(painter: QPainter, box: QRectF, state: Qt.CheckState) -> Non
             QPointF(box.right() - 3, box.center().y()),
         )
         return
-    painter.fillPath(path, QColor(colors["surface"]))
+    painter.fillPath(path, content_surface_color())
     painter.setBrush(Qt.NoBrush)
     # 未勾选框的描边不能和填充同色（深色主题下两者都取 dark_four，
     # 框会直接“消失”在树底色里）；用正文色的低透明度描边保证可辨。

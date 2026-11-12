@@ -10,7 +10,7 @@ from PySide6.QtWidgets import QAbstractButton, QHBoxLayout, QSizePolicy, QVBoxLa
 
 from sllkgui.appcore import AppSettings
 
-from ..display.palette import tokens
+from ..display.palette import content_surface_color, tokens
 from ..icon_utils import render_icon
 from ..paint_utils import draw_chevron
 
@@ -184,7 +184,7 @@ class _SlideCard(QWidget):
         rect = QRectF(self.rect()).adjusted(0.5, 0.5, -0.5, -0.5)
         path = QPainterPath()
         path.addRoundedRect(rect, self._radius, self._radius)
-        painter.fillPath(path, QColor(palette["surface"]))
+        painter.fillPath(path, content_surface_color())
 
         pixmap = _item_pixmap(self._item)
         _paint_cover(painter, path, rect, pixmap)

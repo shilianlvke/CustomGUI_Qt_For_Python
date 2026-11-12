@@ -5,7 +5,7 @@ from __future__ import annotations
 from collections.abc import Callable
 
 from PySide6.QtCore import QItemSelectionModel, QPoint, QSize, Qt, QTimer, Signal
-from PySide6.QtGui import QPainter
+from PySide6.QtGui import QBrush, QPainter, QPalette
 from PySide6.QtWidgets import (
     QAbstractItemView,
     QHBoxLayout,
@@ -122,6 +122,25 @@ class CDataTable(QWidget):
     def _make_view(self, object_name: str) -> QTableView:
         view = QTableView(self)
         view.setObjectName(object_name)
+        # QAbstractScrollArea 默认会用不透明的 QPalette.Base 填 viewport，
+        # QSS 里的半透明底色根本透不出来；关掉自动填充后表格才真正叠在
+        # 宿主卡片/区域玻璃上。
+        view.setAutoFillBackground(False)
+        view.viewport().setAutoFillBackground(False)
+        # 单元格在没有背景规则时回退到 QPalette.Base（不透明），
+        # 这里把 Base / Window 都置空，普通行才会真正透出宿主玻璃；
+        # 斑马行仍由 QSS 的 alternate-background-color 叠一层淡色。
+        palette = view.palette()
+        palette.setBrush(QPalette.ColorRole.Base, QBrush(Qt.BrushStyle.NoBrush))
+        palette.setBrush(QPalette.ColorRole.Window, QBrush(Qt.BrushStyle.NoBrush))
+        view.setPalette(palette)
+        header = view.horizontalHeader()
+        header.setAutoFillBackground(False)
+        header.viewport().setAutoFillBackground(False)
+        header_palette = header.palette()
+        header_palette.setBrush(QPalette.ColorRole.Base, QBrush(Qt.BrushStyle.NoBrush))
+        header_palette.setBrush(QPalette.ColorRole.Window, QBrush(Qt.BrushStyle.NoBrush))
+        header.setPalette(header_palette)
         view.setAlternatingRowColors(self._striped)
         view.setShowGrid(self._gridlines)
         view.setWordWrap(False)
