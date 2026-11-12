@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import os
+import stat
 from pathlib import Path
 
 import pytest
@@ -87,4 +89,49 @@ def test_store_helpers(tmp_path: Path):
     store.truncate_staging()
     assert not staging.exists()
     assert str(GalleryError("CODE", "message")) == "CODE: message"
+
+
+def test_remove_dir_clears_readonly_git_objects(tmp_path: Path):
+    """Git 的 pack/idx 在 Windows 上是只读文件，删除/移动前必须清属性。"""
+    from sllkgui.gallery.store import remove_dir
+
+    pack = tmp_path / "install" / ".git" / "objects" / "pack"
+    pack.mkdir(parents=True)
+    locked = pack / "pack-demo.idx"
+    locked.write_text("x", encoding="utf-8")
+    os.chmod(locked, stat.S_IREAD)
+
+    remove_dir(tmp_path / "install")
+    assert not (tmp_path / "install").exists()
+
+
+def test_move_to_history_survives_locked_directory(tmp_path: Path, monkeypatch):
+    """旧目录被占用时：先复制归档，再移入回收站，不能就地删出半个安装。"""
+    from sllkgui.gallery import store as store_module
+
+    store = GalleryStore(tmp_path / "gallery")
+    store.ensure_layout()
+    current = store.plugin_path("com.example.hello")
+    pack = current / ".git" / "objects" / "pack"
+    pack.mkdir(parents=True)
+    locked = pack / "pack-demo.idx"
+    locked.write_text("x", encoding="utf-8")
+    os.chmod(locked, stat.S_IREAD)
+
+    original = store_module._rename_dir
+    calls = {"count": 0}
+
+    def flaky(src, dst):
+        calls["count"] += 1
+        if calls["count"] == 1:
+            raise PermissionError(13, "denied")
+        original(src, dst)
+
+    monkeypatch.setattr(store_module, "_rename_dir", flaky)
+    history = store.move_to_history("com.example.hello", "1.0.0", "a" * 40)
+
+    assert history.is_dir()
+    assert (history / ".git" / "objects" / "pack" / "pack-demo.idx").is_file()
+    assert not current.exists()
+    assert list(store.trash_root.glob("com.example.hello-*")) == []
 

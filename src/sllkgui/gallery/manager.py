@@ -414,10 +414,7 @@ class PluginManager:
         target = self.store.plugin_path(manifest.plugin_id)
         target.parent.mkdir(parents=True, exist_ok=True)
         if staging.exists():
-            try:
-                staging.rename(target)
-            except OSError:
-                shutil.move(str(staging), str(target))
+            self.store.place_staging(staging, manifest.plugin_id)
         previous = None
         if old is not None and history_path is not None and history_path.exists():
             previous = {
