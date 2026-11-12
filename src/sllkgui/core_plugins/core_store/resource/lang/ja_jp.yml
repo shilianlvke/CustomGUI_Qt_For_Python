@@ -46,7 +46,6 @@ sources:
   confirm_remove: 'ソース {id} を削除しますか？導入済みプラグインは残ります。'
   added: 'ソース {id} を追加しました'
 status:
-  ready: 準備完了
   action_done: 完了
   action_failed: '操作に失敗しました: {error}'
   install_done: '{count} 個のプラグインをインストールしました'

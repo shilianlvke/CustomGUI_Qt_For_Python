@@ -31,12 +31,18 @@ from PySide6.QtWidgets import (
 )
 
 from sllkgui.appcore import AppSettings, ColorPalette, get_design_tokens, get_theme_manager
-from sllkgui.guicore import CButton, CConfirmDialog, CHDiv, CInputText
-from sllkgui.guicore.custom_ui.panels.style import RADIUS, paint_surface, panel_colors, qss_color
+from sllkgui.guicore import CButton, CConfirmDialog, CHDiv, CInputText, CToast
+from sllkgui.guicore.custom_ui.panels.style import RADIUS, paint_surface, panel_colors
 from sllkgui.guicore.styles import card_surface_color
 from sllkgui.plugin import GalleryContext
 
 _MONO_FAMILIES = ["Cascadia Mono", "Consolas", "JetBrains Mono", "monospace"]
+
+
+def _toast_offset(window) -> int:
+    """通知条避让标题栏：顶部偏移 = 标题栏高度 + 8。"""
+    bar = getattr(getattr(window, "ui", None), "title_bar", None)
+    return bar.height() + 8 if bar is not None else 56
 
 
 # ----------------------------------------------------------------------
@@ -1117,10 +1123,6 @@ class StorePage(QWidget):
 
         self.runtime = current_runtime()
         self._mode_cards: dict[str, _ModeCard] = {}
-        self._status_timer = QTimer(self)
-        self._status_timer.setSingleShot(True)
-        self._status_timer.setInterval(6000)
-        self._status_timer.timeout.connect(self._hide_status)
         self._build()
         self.switch_mode("installed")
         self.refresh_stats()
@@ -1192,11 +1194,6 @@ class StorePage(QWidget):
         workspace_layout.addWidget(self.stack)
         body.addWidget(workspace, 1)
         root.addLayout(body, 1)
-
-        # 状态行只承载操作反馈：空闲时隐藏，不再用「就绪」占一整行高度
-        self.status = _ThemedLabel("", "muted")
-        self.status.hide()
-        root.addWidget(self.status)
         self.refresh_btn.clicked.connect(self.refresh_all)
 
     # ------------------------------------------------------------------
@@ -1225,28 +1222,22 @@ class StorePage(QWidget):
     # 状态 / 刷新
     # ------------------------------------------------------------------
     def set_status(self, message: str, level: str = "info") -> None:
+        """用基座通知条反馈操作结果：浮在页面上，不占布局，自动堆叠与消失。"""
         if not message:
-            self._hide_status()
             return
-        colors = panel_colors()
-        if level == "error":
-            color = ColorPalette.custom_red
-        elif level == "warning":
-            color = ColorPalette.custom_yellow
-        elif level == "success":
-            color = qss_color(colors["accent"])
-        else:
-            color = qss_color(colors["muted"])
-        self.status.setStyleSheet(f"color: {color};")
-        self.status.setText(message)
-        self.status.show()
-        self._status_timer.start()
-
-    def _hide_status(self) -> None:
-        """清空并收起状态行：空闲时状态行不占页面高度。"""
-        self._status_timer.stop()
-        self.status.clear()
-        self.status.hide()
+        window = self.ctx.parent_window()
+        if window is None:
+            return
+        severity = {"error": "error", "warning": "warn"}.get(level, level)
+        life = 6000 if level in {"error", "warning"} else 3000
+        CToast.show_message(
+            window,
+            message,
+            self.ctx.text("store.title", "插件管理"),
+            severity,
+            life=life,
+            offset_top=_toast_offset(window),
+        )
 
     def refresh_stats(self) -> None:
         manager = getattr(self.runtime, "manager", None)

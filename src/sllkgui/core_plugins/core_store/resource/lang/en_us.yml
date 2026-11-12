@@ -46,7 +46,6 @@ sources:
   confirm_remove: 'Remove source {id}? Installed plugins are kept.'
   added: 'Added source {id}'
 status:
-  ready: Ready
   action_done: Done
   action_failed: 'Action failed: {error}'
   install_done: 'Installed {count} plugins'

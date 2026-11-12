@@ -46,7 +46,6 @@ sources:
   confirm_remove: '移除源 {id}？已安装插件不受影响。'
   added: '已添加源 {id}'
 status:
-  ready: 就绪
   action_done: 操作完成
   action_failed: '操作失败: {error}'
   install_done: '已安装 {count} 个插件'

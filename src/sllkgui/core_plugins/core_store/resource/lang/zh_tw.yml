@@ -46,7 +46,6 @@ sources:
   confirm_remove: '移除來源 {id}？已安裝外掛不受影響。'
   added: '已新增來源 {id}'
 status:
-  ready: 就緒
   action_done: 操作完成
   action_failed: '操作失敗: {error}'
   install_done: '已安裝 {count} 個外掛'
