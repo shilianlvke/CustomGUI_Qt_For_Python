@@ -1,14 +1,14 @@
-"""插件管理单页：编辑式控制台。
+"""插件管理单页：模式导轨 + 工作区。
 
-一页三段，按「已安装 → 发现 → 来源」自上而下阅读：
+布局沿用三段式工作台（已安装 / 发现 / 源），内容不再强行套用
+``CPickList`` / ``COrderList``：
 
-- 顶部是标题与三个指标（已安装 / 启用 / 来源），只做概览，不抢焦点；
-- 已安装：整行卡片，名称、版本、状态、来源、权限与操作同屏，不需要选中再看；
-- 发现：搜索框 + 两列结果卡片，每张卡片直接「安装」；
-- 来源：紧凑行 + 添加输入，官方/用户信任用标签区分。
+- 左侧导轨负责切换模式并显示计数；
+- 已安装：卡片列表 + 详情清单 + 工具栏动作；
+- 发现：搜索结果卡片流，每张卡片直接安装；
+- 源：紧凑行 + 添加输入，逐行刷新/移除。
 
-设计约束：不使用 CPickList / COrderList；列表与卡片均为自绘表面，颜色实时
-取自 ``panel_colors()``，切主题无需重建。
+自绘表面颜色实时取自 ``panel_colors()``，切换主题无需重建。
 """
 
 from __future__ import annotations
@@ -16,7 +16,7 @@ from __future__ import annotations
 from collections.abc import Callable
 from typing import Any
 
-from PySide6.QtCore import QRectF, QSize, Qt, QTimer
+from PySide6.QtCore import QRectF, Qt, QTimer, Signal
 from PySide6.QtGui import QColor, QFont, QFontMetrics, QPainter, QPen
 from PySide6.QtWidgets import (
     QFrame,
@@ -24,12 +24,13 @@ from PySide6.QtWidgets import (
     QHBoxLayout,
     QScrollArea,
     QSizePolicy,
+    QStackedWidget,
     QVBoxLayout,
     QWidget,
 )
 
 from sllkgui.appcore import get_theme_manager
-from sllkgui.guicore import CButton, CConfirmDialog, CInputText, CText
+from sllkgui.guicore import CButton, CCard, CConfirmDialog, CInputText, CText
 from sllkgui.guicore.custom_ui.panels.style import RADIUS, paint_surface, panel_colors, qss_color
 from sllkgui.plugin import GalleryContext
 
@@ -109,14 +110,14 @@ class _Chip(QWidget):
 
 
 class _ElidedLabel(QWidget):
-    """单行省略文本：用于 ID、commit、URL 等不应换行的内容。"""
+    """单行省略文本：用于 ID、commit、URL。"""
 
     def __init__(self, text: str = "", *, mono: bool = False, size: int = 11, parent=None) -> None:
         super().__init__(parent)
         self._text = text
         self._mono = mono
         self._size = size
-        self.setFixedHeight(size + 5)
+        self.setFixedHeight(size + 6)
         self.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed)
 
     def set_text(self, text: str) -> None:
@@ -137,123 +138,8 @@ class _ElidedLabel(QWidget):
         painter.end()
 
 
-class _Rule(QWidget):
-    """一条会随主题变色的细线。"""
-
-    def __init__(self, parent=None) -> None:
-        super().__init__(parent)
-        self.setFixedHeight(12)
-        self.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed)
-
-    def paintEvent(self, event) -> None:  # noqa: N802 - 覆写 Qt 命名
-        painter = QPainter(self)
-        painter.setPen(QPen(QColor(panel_colors()["divider"]), 1))
-        y = self.height() / 2
-        painter.drawLine(0, int(y), self.width(), int(y))
-        painter.end()
-
-
-class _IndexTitle(QWidget):
-    """章节标题：「01」用强调色，标题用正文色。"""
-
-    def __init__(self, index: str, title: str, parent=None) -> None:
-        super().__init__(parent)
-        self._index = index
-        self._title = title
-        self.setFixedHeight(28)
-
-    def sizeHint(self) -> QSize:  # noqa: N802 - 覆写 Qt 命名
-        metrics = QFontMetrics(_font(self.font(), 16, QFont.Weight.DemiBold))
-        return QSize(metrics.horizontalAdvance(self._title) + 44, 28)
-
-    def paintEvent(self, event) -> None:  # noqa: N802 - 覆写 Qt 命名
-        colors = panel_colors()
-        painter = QPainter(self)
-        painter.setRenderHint(QPainter.RenderHint.Antialiasing)
-        index_font = _font(self.font(), 11, QFont.Weight.DemiBold, mono=True)
-        painter.setFont(index_font)
-        painter.setPen(QColor(colors["accent"]))
-        painter.drawText(
-            QRectF(0, 0, 28, self.height()),
-            Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignVCenter,
-            self._index,
-        )
-        painter.setFont(_font(self.font(), 16, QFont.Weight.DemiBold))
-        painter.setPen(QColor(colors["text"]))
-        painter.drawText(
-            QRectF(30, 0, self.width() - 30, self.height()),
-            Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignVCenter,
-            self._title,
-        )
-        painter.end()
-
-
-class _SectionHeader(QWidget):
-    """章节头：序号 + 标题 + 分隔线 + 右侧动作。"""
-
-    def __init__(self, index: str, title: str, parent=None) -> None:
-        super().__init__(parent)
-        self.title_widget = _IndexTitle(index, title, self)
-        layout = QHBoxLayout(self)
-        layout.setContentsMargins(0, 2, 0, 2)
-        layout.setSpacing(10)
-        layout.addWidget(self.title_widget)
-        layout.addWidget(_Rule(self), 1)
-        self.actions = QHBoxLayout()
-        self.actions.setSpacing(6)
-        layout.addLayout(self.actions)
-        self.setFixedHeight(34)
-
-    def add_action(self, widget: QWidget) -> None:
-        self.actions.addWidget(widget)
-
-
-class _StatChip(QWidget):
-    """指标：强调色圆点 + 数字 + 说明，无外框，保持版面轻盈。"""
-
-    def __init__(self, caption: str, parent=None) -> None:
-        super().__init__(parent)
-        self.caption = caption
-        self._value = 0
-        self.setFixedHeight(34)
-        self.setSizePolicy(QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Fixed)
-
-    def set_value(self, value: int) -> None:
-        self._value = int(value)
-        self.update()
-
-    def sizeHint(self) -> QSize:  # noqa: N802 - 覆写 Qt 命名
-        metrics = QFontMetrics(_font(self.font(), 11))
-        return QSize(metrics.horizontalAdvance(self.caption) + 58, 34)
-
-    def paintEvent(self, event) -> None:  # noqa: N802 - 覆写 Qt 命名
-        colors = panel_colors()
-        painter = QPainter(self)
-        painter.setRenderHint(QPainter.RenderHint.Antialiasing)
-        painter.setPen(Qt.PenStyle.NoPen)
-        painter.setBrush(QColor(colors["accent"]))
-        painter.drawEllipse(QRectF(2, self.height() / 2 - 3, 6, 6))
-        painter.setFont(_font(self.font(), 17, QFont.Weight.DemiBold))
-        painter.setPen(QColor(colors["text"]))
-        value_text = str(self._value)
-        metrics = QFontMetrics(painter.font())
-        painter.drawText(
-            QRectF(16, 0, metrics.horizontalAdvance(value_text) + 4, self.height()),
-            Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignVCenter,
-            value_text,
-        )
-        painter.setFont(_font(self.font(), 11))
-        painter.setPen(QColor(colors["muted"]))
-        painter.drawText(
-            QRectF(16 + metrics.horizontalAdvance(value_text) + 8, 0, self.width(), self.height()),
-            Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignVCenter,
-            self.caption,
-        )
-        painter.end()
-
-
 class _EmptyCard(QFrame):
-    """空态：虚线感圆角卡片 + 居中提示。"""
+    """空态：虚线圆角卡片 + 居中提示。"""
 
     def __init__(self, text: str, parent=None) -> None:
         super().__init__(parent)
@@ -267,8 +153,7 @@ class _EmptyCard(QFrame):
         painter.setRenderHint(QPainter.RenderHint.Antialiasing)
         rect = _card_rect(self)
         painter.setBrush(Qt.BrushStyle.NoBrush)
-        pen = QPen(QColor(colors["border"]), 1, Qt.PenStyle.DashLine)
-        painter.setPen(pen)
+        painter.setPen(QPen(QColor(colors["border"]), 1, Qt.PenStyle.DashLine))
         painter.drawRoundedRect(rect, RADIUS, RADIUS)
         painter.setFont(_font(self.font(), 12))
         painter.setPen(QColor(colors["muted"]))
@@ -276,80 +161,29 @@ class _EmptyCard(QFrame):
         painter.end()
 
 
-class _PluginRow(QFrame):
-    """已安装插件：整行卡片，信息与操作同屏。"""
+class _ModeCard(QFrame):
+    """左侧模式导轨：自绘图标、标题与计数。"""
 
-    def __init__(
-        self,
-        record: dict[str, Any],
-        texts: dict[str, str],
-        on_update: Callable[[str], None],
-        on_rollback: Callable[[str], None],
-        on_toggle: Callable[[str], None],
-        on_remove: Callable[[str], None],
-        parent=None,
-    ) -> None:
+    clicked = Signal(str)
+
+    def __init__(self, mode: str, title: str, parent=None) -> None:
         super().__init__(parent)
-        self.record = record
+        self.mode = mode
+        self.title = title
+        self._count = 0
+        self._active = False
         self._hovered = False
-        self.setAttribute(Qt.WidgetAttribute.WA_Hover, True)
-        self.setToolTip(str(record.get("path") or ""))
+        self.setCursor(Qt.CursorShape.PointingHandCursor)
+        self.setFixedHeight(58)
+        self.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed)
 
-        layout = QHBoxLayout(self)
-        layout.setContentsMargins(16, 12, 14, 12)
-        layout.setSpacing(12)
+    def set_count(self, count: int) -> None:
+        self._count = max(0, int(count))
+        self.update()
 
-        info = QVBoxLayout()
-        info.setSpacing(5)
-        top = QHBoxLayout()
-        top.setSpacing(8)
-        name = str(record.get("name") or record.get("id") or "")
-        top.addWidget(CText(name, size="md", weight="semibold"))
-        top.addWidget(_Chip(f"v{record.get('version') or '?'}", accent=True))
-        top.addWidget(
-            _Chip(
-                texts["enabled"] if record.get("enabled") else texts["disabled"],
-                accent=bool(record.get("enabled")),
-            )
-        )
-        top.addStretch(1)
-        info.addLayout(top)
-        info.addWidget(
-            _ElidedLabel(f"{record.get('id')}  ·  {str(record.get('commit') or '')[:10]}", mono=True)
-        )
-        chips = QHBoxLayout()
-        chips.setSpacing(6)
-        chips.addWidget(_Chip(str(record.get("source") or "-")))
-        for permission in list(record.get("permissions") or [])[:3]:
-            chips.addWidget(_Chip(str(permission)))
-        chips.addStretch(1)
-        info.addLayout(chips)
-        layout.addLayout(info, 1)
-
-        actions = QGridLayout()
-        actions.setHorizontalSpacing(6)
-        actions.setVerticalSpacing(6)
-        plugin_id = str(record.get("id") or "")
-        update = self._button(texts["update"], "primary", "solid", lambda: on_update(plugin_id))
-        rollback = self._button(texts["rollback"], "secondary", "outlined", lambda: on_rollback(plugin_id))
-        toggle = self._button(
-            texts["disable"] if record.get("enabled") else texts["enable"],
-            "warn",
-            "outlined",
-            lambda: on_toggle(plugin_id),
-        )
-        remove = self._button(texts["remove"], "danger", "text", lambda: on_remove(plugin_id))
-        actions.addWidget(update, 0, 0)
-        actions.addWidget(rollback, 0, 1)
-        actions.addWidget(toggle, 1, 0)
-        actions.addWidget(remove, 1, 1)
-        layout.addLayout(actions)
-
-    @staticmethod
-    def _button(text: str, severity: str, variant: str, slot) -> CButton:
-        button = CButton(text, size="sm", severity=severity, variant=variant, fixed_width=66)
-        button.clicked.connect(slot)
-        return button
+    def set_active(self, active: bool) -> None:
+        self._active = bool(active)
+        self.update()
 
     def enterEvent(self, event) -> None:  # noqa: N802 - 覆写 Qt 命名
         self._hovered = True
@@ -361,18 +195,220 @@ class _PluginRow(QFrame):
         self.update()
         super().leaveEvent(event)
 
+    def mouseReleaseEvent(self, event) -> None:  # noqa: N802 - 覆写 Qt 命名
+        if event.button() == Qt.MouseButton.LeftButton and self.rect().contains(event.position().toPoint()):
+            self.clicked.emit(self.mode)
+        super().mouseReleaseEvent(event)
+
     def paintEvent(self, event) -> None:  # noqa: N802 - 覆写 Qt 命名
         colors = panel_colors()
         painter = QPainter(self)
         painter.setRenderHint(QPainter.RenderHint.Antialiasing)
-        paint_surface(
-            painter,
-            _card_rect(self),
-            RADIUS,
-            background=colors["hover"] if self._hovered else colors["background"],
-            border=colors["border"],
+        rect = QRectF(self.rect()).adjusted(0.5, 0.5, -0.5, -0.5)
+        background = None
+        border = None
+        if self._active:
+            background = _tint(colors["accent"], 34)
+            border = _tint(colors["accent"], 96)
+        elif self._hovered:
+            background = colors["hover"]
+        paint_surface(painter, rect, 10, background=background, border=border)
+
+        if self._active:
+            painter.setPen(Qt.PenStyle.NoPen)
+            painter.setBrush(QColor(colors["accent"]))
+            painter.drawRoundedRect(QRectF(rect.left() + 1, rect.top() + 13, 3, rect.height() - 26), 1.5, 1.5)
+
+        glyph = QRectF(rect.left() + 14, rect.center().y() - 9, 18, 18)
+        self._draw_glyph(painter, glyph, QColor(colors["accent"] if self._active else colors["muted"]))
+        painter.setFont(_font(self.font(), 14, QFont.Weight.DemiBold if self._active else QFont.Weight.Medium))
+        painter.setPen(QColor(colors["text"]))
+        painter.drawText(
+            QRectF(rect.left() + 42, rect.top(), rect.width() - 84, rect.height()),
+            Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignVCenter,
+            self.title,
+        )
+        painter.setFont(_font(self.font(), 12))
+        painter.setPen(QColor(colors["accent"] if self._active else colors["muted"]))
+        painter.drawText(
+            QRectF(rect.right() - 44, rect.top(), 32, rect.height()),
+            Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignVCenter,
+            str(self._count),
         )
         painter.end()
+
+    def _draw_glyph(self, painter: QPainter, rect: QRectF, color: QColor) -> None:
+        pen = QPen(color, 1.6)
+        pen.setCapStyle(Qt.PenCapStyle.RoundCap)
+        pen.setJoinStyle(Qt.PenJoinStyle.RoundJoin)
+        painter.setPen(pen)
+        painter.setBrush(Qt.BrushStyle.NoBrush)
+        left = rect.left()
+        top = rect.top()
+        width = rect.width()
+        if self.mode == "installed":
+            for index in range(3):
+                painter.drawRoundedRect(QRectF(left, top + index * 6.4, width, 3.4), 1.7, 1.7)
+            return
+        if self.mode == "discover":
+            painter.drawEllipse(QRectF(left + 1, top + 1, 11, 11))
+            handle = QRectF(left + 10, top + 10, 6, 6)
+            painter.drawLine(handle.topLeft(), handle.bottomRight())
+            return
+        for index in range(3):
+            painter.drawEllipse(QRectF(left, top + index * 6.2, width, 4.2))
+
+
+class _StatTile(QFrame):
+    """顶部指标块：大数字 + 说明。"""
+
+    def __init__(self, caption: str, parent=None) -> None:
+        super().__init__(parent)
+        self.caption = caption
+        self._value = "0"
+        self.setFixedSize(108, 64)
+
+    def set_value(self, value: int | str) -> None:
+        self._value = str(value)
+        self.update()
+
+    def paintEvent(self, event) -> None:  # noqa: N802 - 覆写 Qt 命名
+        colors = panel_colors()
+        painter = QPainter(self)
+        painter.setRenderHint(QPainter.RenderHint.Antialiasing)
+        rect = _card_rect(self)
+        paint_surface(painter, rect, RADIUS, background=colors["background"], border=colors["border"])
+        painter.setPen(QColor(colors["accent"]))
+        painter.setFont(_font(self.font(), 24, QFont.Weight.DemiBold))
+        painter.drawText(
+            QRectF(rect.left() + 12, rect.top() + 6, rect.width() - 24, 30),
+            Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignVCenter,
+            self._value,
+        )
+        painter.setPen(QColor(colors["muted"]))
+        painter.setFont(_font(self.font(), 11))
+        painter.drawText(
+            QRectF(rect.left() + 12, rect.bottom() - 26, rect.width() - 24, 20),
+            Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignVCenter,
+            self.caption,
+        )
+        painter.end()
+
+
+class _PluginCard(QFrame):
+    """已安装插件卡片：名称、版本、状态与权限。"""
+
+    selected = Signal(str)
+
+    def __init__(self, record: dict[str, Any], enabled_text: str, disabled_text: str, parent=None) -> None:
+        super().__init__(parent)
+        self.record = record
+        self._enabled_text = enabled_text
+        self._disabled_text = disabled_text
+        self._selected = False
+        self._hovered = False
+        self.setCursor(Qt.CursorShape.PointingHandCursor)
+        self.setFixedHeight(92)
+        self.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed)
+
+    @property
+    def plugin_id(self) -> str:
+        return str(self.record.get("id") or "")
+
+    def set_selected(self, selected: bool) -> None:
+        self._selected = bool(selected)
+        self.update()
+
+    def enterEvent(self, event) -> None:  # noqa: N802 - 覆写 Qt 命名
+        self._hovered = True
+        self.update()
+        super().enterEvent(event)
+
+    def leaveEvent(self, event) -> None:  # noqa: N802 - 覆写 Qt 命名
+        self._hovered = False
+        self.update()
+        super().leaveEvent(event)
+
+    def mouseReleaseEvent(self, event) -> None:  # noqa: N802 - 覆写 Qt 命名
+        if event.button() == Qt.MouseButton.LeftButton and self.rect().contains(event.position().toPoint()):
+            self.selected.emit(self.plugin_id)
+        super().mouseReleaseEvent(event)
+
+    def paintEvent(self, event) -> None:  # noqa: N802 - 覆写 Qt 命名
+        colors = panel_colors()
+        painter = QPainter(self)
+        painter.setRenderHint(QPainter.RenderHint.Antialiasing)
+        rect = _card_rect(self)
+        background = colors["hover"] if self._hovered and not self._selected else colors["background"]
+        border = QColor(colors["accent"]) if self._selected else QColor(colors["border"])
+        paint_surface(painter, rect, RADIUS, background=background, border=border)
+
+        name = str(self.record.get("name") or self.record.get("id") or "")
+        version = f"v{self.record.get('version') or '?'}"
+        enabled = bool(self.record.get("enabled"))
+        painter.setFont(_font(self.font(), 14, QFont.Weight.DemiBold))
+        painter.setPen(QColor(colors["text"]))
+        metrics = QFontMetrics(painter.font())
+        name_width = max(60, int(rect.width()) - 210)
+        painter.drawText(
+            QRectF(rect.left() + 14, rect.top() + 10, name_width, 22),
+            Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignVCenter,
+            metrics.elidedText(name, Qt.TextElideMode.ElideRight, name_width),
+        )
+
+        pill_font = _font(self.font(), 11, QFont.Weight.DemiBold)
+        painter.setFont(pill_font)
+        version_width = QFontMetrics(pill_font).horizontalAdvance(version) + 16
+        pill = QRectF(rect.right() - version_width - 14, rect.top() + 10, version_width, 20)
+        painter.setPen(Qt.PenStyle.NoPen)
+        painter.setBrush(QColor(colors["accent"]))
+        painter.drawRoundedRect(pill, 10, 10)
+        painter.setPen(QColor(colors["on_accent"]))
+        painter.drawText(pill, Qt.AlignmentFlag.AlignCenter, version)
+
+        status_color = QColor(colors["accent"] if enabled else colors["muted"])
+        painter.setBrush(status_color)
+        painter.setPen(Qt.PenStyle.NoPen)
+        painter.drawEllipse(QRectF(pill.left() - 14, pill.center().y() - 3, 6, 6))
+        painter.setFont(_font(self.font(), 11))
+        painter.setPen(status_color)
+        painter.drawText(
+            QRectF(pill.left() - 74, pill.top(), 56, pill.height()),
+            Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignVCenter,
+            self._enabled_text if enabled else self._disabled_text,
+        )
+
+        painter.setFont(_font(self.font(), 11, mono=True))
+        painter.setPen(QColor(colors["muted"]))
+        sample = f"{self.record.get('id')} · {str(self.record.get('commit') or '')[:10]}"
+        painter.drawText(
+            QRectF(rect.left() + 14, rect.top() + 34, rect.width() - 28, 18),
+            Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignVCenter,
+            QFontMetrics(painter.font()).elidedText(sample, Qt.TextElideMode.ElideRight, int(rect.width()) - 28),
+        )
+
+        x = rect.left() + 14
+        y = rect.top() + 60
+        x += self._draw_pill(painter, x, y, str(self.record.get("source") or "-"), colors)
+        permissions = [str(item) for item in self.record.get("permissions") or []]
+        for permission in permissions[:3]:
+            x += self._draw_pill(painter, x, y, permission, colors)
+        if len(permissions) > 3:
+            self._draw_pill(painter, x, y, f"+{len(permissions) - 3}", colors)
+        painter.end()
+
+    @staticmethod
+    def _draw_pill(painter: QPainter, x: float, y: float, text: str, colors: dict) -> float:
+        font = _font(painter.font(), 11)
+        painter.setFont(font)
+        width = QFontMetrics(font).horizontalAdvance(text) + 16
+        rect = QRectF(x, y, width, 20)
+        painter.setBrush(Qt.BrushStyle.NoBrush)
+        painter.setPen(QPen(QColor(colors["border"]), 1))
+        painter.drawRoundedRect(rect, 10, 10)
+        painter.setPen(QColor(colors["text"]))
+        painter.drawText(rect, Qt.AlignmentFlag.AlignCenter, text)
+        return width + 6
 
 
 class _ResultCard(QFrame):
@@ -404,8 +440,7 @@ class _ResultCard(QFrame):
         top.addStretch(1)
         layout.addLayout(top)
 
-        summary = str(record.get("summary") or record.get("id") or "")
-        summary_label = CText(summary, size="sm", wrap=True)
+        summary_label = CText(str(record.get("summary") or record.get("id") or ""), size="sm", wrap=True)
         summary_label.setFixedHeight(34)
         layout.addWidget(summary_label)
 
@@ -446,13 +481,15 @@ class _ResultCard(QFrame):
 
 
 class _SourceRow(QFrame):
-    """来源：一行一个，信任级别用标签表达。"""
+    """来源：紧凑行 + 逐行刷新/移除。"""
 
     def __init__(
         self,
         record: dict[str, Any],
         trust_texts: dict[str, str],
+        refresh_text: str,
         remove_text: str,
+        on_refresh: Callable[[str], None],
         on_remove: Callable[[str], None],
         parent=None,
     ) -> None:
@@ -460,11 +497,11 @@ class _SourceRow(QFrame):
         self.record = record
         self._hovered = False
         self.setAttribute(Qt.WidgetAttribute.WA_Hover, True)
-        self.setMinimumHeight(62)
+        self.setMinimumHeight(64)
 
         layout = QHBoxLayout(self)
         layout.setContentsMargins(14, 10, 12, 10)
-        layout.setSpacing(12)
+        layout.setSpacing(10)
         trust = str(record.get("trust") or "user")
         layout.addWidget(_Chip(trust_texts.get(trust, trust), accent=trust == "official"))
 
@@ -474,8 +511,12 @@ class _SourceRow(QFrame):
         info.addWidget(_ElidedLabel(str(record.get("url") or ""), mono=True))
         layout.addLayout(info, 1)
 
-        remove = CButton(remove_text, size="sm", severity="danger", variant="text", fixed_width=56)
-        remove.clicked.connect(lambda: on_remove(str(record.get("id") or "")))
+        source_id = str(record.get("id") or "")
+        refresh = CButton(refresh_text, size="sm", severity="secondary", variant="text", fixed_width=48)
+        refresh.clicked.connect(lambda: on_refresh(source_id))
+        remove = CButton(remove_text, size="sm", severity="danger", variant="text", fixed_width=48)
+        remove.clicked.connect(lambda: on_remove(source_id))
+        layout.addWidget(refresh)
         layout.addWidget(remove)
 
     def enterEvent(self, event) -> None:  # noqa: N802 - 覆写 Qt 命名
@@ -502,26 +543,250 @@ class _SourceRow(QFrame):
         painter.end()
 
 
-class StorePage(QWidget):
-    """插件管理：一页内完成安装、更新与来源维护。"""
+class _InstalledPanel(QWidget):
+    """已安装：过滤、卡片、详情与操作。"""
 
-    def __init__(self, ctx: GalleryContext, parent=None) -> None:
+    def __init__(self, page: StorePage, parent=None) -> None:
         super().__init__(parent)
-        self.ctx = ctx
-        from sllkgui.gallery.runtime import current_runtime
-
-        self.runtime = current_runtime()
+        self.page = page
+        self.ctx = page.ctx
+        self._rows: list[dict[str, Any]] = []
+        self._cards: list[_PluginCard] = []
+        self._selected_id = ""
         self._build()
-        self.refresh_all()
-        get_theme_manager().subscribe(self._theme_changed)
+        self.refresh()
+
+    def _build(self) -> None:
+        layout = QVBoxLayout(self)
+        layout.setContentsMargins(0, 0, 0, 0)
+        layout.setSpacing(10)
+
+        toolbar = QHBoxLayout()
+        toolbar.setSpacing(8)
+        self.filter = CInputText(placeholder=self.ctx.text("installed.filter", "过滤插件…"))
+        self.filter.setFixedWidth(220)
+        self.update_btn = CButton(self.ctx.text("installed.update", "更新"), size="sm")
+        self.rollback_btn = CButton(
+            self.ctx.text("installed.rollback", "回滚"), size="sm", severity="secondary", variant="outlined"
+        )
+        self.toggle_btn = CButton(
+            self.ctx.text("installed.disable", "停用"), size="sm", severity="warn", variant="outlined"
+        )
+        self.remove_btn = CButton(
+            self.ctx.text("installed.remove", "卸载"), size="sm", severity="danger", variant="outlined"
+        )
+        toolbar.addWidget(self.filter)
+        toolbar.addStretch(1)
+        for button in (self.update_btn, self.rollback_btn, self.toggle_btn, self.remove_btn):
+            toolbar.addWidget(button)
+        layout.addLayout(toolbar)
+
+        body = QHBoxLayout()
+        body.setSpacing(10)
+        self.scroll = QScrollArea()
+        self.scroll.setWidgetResizable(True)
+        self.scroll.setFrameShape(QFrame.Shape.NoFrame)
+        self.scroll.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
+        self.scroll.setStyleSheet(
+            "QScrollArea, QScrollArea > QWidget > QWidget { background: transparent; border: none; }"
+        )
+        self.cards_host = QWidget()
+        self.cards_host.setStyleSheet("background: transparent;")
+        self.cards_layout = QVBoxLayout(self.cards_host)
+        self.cards_layout.setContentsMargins(0, 0, 6, 0)
+        self.cards_layout.setSpacing(8)
+        self.scroll.setWidget(self.cards_host)
+        body.addWidget(self.scroll, 1)
+        body.addWidget(self._build_detail())
+        layout.addLayout(body, 1)
+
+        self.filter.textChanged.connect(self._rebuild_cards)
+        self.update_btn.clicked.connect(lambda: self._run("update"))
+        self.rollback_btn.clicked.connect(lambda: self._run("rollback"))
+        self.toggle_btn.clicked.connect(self._toggle)
+        self.remove_btn.clicked.connect(self._remove)
+        self._update_actions()
+
+    def _build_detail(self) -> QWidget:
+        card = CCard()
+        card.setFixedWidth(310)
+        box = QVBoxLayout(card)
+        box.setContentsMargins(14, 12, 14, 12)
+        box.setSpacing(8)
+        box.addWidget(CText(self.ctx.text("installed.detail_title", "插件详情"), size="md", weight="semibold"))
+        self.detail_hint = CText(self.ctx.text("installed.select_hint", "选择一个插件查看详情"), size="sm", wrap=True)
+        box.addWidget(self.detail_hint)
+        grid = QGridLayout()
+        grid.setHorizontalSpacing(10)
+        grid.setVerticalSpacing(6)
+        box.addLayout(grid)
+        self.detail_values: dict[str, CText] = {}
+        for row, (key, caption) in enumerate(
+            (
+                ("version", self.ctx.text("installed.version", "版本")),
+                ("source", self.ctx.text("installed.source", "来源")),
+                ("commit", self.ctx.text("installed.commit", "提交")),
+                ("path", self.ctx.text("installed.path", "目录")),
+                ("permissions", self.ctx.text("installed.permissions", "权限")),
+            )
+        ):
+            grid.addWidget(CText(caption, size="sm"), row, 0, Qt.AlignmentFlag.AlignTop)
+            value = CText("-", size="sm", wrap=True)
+            grid.addWidget(value, row, 1)
+            self.detail_values[key] = value
+        box.addStretch(1)
+        return card
 
     # ------------------------------------------------------------------
-    # UI
+    # 数据
     # ------------------------------------------------------------------
+    def _manager(self):
+        return getattr(self.page.runtime, "manager", None)
+
+    def refresh(self) -> None:
+        manager = self._manager()
+        self._rows = list(manager.installed_rows()) if manager is not None else []
+        if self._selected_id not in {row["id"] for row in self._rows}:
+            self._selected_id = self._rows[0]["id"] if self._rows else ""
+        self._rebuild_cards()
+        self._show_detail()
+        self._update_actions()
+
+    def _rebuild_cards(self) -> None:
+        needle = self.filter.text().strip().lower() if hasattr(self, "filter") else ""
+        _clear_layout(self.cards_layout)
+        self._cards = []
+        rows = [row for row in self._rows if not needle or needle in f"{row.get('id')} {row.get('source')}".lower()]
+        if not rows:
+            self.cards_layout.addWidget(_EmptyCard(self.ctx.text("installed.empty", "还没有安装插件")))
+        for row in rows:
+            card = _PluginCard(
+                row,
+                self.ctx.text("installed.enabled", "已启用"),
+                self.ctx.text("installed.disabled", "已停用"),
+            )
+            card.set_selected(card.plugin_id == self._selected_id)
+            card.selected.connect(self._select)
+            self.cards_layout.addWidget(card)
+            self._cards.append(card)
+        self.cards_layout.addStretch(1)
+        self._show_detail()
+
+    def _select(self, plugin_id: str) -> None:
+        self._selected_id = plugin_id
+        for card in self._cards:
+            card.set_selected(card.plugin_id == plugin_id)
+        self._show_detail()
+        self._update_actions()
+
+    def _selected(self) -> dict[str, Any] | None:
+        return next((row for row in self._rows if row.get("id") == self._selected_id), None)
+
+    def _show_detail(self) -> None:
+        row = self._selected()
+        has_row = row is not None
+        self.detail_hint.setVisible(not has_row)
+        for value in self.detail_values.values():
+            value.setVisible(has_row)
+        if not row:
+            return
+        self.detail_values["version"].setText(str(row.get("version") or "-"))
+        self.detail_values["source"].setText(str(row.get("source") or "-"))
+        self.detail_values["commit"].setText(str(row.get("commit") or "-")[:12])
+        self.detail_values["path"].setText(str(row.get("path") or "-"))
+        self.detail_values["permissions"].setText(", ".join(row.get("permissions") or []) or "-")
+
+    def _update_actions(self) -> None:
+        row = self._selected()
+        enabled = bool(row and row.get("enabled"))
+        self.toggle_btn.setText(
+            self.ctx.text("installed.disable", "停用") if enabled else self.ctx.text("installed.enable", "启用")
+        )
+        for button in (self.update_btn, self.rollback_btn, self.toggle_btn, self.remove_btn):
+            button.setEnabled(row is not None)
+
+    # ------------------------------------------------------------------
+    # 操作
+    # ------------------------------------------------------------------
+    def _run(self, name: str) -> None:
+        manager = self._manager()
+        if manager is None or not self._selected_id:
+            return
+        plugin_id = self._selected_id
+        try:
+            with self.ctx.timing(f"core_store.{name}"):
+                result = getattr(manager, name)(plugin_id)
+            self.ctx.log(f"{name}: {result}")
+            self.ctx.event(f"core_store.{name}", {"result": str(result)})
+            self.page.set_status(self.ctx.text("status.action_done", "操作完成"), "success")
+        except Exception as exc:  # noqa: BLE001 - 页面必须保持可用
+            self.ctx.report_error("CORE_STORE_ACTION_FAILED", f"{name} 失败: {exc}", str(exc))
+            self.page.set_status(self.ctx.text("status.action_failed", "操作失败: {error}").format(error=exc), "error")
+        QTimer.singleShot(0, self.page.refresh_all)
+        self.page.schedule_reload()
+
+    def _toggle(self) -> None:
+        row = self._selected()
+        manager = self._manager()
+        if row is None or manager is None:
+            return
+        manager.set_enabled(str(row["id"]), not bool(row.get("enabled")))
+        QTimer.singleShot(0, self.page.refresh_all)
+        self.page.schedule_reload()
+
+    def _remove(self) -> None:
+        if not self._selected_id:
+            return
+        plugin_id = self._selected_id
+        ok = CConfirmDialog.ask(
+            self,
+            title=self.ctx.text("installed.remove", "卸载"),
+            message=self.ctx.text("confirm.remove", "确定卸载该插件？数据目录默认保留。"),
+            severity="danger",
+        )
+        manager = self._manager()
+        if not ok or manager is None:
+            return
+        try:
+            manager.remove(plugin_id)
+            self.page.set_status(self.ctx.text("status.action_done", "操作完成"), "success")
+        except Exception as exc:  # noqa: BLE001
+            self.ctx.report_error("CORE_STORE_REMOVE_FAILED", f"卸载失败: {exc}", str(exc))
+            self.page.set_status(self.ctx.text("status.action_failed", "操作失败: {error}").format(error=exc), "error")
+        self._selected_id = ""
+        QTimer.singleShot(0, self.page.refresh_all)
+        self.page.schedule_reload()
+
+
+class _DiscoverPanel(QWidget):
+    """发现：搜索结果卡片流，直接安装。"""
+
+    def __init__(self, page: StorePage, parent=None) -> None:
+        super().__init__(parent)
+        self.page = page
+        self.ctx = page.ctx
+        self._build()
+        self.search()
+
     def _build(self) -> None:
-        root = QVBoxLayout(self)
-        root.setContentsMargins(18, 16, 18, 8)
-        root.setSpacing(10)
+        layout = QVBoxLayout(self)
+        layout.setContentsMargins(0, 0, 0, 0)
+        layout.setSpacing(10)
+
+        toolbar = QHBoxLayout()
+        toolbar.setSpacing(8)
+        self.query = CInputText(placeholder=self.ctx.text("discover.placeholder", "搜索插件名称、ID 或简介…"))
+        self.search_btn = CButton(self.ctx.text("discover.search", "搜索"), size="sm")
+        self.refresh_btn = CButton(
+            self.ctx.text("discover.refresh_sources", "刷新源"),
+            size="sm",
+            severity="secondary",
+            variant="outlined",
+        )
+        toolbar.addWidget(self.query, 1)
+        toolbar.addWidget(self.search_btn)
+        toolbar.addWidget(self.refresh_btn)
+        layout.addLayout(toolbar)
 
         self.scroll = QScrollArea()
         self.scroll.setWidgetResizable(True)
@@ -530,175 +795,28 @@ class StorePage(QWidget):
         self.scroll.setStyleSheet(
             "QScrollArea, QScrollArea > QWidget > QWidget { background: transparent; border: none; }"
         )
-        content = QWidget()
-        content.setStyleSheet("background: transparent;")
-        column = QVBoxLayout(content)
-        column.setContentsMargins(0, 0, 10, 12)
-        column.setSpacing(20)
-
-        column.addLayout(self._build_hero())
-        column.addWidget(self._build_installed())
-        column.addWidget(self._build_discover())
-        column.addWidget(self._build_sources())
-        column.addStretch(1)
-        self.scroll.setWidget(content)
-        root.addWidget(self.scroll, 1)
-
-        self.status = CText(self.ctx.text("status.ready", "就绪"), size="sm")
-        root.addWidget(self.status)
-        self._set_status(self.ctx.text("status.ready", "就绪"))
-
-    def _build_hero(self) -> QHBoxLayout:
-        hero = QHBoxLayout()
-        hero.setSpacing(16)
-        titles = QVBoxLayout()
-        titles.setSpacing(2)
-        titles.addWidget(CText(self.ctx.text("store.title", "插件管理"), size="xl", weight="semibold"))
-        titles.addWidget(CText(self.ctx.text("store.subtitle", "已安装、发现与来源，在一页内完成"), size="sm"))
-        hero.addLayout(titles, 1)
-
-        self.stat_installed = _StatChip(self.ctx.text("stats.installed", "已安装"))
-        self.stat_enabled = _StatChip(self.ctx.text("stats.enabled", "启用中"))
-        self.stat_sources = _StatChip(self.ctx.text("stats.sources", "来源"))
-        for chip in (self.stat_installed, self.stat_enabled, self.stat_sources):
-            hero.addWidget(chip, 0, Qt.AlignmentFlag.AlignVCenter)
-        self.refresh_btn = CButton(
-            self.ctx.text("store.refresh", "全部刷新"),
-            size="sm",
-            severity="secondary",
-            variant="outlined",
-        )
-        self.refresh_btn.clicked.connect(self.refresh_all)
-        hero.addWidget(self.refresh_btn, 0, Qt.AlignmentFlag.AlignVCenter)
-        return hero
-
-    def _build_installed(self) -> QWidget:
-        host = QWidget()
-        layout = QVBoxLayout(host)
-        layout.setContentsMargins(0, 0, 0, 0)
-        layout.setSpacing(10)
-        header = _SectionHeader("01", self.ctx.text("sections.installed", "已安装"))
-        layout.addWidget(header)
-        self.installed_rows = QVBoxLayout()
-        self.installed_rows.setSpacing(8)
-        layout.addLayout(self.installed_rows)
-        return host
-
-    def _build_discover(self) -> QWidget:
-        host = QWidget()
-        layout = QVBoxLayout(host)
-        layout.setContentsMargins(0, 0, 0, 0)
-        layout.setSpacing(10)
-        header = _SectionHeader("02", self.ctx.text("sections.discover", "发现"))
-        self.refresh_sources_btn = CButton(
-            self.ctx.text("discover.refresh_sources", "刷新源"),
-            size="sm",
-            severity="secondary",
-            variant="text",
-        )
-        self.refresh_sources_btn.clicked.connect(self._refresh_sources)
-        header.add_action(self.refresh_sources_btn)
-        layout.addWidget(header)
-
-        search_row = QHBoxLayout()
-        search_row.setSpacing(8)
-        self.query = CInputText(placeholder=self.ctx.text("discover.placeholder", "搜索插件名称、ID 或简介…"))
-        self.search_btn = CButton(self.ctx.text("discover.search", "搜索"), size="sm")
-        self.search_btn.clicked.connect(self._run_search)
-        self.query.returnPressed.connect(self._run_search)
-        search_row.addWidget(self.query, 1)
-        search_row.addWidget(self.search_btn)
-        layout.addLayout(search_row)
-
-        self.results_grid = QGridLayout()
+        self.results_host = QWidget()
+        self.results_host.setStyleSheet("background: transparent;")
+        self.results_grid = QGridLayout(self.results_host)
+        self.results_grid.setContentsMargins(0, 0, 6, 0)
         self.results_grid.setHorizontalSpacing(10)
         self.results_grid.setVerticalSpacing(10)
         self.results_grid.setColumnStretch(0, 1)
         self.results_grid.setColumnStretch(1, 1)
-        layout.addLayout(self.results_grid)
-        return host
+        self.scroll.setWidget(self.results_host)
+        layout.addWidget(self.scroll, 1)
 
-    def _build_sources(self) -> QWidget:
-        host = QWidget()
-        layout = QVBoxLayout(host)
-        layout.setContentsMargins(0, 0, 0, 0)
-        layout.setSpacing(10)
-        header = _SectionHeader("03", self.ctx.text("sections.sources", "来源"))
-        self.refresh_all_sources_btn = CButton(
-            self.ctx.text("sources.refresh_all", "全部刷新"),
-            size="sm",
-            severity="secondary",
-            variant="text",
-        )
-        self.refresh_all_sources_btn.clicked.connect(self._refresh_sources)
-        header.add_action(self.refresh_all_sources_btn)
-        layout.addWidget(header)
+        self.search_btn.clicked.connect(self.search)
+        self.query.returnPressed.connect(self.search)
+        self.refresh_btn.clicked.connect(self._refresh_sources)
 
-        add_row = QHBoxLayout()
-        add_row.setSpacing(8)
-        self.source_url = CInputText(placeholder=self.ctx.text("sources.placeholder", "Git 仓库地址"))
-        self.add_source_btn = CButton(self.ctx.text("sources.add", "添加"), size="sm")
-        self.add_source_btn.clicked.connect(self._add_source)
-        self.source_url.returnPressed.connect(self._add_source)
-        add_row.addWidget(self.source_url, 1)
-        add_row.addWidget(self.add_source_btn)
-        layout.addLayout(add_row)
-
-        self.source_rows = QVBoxLayout()
-        self.source_rows.setSpacing(8)
-        layout.addLayout(self.source_rows)
-        return host
-
-    # ------------------------------------------------------------------
-    # 数据
-    # ------------------------------------------------------------------
     def _manager(self):
-        return getattr(self.runtime, "manager", None)
+        return getattr(self.page.runtime, "manager", None)
 
     def _sources(self):
-        return getattr(self.runtime, "sources", None)
+        return getattr(self.page.runtime, "sources", None)
 
-    def refresh_all(self) -> None:
-        self.installed = self._manager().installed_rows() if self._manager() is not None else []
-        self.sources_list = self._sources().list() if self._sources() is not None else []
-        self._rebuild_installed()
-        self._rebuild_sources()
-        self._run_search()
-        self._refresh_stats()
-        self._set_status(self.ctx.text("status.ready", "就绪"))
-
-    def _refresh_stats(self) -> None:
-        self.stat_installed.set_value(len(self.installed))
-        self.stat_enabled.set_value(sum(1 for row in self.installed if row.get("enabled")))
-        self.stat_sources.set_value(len(self.sources_list))
-
-    def _rebuild_installed(self) -> None:
-        _clear_layout(self.installed_rows)
-        if not self.installed:
-            self.installed_rows.addWidget(_EmptyCard(self.ctx.text("installed.empty", "还没有安装插件，去「发现」看看")))
-            return
-        texts = {
-            "enabled": self.ctx.text("installed.enabled", "已启用"),
-            "disabled": self.ctx.text("installed.disabled", "已停用"),
-            "update": self.ctx.text("installed.update", "更新"),
-            "rollback": self.ctx.text("installed.rollback", "回滚"),
-            "enable": self.ctx.text("installed.enable", "启用"),
-            "disable": self.ctx.text("installed.disable", "停用"),
-            "remove": self.ctx.text("installed.remove", "卸载"),
-        }
-        for record in self.installed:
-            self.installed_rows.addWidget(
-                _PluginRow(
-                    record,
-                    texts,
-                    self._update_plugin,
-                    self._rollback_plugin,
-                    self._toggle_plugin,
-                    self._remove_plugin,
-                )
-            )
-
-    def _run_search(self) -> None:
+    def search(self) -> None:
         _clear_layout(self.results_grid)
         self.results: list[dict[str, Any]] = []
         manager = self._manager()
@@ -713,130 +831,36 @@ class StorePage(QWidget):
             seen.add(plugin_id)
             self.results.append(row)
         if not self.results:
-            grid_empty = _EmptyCard(self.ctx.text("discover.empty", "没有匹配的可安装插件"))
-            self.results_grid.addWidget(grid_empty, 0, 0, 1, 2)
+            self.results_grid.addWidget(
+                _EmptyCard(self.ctx.text("discover.empty", "没有匹配的可安装插件")), 0, 0, 1, 2
+            )
         for index, record in enumerate(self.results):
             card = _ResultCard(
                 record,
                 self.ctx.text("discover.install", "安装"),
                 self.ctx.text("discover.permissions", "{count} 项权限"),
-                self._install_plugin,
+                self._install,
             )
             self.results_grid.addWidget(card, index // 2, index % 2)
         self.ctx.log(f"search plugins: {len(self.results)}")
         self.ctx.event("core_store.search", {"count": len(self.results)})
 
-    def _rebuild_sources(self) -> None:
-        _clear_layout(self.source_rows)
-        if not self.sources_list:
-            self.source_rows.addWidget(_EmptyCard(self.ctx.text("sources.empty", "还没有配置插件源")))
+    def _refresh_sources(self) -> None:
+        sources = self._sources()
+        if sources is None:
             return
-        trust_texts = {
-            "official": self.ctx.text("sources.official", "官方"),
-            "user": self.ctx.text("sources.user", "用户"),
-        }
-        for record in self.sources_list:
-            self.source_rows.addWidget(
-                _SourceRow(
-                    {
-                        "id": record.source_id,
-                        "url": record.url,
-                        "trust": record.trust,
-                    },
-                    trust_texts,
-                    self.ctx.text("sources.remove", "移除"),
-                    self._remove_source,
-                )
-            )
-
-    def _set_status(self, message: str, level: str = "info") -> None:
-        colors = panel_colors()
-        if level == "error":
-            color = _DANGER
-        elif level == "warning":
-            color = _WARNING
-        elif level == "success":
-            color = qss_color(colors["accent"])
-        else:
-            color = qss_color(colors["muted"])
-        self.status.setStyleSheet(f"color: {color};")
-        self.status.setText(message)
-
-    def _finish(self, message: str, level: str = "info", *, reload: bool = True) -> None:
-        self._set_status(message, level)
-        QTimer.singleShot(0, self.refresh_all)
-        if reload:
-            self.schedule_reload()
-
-    def schedule_reload(self) -> None:
-        window = self.ctx.parent_window()
-        if window is not None and hasattr(window, "reload_plugins"):
-            QTimer.singleShot(120, window.reload_plugins)
-
-    # ------------------------------------------------------------------
-    # 已安装操作
-    # ------------------------------------------------------------------
-    def _update_plugin(self, plugin_id: str) -> None:
-        manager = self._manager()
-        if manager is None:
-            return
+        self.page.set_status(self.ctx.text("status.refreshing", "正在刷新源…"))
         try:
-            with self.ctx.timing("core_store.update"):
-                result = manager.update(plugin_id)
-            self.ctx.log(f"update: {result}")
-            self.ctx.event("core_store.update", {"id": plugin_id, "version": result.get("version")})
-            self._finish(self.ctx.text("status.action_done", "操作完成"), "success")
+            with self.ctx.timing("core_store.source_refresh"):
+                sources.refresh_all()
+            self.ctx.event("core_store.sources_refreshed")
+            self.page.set_status(self.ctx.text("status.refresh_done", "源刷新完成"), "success")
         except Exception as exc:  # noqa: BLE001
-            self.ctx.report_error("CORE_STORE_UPDATE_FAILED", f"更新失败: {exc}", str(exc))
-            self._finish(self.ctx.text("status.action_failed", "操作失败: {error}").format(error=exc), "error", reload=False)
+            self.ctx.report_error("CORE_STORE_SOURCE_FAILED", f"刷新源失败: {exc}", str(exc))
+            self.page.set_status(self.ctx.text("status.action_failed", "操作失败: {error}").format(error=exc), "error")
+        QTimer.singleShot(0, self.page.refresh_all)
 
-    def _rollback_plugin(self, plugin_id: str) -> None:
-        manager = self._manager()
-        if manager is None:
-            return
-        try:
-            with self.ctx.timing("core_store.rollback"):
-                result = manager.rollback(plugin_id)
-            self.ctx.log(f"rollback: {result}")
-            self.ctx.event("core_store.rollback", {"id": plugin_id})
-            self._finish(self.ctx.text("status.action_done", "操作完成"), "success")
-        except Exception as exc:  # noqa: BLE001
-            self.ctx.report_error("CORE_STORE_ROLLBACK_FAILED", f"回滚失败: {exc}", str(exc))
-            self._finish(self.ctx.text("status.action_failed", "操作失败: {error}").format(error=exc), "error", reload=False)
-
-    def _toggle_plugin(self, plugin_id: str) -> None:
-        manager = self._manager()
-        row = next((item for item in self.installed if item.get("id") == plugin_id), None)
-        if manager is None or row is None:
-            return
-        try:
-            manager.set_enabled(plugin_id, not bool(row.get("enabled")))
-            self._finish(self.ctx.text("status.action_done", "操作完成"), "success")
-        except Exception as exc:  # noqa: BLE001
-            self.ctx.report_error("CORE_STORE_TOGGLE_FAILED", f"切换失败: {exc}", str(exc))
-            self._finish(self.ctx.text("status.action_failed", "操作失败: {error}").format(error=exc), "error", reload=False)
-
-    def _remove_plugin(self, plugin_id: str) -> None:
-        ok = CConfirmDialog.ask(
-            self,
-            title=self.ctx.text("installed.remove", "卸载"),
-            message=self.ctx.text("confirm.remove", "确定卸载该插件？数据目录默认保留。"),
-            severity="danger",
-        )
-        manager = self._manager()
-        if not ok or manager is None:
-            return
-        try:
-            manager.remove(plugin_id)
-            self._finish(self.ctx.text("status.action_done", "操作完成"), "success")
-        except Exception as exc:  # noqa: BLE001
-            self.ctx.report_error("CORE_STORE_REMOVE_FAILED", f"卸载失败: {exc}", str(exc))
-            self._finish(self.ctx.text("status.action_failed", "操作失败: {error}").format(error=exc), "error", reload=False)
-
-    # ------------------------------------------------------------------
-    # 发现 / 来源
-    # ------------------------------------------------------------------
-    def _install_plugin(self, record: dict[str, Any]) -> None:
+    def _install(self, record: dict[str, Any]) -> None:
         plugin_id = str(record.get("id") or "")
         permissions = ", ".join(record.get("permissions") or []) or "-"
         ok = CConfirmDialog.ask(
@@ -857,43 +881,142 @@ class StorePage(QWidget):
                 result = manager.install(plugin_id, source_id=str(record.get("source") or ""))
             self.ctx.log(f"installed: {result}")
             self.ctx.event("core_store.install", {"id": plugin_id, "version": result.get("version")})
-            self._finish(
-                self.ctx.text("status.install_done", "已安装 {count} 个插件").format(count=1),
-                "success",
+            self.page.set_status(
+                self.ctx.text("status.install_done", "已安装 {count} 个插件").format(count=1), "success"
             )
         except Exception as exc:  # noqa: BLE001
             self.ctx.report_error("CORE_STORE_INSTALL_FAILED", f"安装失败: {exc}", str(exc))
-            self._finish(self.ctx.text("status.action_failed", "操作失败: {error}").format(error=exc), "error", reload=False)
+            self.page.set_status(self.ctx.text("status.action_failed", "操作失败: {error}").format(error=exc), "error")
+        QTimer.singleShot(0, self.page.refresh_all)
+        self.page.schedule_reload()
 
-    def _refresh_sources(self) -> None:
+
+class _SourcesPanel(QWidget):
+    """源：列表 + 添加输入 + 逐行刷新/移除。"""
+
+    def __init__(self, page: StorePage, parent=None) -> None:
+        super().__init__(parent)
+        self.page = page
+        self.ctx = page.ctx
+        self._build()
+        self.refresh()
+
+    def _build(self) -> None:
+        layout = QVBoxLayout(self)
+        layout.setContentsMargins(0, 0, 0, 0)
+        layout.setSpacing(10)
+
+        add_row = QHBoxLayout()
+        add_row.setSpacing(8)
+        self.url = CInputText(placeholder=self.ctx.text("sources.placeholder", "Git 仓库地址"))
+        self.add_btn = CButton(self.ctx.text("sources.add", "添加"), size="sm")
+        self.refresh_all_btn = CButton(
+            self.ctx.text("sources.refresh_all", "全部刷新"),
+            size="sm",
+            severity="secondary",
+            variant="outlined",
+        )
+        add_row.addWidget(self.url, 1)
+        add_row.addWidget(self.add_btn)
+        add_row.addWidget(self.refresh_all_btn)
+        layout.addLayout(add_row)
+
+        self.scroll = QScrollArea()
+        self.scroll.setWidgetResizable(True)
+        self.scroll.setFrameShape(QFrame.Shape.NoFrame)
+        self.scroll.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
+        self.scroll.setStyleSheet(
+            "QScrollArea, QScrollArea > QWidget > QWidget { background: transparent; border: none; }"
+        )
+        self.rows_host = QWidget()
+        self.rows_host.setStyleSheet("background: transparent;")
+        self.rows_layout = QVBoxLayout(self.rows_host)
+        self.rows_layout.setContentsMargins(0, 0, 6, 0)
+        self.rows_layout.setSpacing(8)
+        self.scroll.setWidget(self.rows_host)
+        layout.addWidget(self.scroll, 1)
+
+        self.add_btn.clicked.connect(self._add)
+        self.url.returnPressed.connect(self._add)
+        self.refresh_all_btn.clicked.connect(self._refresh_all)
+
+    def _sources(self):
+        return getattr(self.page.runtime, "sources", None)
+
+    def refresh(self) -> None:
+        _clear_layout(self.rows_layout)
         sources = self._sources()
-        if sources is None:
+        records = [
+            {"id": record.source_id, "url": record.url, "trust": record.trust}
+            for record in sources.list()
+        ] if sources is not None else []
+        if not records:
+            self.rows_layout.addWidget(_EmptyCard(self.ctx.text("sources.empty", "还没有配置插件源")))
             return
-        self._set_status(self.ctx.text("status.refreshing", "正在刷新源…"))
-        try:
-            with self.ctx.timing("core_store.source_refresh"):
-                sources.refresh_all()
-            self.ctx.event("core_store.sources_refreshed")
-            self._finish(self.ctx.text("status.refresh_done", "源刷新完成"), "success", reload=False)
-        except Exception as exc:  # noqa: BLE001
-            self.ctx.report_error("CORE_STORE_SOURCE_FAILED", f"刷新源失败: {exc}", str(exc))
-            self._finish(self.ctx.text("status.action_failed", "操作失败: {error}").format(error=exc), "error", reload=False)
+        trust_texts = {
+            "official": self.ctx.text("sources.official", "官方"),
+            "user": self.ctx.text("sources.user", "用户"),
+        }
+        for record in records:
+            self.rows_layout.addWidget(
+                _SourceRow(
+                    record,
+                    trust_texts,
+                    self.ctx.text("sources.refresh", "刷新"),
+                    self.ctx.text("sources.remove", "移除"),
+                    self._refresh_one,
+                    self._remove_one,
+                )
+            )
+        self.rows_layout.addStretch(1)
 
-    def _add_source(self) -> None:
+    def _add(self) -> None:
         sources = self._sources()
-        url = self.source_url.text().strip()
+        url = self.url.text().strip()
         if sources is None or not url:
             return
         try:
             record = sources.add(url, refresh=True)
             self.ctx.event("core_store.source_added", {"id": record.source_id})
-            self.source_url.setText("")
-            self._finish(self.ctx.text("sources.added", "已添加源 {id}").format(id=record.source_id), "success", reload=False)
+            self.url.setText("")
+            self.page.set_status(
+                self.ctx.text("sources.added", "已添加源 {id}").format(id=record.source_id), "success"
+            )
         except Exception as exc:  # noqa: BLE001
             self.ctx.report_error("CORE_STORE_SOURCE_ADD_FAILED", f"添加源失败: {exc}", str(exc))
-            self._finish(self.ctx.text("status.action_failed", "操作失败: {error}").format(error=exc), "error", reload=False)
+            self.page.set_status(self.ctx.text("status.action_failed", "操作失败: {error}").format(error=exc), "error")
+        QTimer.singleShot(0, self.page.refresh_all)
 
-    def _remove_source(self, source_id: str) -> None:
+    def _refresh_one(self, source_id: str) -> None:
+        sources = self._sources()
+        if sources is None:
+            return
+        try:
+            with self.ctx.timing("core_store.source_refresh"):
+                sources.refresh(source_id)
+            self.ctx.event("core_store.source_refreshed", {"id": source_id})
+            self.page.set_status(self.ctx.text("status.refresh_done", "源刷新完成"), "success")
+        except Exception as exc:  # noqa: BLE001
+            self.ctx.report_error("CORE_STORE_SOURCE_REFRESH_FAILED", f"刷新源失败: {exc}", str(exc))
+            self.page.set_status(self.ctx.text("status.action_failed", "操作失败: {error}").format(error=exc), "error")
+        QTimer.singleShot(0, self.page.refresh_all)
+
+    def _refresh_all(self) -> None:
+        sources = self._sources()
+        if sources is None:
+            return
+        self.page.set_status(self.ctx.text("status.refreshing", "正在刷新源…"))
+        try:
+            with self.ctx.timing("core_store.source_refresh_all"):
+                sources.refresh_all()
+            self.ctx.event("core_store.sources_refreshed")
+            self.page.set_status(self.ctx.text("status.refresh_done", "源刷新完成"), "success")
+        except Exception as exc:  # noqa: BLE001
+            self.ctx.report_error("CORE_STORE_SOURCE_FAILED", f"刷新源失败: {exc}", str(exc))
+            self.page.set_status(self.ctx.text("status.action_failed", "操作失败: {error}").format(error=exc), "error")
+        QTimer.singleShot(0, self.page.refresh_all)
+
+    def _remove_one(self, source_id: str) -> None:
         ok = CConfirmDialog.ask(
             self,
             title=self.ctx.text("sources.remove", "移除"),
@@ -906,14 +1029,151 @@ class StorePage(QWidget):
         try:
             sources.remove(source_id)
             self.ctx.event("core_store.source_removed", {"id": source_id})
-            self._finish(self.ctx.text("status.action_done", "操作完成"), "success", reload=False)
+            self.page.set_status(self.ctx.text("status.action_done", "操作完成"), "success")
         except Exception as exc:  # noqa: BLE001
             self.ctx.report_error("CORE_STORE_SOURCE_REMOVE_FAILED", f"移除源失败: {exc}", str(exc))
-            self._finish(self.ctx.text("status.action_failed", "操作失败: {error}").format(error=exc), "error", reload=False)
+            self.page.set_status(self.ctx.text("status.action_failed", "操作失败: {error}").format(error=exc), "error")
+        QTimer.singleShot(0, self.page.refresh_all)
+
+
+class StorePage(QWidget):
+    """插件管理工作台。"""
+
+    def __init__(self, ctx: GalleryContext, parent=None) -> None:
+        super().__init__(parent)
+        self.ctx = ctx
+        from sllkgui.gallery.runtime import current_runtime
+
+        self.runtime = current_runtime()
+        self._mode_cards: dict[str, _ModeCard] = {}
+        self._build()
+        self.switch_mode("installed")
+        self.refresh_stats()
+        get_theme_manager().subscribe(self._theme_changed)
+
+    def _build(self) -> None:
+        root = QVBoxLayout(self)
+        root.setContentsMargins(16, 14, 16, 10)
+        root.setSpacing(12)
+
+        hero = QHBoxLayout()
+        hero.setSpacing(12)
+        titles = QVBoxLayout()
+        titles.setSpacing(2)
+        titles.addWidget(CText(self.ctx.text("store.title", "插件管理"), size="xl", weight="semibold"))
+        titles.addWidget(CText(self.ctx.text("store.subtitle", "已安装、发现与来源，在一页内完成"), size="sm", wrap=True))
+        hero.addLayout(titles, 1)
+
+        self.stat_installed = _StatTile(self.ctx.text("stats.installed", "已安装"))
+        self.stat_enabled = _StatTile(self.ctx.text("stats.enabled", "启用中"))
+        self.stat_sources = _StatTile(self.ctx.text("stats.sources", "来源"))
+        self.refresh_btn = CButton(
+            self.ctx.text("store.refresh", "全部刷新"),
+            size="sm",
+            severity="secondary",
+            variant="outlined",
+        )
+        hero.addWidget(self.stat_installed)
+        hero.addWidget(self.stat_enabled)
+        hero.addWidget(self.stat_sources)
+        hero.addWidget(self.refresh_btn, 0, Qt.AlignmentFlag.AlignBottom)
+        root.addLayout(hero)
+
+        body = QHBoxLayout()
+        body.setSpacing(12)
+
+        rail = QVBoxLayout()
+        rail.setSpacing(6)
+        for mode, key, caption in (
+            ("installed", "modes.installed", "已安装"),
+            ("discover", "modes.discover", "发现"),
+            ("sources", "modes.sources", "源"),
+        ):
+            card = _ModeCard(mode, self.ctx.text(key, caption))
+            card.clicked.connect(self.switch_mode)
+            self._mode_cards[mode] = card
+            rail.addWidget(card)
+        rail.addStretch(1)
+        rail_host = QWidget()
+        rail_host.setLayout(rail)
+        rail_host.setFixedWidth(228)
+        body.addWidget(rail_host)
+
+        self.stack = QStackedWidget()
+        self.installed_panel = _InstalledPanel(self)
+        self.discover_panel = _DiscoverPanel(self)
+        self.sources_panel = _SourcesPanel(self)
+        self.stack.addWidget(self.installed_panel)
+        self.stack.addWidget(self.discover_panel)
+        self.stack.addWidget(self.sources_panel)
+        body.addWidget(self.stack, 1)
+        root.addLayout(body, 1)
+
+        self.status = CText(self.ctx.text("status.ready", "就绪"), size="sm")
+        root.addWidget(self.status)
+        self.refresh_btn.clicked.connect(self.refresh_all)
 
     # ------------------------------------------------------------------
-    # 主题
+    # 模式
     # ------------------------------------------------------------------
+    def switch_mode(self, mode: str) -> None:
+        mapping = {
+            "installed": self.installed_panel,
+            "discover": self.discover_panel,
+            "sources": self.sources_panel,
+        }
+        panel = mapping.get(mode)
+        if panel is None:
+            return
+        self.stack.setCurrentWidget(panel)
+        for key, card in self._mode_cards.items():
+            card.set_active(key == mode)
+        if mode == "installed":
+            self.installed_panel.refresh()
+        elif mode == "discover":
+            self.discover_panel.search()
+        else:
+            self.sources_panel.refresh()
+
+    # ------------------------------------------------------------------
+    # 状态 / 刷新
+    # ------------------------------------------------------------------
+    def set_status(self, message: str, level: str = "info") -> None:
+        colors = panel_colors()
+        if level == "error":
+            color = _DANGER
+        elif level == "warning":
+            color = _WARNING
+        elif level == "success":
+            color = qss_color(colors["accent"])
+        else:
+            color = qss_color(colors["muted"])
+        self.status.setStyleSheet(f"color: {color};")
+        self.status.setText(message)
+
+    def refresh_stats(self) -> None:
+        manager = getattr(self.runtime, "manager", None)
+        rows = list(manager.installed_rows()) if manager is not None else []
+        sources = getattr(self.runtime, "sources", None)
+        source_count = len(sources.list()) if sources is not None else 0
+        self.stat_installed.set_value(len(rows))
+        self.stat_enabled.set_value(sum(1 for row in rows if row.get("enabled")))
+        self.stat_sources.set_value(source_count)
+        self._mode_cards["installed"].set_count(len(rows))
+        self._mode_cards["sources"].set_count(source_count)
+
+    def refresh_all(self) -> None:
+        self.refresh_stats()
+        self.installed_panel.refresh()
+        self.discover_panel.search()
+        self.sources_panel.refresh()
+        self.set_status(self.ctx.text("status.ready", "就绪"))
+
+    def schedule_reload(self) -> None:
+        window = self.ctx.parent_window()
+        if window is not None and hasattr(window, "reload_plugins"):
+            QTimer.singleShot(120, window.reload_plugins)
+
     def _theme_changed(self) -> None:
         for widget in self.findChildren(QWidget):
             widget.update()

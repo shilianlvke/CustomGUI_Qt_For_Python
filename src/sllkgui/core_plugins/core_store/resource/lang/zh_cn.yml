@@ -6,19 +6,27 @@ stats:
   installed: 已安装
   enabled: 启用中
   sources: 来源
-sections:
+modes:
   installed: 已安装
   discover: 发现
-  sources: 来源
+  sources: 源
 installed:
-  empty: 还没有安装插件，去「发现」看看
-  enabled: 已启用
-  disabled: 已停用
+  filter: 过滤插件…
   update: 更新
   rollback: 回滚
   enable: 启用
   disable: 停用
   remove: 卸载
+  empty: 还没有安装插件，去「发现」看看
+  select_hint: 选择一个插件查看详情
+  detail_title: 插件详情
+  version: 版本
+  source: 来源
+  commit: 提交
+  path: 目录
+  permissions: 权限
+  enabled: 已启用
+  disabled: 已停用
 discover:
   placeholder: 搜索插件名称、ID 或简介…
   search: 搜索
@@ -30,6 +38,7 @@ sources:
   placeholder: Git 仓库地址
   add: 添加
   refresh_all: 全部刷新
+  refresh: 刷新
   remove: 移除
   empty: 还没有配置插件源
   official: 官方

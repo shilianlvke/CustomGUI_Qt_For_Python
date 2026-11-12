@@ -6,19 +6,27 @@ stats:
   installed: 已安裝
   enabled: 啟用中
   sources: 來源
-sections:
+modes:
   installed: 已安裝
   discover: 探索
   sources: 來源
 installed:
-  empty: 尚無已安裝外掛，去「探索」看看
-  enabled: 已啟用
-  disabled: 已停用
+  filter: 篩選外掛…
   update: 更新
   rollback: 回滾
   enable: 啟用
   disable: 停用
   remove: 解除安裝
+  empty: 尚無已安裝外掛，去「探索」看看
+  select_hint: 選擇一個外掛查看詳情
+  detail_title: 外掛詳情
+  version: 版本
+  source: 來源
+  commit: 提交
+  path: 目錄
+  permissions: 權限
+  enabled: 已啟用
+  disabled: 已停用
 discover:
   placeholder: 搜尋外掛名稱、ID 或簡介…
   search: 搜尋
@@ -30,6 +38,7 @@ sources:
   placeholder: Git 倉庫位址
   add: 新增
   refresh_all: 全部重新整理
+  refresh: 重新整理
   remove: 移除
   empty: 尚未設定外掛來源
   official: 官方

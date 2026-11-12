@@ -6,19 +6,27 @@ stats:
   installed: Installed
   enabled: Enabled
   sources: Sources
-sections:
+modes:
   installed: Installed
   discover: Discover
   sources: Sources
 installed:
-  empty: Nothing installed yet — browse Discover
-  enabled: Enabled
-  disabled: Disabled
+  filter: Filter plugins…
   update: Update
   rollback: Rollback
   enable: Enable
   disable: Disable
   remove: Remove
+  empty: Nothing installed yet — browse Discover
+  select_hint: Select a plugin to inspect it
+  detail_title: Plugin details
+  version: Version
+  source: Source
+  commit: Commit
+  path: Path
+  permissions: Permissions
+  enabled: Enabled
+  disabled: Disabled
 discover:
   placeholder: Search plugin name, ID or summary…
   search: Search
@@ -30,6 +38,7 @@ sources:
   placeholder: Git repository URL
   add: Add
   refresh_all: Refresh all
+  refresh: Refresh
   remove: Remove
   empty: No plugin sources configured
   official: Official
