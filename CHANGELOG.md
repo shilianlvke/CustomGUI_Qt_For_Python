@@ -3,9 +3,18 @@
 项目遵循[语义化版本](https://semver.org/lang/zh-CN/)：major 版本允许破坏性变更并显式列出；
 minor 与 patch 保持向后兼容。
 
-当前版本：`2.1.4`（见 `src/sllkgui/_version.py`），对应 tag `base-v2.1.4`。
+当前版本：`2.1.5`（见 `src/sllkgui/_version.py`），对应 tag `base-v2.1.5`。
 
 ---
+
+## 2.1.5（2026-11-12）
+
+- 插件管理页按 py-rm 页面风格重绘细节（布局不变）：
+  - 页头改为 eyebrow（大写强调色）+ 18px 标题 + 9px 说明；
+  - 指标改为 py-rm `MetricCard` 样式（说明在上、22px 等宽数值在下）；
+  - 模式导轨与工作区各自包一层 SectionCard 风格的圆角描边面板；
+  - 详情卡改用 18/16 内边距、12px 小节标题与 `CHDiv` 分隔线；
+  - 卡片/行内文字统一到 py-rm 的 12/10/9px 排版层级，搜索框带搜索图标。
 
 ## 2.1.4（2026-11-12）
 

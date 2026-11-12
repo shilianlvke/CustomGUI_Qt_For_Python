@@ -22,6 +22,7 @@ from PySide6.QtWidgets import (
     QFrame,
     QGridLayout,
     QHBoxLayout,
+    QLabel,
     QScrollArea,
     QSizePolicy,
     QStackedWidget,
@@ -29,8 +30,8 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
-from sllkgui.appcore import get_theme_manager
-from sllkgui.guicore import CButton, CCard, CConfirmDialog, CInputText, CText
+from sllkgui.appcore import AppSettings, ColorPalette, get_theme_manager
+from sllkgui.guicore import CButton, CCard, CConfirmDialog, CHDiv, CInputText
 from sllkgui.guicore.custom_ui.panels.style import RADIUS, paint_surface, panel_colors, qss_color
 from sllkgui.plugin import GalleryContext
 
@@ -70,6 +71,52 @@ def _card_rect(widget: QWidget) -> QRectF:
     return QRectF(widget.rect()).adjusted(0.75, 0.75, -0.75, -0.75)
 
 
+#: 与 py-rm page_kit 对齐的排版角色
+_ROLE_SIZES = {"eyebrow": 8, "title": 18, "section": 12, "metric": 24, "body": 10, "muted": 9}
+
+
+class _ThemedLabel(QLabel):
+    """按角色取色的文本标签；主题切换时自动刷新颜色。"""
+
+    def __init__(self, text: str = "", role: str = "body", mono: bool = False, parent=None) -> None:
+        super().__init__(text, parent)
+        self._role = role
+        family = _MONO_FAMILIES[0] if mono else AppSettings.family
+        weight = QFont.Weight.DemiBold if role in {"eyebrow", "title", "section", "metric"} else QFont.Weight.Normal
+        self.setFont(QFont(family, _ROLE_SIZES.get(role, 10), weight))
+        self._apply_theme()
+        try:
+            get_theme_manager().subscribe(self._apply_theme)
+        except Exception:  # noqa: BLE001 - 无主题管理器时保持初始配色
+            pass
+
+    def _apply_theme(self) -> None:
+        color = {
+            "eyebrow": ColorPalette.custom_context_color,
+            "title": ColorPalette.custom_text_title,
+            "section": ColorPalette.custom_text_title,
+            "metric": ColorPalette.custom_text_title,
+            "muted": ColorPalette.custom_text_description,
+            "body": ColorPalette.custom_text_foreground,
+        }.get(self._role, ColorPalette.custom_text_foreground)
+        self.setStyleSheet(f"color: {color}; background: transparent;")
+
+
+class _Panel(QFrame):
+    """py-rm SectionCard 风格的外层容器：圆角 + 描边 + 留白。"""
+
+    def __init__(self, parent=None) -> None:
+        super().__init__(parent)
+        self.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
+
+    def paintEvent(self, event) -> None:  # noqa: N802 - 覆写 Qt 命名
+        colors = panel_colors()
+        painter = QPainter(self)
+        painter.setRenderHint(QPainter.RenderHint.Antialiasing)
+        paint_surface(painter, _card_rect(self), RADIUS, background=colors["background"], border=colors["border"])
+        painter.end()
+
+
 class _Chip(QWidget):
     """胶囊标签：版本、状态、来源、权限共用。"""
 
@@ -82,7 +129,7 @@ class _Chip(QWidget):
         self._resize_to_text()
 
     def _font(self) -> QFont:
-        return _font(self.font(), 11, QFont.Weight.Medium)
+        return _font(self.font(), 10, QFont.Weight.Medium)
 
     def _resize_to_text(self) -> None:
         width = QFontMetrics(self._font()).horizontalAdvance(self._text) + 16
@@ -112,7 +159,7 @@ class _Chip(QWidget):
 class _ElidedLabel(QWidget):
     """单行省略文本：用于 ID、commit、URL。"""
 
-    def __init__(self, text: str = "", *, mono: bool = False, size: int = 11, parent=None) -> None:
+    def __init__(self, text: str = "", *, mono: bool = False, size: int = 10, parent=None) -> None:
         super().__init__(parent)
         self._text = text
         self._mono = mono
@@ -155,7 +202,7 @@ class _EmptyCard(QFrame):
         painter.setBrush(Qt.BrushStyle.NoBrush)
         painter.setPen(QPen(QColor(colors["border"]), 1, Qt.PenStyle.DashLine))
         painter.drawRoundedRect(rect, RADIUS, RADIUS)
-        painter.setFont(_font(self.font(), 12))
+        painter.setFont(_font(self.font(), 10))
         painter.setPen(QColor(colors["muted"]))
         painter.drawText(rect, Qt.AlignmentFlag.AlignCenter, self._text)
         painter.end()
@@ -221,14 +268,14 @@ class _ModeCard(QFrame):
 
         glyph = QRectF(rect.left() + 14, rect.center().y() - 9, 18, 18)
         self._draw_glyph(painter, glyph, QColor(colors["accent"] if self._active else colors["muted"]))
-        painter.setFont(_font(self.font(), 14, QFont.Weight.DemiBold if self._active else QFont.Weight.Medium))
+        painter.setFont(_font(self.font(), 13, QFont.Weight.DemiBold if self._active else QFont.Weight.Medium))
         painter.setPen(QColor(colors["text"]))
         painter.drawText(
             QRectF(rect.left() + 42, rect.top(), rect.width() - 84, rect.height()),
             Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignVCenter,
             self.title,
         )
-        painter.setFont(_font(self.font(), 12))
+        painter.setFont(_font(self.font(), 11))
         painter.setPen(QColor(colors["accent"] if self._active else colors["muted"]))
         painter.drawText(
             QRectF(rect.right() - 44, rect.top(), 32, rect.height()),
@@ -260,13 +307,13 @@ class _ModeCard(QFrame):
 
 
 class _StatTile(QFrame):
-    """顶部指标块：大数字 + 说明。"""
+    """顶部指标卡：参考 py-rm MetricCard（说明在上、数值在下）。"""
 
     def __init__(self, caption: str, parent=None) -> None:
         super().__init__(parent)
         self.caption = caption
         self._value = "0"
-        self.setFixedSize(108, 64)
+        self.setFixedSize(104, 66)
 
     def set_value(self, value: int | str) -> None:
         self._value = str(value)
@@ -278,19 +325,19 @@ class _StatTile(QFrame):
         painter.setRenderHint(QPainter.RenderHint.Antialiasing)
         rect = _card_rect(self)
         paint_surface(painter, rect, RADIUS, background=colors["background"], border=colors["border"])
-        painter.setPen(QColor(colors["accent"]))
-        painter.setFont(_font(self.font(), 24, QFont.Weight.DemiBold))
-        painter.drawText(
-            QRectF(rect.left() + 12, rect.top() + 6, rect.width() - 24, 30),
-            Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignVCenter,
-            self._value,
-        )
+        painter.setFont(_font(self.font(), 9))
         painter.setPen(QColor(colors["muted"]))
-        painter.setFont(_font(self.font(), 11))
         painter.drawText(
-            QRectF(rect.left() + 12, rect.bottom() - 26, rect.width() - 24, 20),
+            QRectF(rect.left() + 14, rect.top() + 10, rect.width() - 28, 16),
             Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignVCenter,
             self.caption,
+        )
+        painter.setFont(_font(self.font(), 22, QFont.Weight.DemiBold, mono=True))
+        painter.setPen(QColor(colors["text"]))
+        painter.drawText(
+            QRectF(rect.left() + 14, rect.top() + 27, rect.width() - 28, 28),
+            Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignVCenter,
+            self._value,
         )
         painter.end()
 
@@ -346,17 +393,17 @@ class _PluginCard(QFrame):
         name = str(self.record.get("name") or self.record.get("id") or "")
         version = f"v{self.record.get('version') or '?'}"
         enabled = bool(self.record.get("enabled"))
-        painter.setFont(_font(self.font(), 14, QFont.Weight.DemiBold))
+        painter.setFont(_font(self.font(), 12, QFont.Weight.DemiBold))
         painter.setPen(QColor(colors["text"]))
         metrics = QFontMetrics(painter.font())
         name_width = max(60, int(rect.width()) - 210)
         painter.drawText(
-            QRectF(rect.left() + 14, rect.top() + 10, name_width, 22),
+            QRectF(rect.left() + 16, rect.top() + 10, name_width, 22),
             Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignVCenter,
             metrics.elidedText(name, Qt.TextElideMode.ElideRight, name_width),
         )
 
-        pill_font = _font(self.font(), 11, QFont.Weight.DemiBold)
+        pill_font = _font(self.font(), 10, QFont.Weight.DemiBold)
         painter.setFont(pill_font)
         version_width = QFontMetrics(pill_font).horizontalAdvance(version) + 16
         pill = QRectF(rect.right() - version_width - 14, rect.top() + 10, version_width, 20)
@@ -370,7 +417,7 @@ class _PluginCard(QFrame):
         painter.setBrush(status_color)
         painter.setPen(Qt.PenStyle.NoPen)
         painter.drawEllipse(QRectF(pill.left() - 14, pill.center().y() - 3, 6, 6))
-        painter.setFont(_font(self.font(), 11))
+        painter.setFont(_font(self.font(), 10))
         painter.setPen(status_color)
         painter.drawText(
             QRectF(pill.left() - 74, pill.top(), 56, pill.height()),
@@ -378,16 +425,16 @@ class _PluginCard(QFrame):
             self._enabled_text if enabled else self._disabled_text,
         )
 
-        painter.setFont(_font(self.font(), 11, mono=True))
+        painter.setFont(_font(self.font(), 10, mono=True))
         painter.setPen(QColor(colors["muted"]))
         sample = f"{self.record.get('id')} · {str(self.record.get('commit') or '')[:10]}"
         painter.drawText(
-            QRectF(rect.left() + 14, rect.top() + 34, rect.width() - 28, 18),
+            QRectF(rect.left() + 16, rect.top() + 34, rect.width() - 32, 18),
             Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignVCenter,
             QFontMetrics(painter.font()).elidedText(sample, Qt.TextElideMode.ElideRight, int(rect.width()) - 28),
         )
 
-        x = rect.left() + 14
+        x = rect.left() + 16
         y = rect.top() + 60
         x += self._draw_pill(painter, x, y, str(self.record.get("source") or "-"), colors)
         permissions = [str(item) for item in self.record.get("permissions") or []]
@@ -399,7 +446,7 @@ class _PluginCard(QFrame):
 
     @staticmethod
     def _draw_pill(painter: QPainter, x: float, y: float, text: str, colors: dict) -> float:
-        font = _font(painter.font(), 11)
+        font = _font(painter.font(), 10)
         painter.setFont(font)
         width = QFontMetrics(font).horizontalAdvance(text) + 16
         rect = QRectF(x, y, width, 20)
@@ -430,18 +477,19 @@ class _ResultCard(QFrame):
         self.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed)
 
         layout = QVBoxLayout(self)
-        layout.setContentsMargins(14, 12, 14, 12)
-        layout.setSpacing(6)
+        layout.setContentsMargins(16, 14, 16, 14)
+        layout.setSpacing(7)
         top = QHBoxLayout()
         top.setSpacing(8)
         name = str(record.get("name") or record.get("id") or "")
-        top.addWidget(CText(name, size="md", weight="semibold"))
+        top.addWidget(_ThemedLabel(name, "section"))
         top.addWidget(_Chip(f"v{record.get('version') or '?'}", accent=True))
         top.addStretch(1)
         layout.addLayout(top)
 
-        summary_label = CText(str(record.get("summary") or record.get("id") or ""), size="sm", wrap=True)
-        summary_label.setFixedHeight(34)
+        summary_label = _ThemedLabel(str(record.get("summary") or record.get("id") or ""), "muted")
+        summary_label.setWordWrap(True)
+        summary_label.setFixedHeight(32)
         layout.addWidget(summary_label)
 
         bottom = QHBoxLayout()
@@ -500,14 +548,14 @@ class _SourceRow(QFrame):
         self.setMinimumHeight(64)
 
         layout = QHBoxLayout(self)
-        layout.setContentsMargins(14, 10, 12, 10)
+        layout.setContentsMargins(16, 12, 14, 12)
         layout.setSpacing(10)
         trust = str(record.get("trust") or "user")
         layout.addWidget(_Chip(trust_texts.get(trust, trust), accent=trust == "official"))
 
         info = QVBoxLayout()
-        info.setSpacing(3)
-        info.addWidget(CText(str(record.get("id") or ""), size="sm", weight="semibold"))
+        info.setSpacing(4)
+        info.addWidget(_ThemedLabel(str(record.get("id") or ""), "body"))
         info.addWidget(_ElidedLabel(str(record.get("url") or ""), mono=True))
         layout.addLayout(info, 1)
 
@@ -563,7 +611,7 @@ class _InstalledPanel(QWidget):
 
         toolbar = QHBoxLayout()
         toolbar.setSpacing(8)
-        self.filter = CInputText(placeholder=self.ctx.text("installed.filter", "过滤插件…"))
+        self.filter = CInputText(placeholder=self.ctx.text("installed.filter", "过滤插件…"), icon="icon_search")
         self.filter.setFixedWidth(220)
         self.update_btn = CButton(self.ctx.text("installed.update", "更新"), size="sm")
         self.rollback_btn = CButton(
@@ -611,16 +659,18 @@ class _InstalledPanel(QWidget):
         card = CCard()
         card.setFixedWidth(310)
         box = QVBoxLayout(card)
-        box.setContentsMargins(14, 12, 14, 12)
-        box.setSpacing(8)
-        box.addWidget(CText(self.ctx.text("installed.detail_title", "插件详情"), size="md", weight="semibold"))
-        self.detail_hint = CText(self.ctx.text("installed.select_hint", "选择一个插件查看详情"), size="sm", wrap=True)
+        box.setContentsMargins(18, 16, 18, 16)
+        box.setSpacing(10)
+        box.addWidget(_ThemedLabel(self.ctx.text("installed.detail_title", "插件详情"), "section"))
+        box.addWidget(CHDiv())
+        self.detail_hint = _ThemedLabel(self.ctx.text("installed.select_hint", "选择一个插件查看详情"), "muted")
+        self.detail_hint.setWordWrap(True)
         box.addWidget(self.detail_hint)
         grid = QGridLayout()
         grid.setHorizontalSpacing(10)
-        grid.setVerticalSpacing(6)
+        grid.setVerticalSpacing(7)
         box.addLayout(grid)
-        self.detail_values: dict[str, CText] = {}
+        self.detail_values: dict[str, QLabel] = {}
         for row, (key, caption) in enumerate(
             (
                 ("version", self.ctx.text("installed.version", "版本")),
@@ -630,8 +680,9 @@ class _InstalledPanel(QWidget):
                 ("permissions", self.ctx.text("installed.permissions", "权限")),
             )
         ):
-            grid.addWidget(CText(caption, size="sm"), row, 0, Qt.AlignmentFlag.AlignTop)
-            value = CText("-", size="sm", wrap=True)
+            grid.addWidget(_ThemedLabel(caption, "muted"), row, 0, Qt.AlignmentFlag.AlignTop)
+            value = _ThemedLabel("-", "body")
+            value.setWordWrap(True)
             grid.addWidget(value, row, 1)
             self.detail_values[key] = value
         box.addStretch(1)
@@ -775,7 +826,10 @@ class _DiscoverPanel(QWidget):
 
         toolbar = QHBoxLayout()
         toolbar.setSpacing(8)
-        self.query = CInputText(placeholder=self.ctx.text("discover.placeholder", "搜索插件名称、ID 或简介…"))
+        self.query = CInputText(
+            placeholder=self.ctx.text("discover.placeholder", "搜索插件名称、ID 或简介…"),
+            icon="icon_search",
+        )
         self.search_btn = CButton(self.ctx.text("discover.search", "搜索"), size="sm")
         self.refresh_btn = CButton(
             self.ctx.text("discover.refresh_sources", "刷新源"),
@@ -1057,11 +1111,14 @@ class StorePage(QWidget):
         root.setSpacing(12)
 
         hero = QHBoxLayout()
-        hero.setSpacing(12)
+        hero.setSpacing(14)
         titles = QVBoxLayout()
         titles.setSpacing(2)
-        titles.addWidget(CText(self.ctx.text("store.title", "插件管理"), size="xl", weight="semibold"))
-        titles.addWidget(CText(self.ctx.text("store.subtitle", "已安装、发现与来源，在一页内完成"), size="sm", wrap=True))
+        titles.addWidget(_ThemedLabel("SLLKGUI / PLUGINS", "eyebrow"))
+        titles.addWidget(_ThemedLabel(self.ctx.text("store.title", "插件管理"), "title"))
+        subtitle = _ThemedLabel(self.ctx.text("store.subtitle", "已安装、发现与来源，在一页内完成"), "muted")
+        subtitle.setWordWrap(True)
+        titles.addWidget(subtitle)
         hero.addLayout(titles, 1)
 
         self.stat_installed = _StatTile(self.ctx.text("stats.installed", "已安装"))
@@ -1083,7 +1140,8 @@ class StorePage(QWidget):
         body.setSpacing(12)
 
         rail = QVBoxLayout()
-        rail.setSpacing(6)
+        rail.setContentsMargins(10, 10, 10, 10)
+        rail.setSpacing(4)
         for mode, key, caption in (
             ("installed", "modes.installed", "已安装"),
             ("discover", "modes.discover", "发现"),
@@ -1094,9 +1152,9 @@ class StorePage(QWidget):
             self._mode_cards[mode] = card
             rail.addWidget(card)
         rail.addStretch(1)
-        rail_host = QWidget()
+        rail_host = _Panel()
         rail_host.setLayout(rail)
-        rail_host.setFixedWidth(228)
+        rail_host.setFixedWidth(232)
         body.addWidget(rail_host)
 
         self.stack = QStackedWidget()
@@ -1106,10 +1164,15 @@ class StorePage(QWidget):
         self.stack.addWidget(self.installed_panel)
         self.stack.addWidget(self.discover_panel)
         self.stack.addWidget(self.sources_panel)
-        body.addWidget(self.stack, 1)
+        workspace = _Panel()
+        workspace_layout = QVBoxLayout(workspace)
+        workspace_layout.setContentsMargins(16, 14, 16, 14)
+        workspace_layout.setSpacing(10)
+        workspace_layout.addWidget(self.stack)
+        body.addWidget(workspace, 1)
         root.addLayout(body, 1)
 
-        self.status = CText(self.ctx.text("status.ready", "就绪"), size="sm")
+        self.status = _ThemedLabel(self.ctx.text("status.ready", "就绪"), "muted")
         root.addWidget(self.status)
         self.refresh_btn.clicked.connect(self.refresh_all)
 
