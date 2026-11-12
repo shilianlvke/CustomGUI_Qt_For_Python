@@ -32,6 +32,9 @@ entry: plugin.py
 requires:
   sllkgui: ">=2.0.0,<3.0.0"
   python: ">=3.12"
+python_dependencies:
+  - psutil>=6
+  - pyyaml>=6.0.3
 surfaces:
   - id: notes
     title: {zh_cn: 便签, zh_tw: 便籤, en_us: Notes, ja_jp: ノート}
@@ -46,7 +49,13 @@ permissions:
 - `version`：SemVer。
 - `surfaces`：至少一个；`default: true` 最多一个；`order` 越小越靠前。
 - `permissions`：`network`、`filesystem.read`、`filesystem.write`、`subprocess`、
-  `clipboard`、`notifications`、`autostart`、`system.info`。
+  `clipboard`、`notifications`、`tray`、`autostart`、`system.info`。
+- `python_dependencies`（可选）：第三方 Python 包声明（PEP 508 格式，如
+  `psutil>=6`）。基座在导入插件**之前**检查；缺失时弹窗让用户选择自动安装
+  （`uv pip install` 到当前解释器）或手动安装，安装失败则隔离该插件并记录
+  `PYTHON_DEPENDENCY_MISSING`。镜像源见 `sllkgui run --index-url` /
+  `SLLKGUI_PIP_INDEX_URL` / `sllkgui.configure(pip_index_url=...)`。
+  能用标准库、纯 Python 小库或 `vendor/` 内联解决的，优先不声明。
 
 ## 3. 入口 `plugin.py`
 
@@ -109,6 +118,7 @@ PLUGIN = NotesPlugin()
 | `timing(name, payload=None)` | 上下文计时，自动记录 `duration_ms` |
 | `report_error(code, message, detail=None)` | 日志 + 遥测 + 非阻塞错误提示 |
 | `parent_window()` | Gallery 主窗口（对话框父级） |
+| `tray` | 基座托盘（需 `tray` 权限，见 `docs/TRAY.md`） |
 
 ## 5. 多语言
 

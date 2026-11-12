@@ -14,10 +14,12 @@ from typing import Any
 
 from sllkgui.appcore import Language, Logger, get_theme_manager, record_event, track_timing
 
-from .api import GalleryContext, Permission
+from .api import GalleryContext, GalleryTray, Permission
 from .defaults import MAX_EVENT_BYTES
+from .errors import PLUGIN_PERMISSION_DENIED, GalleryError
 from .manifest import PluginManifest, ensure_within
 from .store import GalleryStore
+from .tray import TrayHandle, TrayService
 
 _LEVELS = {
     "debug": Logger.debug,
@@ -68,6 +70,7 @@ class GalleryContextImpl(GalleryContext):
         open_surface: Callable[[str, str], bool] | None = None,
         parent_window: Callable[[], Any] | None = None,
         error_reporter: Callable[[str, str, str], None] | None = None,
+        tray: TrayService | None = None,
     ) -> None:
         self._manifest = manifest
         self._store = store
@@ -75,6 +78,9 @@ class GalleryContextImpl(GalleryContext):
         self._open_surface_cb = open_surface
         self._parent_window_cb = parent_window
         self._error_reporter = error_reporter
+        self._tray_handle = (
+            TrayHandle(tray, manifest.plugin_id, tuple(manifest.permissions)) if tray is not None else None
+        )
         self._record = None
         self._prefix = f"[plugin:{manifest.plugin_id}@{manifest.version}]"
         self._logger_name = f"sllkgui.plugin.{manifest.plugin_id}"
@@ -132,6 +138,26 @@ class GalleryContextImpl(GalleryContext):
 
     def parent_window(self) -> Any:
         return self._parent_window_cb() if self._parent_window_cb else None
+
+    @property
+    def tray(self) -> GalleryTray:
+        if self._tray_handle is None:
+            raise GalleryError(PLUGIN_PERMISSION_DENIED, "当前环境不提供托盘能力")
+        if Permission.TRAY not in self._manifest.permissions:
+            raise GalleryError(
+                PLUGIN_PERMISSION_DENIED,
+                "插件未声明 tray 权限，无法使用托盘",
+                "在 sllkgui-plugin.yml 的 permissions 中添加 tray",
+            )
+        return self._tray_handle
+
+    def clear_tray(self) -> None:
+        """卸载时清理本插件注册的托盘动作。"""
+        if self._tray_handle is not None:
+            try:
+                self._tray_handle.clear()
+            except Exception as exc:  # noqa: BLE001 - 清理失败不影响卸载
+                Logger.debug(f"{self._prefix} 托盘清理失败: {exc}")
 
     # ------------------------------------------------------------------
     # 语言

@@ -67,6 +67,8 @@ def test_doctor_json(tmp_path: Path, capsys):
     payload = json.loads(capsys.readouterr().out)
     assert payload["version"] == __version__
     assert "gallery_dir" in payload
+    assert set(payload["tools"]) == {"uv", "git", "pip"}
+    assert "pip_index_url" in payload
 
 
 def test_plugin_lifecycle_cli(tmp_path: Path, capsys):

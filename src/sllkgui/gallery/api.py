@@ -31,8 +31,63 @@ class Permission(StrEnum):
     SUBPROCESS = "subprocess"
     CLIPBOARD = "clipboard"
     NOTIFICATIONS = "notifications"
+    TRAY = "tray"
     AUTOSTART = "autostart"
     SYSTEM_INFO = "system.info"
+
+
+class GalleryTray(ABC):
+    """基座托盘能力：全进程唯一图标，插件只注册动作与通知。
+
+    由基座负责图标、菜单外壳（显示主窗口/退出）、生命周期与语言切换；
+    插件不得自建 ``QSystemTrayIcon``。动作回调在 Qt 主线程执行。
+    """
+
+    @abstractmethod
+    def available(self) -> bool:
+        """当前环境是否支持系统托盘。"""
+
+    @abstractmethod
+    def set_icon(self, path: str | Path | None = None) -> bool:
+        """设置托盘图标；传 ``None`` 恢复基座默认图标。路径必须在插件目录内。"""
+
+    @abstractmethod
+    def set_tooltip(self, text: str) -> None:
+        """设置托盘悬停提示。"""
+
+    @abstractmethod
+    def add_action(
+        self,
+        action_id: str,
+        text: str,
+        callback: Callable[[], None],
+        *,
+        order: int = 100,
+    ) -> None:
+        """注册菜单动作；``action_id`` 在插件内唯一，重名覆盖。"""
+
+    @abstractmethod
+    def set_action_text(self, action_id: str, text: str) -> None:
+        """更新动作文案（语言切换时调用）。"""
+
+    @abstractmethod
+    def remove_action(self, action_id: str) -> None:
+        """移除动作。"""
+
+    @abstractmethod
+    def show_message(
+        self,
+        title: str,
+        message: str,
+        *,
+        level: str = "info",
+        timeout_ms: int = 4000,
+    ) -> bool:
+        """弹出系统通知；需要 ``notifications`` 权限。"""
+
+    @abstractmethod
+    def clear(self) -> None:
+        """移除本插件的全部动作与图标设置（卸载时由加载器调用）。"""
 
 
 class GalleryContext(ABC):
@@ -94,6 +149,11 @@ class GalleryContext(ABC):
     @abstractmethod
     def parent_window(self) -> QWidget | None: ...
 
+    @property
+    @abstractmethod
+    def tray(self) -> GalleryTray:
+        """基座托盘；需要在清单声明 ``tray`` 权限。"""
+
 
 class Plugin(ABC):
     """插件基类。唯一合法入口是模块级 ``PLUGIN`` 实例。"""
@@ -113,4 +173,4 @@ class Plugin(ABC):
         """Gallery 重载/退出前调用；必须幂等。"""
 
 
-__all__ = ["GalleryContext", "Permission", "Plugin"]
+__all__ = ["GalleryContext", "GalleryTray", "PLUGIN_API_VERSION", "Permission", "Plugin"]

@@ -185,6 +185,9 @@ UI:
   ui_ModeStatic: 固定
   ui_ModeOverlay: 浮層
   ui_SoftwareInfo: 軟體資訊
+  # 托盤
+  ui_TrayShowWindow: 顯示主視窗
+  ui_TrayQuit: 結束
 
 TEXT:
   home_page_welcome: 你好！我是 SllkGUI ~

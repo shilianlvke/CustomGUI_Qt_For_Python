@@ -23,6 +23,7 @@ from .registry import GalleryRegistry, PluginRecord, set_current_registry
 from .source import SourceManager
 from .state import RegistryState, SourcesState, load_registry, load_sources
 from .store import GalleryStore
+from .tray import TrayService
 
 Mode = Literal["gallery", "run"]
 
@@ -48,6 +49,10 @@ class GalleryRuntime:
         plugin_dirs: list[Path] | None = None,
         safe_mode: bool = False,
         allow_local: bool = False,
+        install_missing_deps: bool = True,
+        interactive: bool = True,
+        index_url: str = "",
+        check_tools: bool = False,
     ) -> None:
         self.mode = mode
         self.data_dir = Path(data_dir).resolve() if data_dir else self._default_data_dir()
@@ -57,14 +62,22 @@ class GalleryRuntime:
         self.plugin_dirs = [Path(item).resolve() for item in (plugin_dirs or [])]
         self.safe_mode = bool(safe_mode)
         self.allow_local = bool(allow_local)
+        self.install_missing_deps = bool(install_missing_deps)
+        self.interactive = bool(interactive)
+        self.check_tools = bool(check_tools)
+        from sllkgui.config import current_config
+
+        self.index_url = (index_url or current_config().resolved_pip_index_url()).strip()
         self.store = GalleryStore(self.gallery_dir)
         self.registry = GalleryRegistry()
+        self.tray = TrayService()
         self.registry_state: RegistryState = RegistryState(base_version=sllkgui.__version__)
         self.sources_state: SourcesState = SourcesState()
         self.sources: SourceManager | None = None
         self.manager: PluginManager | None = None
         self.records: list[PluginRecord] = []
         self.last_error: dict[str, str] | None = None
+        self.tools: Any = None
         self._navigate: Callable[[str], bool] | None = None
         self._parent_window: Callable[[], Any] | None = None
 
@@ -80,6 +93,14 @@ class GalleryRuntime:
     def bootstrap(self) -> GalleryRegistry:
         set_current_registry(self.registry)
         set_current_runtime(self)
+        if self.mode == "run" and self.check_tools:
+            # 启动即检测 uv/git：缺失时让用户选自动或手动安装（不影响启动）
+            from .dependencies import ensure_tools
+
+            self.tools = ensure_tools(
+                interactive=self.interactive,
+                parent=self._parent_window_provider(),
+            )
         if self.mode == "run":
             self.store.ensure_layout()
             self.registry_state = load_registry(
@@ -105,9 +126,13 @@ class GalleryRuntime:
                     self.store,
                     self.registry,
                     is_core=is_core,
+                    install_missing_deps=self.install_missing_deps,
+                    interactive=self.interactive,
+                    index_url=self.index_url,
                     open_surface=self._open_surface,
                     parent_window=self._parent_window_provider,
                     error_reporter=self._report_error,
+                    tray=self.tray,
                 )
                 if record is not None:
                     self.records.append(record)
@@ -160,6 +185,10 @@ class GalleryRuntime:
         self._navigate = callback
         self._parent_window = parent_window
 
+    def attach_window(self, window: Any) -> None:
+        """把宿主窗口接入托盘：显示主窗口 / 退出。"""
+        self.tray.attach_window(window.show_and_raise, window.quit_application)
+
     # ------------------------------------------------------------------
     # 查询
     # ------------------------------------------------------------------
@@ -190,6 +219,7 @@ class GalleryRuntime:
     def shutdown(self, *, clear_registry: bool = True) -> None:
         unload_all(self.records)
         self.records.clear()
+        self.tray.dispose()
         if clear_registry:
             self.registry.clear()
             set_current_registry(None)

@@ -38,6 +38,7 @@ class AppConfig:
     data_dir: Path | None = None
     diagnostics_dir: Path | None = None
     builtin_menus: bool | None = None
+    pip_index_url: str | None = None
     env_fallback: bool = True
 
     def resolved_gallery_dir(self) -> Path | None:
@@ -93,10 +94,25 @@ class AppConfig:
                 return raw not in {"0", "false", "no", "off"}
         return True
 
+    def resolved_pip_index_url(self) -> str:
+        """Python 依赖镜像源；显式配置 > ``SLLKGUI_PIP_INDEX_URL`` > 空（PyPI 默认）。"""
+        if self.pip_index_url is not None:
+            return self.pip_index_url.strip()
+        if self.env_fallback:
+            return os.getenv("SLLKGUI_PIP_INDEX_URL", "").strip()
+        return ""
+
 
 def _env_path(name: str) -> Path | None:
     value = os.getenv(name, "").strip()
     return Path(value).expanduser().resolve() if value else None
+
+
+def _redact_url(value: str) -> str:
+    if "@" not in value:
+        return value
+    scheme, _, rest = value.partition("://")
+    return f"{scheme}://***@{rest.split('@', 1)[-1]}" if rest else value
 
 
 def _as_path(value: str | os.PathLike[str] | None) -> Path | None:
@@ -126,6 +142,7 @@ def configure(
     data_dir: str | os.PathLike[str] | None = None,
     diagnostics_dir: str | os.PathLike[str] | None = None,
     builtin_menus: bool | None = None,
+    pip_index_url: str | None = None,
     env_fallback: bool | None = None,
     force_reload: bool = False,
 ) -> AppConfig:
@@ -155,6 +172,7 @@ def configure(
         data_dir=_as_path(data_dir) or _ACTIVE.data_dir,
         diagnostics_dir=_as_path(diagnostics_dir) or _ACTIVE.diagnostics_dir,
         builtin_menus=_ACTIVE.builtin_menus if builtin_menus is None else builtin_menus,
+        pip_index_url=_ACTIVE.pip_index_url if pip_index_url is None else pip_index_url,
         env_fallback=_ACTIVE.env_fallback if env_fallback is None else env_fallback,
     )
     _CONFIGURED = True
@@ -203,6 +221,7 @@ def _log_effective_config(config: AppConfig) -> None:
         f"diagnostics={config.resolved_diagnostics_dir()} "
         f"resources=[{resources}] "
         f"builtin_menus={config.resolved_builtin_menus()} "
+        f"pip_index={_redact_url(config.resolved_pip_index_url()) or '-'} "
         f"env_fallback={config.env_fallback}",
         "info",
     )

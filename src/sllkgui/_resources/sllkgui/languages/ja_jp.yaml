@@ -185,6 +185,9 @@ UI:
   ui_ModeStatic: 固定
   ui_ModeOverlay: オーバーレイ
   ui_SoftwareInfo: ソフトウェア情報
+  # トレイ
+  ui_TrayShowWindow: メインウィンドウを表示
+  ui_TrayQuit: 終了
 
 TEXT:
   home_page_welcome: こんにちは！SllkGUI です ~

@@ -184,6 +184,9 @@ UI:
   ui_ModeStatic: Docked
   ui_ModeOverlay: Overlay
   ui_SoftwareInfo: Software Info
+  # Tray
+  ui_TrayShowWindow: Show Main Window
+  ui_TrayQuit: Quit
 
 TEXT:
   home_page_welcome: Hello! I am SllkGUI ~

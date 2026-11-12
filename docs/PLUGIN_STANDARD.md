@@ -47,7 +47,8 @@
 
 ## 7. 安全与权限
 
-- 清单 `permissions` 必须覆盖实际能力使用。
+- 清单 `permissions` 必须覆盖实际能力使用（含托盘 `tray` 与通知
+  `notifications`）。
 - 禁止 `eval` / `exec` 远程内容、运行时下载代码、修改 `sys.path`、未声明子进程。
 - 文件路径限制在 `data_dir` / `resource` 内。
 - 网络请求必须设置超时与错误处理，禁止在 UI 线程同步网络。
@@ -55,7 +56,10 @@
 ## 8. 依赖与打包
 
 - 只使用清单声明的依赖；跨插件不得直接 import 另一个插件的内部模块。
-- 纯 Python 依赖放 `vendor/`；禁止运行时 `pip install`。
+- 第三方 Python 包必须在清单 `python_dependencies` 中声明（PEP 508），不得在
+  运行时自行 `pip install`。基座启动/加载插件时检测缺失依赖，由用户选择自动
+  安装（uv）或手动安装；因此插件不得依赖「用户环境里恰好装过」。
+- 私有改动或无法从镜像获取的纯 Python 依赖可放 `vendor/`，其余走声明。
 - 提供 `README.md`、`CHANGELOG.md`、`LICENSE`；不提交 `.venv`、`build/`、`dist/`。
 
 ## 9. 测试与文档

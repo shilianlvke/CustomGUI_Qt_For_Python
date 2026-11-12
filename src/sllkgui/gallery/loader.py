@@ -16,15 +16,17 @@ from typing import Any
 
 import yaml
 
-from sllkgui.appcore import Language, Logger
+from sllkgui.appcore import Language, Logger, record_event
 
 from .api import Plugin
 from .context import GalleryContextImpl, _flatten
 from .defaults import MANIFEST_NAME
+from .dependencies import ensure_python_dependencies
 from .errors import PLUGIN_LOAD_FAILED, GalleryError
 from .manifest import ensure_within, load_manifest
 from .registry import GalleryRegistry, PluginRecord, sanitize_route
 from .store import GalleryStore
+from .tray import TrayService
 
 #: plugin_id -> locale -> flatten(key -> text)
 _LANG: dict[str, dict[str, dict[str, str]]] = {}
@@ -158,9 +160,13 @@ def load_plugin(
     *,
     is_core: bool = False,
     compliance: int = 1,
+    install_missing_deps: bool = False,
+    interactive: bool = False,
+    index_url: str = "",
     open_surface: Callable[[str, str], bool] | None = None,
     parent_window: Callable[[], Any] | None = None,
     error_reporter: Callable[[str, str, str], None] | None = None,
+    tray: TrayService | None = None,
 ) -> PluginRecord | None:
     """加载单个插件；失败只记录，不影响调用方。"""
     root = Path(path).resolve()
@@ -176,6 +182,28 @@ def load_plugin(
             {"plugin_id": manifest.plugin_id, "code": "PLUGIN_ALREADY_INSTALLED"}
         )
         Logger.warning(f"插件重复，已跳过: {manifest.plugin_id}")
+        return None
+
+    # 第三方依赖必须先就绪：插件模块本身就会在顶层 import 它们
+    try:
+        ensure_python_dependencies(
+            manifest.python_dependencies,
+            plugin_id=manifest.plugin_id,
+            interactive=interactive,
+            install=install_missing_deps,
+            index_url=index_url,
+            parent=parent_window() if parent_window is not None else None,
+        )
+    except GalleryError as exc:
+        registry._errors.append(
+            {"plugin_id": manifest.plugin_id, "code": exc.code, "detail": str(exc)}
+        )
+        Logger.warning(f"插件依赖未就绪，已跳过: {manifest.plugin_id}: {exc.message}")
+        record_event(
+            "plugin.dependencies_blocked",
+            category="plugin",
+            payload={"plugin_id": manifest.plugin_id, "code": exc.code},
+        )
         return None
 
     language = load_language_data(root, manifest.plugin_id)
@@ -194,6 +222,7 @@ def load_plugin(
         open_surface=open_surface,
         parent_window=parent_window,
         error_reporter=error_reporter,
+        tray=tray,
     )
     record = PluginRecord(
         manifest=manifest,
@@ -229,6 +258,7 @@ def load_plugin(
         for name in module_names or []:
             sys.modules.pop(name, None)
         _remove_sys_path(sys_path_added)
+        context.clear_tray()
         registry._errors.append(
             {"plugin_id": manifest.plugin_id, "code": PLUGIN_LOAD_FAILED, "detail": str(exc)}
         )
@@ -241,6 +271,8 @@ def unload_plugin(record: PluginRecord) -> None:
         record.plugin.on_unload()
     except Exception as exc:  # noqa: BLE001 - 卸载失败也要继续清理
         Logger.warning(f"插件卸载钩子失败: {record.plugin_id}: {exc}")
+    if record.context is not None:
+        record.context.clear_tray()
     for name in list(getattr(record, "_module_names", []) or []):
         sys.modules.pop(name, None)
     _remove_sys_path(list(getattr(record, "_sys_path_added", []) or []))

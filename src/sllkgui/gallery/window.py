@@ -29,6 +29,12 @@ class GalleryWindow(QMainWindow):
         self.ui = UiMainWindow()
         self.ui.setup_ui(self)
         runtime.set_navigation(self.open_route, lambda: self)
+        runtime.attach_window(self)
+        self._force_close = False
+        try:
+            Language.subscribe(self._refresh_tray_texts)
+        except Exception as exc:  # noqa: BLE001 - 托盘文案刷新失败不阻断启动
+            Logger.debug(f"托盘语言订阅失败: {exc}")
         SetupMainWindow.setup_gui(self)
         self.controller = MainWindowController(self)
         title = "SllkGUI Gallery" if runtime.mode == "gallery" else "SllkGUI"
@@ -140,9 +146,42 @@ class GalleryWindow(QMainWindow):
         pages.setCurrentWidget(page)
 
     # ------------------------------------------------------------------
+    # 托盘 / 生命周期
+    # ------------------------------------------------------------------
+    def show_and_raise(self) -> None:
+        self.show()
+        self.raise_()
+        self.activateWindow()
+
+    def quit_application(self) -> None:
+        self._force_close = True
+        self.close()
+        from PySide6.QtWidgets import QApplication
+
+        app = QApplication.instance()
+        if app is not None:
+            app.quit()
+
+    def _refresh_tray_texts(self) -> None:
+        try:
+            self.runtime.tray.refresh_texts()
+        except Exception as exc:  # noqa: BLE001 - 托盘文案刷新失败不影响切语言
+            Logger.debug(f"托盘文案刷新失败: {exc}")
+
+    # ------------------------------------------------------------------
     # 生命周期
     # ------------------------------------------------------------------
     def closeEvent(self, event) -> None:  # noqa: N802 - 覆写 Qt 命名
+        # 插件启用托盘时，关闭窗口只隐藏，保留桌面小部件与运行时
+        if not self._force_close and self.runtime.tray.is_active():
+            event.ignore()
+            self.hide()
+            record_event("window.hidden_to_tray", category="gallery", payload={"mode": self.runtime.mode})
+            return
+        try:
+            Language.unsubscribe(self._refresh_tray_texts)
+        except Exception as exc:  # noqa: BLE001 - 退订失败不应阻塞退出
+            Logger.debug(f"托盘语言退订失败: {exc}")
         try:
             self.controller.theme_controller.detach()
         except Exception as exc:  # noqa: BLE001 - 退订失败不应阻塞退出
@@ -176,6 +215,10 @@ def load_run(
     plugin_dirs: list[Path | str] | None = None,
     safe_mode: bool = False,
     allow_local: bool = False,
+    install_missing_deps: bool = True,
+    interactive: bool = True,
+    index_url: str = "",
+    check_tools: bool = False,
 ) -> GalleryWindow:
     runtime = GalleryRuntime(
         "run",
@@ -184,6 +227,10 @@ def load_run(
         plugin_dirs=[Path(item) for item in (plugin_dirs or [])],
         safe_mode=safe_mode,
         allow_local=allow_local,
+        install_missing_deps=install_missing_deps,
+        interactive=interactive,
+        index_url=index_url,
+        check_tools=check_tools,
     )
     return _run_window(runtime, route)
 

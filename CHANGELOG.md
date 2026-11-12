@@ -3,9 +3,24 @@
 项目遵循[语义化版本](https://semver.org/lang/zh-CN/)：major 版本允许破坏性变更并显式列出；
 minor 与 patch 保持向后兼容。
 
-当前版本：`2.0.2`（见 `src/sllkgui/_version.py`），对应 tag `base-v2.0.2`。
+当前版本：`2.1.0`（见 `src/sllkgui/_version.py`），对应 tag `base-v2.1.0`。
 
 ---
+
+## 2.1.0（2026-11-12）
+
+- 新增基座托盘能力：全应用唯一 `QSystemTrayIcon`，插件通过 `ctx.tray`
+  注册动作/通知（新权限 `tray`），不再自建托盘；托盘可见时关闭主窗口只隐藏，
+  「显示主窗口」「退出」由基座提供。方案见 `docs/TRAY.md`。
+- 插件清单新增 `python_dependencies`（PEP 508）：加载器在导入插件前检查缺失，
+  按用户选择用 `uv pip install` 安装到当前解释器；失败隔离并记录
+  `PYTHON_DEPENDENCY_MISSING` / `PYTHON_DEPENDENCY_INSTALL_FAILED`。
+- `sllkgui run` 启动时检测 uv / Git，缺失时允许用户选择自动安装或手动安装；
+  uv 使用官方脚本（`irm https://astral.sh/uv/install.ps1 | iex`）安装，
+  Windows 上 Git 优先用 winget；仅影响源安装/刷新，不阻塞启动。
+- 新增镜像源配置：`run --index-url`、`SLLKGUI_PIP_INDEX_URL`、
+  `configure(pip_index_url=...)`；`run --no-install-deps` 只检查不安装。
+- `doctor` / `plugin doctor` 输出 `tools` 与生效镜像源。
 
 ## 2.0.2（2026-11-12）
 

@@ -14,6 +14,7 @@ from pathlib import Path
 from typing import Any
 
 import yaml
+from packaging.requirements import InvalidRequirement, Requirement
 from packaging.specifiers import InvalidSpecifier, SpecifierSet
 from packaging.version import InvalidVersion, Version
 
@@ -85,6 +86,7 @@ class PluginManifest:
     repository: str = ""
     requires_sllkgui: str = ""
     requires_python: str = ""
+    python_dependencies: tuple[str, ...] = ()
     surfaces: tuple[SurfaceSpec, ...] = ()
     dependencies: tuple[DependencySpec, ...] = ()
     permissions: tuple[Permission, ...] = ()
@@ -237,6 +239,25 @@ def _parse_dependencies(value: Any) -> tuple[DependencySpec, ...]:
     return tuple(result)
 
 
+def _parse_python_dependencies(value: Any) -> tuple[str, ...]:
+    if value is None:
+        return ()
+    if not isinstance(value, list):
+        raise GalleryError(PLUGIN_MANIFEST_INVALID, "python_dependencies 必须是列表")
+    result: list[str] = []
+    for item in value:
+        text = str(item or "").strip()
+        if not text:
+            continue
+        try:
+            Requirement(text)
+        except InvalidRequirement as exc:
+            raise GalleryError(PLUGIN_MANIFEST_INVALID, f"非法 Python 依赖: {text!r}", str(exc)) from exc
+        if text not in result:
+            result.append(text)
+    return tuple(result)
+
+
 def _parse_permissions(value: Any) -> tuple[Permission, ...]:
     if value is None:
         return ()
@@ -335,6 +356,7 @@ def load_manifest(path: Path, *, current_sllkgui: str | None = None) -> PluginMa
         repository=str(data.get("repository") or "").strip(),
         requires_sllkgui=requires_sllkgui,
         requires_python=requires_python,
+        python_dependencies=_parse_python_dependencies(data.get("python_dependencies")),
         surfaces=surfaces,
         dependencies=_parse_dependencies(data.get("dependencies")),
         permissions=_parse_permissions(data.get("permissions")),

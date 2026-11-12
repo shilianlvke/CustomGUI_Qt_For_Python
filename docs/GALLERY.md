@@ -48,6 +48,7 @@ run:      read registry -> core plugins -> installed -> plugin-dir
 sllkgui gallery [--surface ROUTE] [--data-dir DIR]
 sllkgui run [--surface ROUTE] [--data-dir DIR] [--gallery-dir DIR]
             [--plugin-dir DIR]... [--safe-mode] [--allow-local]
+            [--index-url URL] [--no-install-deps]
 
 sllkgui source list [--json]
 sllkgui source add <url> [--id ID] [--trust user|official] [--allow-local] [--refresh] [--yes]
@@ -72,6 +73,28 @@ sllkgui doctor [--json]
 sllkgui scaffold <dir> [--id ID] [--name NAME] [--source]
 ```
 
+### 依赖与工具链
+
+- `run` 启动时检测 **uv** 与 **Git**：缺失时弹窗让用户选择自动安装（pip 装 uv、
+  winget 装 Git）或手动安装，也可跳过（仅影响「从源安装/刷新插件」）。
+- 插件清单声明 `python_dependencies` 时，加载前检查当前解释器；缺失则提示
+  自动安装（`uv pip install --python <当前解释器>`）或给出手动命令。安装失败
+  的插件被隔离，记录 `PYTHON_DEPENDENCY_MISSING` / `PYTHON_DEPENDENCY_INSTALL_FAILED`。
+- 镜像源优先级：`run --index-url` > `SLLKGUI_PIP_INDEX_URL` >
+  `sllkgui.configure(pip_index_url=...)` > 默认 PyPI。`--no-install-deps`
+  只检查不安装，适合离线/受控环境。
+- `doctor` / `plugin doctor` 输出 `tools: {uv, git, pip}` 与生效镜像，便于排查。
+- uv 自动安装使用官方脚本（`irm https://astral.sh/uv/install.ps1 | iex`），
+  不通过 pip；Git 在 Windows 上优先用 winget。
+
+### 托盘
+
+- 插件通过 `ctx.tray` 使用基座唯一托盘，禁止自建 `QSystemTrayIcon`；
+  需要声明 `tray` 权限，通知另需 `notifications`。
+- 托盘可见时关闭主窗口只隐藏，插件与桌面小部件继续运行；托盘菜单的
+  「退出」才会执行 `shutdown()`。
+- 完整方案见 [TRAY.md](TRAY.md)。
+
 ## 5. 安全
 
 - Git 仅允许 `https://` / `ssh://` / `git@host:path`；`file://` 需 `--allow-local`。
@@ -91,6 +114,8 @@ sllkgui scaffold <dir> [--id ID] [--name NAME] [--source]
 | `gallery/source.py` | 源刷新与索引 |
 | `gallery/manager.py` | 安装/更新/回滚/卸载/校验 |
 | `gallery/loader.py` | 导入、生命周期、失败隔离 |
+| `gallery/dependencies.py` | 第三方 Python 依赖检测、uv/Git 工具检查与安装 |
+| `gallery/tray.py` | 基座唯一托盘、插件动作与通知（见 `docs/TRAY.md`） |
 | `gallery/registry.py` | Surface 路由与默认页 |
 | `gallery/context.py` | 插件上下文 |
 | `gallery/lint.py` | 开发规范检查 |

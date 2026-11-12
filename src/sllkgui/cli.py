@@ -146,6 +146,10 @@ def _cmd_window(args: argparse.Namespace, mode: str) -> int:
             plugin_dirs=[Path(item).expanduser().resolve() for item in (args.plugin_dir or [])],
             safe_mode=bool(args.safe_mode),
             allow_local=bool(getattr(args, "allow_local", False)),
+            install_missing_deps=not bool(getattr(args, "no_install_deps", False)),
+            interactive=True,
+            index_url=getattr(args, "index_url", "") or "",
+            check_tools=True,
         )
     window.show()
     return int(app.exec())
@@ -328,12 +332,15 @@ def _cmd_plugin_lint(args: argparse.Namespace) -> int:
 
 
 def _cmd_plugin_doctor(args: argparse.Namespace) -> int:
+    from sllkgui.gallery.dependencies import tool_status
+
     store, state, sources, _manager = _services(args)
     payload = {
         "base_version": _version(),
         "gallery_dir": str(store.root),
         "registry": str(store.registry_file),
         "sources_file": str(store.sources_file),
+        "tools": tool_status().to_dict(),
         "sources": [item.source_id for item in sources.list()],
         "plugins": [
             {"id": record.plugin_id, "version": record.version, "enabled": record.enabled}
@@ -350,6 +357,8 @@ def _cmd_plugin_doctor(args: argparse.Namespace) -> int:
 def _cmd_doctor(args: argparse.Namespace) -> int:
     from sllkgui import package_root
     from sllkgui.appcore.sysx.config.paths import data_root, gallery_root, resource_roots
+    from sllkgui.config import current_config
+    from sllkgui.gallery.dependencies import tool_status
 
     store, state, sources, _manager = _services(args)
     payload = {
@@ -359,6 +368,8 @@ def _cmd_doctor(args: argparse.Namespace) -> int:
         "data_root": str(data_root()),
         "gallery_root": str(gallery_root()),
         "gallery_dir": str(store.root),
+        "tools": tool_status().to_dict(),
+        "pip_index_url": current_config().resolved_pip_index_url(),
         "sources": [item.source_id for item in sources.list()],
         "installed": [
             {"id": record.plugin_id, "version": record.version, "enabled": record.enabled}
@@ -419,6 +430,8 @@ def build_parser() -> argparse.ArgumentParser:
     run.add_argument("--plugin-dir", action="append", help="本地开发插件目录（可重复）")
     run.add_argument("--safe-mode", action="store_true", help="只加载核心插件")
     run.add_argument("--allow-local", action="store_true", help="允许 file:// 插件源")
+    run.add_argument("--index-url", help="Python 依赖镜像源（如 https://pypi.tuna.tsinghua.edu.cn/simple）")
+    run.add_argument("--no-install-deps", action="store_true", help="禁止自动安装插件缺失的 Python 依赖")
     run.set_defaults(func=_cmd_run)
 
     source = sub.add_parser("source", help="插件源管理")
