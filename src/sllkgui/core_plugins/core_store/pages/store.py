@@ -1117,6 +1117,10 @@ class StorePage(QWidget):
 
         self.runtime = current_runtime()
         self._mode_cards: dict[str, _ModeCard] = {}
+        self._status_timer = QTimer(self)
+        self._status_timer.setSingleShot(True)
+        self._status_timer.setInterval(6000)
+        self._status_timer.timeout.connect(self._hide_status)
         self._build()
         self.switch_mode("installed")
         self.refresh_stats()
@@ -1189,7 +1193,9 @@ class StorePage(QWidget):
         body.addWidget(workspace, 1)
         root.addLayout(body, 1)
 
-        self.status = _ThemedLabel(self.ctx.text("status.ready", "就绪"), "muted")
+        # 状态行只承载操作反馈：空闲时隐藏，不再用「就绪」占一整行高度
+        self.status = _ThemedLabel("", "muted")
+        self.status.hide()
         root.addWidget(self.status)
         self.refresh_btn.clicked.connect(self.refresh_all)
 
@@ -1219,6 +1225,9 @@ class StorePage(QWidget):
     # 状态 / 刷新
     # ------------------------------------------------------------------
     def set_status(self, message: str, level: str = "info") -> None:
+        if not message:
+            self._hide_status()
+            return
         colors = panel_colors()
         if level == "error":
             color = ColorPalette.custom_red
@@ -1230,6 +1239,14 @@ class StorePage(QWidget):
             color = qss_color(colors["muted"])
         self.status.setStyleSheet(f"color: {color};")
         self.status.setText(message)
+        self.status.show()
+        self._status_timer.start()
+
+    def _hide_status(self) -> None:
+        """清空并收起状态行：空闲时状态行不占页面高度。"""
+        self._status_timer.stop()
+        self.status.clear()
+        self.status.hide()
 
     def refresh_stats(self) -> None:
         manager = getattr(self.runtime, "manager", None)
@@ -1247,7 +1264,6 @@ class StorePage(QWidget):
         self.installed_panel.refresh()
         self.discover_panel.search()
         self.sources_panel.refresh()
-        self.set_status(self.ctx.text("status.ready", "就绪"))
 
     def schedule_reload(self) -> None:
         window = self.ctx.parent_window()
