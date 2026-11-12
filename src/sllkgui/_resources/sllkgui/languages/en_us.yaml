@@ -266,6 +266,12 @@ plugin_store:
   status:
     action_done: Done
     action_failed: 'Action failed: {error}'
+    installing: 'Installing {id}…'
+    updating: 'Updating {id}…'
+    rolling_back: 'Rolling back {id}…'
+    removing: 'Removing {id}…'
+    adding_source: Adding source…
+    removing_source: Removing source…
     install_done: 'Installed {count} plugins'
     up_to_date: Up to date
     update_done: 'Updated to v{version}'

@@ -46,6 +46,7 @@ from sllkgui.guicore import (
     CSelectButton,
     CToast,
     CToggleSwitch,
+    run_task,
 )
 from sllkgui.guicore.custom_ui.icon_utils import render_icon
 from sllkgui.guicore.custom_ui.panels.style import RADIUS, paint_surface, panel_colors, rounded_path
@@ -1137,6 +1138,8 @@ class StorePage(QWidget):
         self.runtime = current_runtime()
         self._mode_cards: dict[str, _ModeCard] = {}
         self._detail_dialog: CDialog | None = None
+        self._busy = False
+        self._busy_toast: CToast | None = None
         self._build()
         self.switch_mode("installed")
         self.refresh_stats()
@@ -1297,7 +1300,68 @@ class StorePage(QWidget):
         self.ctx.report_error(code, message, str(exc))
         self.set_status(self.ctx.text("status.action_failed", "操作失败: {error}").format(error=exc), "error")
 
+    def _run_async(
+        self,
+        *,
+        name: str,
+        fn: Callable[[], Any],
+        busy_text: str,
+        success_message: Callable[[Any], str] | None,
+        error_code: str,
+        error_prefix: str,
+        on_done: Callable[[Any], None] | None = None,
+        reload_plugins: bool = False,
+    ) -> None:
+        """把 git / 文件操作放到后台线程，主线程只负责状态与刷新。"""
+        if self._busy:
+            return
+        self._busy = True
+        self.setEnabled(False)
+        window = self.ctx.parent_window()
+        offset = _toast_offset(window) if window is not None else 8
+        toast = CToast.show_message(
+            window or self,
+            busy_text,
+            self.ctx.text("store.title", "插件管理"),
+            "info",
+            life=0,
+            offset_top=offset,
+        )
+        self._busy_toast = toast
+        # 页面被语言切换/重载销毁时，持久通知不能留在窗口上。
+        try:
+            self.destroyed.connect(lambda *_: toast.dismiss(immediate=True))
+        except Exception:  # noqa: BLE001 - 清理绑定失败不影响任务
+            pass
+
+        def finish() -> None:
+            self._busy = False
+            self.setEnabled(True)
+            toast = self._busy_toast
+            self._busy_toast = None
+            if toast is not None:
+                toast.dismiss()
+
+        def done(result: Any) -> None:
+            finish()
+            if on_done is not None:
+                on_done(result)
+            elif success_message is not None:
+                self.set_status(success_message(result), "success")
+            QTimer.singleShot(0, self.refresh_all)
+            if reload_plugins:
+                self.schedule_reload()
+
+        def failed(error: str) -> None:
+            finish()
+            self._fail(error_code, f"{error_prefix}: {error}", RuntimeError(error))
+            QTimer.singleShot(0, self.refresh_all)
+
+        run_task(self, lambda _emit: fn(), on_done=done, on_error=failed, name=name)
+
     def _set_plugin_enabled(self, plugin_id: str, enabled: bool) -> None:
+        if self._busy:
+            return
         manager = self._manager()
         if manager is None:
             return
@@ -1313,9 +1377,8 @@ class StorePage(QWidget):
         manager = self._manager()
         if manager is None:
             return
-        try:
-            with self.ctx.timing("plugin_store.update"):
-                result = manager.update(plugin_id)
+
+        def done(result: dict[str, Any]) -> None:
             if result.get("updated"):
                 message = self.ctx.text("status.update_done", "已更新到 v{version}").format(
                     version=result.get("version") or ""
@@ -1323,27 +1386,35 @@ class StorePage(QWidget):
             else:
                 message = self.ctx.text("status.up_to_date", "已是最新版本")
             self.set_status(message, "success")
-        except Exception as exc:  # noqa: BLE001
-            self._fail("PLUGIN_STORE_UPDATE_FAILED", f"更新失败: {exc}", exc)
-        QTimer.singleShot(0, self.refresh_all)
-        self.schedule_reload()
+
+        self._run_async(
+            name="plugin_store.update",
+            fn=lambda: manager.update(plugin_id),
+            busy_text=self.ctx.text("status.updating", "正在更新 {id}…").format(id=plugin_id),
+            success_message=None,
+            error_code="PLUGIN_STORE_UPDATE_FAILED",
+            error_prefix="更新失败",
+            on_done=done,
+            reload_plugins=True,
+        )
 
     def _rollback_plugin(self, plugin_id: str) -> None:
         manager = self._manager()
         if manager is None:
             return
-        try:
-            with self.ctx.timing("plugin_store.rollback"):
-                manager.rollback(plugin_id)
-            self.set_status(self.ctx.text("status.action_done", "操作完成"), "success")
-        except Exception as exc:  # noqa: BLE001
-            self._fail("PLUGIN_STORE_ROLLBACK_FAILED", f"回滚失败: {exc}", exc)
-        QTimer.singleShot(0, self.refresh_all)
-        self.schedule_reload()
+        self._run_async(
+            name="plugin_store.rollback",
+            fn=lambda: manager.rollback(plugin_id),
+            busy_text=self.ctx.text("status.rolling_back", "正在回滚 {id}…").format(id=plugin_id),
+            success_message=lambda _result: self.ctx.text("status.action_done", "操作完成"),
+            error_code="PLUGIN_STORE_ROLLBACK_FAILED",
+            error_prefix="回滚失败",
+            reload_plugins=True,
+        )
 
     def _remove_plugin(self, plugin_id: str) -> None:
         manager = self._manager()
-        if manager is None:
+        if manager is None or self._busy:
             return
         ok = CConfirmDialog.ask(
             self,
@@ -1353,18 +1424,19 @@ class StorePage(QWidget):
         )
         if not ok:
             return
-        try:
-            with self.ctx.timing("plugin_store.remove"):
-                manager.remove(plugin_id)
-            self.set_status(self.ctx.text("status.action_done", "操作完成"), "success")
-        except Exception as exc:  # noqa: BLE001
-            self._fail("PLUGIN_STORE_REMOVE_FAILED", f"卸载失败: {exc}", exc)
-        QTimer.singleShot(0, self.refresh_all)
-        self.schedule_reload()
+        self._run_async(
+            name="plugin_store.remove",
+            fn=lambda: manager.remove(plugin_id),
+            busy_text=self.ctx.text("status.removing", "正在卸载 {id}…").format(id=plugin_id),
+            success_message=lambda _result: self.ctx.text("status.action_done", "操作完成"),
+            error_code="PLUGIN_STORE_REMOVE_FAILED",
+            error_prefix="卸载失败",
+            reload_plugins=True,
+        )
 
     def _install_plugin(self, record: dict[str, Any]) -> None:
         manager = self._manager()
-        if manager is None:
+        if manager is None or self._busy:
             return
         plugin_id = str(record.get("id") or "")
         permissions = ", ".join(str(item) for item in record.get("permissions") or []) or "-"
@@ -1380,62 +1452,66 @@ class StorePage(QWidget):
         )
         if not ok:
             return
-        try:
-            with self.ctx.timing("plugin_store.install"):
-                manager.install(plugin_id, source_id=str(record.get("source") or ""))
-            self.set_status(
-                self.ctx.text("status.install_done", "已安装 {count} 个插件").format(count=1), "success"
-            )
-        except Exception as exc:  # noqa: BLE001
-            self._fail("PLUGIN_STORE_INSTALL_FAILED", f"安装失败: {exc}", exc)
-        QTimer.singleShot(0, self.refresh_all)
-        self.schedule_reload()
+        self._run_async(
+            name="plugin_store.install",
+            fn=lambda: manager.install(plugin_id, source_id=str(record.get("source") or "")),
+            busy_text=self.ctx.text("status.installing", "正在安装 {id}…").format(id=plugin_id),
+            success_message=lambda _result: self.ctx.text(
+                "status.install_done", "已安装 {count} 个插件"
+            ).format(count=1),
+            error_code="PLUGIN_STORE_INSTALL_FAILED",
+            error_prefix="安装失败",
+            reload_plugins=True,
+        )
 
     # ------------------------------------------------------------------
     # 源动作
     # ------------------------------------------------------------------
     def _add_source(self, url: str) -> bool:
         sources = self._sources()
-        if sources is None or not url:
+        if sources is None or not url or self._busy:
             return False
-        try:
-            record = sources.add(url, refresh=True)
-            self.set_status(
-                self.ctx.text("sources.added", "已添加源 {id}").format(id=record.source_id), "success"
-            )
-        except Exception as exc:  # noqa: BLE001
-            self._fail("PLUGIN_STORE_SOURCE_ADD_FAILED", f"添加源失败: {exc}", exc)
-            return False
-        QTimer.singleShot(0, self.refresh_all)
+        self._run_async(
+            name="plugin_store.source_add",
+            fn=lambda: sources.add(url, refresh=True),
+            busy_text=self.ctx.text("status.adding_source", "正在添加源…"),
+            success_message=lambda record: self.ctx.text("sources.added", "已添加源 {id}").format(
+                id=getattr(record, "source_id", url)
+            ),
+            error_code="PLUGIN_STORE_SOURCE_ADD_FAILED",
+            error_prefix="添加源失败",
+        )
         return True
 
     def _refresh_source(self, source_id: str) -> None:
         sources = self._sources()
         if sources is None:
             return
-        try:
-            with self.ctx.timing("plugin_store.source_refresh"):
-                sources.refresh(source_id)
-            self.set_status(self.ctx.text("status.refresh_done", "源刷新完成"), "success")
-        except Exception as exc:  # noqa: BLE001
-            self._fail("PLUGIN_STORE_SOURCE_REFRESH_FAILED", f"刷新源失败: {exc}", exc)
-        QTimer.singleShot(0, self.refresh_all)
+        self._run_async(
+            name="plugin_store.source_refresh",
+            fn=lambda: sources.refresh(source_id),
+            busy_text=self.ctx.text("status.refreshing", "正在刷新源…"),
+            success_message=lambda _result: self.ctx.text("status.refresh_done", "源刷新完成"),
+            error_code="PLUGIN_STORE_SOURCE_REFRESH_FAILED",
+            error_prefix="刷新源失败",
+        )
 
     def _refresh_sources(self) -> None:
         sources = self._sources()
         if sources is None:
             return
-        try:
-            with self.ctx.timing("plugin_store.source_refresh_all"):
-                sources.refresh_all()
-            self.set_status(self.ctx.text("status.refresh_done", "源刷新完成"), "success")
-        except Exception as exc:  # noqa: BLE001
-            self._fail("PLUGIN_STORE_SOURCE_FAILED", f"刷新源失败: {exc}", exc)
-        QTimer.singleShot(0, self.refresh_all)
+        self._run_async(
+            name="plugin_store.source_refresh_all",
+            fn=lambda: sources.refresh_all(),
+            busy_text=self.ctx.text("status.refreshing", "正在刷新源…"),
+            success_message=lambda _result: self.ctx.text("status.refresh_done", "源刷新完成"),
+            error_code="PLUGIN_STORE_SOURCE_FAILED",
+            error_prefix="刷新源失败",
+        )
 
     def _remove_source(self, source_id: str) -> None:
         sources = self._sources()
-        if sources is None:
+        if sources is None or self._busy:
             return
         ok = CConfirmDialog.ask(
             self,
@@ -1447,14 +1523,18 @@ class StorePage(QWidget):
         )
         if not ok:
             return
-        try:
-            sources.remove(source_id)
-            self.set_status(self.ctx.text("status.action_done", "操作完成"), "success")
-        except Exception as exc:  # noqa: BLE001
-            self._fail("PLUGIN_STORE_SOURCE_REMOVE_FAILED", f"移除源失败: {exc}", exc)
-        QTimer.singleShot(0, self.refresh_all)
+        self._run_async(
+            name="plugin_store.source_remove",
+            fn=lambda: sources.remove(source_id),
+            busy_text=self.ctx.text("status.removing_source", "正在移除源…"),
+            success_message=lambda _result: self.ctx.text("status.action_done", "操作完成"),
+            error_code="PLUGIN_STORE_SOURCE_REMOVE_FAILED",
+            error_prefix="移除源失败",
+        )
 
     def _set_source_enabled(self, source_id: str, enabled: bool) -> None:
+        if self._busy:
+            return
         sources = self._sources()
         if sources is None:
             return

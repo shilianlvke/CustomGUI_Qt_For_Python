@@ -267,6 +267,12 @@ plugin_store:
   status:
     action_done: 操作完成
     action_failed: '操作失敗: {error}'
+    installing: '正在安裝 {id}…'
+    updating: '正在更新 {id}…'
+    rolling_back: '正在回滾 {id}…'
+    removing: '正在解除安裝 {id}…'
+    adding_source: 正在新增來源…
+    removing_source: 正在移除來源…
     install_done: '已安裝 {count} 個外掛'
     up_to_date: 已是最新版本
     update_done: '已更新到 v{version}'

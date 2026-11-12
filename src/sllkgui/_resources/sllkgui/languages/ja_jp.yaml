@@ -267,6 +267,12 @@ plugin_store:
   status:
     action_done: 完了
     action_failed: '操作に失敗しました: {error}'
+    installing: '{id} をインストールしています…'
+    updating: '{id} を更新しています…'
+    rolling_back: '{id} をロールバックしています…'
+    removing: '{id} を削除しています…'
+    adding_source: ソースを追加しています…
+    removing_source: ソースを削除しています…
     install_done: '{count} 個のプラグインをインストールしました'
     up_to_date: 最新バージョンです
     update_done: 'v{version} に更新しました'
