@@ -1,39 +1,56 @@
-installed:
-  title: 已安裝外掛
-search:
-  title: 搜尋外掛
-  placeholder: 搜尋名稱或 ID
-sources:
-  title: 外掛來源
-  placeholder: Git 儲存庫位址
-actions:
+store:
+  title: 外掛管理
+  subtitle: 安裝、更新與來源，在同一個工作台完成
   refresh: 重新整理
-  refresh_sources: 重新整理來源
+stats:
+  installed: 已安裝
+  enabled: 啟用中
+  sources: 來源
+modes:
+  installed: 已安裝
+  discover: 探索
+  sources: 來源
+installed:
+  filter: 篩選外掛…
   update: 更新
-  rollback: 回復
-  disable: 停用
+  rollback: 回滾
   enable: 啟用
-  remove: 移除
-  search: 搜尋
-  install: 安裝
-  add: 新增
-columns:
-  id: 外掛
-  name: 名稱
+  disable: 停用
+  remove: 解除安裝
+  empty: 尚無已安裝外掛
+  select_hint: 選擇一個外掛查看詳情
+  detail_title: 外掛詳情
   version: 版本
   source: 來源
-  enabled: 啟用
-  compliance: 合規
+  commit: 提交
   path: 目錄
   permissions: 權限
-  url: 位址
-  trust: 信任
-  last_refresh: 最近重新整理
+  enabled: 已啟用
+  disabled: 已停用
+discover:
+  placeholder: 搜尋名稱、ID 或簡介…
+  hint: 左側挑選可安裝外掛，右側是安裝佇列
+  search: 搜尋
+  refresh_sources: 重新整理來源
+  clear: 清空
+  install: 安裝佇列
+  queue_summary: 安裝佇列 · {count}
+  confirm: "安裝佇列中的 {count} 個外掛？\n{names}"
+sources:
+  placeholder: Git 倉庫位址
+  add: 新增
+  refresh_all: 全部重新整理
+  hint: 順序即優先級，越前面越先被採用
+  remove: 移除來源
+  confirm_remove: '移除來源 {id}？已安裝外掛不受影響。'
+  refreshing: 正在重新整理來源…
+  refresh_done: 來源重新整理完成
+  order_saved: 已儲存來源優先級
+  added: '已新增來源 {id}'
 status:
-  enabled: 是
-  disabled: 否
-empty: 尚無記錄
+  ready: 就緒
+  action_done: 操作完成
+  action_failed: '操作失敗: {error}'
+  install_done: '已安裝 {count} 個外掛'
 confirm:
-  install: 確認安裝此外掛？請核對來源、版本與權限。
-  remove: 確定移除外掛？資料目錄預設保留。
-  remove_source: 確定移除來源？已安裝外掛不受影響。
+  remove: 確定解除安裝該外掛？資料目錄預設保留。

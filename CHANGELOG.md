@@ -3,9 +3,16 @@
 项目遵循[语义化版本](https://semver.org/lang/zh-CN/)：major 版本允许破坏性变更并显式列出；
 minor 与 patch 保持向后兼容。
 
-当前版本：`2.1.0`（见 `src/sllkgui/_version.py`），对应 tag `base-v2.1.0`。
+当前版本：`2.1.1`（见 `src/sllkgui/_version.py`），对应 tag `base-v2.1.1`。
 
 ---
+
+## 2.1.1（2026-11-12）
+
+- 修正左菜单分区：插件 Surface 按钮注册到顶部轨道，底部只保留「软件信息」。
+- `core_store` 合并为单页插件管理工作台（`store` Surface）：左侧模式导轨
+  （已安装 / 发现 / 源）+ 顶部指标，已安装用插件卡片与详情清单，发现用
+  `CPickList` 挑选安装队列，源用 `COrderList` 管理优先级；删除原三个 Surface。
 
 ## 2.1.0（2026-11-12）
 

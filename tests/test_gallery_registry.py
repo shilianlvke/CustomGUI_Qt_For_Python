@@ -32,6 +32,7 @@ def test_registry_routes_and_default(tmp_path: Path):
     assert registry.route_for_button(surface.button_id) is surface
     assert registry.route_for_page(surface.page_object) is surface
     assert registry.menu_items()[0]["btn_id"] == surface.button_id
+    assert registry.menu_items()[0]["show_top"] is True
     registry.remove("com.example.hello")
     assert registry.surface_count() == 0
 

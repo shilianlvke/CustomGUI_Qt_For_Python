@@ -34,7 +34,7 @@ def test_run_mode_loads_core_and_dev_plugin(tmp_path: Path):
         assert "com.sllkgui.core.store" in ids
         assert "com.example.dev" in ids
         assert "com.sllkgui.showcase.core_preview" not in ids
-        assert registry.surface_count() == 4
+        assert registry.surface_count() == 2
     finally:
         runtime.shutdown()
 

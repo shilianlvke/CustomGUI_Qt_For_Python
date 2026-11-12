@@ -59,13 +59,12 @@ def test_showcase_loads_ten_surfaces(tmp_path, prepared):
         _close(window)
 
 
-def test_core_store_loads_three_surfaces(tmp_path, prepared):
+def test_core_store_loads_single_surface(tmp_path, prepared):
     window = _window(tmp_path, "run")
     try:
         routes = list(window.gallery_registry.routes())
-        assert len(routes) == 3
-        for route in routes:
-            assert window.open_route(route), route
+        assert routes == ["com.sllkgui.core.store/store"]
+        assert window.open_route(routes[0])
     finally:
         _close(window)
 

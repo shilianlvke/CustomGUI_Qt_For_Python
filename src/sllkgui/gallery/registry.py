@@ -195,7 +195,7 @@ class GalleryRegistry:
                     "btn_text": f"language.app.{surface.plugin_id}.surface.{surface.surface_id}.title",
                     "btn_tooltip": f"language.app.{surface.plugin_id}.surface.{surface.surface_id}.title",
                     "btn_text_fallback": title,
-                    "show_top": False,
+                    "show_top": True,
                     "is_active": False,
                 }
             )

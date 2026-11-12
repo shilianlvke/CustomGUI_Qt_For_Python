@@ -1,39 +1,56 @@
-installed:
-  title: インストール済み
-search:
-  title: プラグイン検索
-  placeholder: 名前または ID で検索
-sources:
-  title: ソース
-  placeholder: Git リポジトリ URL
-actions:
+store:
+  title: プラグイン管理
+  subtitle: インストール・更新・ソースをひとつのワークスペースで
   refresh: 更新
-  refresh_sources: ソースを更新
-  update: アップデート
+stats:
+  installed: 導入済み
+  enabled: 有効
+  sources: ソース
+modes:
+  installed: 導入済み
+  discover: 見つける
+  sources: ソース
+installed:
+  filter: プラグインを絞り込む…
+  update: 更新
   rollback: ロールバック
-  disable: 無効化
   enable: 有効化
+  disable: 無効化
   remove: 削除
-  search: 検索
-  install: インストール
-  add: 追加
-columns:
-  id: プラグイン
-  name: 名前
+  empty: プラグインはまだありません
+  select_hint: プラグインを選択して詳細を表示
+  detail_title: プラグインの詳細
   version: バージョン
   source: ソース
-  enabled: 有効
-  compliance: コンプライアンス
+  commit: コミット
   path: パス
   permissions: 権限
-  url: URL
-  trust: 信頼
-  last_refresh: 最終更新
+  enabled: 有効
+  disabled: 無効
+discover:
+  placeholder: 名前・ID・概要を検索…
+  hint: 左でプラグインを選び、右のインストール待ちに追加します
+  search: 検索
+  refresh_sources: ソースを更新
+  clear: クリア
+  install: インストール待ち
+  queue_summary: 'インストール待ち · {count}'
+  confirm: "待ち行列の {count} 個をインストールしますか？\n{names}"
+sources:
+  placeholder: Git リポジトリの URL
+  add: 追加
+  refresh_all: すべて更新
+  hint: 並び順が優先度です。上にあるソースが優先されます
+  remove: ソースを削除
+  confirm_remove: 'ソース {id} を削除しますか？導入済みプラグインは残ります。'
+  refreshing: ソースを更新しています…
+  refresh_done: ソースを更新しました
+  order_saved: ソースの優先度を保存しました
+  added: 'ソース {id} を追加しました'
 status:
-  enabled: はい
-  disabled: いいえ
-empty: レコードがありません
+  ready: 準備完了
+  action_done: 完了
+  action_failed: '操作に失敗しました: {error}'
+  install_done: '{count} 個のプラグインをインストールしました'
 confirm:
-  install: このプラグインをインストールしますか？ソース、バージョン、権限を確認してください。
   remove: このプラグインを削除しますか？データディレクトリは既定で保持されます。
-  remove_source: このソースを削除しますか？インストール済みプラグインには影響しません。

@@ -1,39 +1,56 @@
-installed:
-  title: Installed Plugins
-search:
-  title: Find Plugins
-  placeholder: Search by name or ID
-sources:
-  title: Sources
-  placeholder: Git repository URL
-actions:
+store:
+  title: Plugin Manager
+  subtitle: Install, update and manage sources in one workspace
   refresh: Refresh
-  refresh_sources: Refresh Sources
+stats:
+  installed: Installed
+  enabled: Enabled
+  sources: Sources
+modes:
+  installed: Installed
+  discover: Discover
+  sources: Sources
+installed:
+  filter: Filter plugins…
   update: Update
   rollback: Rollback
-  disable: Disable
   enable: Enable
+  disable: Disable
   remove: Remove
-  search: Search
-  install: Install
-  add: Add
-columns:
-  id: Plugin
-  name: Name
+  empty: No plugins installed yet
+  select_hint: Select a plugin to inspect it
+  detail_title: Plugin details
   version: Version
   source: Source
-  enabled: Enabled
-  compliance: Compliance
+  commit: Commit
   path: Path
   permissions: Permissions
-  url: URL
-  trust: Trust
-  last_refresh: Last Refresh
+  enabled: Enabled
+  disabled: Disabled
+discover:
+  placeholder: Search name, ID or summary…
+  hint: Pick plugins on the left and build an install queue on the right
+  search: Search
+  refresh_sources: Refresh sources
+  clear: Clear
+  install: Install queue
+  queue_summary: 'Install queue · {count}'
+  confirm: "Install {count} plugins from the queue?\n{names}"
+sources:
+  placeholder: Git repository URL
+  add: Add
+  refresh_all: Refresh all
+  hint: Order is priority — sources higher in the list win
+  remove: Remove source
+  confirm_remove: 'Remove source {id}? Installed plugins are kept.'
+  refreshing: Refreshing sources…
+  refresh_done: Sources refreshed
+  order_saved: Source priority saved
+  added: 'Added source {id}'
 status:
-  enabled: Yes
-  disabled: No
-empty: No records
+  ready: Ready
+  action_done: Done
+  action_failed: 'Action failed: {error}'
+  install_done: 'Installed {count} plugins'
 confirm:
-  install: Install this plugin? Check source, version and permissions.
   remove: Remove this plugin? Its data directory is kept by default.
-  remove_source: Remove this source? Installed plugins are not affected.
