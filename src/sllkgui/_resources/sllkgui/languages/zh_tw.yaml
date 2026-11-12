@@ -49,7 +49,7 @@ UI:
   ui_Property: 屬性
   # 其他
   ui_Settings: 設定
-  ui_SettingsSubtitle: 軟體與環境
+  ui_SettingsSubtitle: 軟體、外觀與介面
   ui_SettingsSoftware: 軟體資訊
   ui_SettingsOverview: 概覽
   ui_SettingsEnvironment: 執行環境
@@ -61,7 +61,7 @@ UI:
   ui_SettingsLogDir: 日誌目錄
   ui_SettingsOpenData: 開啟資料目錄
   ui_SettingsOpenLogs: 開啟日誌目錄
-  ui_SettingsAppearanceHint: 外觀設定請使用標題列色盤
+  ui_SettingsAppearanceHint: 外觀與軟體資訊請使用標題列「設定」
   ui_OpenFile: 開啟檔案
   ui_UpdateLogs: 更新日誌
   ui_Welcome: 歡迎
@@ -146,6 +146,7 @@ UI:
   ui_Appearance: 外觀配置
   ui_AppearanceHint: 主題、材質、背景與介面
   ui_Theme: 主題
+  ui_TabAppearance: 外觀
   ui_TabTheme: 主題
   ui_TabMaterial: 材質
   ui_TabBackground: 背景
@@ -192,3 +193,62 @@ UI:
 TEXT:
   home_page_welcome: 你好！我是 SllkGUI ~
   login: 登入 SllkGUI
+
+# 外掛管理（基座原生頁面）
+plugin_store:
+  store:
+    title: 外掛管理
+    subtitle: 已安裝、探索與來源，在同一頁完成
+    refresh: 全部重新整理
+  stats:
+    installed: 已安裝
+    enabled: 啟用中
+    sources: 來源
+  modes:
+    installed: 已安裝
+    discover: 探索
+    sources: 來源
+  installed:
+    filter: 篩選外掛…
+    update: 更新
+    rollback: 回滾
+    enable: 啟用
+    disable: 停用
+    remove: 解除安裝
+    empty: 尚無已安裝外掛，去「探索」看看
+    select_hint: 選擇一個外掛查看詳情
+    detail_title: 外掛詳情
+    version: 版本
+    source: 來源
+    commit: 提交
+    path: 目錄
+    permissions: 權限
+    enabled: 已啟用
+    disabled: 已停用
+  discover:
+    placeholder: 搜尋外掛名稱、ID 或簡介…
+    search: 搜尋
+    refresh_sources: 重新整理來源
+    empty: 沒有符合的可安裝外掛
+    install: 安裝
+    permissions: '{count} 項權限'
+  sources:
+    placeholder: Git 倉庫位址
+    add: 新增
+    refresh_all: 全部重新整理
+    refresh: 重新整理
+    remove: 移除
+    empty: 尚未設定外掛來源
+    official: 官方
+    user: 使用者
+    confirm_remove: '移除來源 {id}？已安裝外掛不受影響。'
+    added: '已新增來源 {id}'
+  status:
+    action_done: 操作完成
+    action_failed: '操作失敗: {error}'
+    install_done: '已安裝 {count} 個外掛'
+    refreshing: 正在重新整理來源…
+    refresh_done: 來源重新整理完成
+  confirm:
+    remove: 確定解除安裝該外掛？資料目錄預設保留。
+    install: '安裝 {id} v{version}？權限：{permissions}'

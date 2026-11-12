@@ -6,8 +6,8 @@ SllkGUI 2.0 把「组件预览」与「插件运行」拆成两个严格分离�
 
 | 命令 | 插件来源 | 外部插件 | 网络 | 用途 |
 | --- | --- | --- | --- | --- |
-| `sllkgui gallery` | `<package>/showcase/*` | 否 | 否 | 组件验收、设计走查 |
-| `sllkgui run` | `core_plugins/*` + 已安装插件 + `--plugin-dir` | 是 | 否（不自动刷新源） | 日常使用 |
+| `sllkgui gallery` | `<package>/showcase/*` + 原生插件管理 | 否 | 否 | 组件验收、设计走查 |
+| `sllkgui run` | 已安装插件 + `--plugin-dir` + 原生插件管理 | 是 | 否（不自动刷新源） | 日常使用 |
 
 `gallery` 不读取 `registry.json`、`sources.json`、`plugins/`，也不发起网络请求；
 即使本机安装了插件，也不会出现在预览里。
@@ -33,12 +33,13 @@ SllkGUI 2.0 把「组件预览」与「插件运行」拆成两个严格分离�
 
 ```text
 gallery:  discover(showcase) -> load -> registry -> window
-run:      read registry -> core plugins -> installed -> plugin-dir
-          -> registry -> window
+run:      read registry -> installed -> plugin-dir -> registry -> window
+          （两种模式都会注册原生插件管理页）
 ```
 
 - 单个插件失败只记录错误，不影响其它插件。
-- `--safe-mode` 只加载核心插件。
+- 插件管理是基座原生页面（不走插件协议），两种模式都常驻左菜单底部。
+- `--safe-mode` 不加载任何外部插件，仍可进入原生插件管理。
 - `--surface plugin_id/surface_id` 直接打开指定页面。
 - `run --allow-local` 允许 `file://` 源（仅开发/测试）。
 

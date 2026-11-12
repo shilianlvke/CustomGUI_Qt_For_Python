@@ -1,10 +1,10 @@
-"""外观配置抽屉：主题、材质、背景与界面四个单屏子页。
+"""设置抽屉：软件信息、外观与界面三个单屏子页。
 
 右侧滑入的浮层面板，所有配色在绘制或刷新时实时读取设计令牌与调色板，
 切换主题后重绘即生效；语言以目标语言直接选择，不再循环轮替。
 
-控件树（标题栏、分段导航与四个配置子页）由
-:mod:`sllkgui.guicore.window.app_configurator_sections` 提供，本模块只负责
+控件树（标题栏、分段导航与三个设置子页）由
+:mod:`sllkgui.guicore.window.settings.sections` 提供，本模块只负责
 状态、信号、主题/语言/菜单模式的运行期逻辑与抽屉开合动画。
 """
 
@@ -23,20 +23,21 @@ from sllkgui.appcore import (
     get_theme_manager,
 )
 
-from ..acrylic import set_acrylic_transparency, set_glass_strength
-from ..styles import overlay_border_color, overlay_surface_color
-from .app_configurator_sections import _ConfigSectionsMixin, _ThemeCard
+from ...acrylic import set_acrylic_transparency, set_glass_strength
+from ...custom_ui.button.button import CButton
+from ...styles import card_stroke_color, card_surface_color, overlay_border_color, overlay_surface_color, qss_color
+from .sections import _SettingsSectionsMixin, _ThemeCard
 
 #: QWidget 的尺寸上限（Qt 的 QWIDGETSIZE_MAX）
 _MAX_WIDGET_SIZE = 16777215
 
 
-class CAppConfigurator(_ConfigSectionsMixin, QFrame):
-    """右侧滑入的外观配置抽屉。
+class CSettingsDrawer(_SettingsSectionsMixin, QFrame):
+    """右侧滑入的设置抽屉（软件信息 / 外观 / 界面）。
 
     用法::
 
-        panel = CAppConfigurator(host_widget)
+        panel = CSettingsDrawer(host_widget)
         panel.themeChanged.connect(on_theme)
         panel.open()
 
@@ -69,7 +70,7 @@ class CAppConfigurator(_ConfigSectionsMixin, QFrame):
 
     def __init__(self, parent=None, width: int = DEFAULT_WIDTH, embedded: bool = False):
         super().__init__(parent)
-        self.setObjectName("CAppConfigurator_Frame")
+        self.setObjectName("CSettingsDrawer_Frame")
         #: 嵌入模式：作为右侧抽屉里的普通页面使用，不再做固定宽度、滑入动画与
         #: 自身背景绘制；标题/关闭按钮也由外层抽屉控制。
         self._embedded = bool(embedded)
@@ -83,6 +84,8 @@ class CAppConfigurator(_ConfigSectionsMixin, QFrame):
         self._theme_cards: list[_ThemeCard] = []
         #: 需要随语言刷新的标签：资源键 -> (标签, 默认文案)
         self._texts: dict[str, tuple[QLabel, str]] = {}
+        #: 需要随语言刷新的普通按钮：(按钮, 资源键, 默认文案)
+        self._buttons: list[tuple[QLabel | CButton, str, str]] = []
 
         if self._embedded:
             self.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
@@ -262,11 +265,11 @@ class CAppConfigurator(_ConfigSectionsMixin, QFrame):
 
     @staticmethod
     def _menu_mode_labels() -> list[str]:
-        return CAppConfigurator._mode_labels()
+        return CSettingsDrawer._mode_labels()
 
     @staticmethod
     def _drawer_mode_labels() -> list[str]:
-        return CAppConfigurator._mode_labels()
+        return CSettingsDrawer._mode_labels()
 
     @staticmethod
     def _mode_labels() -> list[str]:
@@ -298,12 +301,15 @@ class CAppConfigurator(_ConfigSectionsMixin, QFrame):
         """语言切换后刷新标题、分区与选项文案（控件树不重建）。"""
         for key, (label, fallback) in self._texts.items():
             label.setText(Language.resolve_key(key, fallback))
+        for button, key, fallback in self._buttons:
+            button.setText(Language.resolve_key(key, fallback))
         self.tabs.set_options(self._tab_labels(), index=self.tabs.current_index(), emit=False)
         self.menu_mode_select.set_options(self._menu_mode_labels(), index=self.menu_mode_select.current_index(), emit=False)
         self.drawer_mode_select.set_options(
             self._drawer_mode_labels(), index=self.drawer_mode_select.current_index(), emit=False
         )
         self._refresh_background_texts()
+        self._refresh_software_info()
         self._sync_language()
         self.update()
 
@@ -432,6 +438,10 @@ class CAppConfigurator(_ConfigSectionsMixin, QFrame):
             self._animation.stop()
             self._animation = None
 
+    def showEvent(self, event):  # noqa: N802 - 覆写 Qt 命名
+        super().showEvent(event)
+        self._refresh_software_info()
+
     def eventFilter(self, obj, event):  # noqa: N802 - 覆写 Qt 命名
         if (
             not self._embedded
@@ -451,12 +461,17 @@ class CAppConfigurator(_ConfigSectionsMixin, QFrame):
         标签颜色用**一条面板级样式表**统一下发：逐个 ``QLabel.setStyleSheet``
         会触发每个标签各一次样式重算，主题切换时累计上百毫秒。
         """
-        colors = get_design_tokens().colors
+        tokens = get_design_tokens()
+        colors = tokens.colors
         self.close_button.set_color(QColor(colors.text_primary))
         self.setStyleSheet(
             f"QLabel {{ color: {colors.text_primary}; background: transparent; }}"
-            f'QLabel[role="hint"] {{ color: {colors.text_muted}; }}'
+            f'QLabel[role="hint"], QLabel[role="key"] {{ color: {colors.text_muted}; }}'
             f'QFrame[role="divider"] {{ background: {colors.surface_interactive_pressed}; border: none; }}'
+            f"#CSettingsCard_Frame {{"
+            f" background-color: {qss_color(card_surface_color())};"
+            f" border: 1px solid {qss_color(card_stroke_color())};"
+            f" border-radius: {tokens.radius.control}px; }}"
         )
         for card in self._theme_cards:
             card.update()
@@ -473,6 +488,7 @@ class CAppConfigurator(_ConfigSectionsMixin, QFrame):
         for thumb in self._recent_thumbs:
             thumb.update()
         self._refresh_background_icon()
+        self._refresh_software_info()
         self.update()
 
     def paintEvent(self, event):  # noqa: N802 - 覆写 Qt 命名
@@ -503,4 +519,4 @@ class CAppConfigurator(_ConfigSectionsMixin, QFrame):
         painter.end()
 
 
-__all__ = ["CAppConfigurator"]
+__all__ = ["CSettingsDrawer"]

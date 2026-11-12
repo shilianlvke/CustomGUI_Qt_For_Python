@@ -120,7 +120,7 @@ def test_restore_drawer_mode_applies_and_syncs(monkeypatch):
             self.value = mode
 
     config = _Config()
-    window = SimpleNamespace(ui=SimpleNamespace(theme_config=config))
+    window = SimpleNamespace(ui=SimpleNamespace(settings_drawer=config))
     monkeypatch.setattr(setup_window_module, "MainFunctions", _Functions)
 
     SetupMainWindow.restore_drawer_mode(window, {"drawer_mode": "overlay"})
@@ -141,7 +141,7 @@ def test_restore_drawer_mode_defaults_to_static(monkeypatch):
         def set_drawer_mode(self, mode):
             applied.append(mode)
 
-    window = SimpleNamespace(ui=SimpleNamespace(theme_config=_Config()))
+    window = SimpleNamespace(ui=SimpleNamespace(settings_drawer=_Config()))
     monkeypatch.setattr(setup_window_module, "MainFunctions", _Functions)
 
     SetupMainWindow.restore_drawer_mode(window, {"drawer_mode": "floating"})
@@ -259,7 +259,7 @@ def test_restore_menu_mode_syncs_drawer(monkeypatch):
             self.value = mode
 
     config = _Config()
-    window = SimpleNamespace(ui=SimpleNamespace(theme_config=config))
+    window = SimpleNamespace(ui=SimpleNamespace(settings_drawer=config))
     monkeypatch.setattr(setup_window_module, "MainFunctions", _Functions)
 
     SetupMainWindow.restore_menu_mode(window, {"menu_mode": "overlay"})
@@ -274,7 +274,7 @@ def test_restore_menu_mode_ignores_invalid_value(monkeypatch):
         def set_menu_mode(window, mode):  # pragma: no cover - 不应被调用
             raise AssertionError(mode)
 
-    window = SimpleNamespace(ui=SimpleNamespace(theme_config=SimpleNamespace(set_menu_mode=lambda mode: None)))
+    window = SimpleNamespace(ui=SimpleNamespace(settings_drawer=SimpleNamespace(set_menu_mode=lambda mode: None)))
     monkeypatch.setattr(setup_window_module, "MainFunctions", _Functions)
 
     SetupMainWindow.restore_menu_mode(window, {"menu_mode": "floating"})
@@ -290,7 +290,7 @@ def test_restore_appearance_applies_and_syncs_panel():
             synced["transparency"] = transparency
             synced["strength"] = strength
 
-    window = SimpleNamespace(ui=SimpleNamespace(theme_config=_Config()))
+    window = SimpleNamespace(ui=SimpleNamespace(settings_drawer=_Config()))
     try:
         applied = SetupMainWindow.restore_appearance(
             window,

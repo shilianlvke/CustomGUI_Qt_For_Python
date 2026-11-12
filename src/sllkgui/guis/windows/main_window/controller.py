@@ -12,7 +12,7 @@ from sllkgui.appcore import (
     record_event,
     save_user_settings,
 )
-from sllkgui.guicore import CAppConfigurator, Styles, acrylic_active, apply_acrylic
+from sllkgui.guicore import CSettingsDrawer, Styles, acrylic_active, apply_acrylic
 
 from .functions import MainFunctions
 from .registry import ensure_registered_page, get_page_routes
@@ -45,7 +45,7 @@ class _WindowStateTracker(QObject):
                 max(size.width(), minimum.width()),
                 max(size.height(), minimum.height()),
             ]
-        config = getattr(getattr(window, "ui", None), "theme_config", None)
+        config = getattr(getattr(window, "ui", None), "settings_drawer", None)
         transparency = getattr(config, "transparency", None)
         strength = getattr(config, "appearance_strength", None)
         if callable(transparency) and callable(strength):
@@ -99,8 +99,8 @@ class PageRouterController:
         )
 
 
-class ThemeController:
-    """主题切换控制器：委托 ThemeManager，样式重建由订阅驱动。"""
+class SettingsController:
+    """设置与主题控制器：主题切换委托 ThemeManager，样式重建由订阅驱动。"""
 
     def __init__(
         self,
@@ -116,7 +116,7 @@ class ThemeController:
         self._style_factory = style_factory
         self._logger = logger
         self._record_event = event_recorder
-        #: 外观面板惰性创建回调（由 MainWindowController 提供）
+        #: 设置抽屉惰性创建回调（由 MainWindowController 提供）
         self._config_provider = config_provider
         # 主题变更 -> 重建全局样式并应用（弱引用订阅）
         self._theme_manager.subscribe(self._apply_styles)
@@ -127,15 +127,15 @@ class ThemeController:
     def wire_config(self, config) -> None:
         """接通面板的关闭信号（幂等；惰性创建后调用）。"""
         closed = getattr(config, "closed", None)
-        if closed is None or getattr(config, "_theme_controller_wired", False):
+        if closed is None or getattr(config, "_settings_controller_wired", False):
             return
-        closed.connect(lambda: self._sync_theme_button(False))
-        config._theme_controller_wired = True
+        closed.connect(lambda: self._sync_settings_button(False))
+        config._settings_controller_wired = True
 
     def _config(self, *, create: bool = True):
-        """当前外观面板；未创建时可请求控制器惰性构建。"""
+        """当前设置抽屉；未创建时可请求控制器惰性构建。"""
         ui = getattr(self._window, "ui", None)
-        config = getattr(ui, "theme_config", None)
+        config = getattr(ui, "settings_drawer", None)
         if config is None and create and callable(self._config_provider):
             config = self._config_provider()
         return config
@@ -152,16 +152,16 @@ class ThemeController:
                 self._logger.warning(f"自定义主题切换失败，回退到基座主题循环: {exc}")
         self._theme_manager.cycle()
 
-    def toggle_theme_drawer(self) -> bool:
-        """打开/收起右侧外观配置抽屉。
+    def toggle_settings_drawer(self) -> bool:
+        """打开/收起右侧设置抽屉。
 
-        ``drawer_mode=overlay``：外观面板浮在内容区右侧，不压缩主页面；
+        ``drawer_mode=overlay``：设置面板浮在内容区右侧，不压缩主页面；
         ``drawer_mode=static``：面板嵌入右列，展开时挤压内容区（既有行为）。
         没有浮层面板的宿主始终回落到旧的右侧栏开合逻辑。
         """
         ui = getattr(self._window, "ui", None)
         overlay = getattr(self._window, "_drawer_mode", "static") == "overlay"
-        # 惰性构建：只有真正打开外观抽屉时才付出控件树的构建成本
+        # 惰性构建：只有真正打开设置抽屉时才付出控件树的构建成本
         config = self._config()
         if (
             overlay
@@ -170,33 +170,33 @@ class ThemeController:
             and not getattr(config, "_embedded", False)
         ):
             config.toggle()
-            self._sync_theme_button(bool(config.is_open()))
+            self._sync_settings_button(bool(config.is_open()))
             return True
 
-        menu = getattr(ui, "theme_menu", None)
+        menu = getattr(ui, "settings_menu", None)
         if menu is None or not hasattr(ui, "right_column"):
-            # 极旧宿主：没有外观页时回落到浮层 / 旧栏开合
+            # 极旧宿主：没有设置页时回落到浮层 / 旧栏开合
             if config is not None and callable(getattr(config, "toggle", None)):
                 config.toggle()
-                self._sync_theme_button(bool(config.is_open()))
+                self._sync_settings_button(bool(config.is_open()))
                 return True
-            self._logger.warning("当前窗口没有外观配置抽屉页")
+            self._logger.warning("当前窗口没有设置抽屉页")
             return False
         visible = MainFunctions.right_column_is_visible(self._window)
         if visible and ui.right_column.menus.currentWidget() is menu:
             MainFunctions.toggle_right_column(self._window)
             # 关闭动画期间 right_column_frame 仍有宽度，不能再按“当前宽度”
             # 推断状态，否则第二次点击后按钮会一直停在选中态。
-            self._sync_theme_button(False)
+            self._sync_settings_button(False)
             return True
         ui.right_column.menus.setCurrentWidget(menu)
         if not visible:
             MainFunctions.toggle_right_column(self._window)
-        self._sync_theme_button(True)
+        self._sync_settings_button(True)
         return True
 
-    def _sync_theme_button(self, active: bool | None = None) -> None:
-        """让标题栏外观配置按钮始终反映抽屉的展开状态。
+    def _sync_settings_button(self, active: bool | None = None) -> None:
+        """让标题栏设置按钮始终反映抽屉的展开状态。
 
         ``active`` 显式给出目标状态时以其为准（开合动画进行中的宽度不可靠）；
         未给出时按当前抽屉模式推导：浮层看面板自身的 ``is_open``，固定看
@@ -205,14 +205,14 @@ class ThemeController:
         ui = getattr(self._window, "ui", None)
         if ui is None:
             return
-        button = ui.title_bar.findChild(QPushButton, "btn_themes")
+        button = ui.title_bar.findChild(QPushButton, "btn_settings")
         if button is None or not hasattr(button, "set_active"):
             return
         if active is None:
-            active = self._theme_drawer_active()
+            active = self._settings_drawer_active()
         button.set_active(bool(active))
 
-    def _theme_drawer_active(self) -> bool:
+    def _settings_drawer_active(self) -> bool:
         ui = getattr(self._window, "ui", None)
         if ui is None:
             return False
@@ -221,7 +221,7 @@ class ThemeController:
             if config is not None and callable(getattr(config, "is_open", None)):
                 return bool(config.is_open())
             return False
-        menu = getattr(ui, "theme_menu", None)
+        menu = getattr(ui, "settings_menu", None)
         frame = getattr(ui, "right_column_frame", None)
         column = getattr(ui, "right_column", None)
         if menu is None or frame is None or column is None:
@@ -270,38 +270,6 @@ class ColumnController:
         self._window = window
         self._main_functions = main_functions
         self._language = language
-
-    def handle_info_button(self, btn_name: str):
-        """「软件信息」是设置的唯一入口：打开/关闭左侧设置抽屉。
-
-        与标题栏外观按钮保持一致：抽屉已停在该页时再次点击收起；
-        抽屉停在别的左列页时只切到设置页，不收起。
-        """
-        ui = self._window.ui
-        menus = ui.left_column.menus
-        menu = menus.menu_2
-        visible = self._main_functions.left_column_is_visible(self._window)
-        stack = getattr(menus, "menus", menus)
-        current_getter = getattr(stack, "currentWidget", None)
-        if callable(current_getter):
-            try:
-                current_widget = current_getter()
-            except Exception:
-                current_widget = None
-        if visible and current_widget is menu:
-            ui.left_menu.deselect_all_tab("bottom")
-            self._main_functions.toggle_left_column(self._window)
-            return
-
-        self._main_functions.set_left_column_menu(
-            self._window,
-            menu=menu,
-            title="language.UI.ui_Settings",
-            icon_path=PathFactory.set_svg_icon("icon_setting"),
-        )
-        if not visible:
-            self._main_functions.toggle_left_column(self._window)
-        ui.left_menu.select_only_one_tab(btn_name)
 
     def handle_more_button(self, btn_name: str):
         if not self._main_functions.left_column_is_visible(self._window):
@@ -354,7 +322,7 @@ class MainWindowController:
         self._logger = logger
         self._button_use_case = button_use_case or MainWindowButtonUseCase()
         self.page_router = PageRouterController(window=window, main_functions=main_functions)
-        self.theme_controller = ThemeController(window=window, config_provider=self._ensure_theme_config)
+        self.settings_controller = SettingsController(window=window, config_provider=self._ensure_settings_drawer)
         self.column_controller = ColumnController(window=window, main_functions=main_functions)
         # 滑块连续拖动时重建整棵控件树的样式代价较高，用 60ms 节流合并；
         # 透明度只需重挂系统材质，可以每次立即生效。
@@ -371,29 +339,29 @@ class MainWindowController:
             self._window_state_tracker = _WindowStateTracker(window)
             window.installEventFilter(self._window_state_tracker)
         # 自定义宿主可能已提前创建面板：立即接线，行为与惰性创建一致
-        config = getattr(getattr(window, "ui", None), "theme_config", None)
+        config = getattr(getattr(window, "ui", None), "settings_drawer", None)
         if config is not None:
-            self._wire_theme_config(config)
+            self._wire_settings_drawer(config)
 
-    def _ensure_theme_config(self):
-        """首次打开外观抽屉时创建 CAppConfigurator（启动内存优化）。
+    def _ensure_settings_drawer(self):
+        """首次打开设置抽屉时创建 CSettingsDrawer（启动内存优化）。
 
-        面板含 4 个单屏子页与大量自绘控件，启动即建约 10 MB。创建后先同步
+        面板含 3 个单屏子页与大量自绘控件，启动即建约 10 MB。创建后先同步
         用户配置（材质/菜单/抽屉模式），再接线信号，最后按当前抽屉模式挂载。
         """
         ui = getattr(self._window, "ui", None)
         if ui is None:
             return None
-        config = getattr(ui, "theme_config", None)
+        config = getattr(ui, "settings_drawer", None)
         if config is not None:
             return config
         parent = getattr(ui, "content_area_frame", None)
         if parent is None:
             return None
-        config = CAppConfigurator(parent, embedded=False)
-        ui.theme_config = config
-        self._restore_theme_config_state(config)
-        self._wire_theme_config(config)
+        config = CSettingsDrawer(parent, embedded=False)
+        ui.settings_drawer = config
+        self._restore_settings_drawer_state(config)
+        self._wire_settings_drawer(config)
         drawer = getattr(self._window, "_drawer_layout", None)
         if drawer is not None:
             drawer.attach_right(config)
@@ -404,12 +372,12 @@ class MainWindowController:
                 config.set_embedded(True)
                 if config.parentWidget() is not stack:
                     stack.addWidget(config)
-                ui.theme_menu = config
+                ui.settings_menu = config
                 stack.setCurrentWidget(config)
-        self._logger.debug("外观配置面板已按需创建")
+        self._logger.debug("设置面板已按需创建")
         return config
 
-    def _restore_theme_config_state(self, config) -> None:
+    def _restore_settings_drawer_state(self, config) -> None:
         """把启动时已恢复的用户偏好同步到新建面板（不触发落盘）。"""
         state = load_user_settings()
         transparency = state.get("acrylic_transparency")
@@ -419,13 +387,13 @@ class MainWindowController:
         config.set_menu_mode(getattr(self._window, "_menu_mode", "static"))
         config.set_drawer_mode(getattr(self._window, "_drawer_mode", "static"))
 
-    def _wire_theme_config(self, config) -> None:
-        """接通外观面板的全部信号（惰性创建后调用，幂等）。"""
-        self.theme_controller.wire_config(config)
-        if getattr(config, "_main_controller_wired", False):
+    def _wire_settings_drawer(self, config) -> None:
+        """接通设置面板的全部信号（惰性创建后调用，幂等）。"""
+        self.settings_controller.wire_config(config)
+        if getattr(config, "_main_settings_wired", False):
             return
         connections = (
-            ("closeRequested", self.theme_controller.toggle_theme_drawer),
+            ("closeRequested", self.settings_controller.toggle_settings_drawer),
             ("menuModeChanged", self._apply_menu_mode),
             ("drawerModeChanged", self._apply_drawer_mode),
             ("languageChanged", self._apply_language),
@@ -438,11 +406,11 @@ class MainWindowController:
             signal = getattr(config, signal_name, None)
             if signal is not None:
                 signal.connect(slot)
-        config._main_controller_wired = True
+        config._main_settings_wired = True
 
     def _apply_transparency(self, value: int) -> None:
         """窗口透明度滑块：立即重挂亚克力色调，并节流写入用户配置。"""
-        self.theme_controller.refresh_acrylic()
+        self.settings_controller.refresh_acrylic()
         self._schedule_appearance_flush()
 
     def _apply_glass_strength(self, value: int) -> None:
@@ -451,7 +419,7 @@ class MainWindowController:
         self._schedule_appearance_flush()
 
     def _apply_background(self, path: str, fit: str) -> None:
-        """外观配置里的背景图：立即应用到主窗口（持久化由配置面板负责）。"""
+        """设置里的背景图：立即应用到主窗口（持久化由设置面板负责）。"""
         widget = getattr(getattr(self._window, "ui", None), "window", None)
         setter = getattr(widget, "set_background_image", None)
         if callable(setter):
@@ -470,8 +438,8 @@ class MainWindowController:
             self._appearance_timer.stop()
         if self._appearance_style_dirty:
             self._appearance_style_dirty = False
-            self.theme_controller.refresh_styles()
-        config = getattr(getattr(self._window, "ui", None), "theme_config", None)
+            self.settings_controller.refresh_styles()
+        config = getattr(getattr(self._window, "ui", None), "settings_drawer", None)
         transparency = getattr(config, "transparency", None)
         strength = getattr(config, "appearance_strength", None)
         if callable(transparency) and callable(strength):
@@ -493,7 +461,7 @@ class MainWindowController:
         if callable(setter):
             setter(self._window, mode)
         save_user_settings(drawer_mode=mode)
-        sync = getattr(self.theme_controller, "_sync_theme_button", None)
+        sync = getattr(self.settings_controller, "_sync_settings_button", None)
         if callable(sync):
             sync()
 
@@ -527,13 +495,12 @@ class MainWindowController:
         action_name = decision.payload
 
         action_routes = {
-            "btn_info": lambda: self.column_controller.handle_info_button(btn_name),
             "btn_more": lambda: self.column_controller.handle_more_button(btn_name),
             "btn_close_left_column": lambda: self.column_controller.handle_more_button(btn_name),
             "btn_close_top_column": lambda: self.column_controller.handle_top_column_close(btn_name),
             "btn_close_bottom_column": lambda: self.column_controller.handle_bottom_column_close(btn_name),
             "btn_top_settings": lambda: self._handle_top_settings_button(btn),
-            "btn_themes": self._handle_theme_button,
+            "btn_settings": self._handle_settings_button,
             "btn_search": lambda: self._handle_search_button(btn),
         }
 
@@ -561,21 +528,21 @@ class MainWindowController:
         page_name, title = route
         self.page_router.switch_page(btn_name, page_name, title)
 
-    def _handle_theme_button(self):
-        """标题栏色盘按钮：打开/收起右侧外观配置抽屉。
+    def _handle_settings_button(self):
+        """标题栏设置按钮：打开/收起右侧设置抽屉。
 
         兼容只注入了旧 ``cycle_theme`` 的测试桩/自定义控制器；真实控制器
-        始终具备 ``toggle_theme_drawer``。
+        始终具备 ``toggle_settings_drawer``。
         """
-        toggle = getattr(self.theme_controller, "toggle_theme_drawer", None)
+        toggle = getattr(self.settings_controller, "toggle_settings_drawer", None)
         if callable(toggle):
             toggle()
         else:
-            self.theme_controller.cycle_theme()
+            self.settings_controller.cycle_theme()
 
     def _handle_top_settings_button(self, btn):
-        """顶栏设置按钮开合右列时，按抽屉的实际状态同步外观按钮。"""
+        """顶栏设置按钮开合右列时，按抽屉的实际状态同步设置按钮。"""
         self.column_controller.handle_top_settings_button(btn)
-        sync = getattr(self.theme_controller, "_sync_theme_button", None)
+        sync = getattr(self.settings_controller, "_sync_settings_button", None)
         if callable(sync):
             sync()

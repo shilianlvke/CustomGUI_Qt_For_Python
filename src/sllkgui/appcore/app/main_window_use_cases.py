@@ -9,13 +9,12 @@ class ButtonDecision:
 
 class MainWindowButtonUseCase:
     ACTION_MAP = {
-        "btn_info": "btn_info",
         "btn_more": "btn_more",
         "btn_close_left_column": "btn_more",
         "btn_close_top_column": "btn_close_top_column",
         "btn_close_bottom_column": "btn_close_bottom_column",
         "btn_top_settings": "btn_top_settings",
-        "btn_themes": "btn_themes",
+        "btn_settings": "btn_settings",
         "btn_search": "btn_search",
     }
 

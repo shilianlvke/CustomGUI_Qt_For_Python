@@ -48,7 +48,7 @@ UI:
   ui_Property: 属性
   # 其他
   ui_Settings: 设置
-  ui_SettingsSubtitle: 软件与环境
+  ui_SettingsSubtitle: 软件、外观与界面
   ui_SettingsSoftware: 软件信息
   ui_SettingsOverview: 概览
   ui_SettingsEnvironment: 运行环境
@@ -60,7 +60,7 @@ UI:
   ui_SettingsLogDir: 日志目录
   ui_SettingsOpenData: 打开数据目录
   ui_SettingsOpenLogs: 打开日志目录
-  ui_SettingsAppearanceHint: 外观配置请使用标题栏色盘
+  ui_SettingsAppearanceHint: 外观与软件信息请使用标题栏「设置」
   ui_OpenFile: 打开文件
   ui_UpdateLogs: 更新日志
   ui_Welcome: Welcome!
@@ -145,6 +145,7 @@ UI:
   ui_Appearance: 外观配置
   ui_AppearanceHint: 主题、材质、背景与界面
   ui_Theme: 主题
+  ui_TabAppearance: 外观
   ui_TabTheme: 主题
   ui_TabMaterial: 材质
   ui_TabBackground: 背景
@@ -191,3 +192,62 @@ UI:
 TEXT:
   home_page_welcome: 你好！我是 SllkGUI ~
   login: 登录到 SllkGUI
+
+# 插件管理（基座原生页面）
+plugin_store:
+  store:
+    title: 插件管理
+    subtitle: 已安装、发现与来源，在一页内完成
+    refresh: 全部刷新
+  stats:
+    installed: 已安装
+    enabled: 启用中
+    sources: 来源
+  modes:
+    installed: 已安装
+    discover: 发现
+    sources: 源
+  installed:
+    filter: 过滤插件…
+    update: 更新
+    rollback: 回滚
+    enable: 启用
+    disable: 停用
+    remove: 卸载
+    empty: 还没有安装插件，去「发现」看看
+    select_hint: 选择一个插件查看详情
+    detail_title: 插件详情
+    version: 版本
+    source: 来源
+    commit: 提交
+    path: 目录
+    permissions: 权限
+    enabled: 已启用
+    disabled: 已停用
+  discover:
+    placeholder: 搜索插件名称、ID 或简介…
+    search: 搜索
+    refresh_sources: 刷新源
+    empty: 没有匹配的可安装插件
+    install: 安装
+    permissions: '{count} 项权限'
+  sources:
+    placeholder: Git 仓库地址
+    add: 添加
+    refresh_all: 全部刷新
+    refresh: 刷新
+    remove: 移除
+    empty: 还没有配置插件源
+    official: 官方
+    user: 用户
+    confirm_remove: '移除源 {id}？已安装插件不受影响。'
+    added: '已添加源 {id}'
+  status:
+    action_done: 操作完成
+    action_failed: '操作失败: {error}'
+    install_done: '已安装 {count} 个插件'
+    refreshing: 正在刷新源…
+    refresh_done: 源刷新完成
+  confirm:
+    remove: 确定卸载该插件？数据目录默认保留。
+    install: '安装 {id} v{version}？权限：{permissions}'

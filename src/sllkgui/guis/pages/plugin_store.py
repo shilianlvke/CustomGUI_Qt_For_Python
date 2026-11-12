@@ -1,7 +1,10 @@
-"""插件管理单页：模式导轨 + 工作区。
+"""插件管理（基座原生页面）：模式导轨 + 工作区。
 
-布局沿用三段式工作台（已安装 / 发现 / 源），内容不再强行套用
-``CPickList`` / ``COrderList``：
+不再作为 ``core_plugins`` 里的插件分发，而是 ``gallery`` 与 ``run`` 两种
+模式都常驻的基座页面；由 :mod:`sllkgui.guis.windows.main_window.native_pages`
+注册到左菜单与页面路由。
+
+布局沿用三段式工作台（已安装 / 发现 / 源）：
 
 - 左侧导轨负责切换模式并显示计数；
 - 已安装：卡片列表 + 详情清单 + 工具栏动作；
@@ -30,13 +33,81 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
-from sllkgui.appcore import AppSettings, ColorPalette, get_design_tokens, get_theme_manager
+from sllkgui.appcore import (
+    AppSettings,
+    ColorPalette,
+    Language,
+    Logger,
+    get_design_tokens,
+    get_theme_manager,
+    record_event,
+    track_timing,
+)
 from sllkgui.guicore import CButton, CConfirmDialog, CHDiv, CInputText, CToast
 from sllkgui.guicore.custom_ui.panels.style import RADIUS, paint_surface, panel_colors
 from sllkgui.guicore.styles import card_surface_color
-from sllkgui.plugin import GalleryContext
 
 _MONO_FAMILIES = ["Cascadia Mono", "Consolas", "JetBrains Mono", "monospace"]
+
+#: 原生页面的语言命名空间（语言文件里的 ``plugin_store`` 顶层节点）
+_TEXT_NAMESPACE = "language.plugin_store"
+
+
+class PageContext:
+    """原生页面上下文：只覆盖插件管理页用到的基座能力。
+
+    与插件上下文保持同名方法，页面代码无需感知自己已经脱离插件协议。
+    """
+
+    def __init__(self, parent_provider: Callable[[], QWidget | None]) -> None:
+        self._parent_provider = parent_provider
+
+    def text(self, key: str, default: str | None = None, **kwargs: Any) -> str:
+        value = str(Language.resolve_key(f"{_TEXT_NAMESPACE}.{key}", default if default is not None else key))
+        if not kwargs:
+            return value
+        try:
+            return value.format(**kwargs)
+        except (KeyError, ValueError, IndexError):
+            return value
+
+    def log(self, message: str, level: str = "info") -> None:
+        writer = {
+            "debug": Logger.debug,
+            "warning": Logger.warning,
+            "warn": Logger.warning,
+            "error": Logger.error,
+            "critical": Logger.critical,
+        }.get(str(level).lower(), Logger.info)
+        writer(f"[plugin-store] {message}")
+
+    def event(self, name: str, payload: Any = None, level: str = "info") -> None:
+        record_event(str(name), category="ui", level=str(level), payload=dict(payload or {}))
+
+    def timing(self, name: str, payload: Any = None):
+        return track_timing(str(name), category="ui", payload=dict(payload or {}))
+
+    def report_error(self, code: str, message: str, detail: str | None = None) -> None:
+        self.log(f"{code}: {message}", "error")
+        if detail:
+            Logger.debug(f"[plugin-store] {code} detail: {detail}")
+        try:
+            from sllkgui.gallery.runtime import current_runtime
+
+            runtime = current_runtime()
+            if runtime is not None:
+                runtime.last_error = {"code": code, "message": message, "detail": detail or ""}
+        except Exception:  # noqa: BLE001 - 错误记录失败不影响页面
+            pass
+        self.event("plugin_store.error", {"code": code, "message": message}, level="error")
+
+    def parent_window(self) -> QWidget | None:
+        return self._parent_provider()
+
+
+def build_plugin_store_page(window) -> QWidget:
+    """原生页面工厂：由窗口装配层在首次导航时调用。"""
+    return StorePage(PageContext(lambda: window))
 
 
 def _toast_offset(window) -> int:
@@ -788,10 +859,10 @@ class _InstalledPanel(QWidget):
             return
         plugin_id = self._selected_id
         try:
-            with self.ctx.timing(f"core_store.{name}"):
+            with self.ctx.timing(f"plugin_store.{name}"):
                 result = getattr(manager, name)(plugin_id)
             self.ctx.log(f"{name}: {result}")
-            self.ctx.event(f"core_store.{name}", {"result": str(result)})
+            self.ctx.event(f"plugin_store.{name}", {"result": str(result)})
             self.page.set_status(self.ctx.text("status.action_done", "操作完成"), "success")
         except Exception as exc:  # noqa: BLE001 - 页面必须保持可用
             self.ctx.report_error("CORE_STORE_ACTION_FAILED", f"{name} 失败: {exc}", str(exc))
@@ -920,7 +991,7 @@ class _DiscoverPanel(QWidget):
             )
             self.results_grid.addWidget(card, index // 2, index % 2)
         self.ctx.log(f"search plugins: {len(self.results)}")
-        self.ctx.event("core_store.search", {"count": len(self.results)})
+        self.ctx.event("plugin_store.search", {"count": len(self.results)})
 
     def _refresh_sources(self) -> None:
         sources = self._sources()
@@ -928,9 +999,9 @@ class _DiscoverPanel(QWidget):
             return
         self.page.set_status(self.ctx.text("status.refreshing", "正在刷新源…"))
         try:
-            with self.ctx.timing("core_store.source_refresh"):
+            with self.ctx.timing("plugin_store.source_refresh"):
                 sources.refresh_all()
-            self.ctx.event("core_store.sources_refreshed")
+            self.ctx.event("plugin_store.sources_refreshed")
             self.page.set_status(self.ctx.text("status.refresh_done", "源刷新完成"), "success")
         except Exception as exc:  # noqa: BLE001
             self.ctx.report_error("CORE_STORE_SOURCE_FAILED", f"刷新源失败: {exc}", str(exc))
@@ -954,10 +1025,10 @@ class _DiscoverPanel(QWidget):
         if not ok or manager is None:
             return
         try:
-            with self.ctx.timing("core_store.install"):
+            with self.ctx.timing("plugin_store.install"):
                 result = manager.install(plugin_id, source_id=str(record.get("source") or ""))
             self.ctx.log(f"installed: {result}")
-            self.ctx.event("core_store.install", {"id": plugin_id, "version": result.get("version")})
+            self.ctx.event("plugin_store.install", {"id": plugin_id, "version": result.get("version")})
             self.page.set_status(
                 self.ctx.text("status.install_done", "已安装 {count} 个插件").format(count=1), "success"
             )
@@ -1054,7 +1125,7 @@ class _SourcesPanel(QWidget):
             return
         try:
             record = sources.add(url, refresh=True)
-            self.ctx.event("core_store.source_added", {"id": record.source_id})
+            self.ctx.event("plugin_store.source_added", {"id": record.source_id})
             self.url.setText("")
             self.page.set_status(
                 self.ctx.text("sources.added", "已添加源 {id}").format(id=record.source_id), "success"
@@ -1069,9 +1140,9 @@ class _SourcesPanel(QWidget):
         if sources is None:
             return
         try:
-            with self.ctx.timing("core_store.source_refresh"):
+            with self.ctx.timing("plugin_store.source_refresh"):
                 sources.refresh(source_id)
-            self.ctx.event("core_store.source_refreshed", {"id": source_id})
+            self.ctx.event("plugin_store.source_refreshed", {"id": source_id})
             self.page.set_status(self.ctx.text("status.refresh_done", "源刷新完成"), "success")
         except Exception as exc:  # noqa: BLE001
             self.ctx.report_error("CORE_STORE_SOURCE_REFRESH_FAILED", f"刷新源失败: {exc}", str(exc))
@@ -1084,9 +1155,9 @@ class _SourcesPanel(QWidget):
             return
         self.page.set_status(self.ctx.text("status.refreshing", "正在刷新源…"))
         try:
-            with self.ctx.timing("core_store.source_refresh_all"):
+            with self.ctx.timing("plugin_store.source_refresh_all"):
                 sources.refresh_all()
-            self.ctx.event("core_store.sources_refreshed")
+            self.ctx.event("plugin_store.sources_refreshed")
             self.page.set_status(self.ctx.text("status.refresh_done", "源刷新完成"), "success")
         except Exception as exc:  # noqa: BLE001
             self.ctx.report_error("CORE_STORE_SOURCE_FAILED", f"刷新源失败: {exc}", str(exc))
@@ -1105,7 +1176,7 @@ class _SourcesPanel(QWidget):
             return
         try:
             sources.remove(source_id)
-            self.ctx.event("core_store.source_removed", {"id": source_id})
+            self.ctx.event("plugin_store.source_removed", {"id": source_id})
             self.page.set_status(self.ctx.text("status.action_done", "操作完成"), "success")
         except Exception as exc:  # noqa: BLE001
             self.ctx.report_error("CORE_STORE_SOURCE_REMOVE_FAILED", f"移除源失败: {exc}", str(exc))
@@ -1116,7 +1187,7 @@ class _SourcesPanel(QWidget):
 class StorePage(QWidget):
     """插件管理工作台。"""
 
-    def __init__(self, ctx: GalleryContext, parent=None) -> None:
+    def __init__(self, ctx: PageContext, parent=None) -> None:
         super().__init__(parent)
         self.ctx = ctx
         from sllkgui.gallery.runtime import current_runtime
@@ -1266,4 +1337,4 @@ class StorePage(QWidget):
             widget.update()
 
 
-__all__ = ["StorePage"]
+__all__ = ["PageContext", "StorePage", "build_plugin_store_page"]

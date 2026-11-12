@@ -5,8 +5,8 @@
 * ``static``：抽屉框是布局成员，展开时挤压内容区（基座既有行为）；
 * ``overlay``：抽屉框脱离布局、浮在内容区之上，展开时内容区宽度不变。
 
-左 / 上 / 下三个抽屉的框直接复用；右侧抽屉就是外观配置面板
-（``CAppConfigurator``），在 static 模式下嵌入右列、在 overlay 模式下
+左 / 上 / 下三个抽屉的框直接复用；右侧抽屉就是设置面板
+（``CSettingsDrawer``），在 static 模式下嵌入右列、在 overlay 模式下
 浮在内容区右侧。``menu_mode`` 仍只控制左侧图标菜单，与本模块无关。
 
 运行期切换模式会保留当前已展开的抽屉：先记录展开状态，换容器后再恢复，
@@ -79,7 +79,7 @@ class DrawerLayout:
         return (frame.width() if axis == "width" else frame.height()) > minimum
 
     def right_is_open(self) -> bool:
-        """右侧外观抽屉是否展开。"""
+        """右侧设置抽屉是否展开。"""
         if self._mode == "overlay" and self._overlay_ready:
             panel = self._panel()
             return bool(panel is not None and panel.is_open())
@@ -199,7 +199,7 @@ class DrawerLayout:
         panel.set_embedded(True)
         if panel.parentWidget() is not stack:
             stack.addWidget(panel)
-        self.ui.theme_menu = panel
+        self.ui.settings_menu = panel
         self._right_embedded = True
 
     def _float_right(self, panel) -> None:
@@ -495,7 +495,7 @@ class DrawerLayout:
 
     def _panel(self):
         ui = self.ui
-        return getattr(ui, "theme_config", None) if ui is not None else None
+        return getattr(ui, "settings_drawer", None) if ui is not None else None
 
     def _right_stack(self):
         ui = self.ui

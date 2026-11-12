@@ -21,8 +21,8 @@ from sllkgui.appcore import (
     Language,
     get_app_context,
 )
-from sllkgui.guicore.window.app_configurator import CAppConfigurator
-from sllkgui.guis.windows.main_window.controller import MainWindowController, ThemeController
+from sllkgui.guicore.window.settings import CSettingsDrawer
+from sllkgui.guis.windows.main_window.controller import MainWindowController, SettingsController
 from sllkgui.guis.windows.main_window.functions import MainFunctions
 from sllkgui.guis.windows.main_window.ui_main import UiMainWindow
 
@@ -46,7 +46,7 @@ def window(qapp):
     host.ui = ui
     host.controller = MainWindowController(host)
     # 外观面板默认惰性创建；抽屉模式用例需要它立即存在
-    host.controller._ensure_theme_config()
+    host.controller._ensure_settings_drawer()
     host.resize(1200, 760)
     host.show()
     QTest.qWait(80)
@@ -70,11 +70,11 @@ def test_appearance_panel_is_created_on_first_open(qapp):
     host.show()
     QTest.qWait(80)
     try:
-        assert ui.theme_config is None
-        host.controller.theme_controller.toggle_theme_drawer()
+        assert ui.settings_drawer is None
+        host.controller.settings_controller.toggle_settings_drawer()
         _wait_animation()
-        assert ui.theme_config is not None
-        assert ui.theme_config.isVisible()
+        assert ui.settings_drawer is not None
+        assert ui.settings_drawer.isVisible()
         assert ui.right_column_frame.minimumWidth() == AppSettings.right_column_size.maximum
     finally:
         host.close()
@@ -99,7 +99,7 @@ def test_configurator_drawer_mode_signal(qapp):
     host = QWidget()
     host.resize(900, 640)
     host.show()
-    panel = CAppConfigurator(host)
+    panel = CSettingsDrawer(host)
     modes: list[str] = []
     panel.drawerModeChanged.connect(modes.append)
     try:
@@ -122,25 +122,25 @@ def test_configurator_drawer_mode_signal(qapp):
 def test_static_mode_left_and_right_drawers_occupy_layout(window):
     MainFunctions.set_drawer_mode(window, "static")
     assert MainFunctions.drawer_mode(window) == "static"
-    assert window.ui.theme_config.is_embedded()
-    assert window.ui.theme_menu is window.ui.theme_config
+    assert window.ui.settings_drawer.is_embedded()
+    assert window.ui.settings_menu is window.ui.settings_drawer
 
     MainFunctions.toggle_left_column(window)
     _wait_animation()
     assert window.ui.left_column_frame.minimumWidth() == AppSettings.left_column_size.maximum
     assert MainFunctions.left_column_is_visible(window)
 
-    controller = ThemeController(window)
-    controller.toggle_theme_drawer()
+    controller = SettingsController(window)
+    controller.toggle_settings_drawer()
     _wait_animation()
     assert window.ui.right_column_frame.minimumWidth() == AppSettings.right_column_size.maximum
-    assert window.ui.theme_config.isVisible()
-    assert controller._theme_drawer_active()
+    assert window.ui.settings_drawer.isVisible()
+    assert controller._settings_drawer_active()
 
-    controller.toggle_theme_drawer()
+    controller.toggle_settings_drawer()
     _wait_animation()
     assert window.ui.right_column_frame.minimumWidth() == AppSettings.right_column_size.minimum
-    assert not controller._theme_drawer_active()
+    assert not controller._settings_drawer_active()
 
 
 def test_static_mode_top_and_bottom_drawers_occupy_layout(window):
@@ -165,8 +165,8 @@ def test_overlay_mode_left_and_top_bottom_float_without_resizing_content(window)
     MainFunctions.set_drawer_mode(window, "overlay")
     drawer = window._drawer_layout
     assert drawer.mode() == "overlay"
-    assert not window.ui.theme_config.is_embedded()
-    assert window.ui.theme_config.isHidden()
+    assert not window.ui.settings_drawer.is_embedded()
+    assert window.ui.settings_drawer.isHidden()
     for frame in (
         window.ui.left_column_frame,
         window.ui.top_column_frame,
@@ -198,19 +198,19 @@ def test_overlay_mode_left_and_top_bottom_float_without_resizing_content(window)
 
 def test_overlay_mode_right_drawer_floats_without_resizing_content(window):
     MainFunctions.set_drawer_mode(window, "overlay")
-    controller = ThemeController(window)
+    controller = SettingsController(window)
     width_before, height_before = _content_size(window)
 
-    controller.toggle_theme_drawer()
+    controller.toggle_settings_drawer()
     _wait_animation()
-    panel = window.ui.theme_config
+    panel = window.ui.settings_drawer
     assert panel.is_open()
     assert panel.isVisible()
-    assert panel.width() == CAppConfigurator.DEFAULT_WIDTH
+    assert panel.width() == CSettingsDrawer.DEFAULT_WIDTH
     assert window.ui.right_column_frame.width() == AppSettings.right_column_size.minimum
     assert _content_size(window) == (width_before, height_before)
 
-    controller.toggle_theme_drawer()
+    controller.toggle_settings_drawer()
     _wait_animation()
     assert not panel.is_open()
     assert not panel.isVisible()

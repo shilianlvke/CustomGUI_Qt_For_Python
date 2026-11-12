@@ -21,13 +21,13 @@
 
 | 命令 | 用途 | 插件来源 |
 | --- | --- | --- |
-| `sllkgui gallery` | 组件预览、设计走查、离线演示 | 仅内置 `showcase/core_preview`，不加载外部插件 |
-| `sllkgui run` | 日常使用、运行插件应用 | 核心插件 + 已安装插件 + `--plugin-dir` |
+| `sllkgui gallery` | 组件预览、设计走查、离线演示 | 内置 `showcase/core_preview` + 原生插件管理，不加载外部插件 |
+| `sllkgui run` | 日常使用、运行插件应用 | 已安装插件 + `--plugin-dir` + 原生插件管理 |
 
 ```powershell
 uv run sllkgui gallery
 uv run sllkgui run
-uv run sllkgui run --safe-mode          # 只加载核心插件
+uv run sllkgui run --safe-mode          # 不加载外部插件
 uv run sllkgui run --plugin-dir ..\my-plugin
 ```
 
@@ -118,7 +118,7 @@ src/sllkgui/
 ├── guicore/          组件库、设计令牌、窗口部件
 ├── gallery/          插件协议、源、存储、安装、加载、Gallery 外壳
 ├── showcase/         内置组件预览（gallery 模式）
-├── core_plugins/     核心插件（run 模式）
+├── guis/pages/       基座原生页面（插件管理）
 ├── plugin.py         插件作者公开 API
 ├── window.py         窗口/Gallery 门面
 └── cli.py            gallery / run / plugin / source / doctor / scaffold

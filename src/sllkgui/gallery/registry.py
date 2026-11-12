@@ -195,7 +195,7 @@ class GalleryRegistry:
                     "btn_text": f"language.app.{surface.plugin_id}.surface.{surface.surface_id}.title",
                     "btn_tooltip": f"language.app.{surface.plugin_id}.surface.{surface.surface_id}.title",
                     "btn_text_fallback": title,
-                    # 核心插件是工具入口（插件管理），与「软件信息」一起放到底部
+                    # 核心插件是工具入口，与原生页面一起放到底部
                     "show_top": not surface.plugin.is_core,
                     "is_active": False,
                 }

@@ -2,8 +2,6 @@
 
 from __future__ import annotations
 
-from pathlib import Path
-
 MANIFEST_NAME = "sllkgui-plugin.yml"
 SOURCE_MANIFEST_NAME = "source.yaml"
 ENTRY_MANIFEST_NAME = "entry.yaml"
@@ -26,18 +24,11 @@ MAX_EVENT_BYTES = 2 * 1024
 GIT_LS_REMOTE_TIMEOUT = 30
 GIT_CLONE_TIMEOUT = 120
 
-#: 构建 wheel 后内置插件的相对位置
+#: 构建 wheel 后内置预览插件的相对位置
 SHOWCASE_DIRNAME = "showcase"
-CORE_PLUGINS_DIRNAME = "core_plugins"
-
-
-def builtin_root(package_root: Path) -> Path:
-    """返回内置插件根（``<package>/showcase`` 与 ``<package>/core_plugins`` 的父级）。"""
-    return Path(package_root)
 
 
 __all__ = [
-    "CORE_PLUGINS_DIRNAME",
     "DEFAULT_SOURCE_ID",
     "DEFAULT_SOURCE_TRUST",
     "DEFAULT_SOURCE_URL",
@@ -53,5 +44,4 @@ __all__ = [
     "SOURCE_MANIFEST_NAME",
     "SUPPORTED_API",
     "SUPPORTED_SCHEMA",
-    "builtin_root",
 ]

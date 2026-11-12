@@ -1,6 +1,6 @@
 from types import SimpleNamespace
 
-from sllkgui.guis.windows.main_window.controller import PageRouterController, ThemeController
+from sllkgui.guis.windows.main_window.controller import PageRouterController, SettingsController
 
 
 class _StubMainFunctions:
@@ -57,7 +57,7 @@ def test_page_router_switch_page_routes_target_widget():
     assert window._selected_page == "home_page"
 
 
-def test_theme_controller_cycles_expected_theme_sequence():
+def test_settings_controller_cycles_expected_theme_sequence():
     style_calls = []
 
     class _Styles:
@@ -71,7 +71,7 @@ def test_theme_controller_cycles_expected_theme_sequence():
     from sllkgui.appcore import ThemeManager
 
     manager = ThemeManager()  # 独立实例，不污染全局单例
-    controller = ThemeController(window=window, theme_manager=manager, style_factory=_Styles)
+    controller = SettingsController(window=window, theme_manager=manager, style_factory=_Styles)
 
     controller.cycle_theme()
     controller.cycle_theme()

@@ -3,7 +3,9 @@
 ``gallery`` 与 ``run`` 共用注册表与窗口外壳，唯一差别是插件来源：
 
 - gallery：只读 ``<package>/showcase``，不读 registry/sources/plugins，不联网；
-- run：``core_plugins`` + 已启用已安装插件 + ``--plugin-dir`` 开发插件。
+- run：已启用已安装插件 + ``--plugin-dir`` 开发插件。
+
+插件管理已改为基座原生页面，不再作为 ``core_plugins`` 插件加载。
 """
 
 from __future__ import annotations
@@ -15,7 +17,7 @@ from typing import Any, Literal
 import sllkgui
 from sllkgui.appcore import Logger, record_event
 
-from .defaults import CORE_PLUGINS_DIRNAME, GALLERY_DIRNAME, SHOWCASE_DIRNAME
+from .defaults import GALLERY_DIRNAME, SHOWCASE_DIRNAME
 from .errors import GalleryError
 from .loader import discover_plugin_dirs, load_plugin, refresh_language_namespace, unload_all
 from .manager import PluginManager
@@ -164,7 +166,6 @@ class GalleryRuntime:
                     roots.append((path, False))
                 else:
                     Logger.warning(f"已安装插件目录缺失，已跳过: {record.plugin_id}")
-        roots.append((sllkgui.package_root() / CORE_PLUGINS_DIRNAME, True))
         return roots
 
     def _parent_window_provider(self) -> Any:

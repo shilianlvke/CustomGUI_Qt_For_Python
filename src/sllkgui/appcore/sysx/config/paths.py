@@ -66,11 +66,6 @@ def showcase_root() -> Path:
     return package_root() / "showcase"
 
 
-def core_plugins_root() -> Path:
-    """返回基座核心插件根（``<package>/core_plugins``）。"""
-    return package_root() / "core_plugins"
-
-
 def _configured_roots() -> list[Path]:
     """显式配置 + 环境变量给出的资源根（未追加品牌层与基座包内）。"""
     roots: list[Path] = []

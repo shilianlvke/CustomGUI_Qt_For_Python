@@ -11,7 +11,11 @@ from sllkgui.gallery.registry import SurfaceRecord
 from sllkgui.gallery.runtime import GalleryRuntime
 from sllkgui.guis.windows.main_window.controller import MainWindowController
 from sllkgui.guis.windows.main_window.functions import MainFunctions
-from sllkgui.guis.windows.main_window.registry import ensure_registered_page, get_menu_items
+from sllkgui.guis.windows.main_window.registry import (
+    ensure_registered_page,
+    get_default_page_object,
+    get_menu_items,
+)
 from sllkgui.guis.windows.main_window.setup_main_window import SetupMainWindow
 from sllkgui.guis.windows.main_window.ui_main import UiMainWindow
 
@@ -40,7 +44,7 @@ class GalleryWindow(QMainWindow):
         title = "SllkGUI Gallery" if runtime.mode == "gallery" else "SllkGUI"
         self.setWindowTitle(title)
         self.ui.title_bar.set_title(title)
-        if self.gallery_registry.surface_count() == 0:
+        if self.gallery_registry.surface_count() == 0 and not get_default_page_object():
             self._show_empty_state()
         target = route or runtime.default_route()
         if target:
@@ -114,7 +118,7 @@ class GalleryWindow(QMainWindow):
         target = current if self.gallery_registry.get(current) else self.runtime.default_route()
         if target:
             self.open_route(target)
-        elif self.gallery_registry.surface_count() == 0:
+        elif self.gallery_registry.surface_count() == 0 and not get_default_page_object():
             self._show_empty_state()
 
     # ------------------------------------------------------------------
@@ -183,7 +187,7 @@ class GalleryWindow(QMainWindow):
         except Exception as exc:  # noqa: BLE001 - 退订失败不应阻塞退出
             Logger.debug(f"托盘语言退订失败: {exc}")
         try:
-            self.controller.theme_controller.detach()
+            self.controller.settings_controller.detach()
         except Exception as exc:  # noqa: BLE001 - 退订失败不应阻塞退出
             Logger.debug(f"Gallery 主题订阅清理失败: {exc}")
         try:

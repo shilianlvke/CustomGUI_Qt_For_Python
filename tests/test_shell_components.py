@@ -15,9 +15,9 @@ from PySide6.QtTest import QTest
 from PySide6.QtWidgets import QApplication, QVBoxLayout, QWidget
 
 from sllkgui.appcore import get_theme_manager
-from sllkgui.guicore.window.app_configurator import CAppConfigurator
 from sllkgui.guicore.window.app_menu import CAppMenu
 from sllkgui.guicore.window.app_topbar import CAppTopbar
+from sllkgui.guicore.window.settings import CSettingsDrawer
 
 
 @pytest.fixture(scope="module")
@@ -52,7 +52,7 @@ def _wait_animation():
 # Configurator
 # ----------------------------------------------------------------------
 def test_configurator_open_close_and_theme_signal(host):
-    panel = CAppConfigurator(host)
+    panel = CSettingsDrawer(host)
     changed = []
     closed = []
     panel.themeChanged.connect(changed.append)
@@ -79,16 +79,16 @@ def test_configurator_background_accordion_expand_and_apply(host, tmp_path):
     """背景手风琴默认收起，展开后可选择图片并发出变更信号。"""
     from PySide6.QtGui import QImage
 
-    panel = CAppConfigurator(host)
+    panel = CSettingsDrawer(host)
     panel.open()
     _wait_animation()
     assert not panel.is_background_expanded()
     assert not panel._background_content.isVisible()
 
-    # 背景是独立子页：先切到“背景”再测试手风琴展开。
-    panel.tabs.set_index(2)
+    # 背景位于「外观」子页：先切到外观再测试手风琴展开。
+    panel.tabs.set_index(1)
     QTest.qWait(50)
-    assert panel.stack.currentIndex() == 2
+    assert panel.stack.currentIndex() == 1
     panel.background_toggle.click()
     _wait_animation()
     assert panel.is_background_expanded()
@@ -119,7 +119,7 @@ def test_recent_background_thumb_decodes_at_thumbnail_size(qapp, tmp_path):
     """最近背景缩略图只按 2 倍目标尺寸解码，不把整张原图读进内存。"""
     from PySide6.QtGui import QImage
 
-    from sllkgui.guicore.window.app_configurator_sections import _RecentThumb
+    from sllkgui.guicore.window.settings.sections import _RecentThumb
 
     image = QImage(1600, 900, QImage.Format.Format_RGB32)
     image.fill(Qt.GlobalColor.darkCyan)
@@ -138,7 +138,7 @@ def test_recent_background_thumb_decodes_at_thumbnail_size(qapp, tmp_path):
 
 
 def test_configurator_menu_mode_and_dark_mode(host):
-    panel = CAppConfigurator(host)
+    panel = CSettingsDrawer(host)
     modes = []
     dark = []
     panel.menuModeChanged.connect(modes.append)
@@ -163,7 +163,7 @@ def test_configurator_menu_mode_and_dark_mode(host):
 def test_configurator_language_selection_and_retranslate(host):
     from sllkgui.appcore import LANGUAGE_OPTIONS, Language
 
-    panel = CAppConfigurator(host)
+    panel = CSettingsDrawer(host)
     picked = []
     panel.languageChanged.connect(picked.append)
 
@@ -175,7 +175,7 @@ def test_configurator_language_selection_and_retranslate(host):
     assert picked == [target]
 
     Language.apply("en_us")
-    assert panel.header_title.text() == "Appearance"
+    assert panel.header_title.text() == "Settings"
     Language.apply(current)
     panel.deleteLater()
 
@@ -191,7 +191,7 @@ def test_configurator_appearance_sliders(host):
     )
 
     reset_appearance_overrides()
-    panel = CAppConfigurator(host)
+    panel = CSettingsDrawer(host)
     transparency_changes = []
     strength_changes = []
     committed = []

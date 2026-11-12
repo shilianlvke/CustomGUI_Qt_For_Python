@@ -48,7 +48,7 @@ UI:
   ui_Property: Property
   # Others
   ui_Settings: Settings
-  ui_SettingsSubtitle: Software & environment
+  ui_SettingsSubtitle: Software, appearance & interface
   ui_SettingsSoftware: Software info
   ui_SettingsOverview: Overview
   ui_SettingsEnvironment: Environment
@@ -60,7 +60,7 @@ UI:
   ui_SettingsLogDir: Logs folder
   ui_SettingsOpenData: Open data folder
   ui_SettingsOpenLogs: Open logs folder
-  ui_SettingsAppearanceHint: Adjust appearance from the title bar palette
+  ui_SettingsAppearanceHint: Use Settings in the title bar for appearance and software info
   ui_OpenFile: Open File
   ui_UpdateLogs: Update Logs
   ui_Welcome: Welcome!
@@ -145,6 +145,7 @@ UI:
   ui_Appearance: Appearance
   ui_AppearanceHint: Theme, material, background and interface
   ui_Theme: Theme
+  ui_TabAppearance: Appearance
   ui_TabTheme: Theme
   ui_TabMaterial: Material
   ui_TabBackground: Background
@@ -191,3 +192,62 @@ UI:
 TEXT:
   home_page_welcome: Hello! I am SllkGUI ~
   login: Log in to SllkGUI
+
+# Plugin manager (built-in page)
+plugin_store:
+  store:
+    title: Plugin Manager
+    subtitle: Installed, discover and sources — all on one page
+    refresh: Refresh all
+  stats:
+    installed: Installed
+    enabled: Enabled
+    sources: Sources
+  modes:
+    installed: Installed
+    discover: Discover
+    sources: Sources
+  installed:
+    filter: Filter plugins…
+    update: Update
+    rollback: Rollback
+    enable: Enable
+    disable: Disable
+    remove: Remove
+    empty: Nothing installed yet — browse Discover
+    select_hint: Select a plugin to inspect it
+    detail_title: Plugin details
+    version: Version
+    source: Source
+    commit: Commit
+    path: Path
+    permissions: Permissions
+    enabled: Enabled
+    disabled: Disabled
+  discover:
+    placeholder: Search plugin name, ID or summary…
+    search: Search
+    refresh_sources: Refresh sources
+    empty: No installable plugins match
+    install: Install
+    permissions: '{count} permissions'
+  sources:
+    placeholder: Git repository URL
+    add: Add
+    refresh_all: Refresh all
+    refresh: Refresh
+    remove: Remove
+    empty: No plugin sources configured
+    official: Official
+    user: User
+    confirm_remove: 'Remove source {id}? Installed plugins are kept.'
+    added: 'Added source {id}'
+  status:
+    action_done: Done
+    action_failed: 'Action failed: {error}'
+    install_done: 'Installed {count} plugins'
+    refreshing: Refreshing sources…
+    refresh_done: Sources refreshed
+  confirm:
+    remove: Remove this plugin? Its data directory is kept by default.
+    install: 'Install {id} v{version}? Permissions: {permissions}'

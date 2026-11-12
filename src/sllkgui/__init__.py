@@ -7,7 +7,6 @@
     sllkgui.guis       窗口装配：主窗口、页面栈、语言服务
     sllkgui.gallery    插件协议、源、存储、加载与 Gallery 外壳
     sllkgui.showcase   内置组件预览插件（gallery 模式）
-    sllkgui.core_plugins 核心插件（run 模式）
 
 对外稳定面：``configure()`` / ``current_config()`` / ``reset_config()`` /
 ``__version__``，以及 ``sllkgui.plugin``、``sllkgui.window`` 两个门面。

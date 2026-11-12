@@ -1,6 +1,6 @@
 from types import SimpleNamespace
 
-from sllkgui.guis.windows.main_window.controller import ColumnController, MainWindowController, PageRouterController
+from sllkgui.guis.windows.main_window.controller import MainWindowController, PageRouterController
 
 
 class _FakeButton:
@@ -119,10 +119,10 @@ def test_button_to_page_route_chain():
     assert title_state["text"] == "Home"
 
 
-def test_button_to_column_action_chain():
+def test_settings_button_toggles_native_settings_drawer():
+    """标题栏「设置」只负责开合右侧抽屉，不切换页面或左菜单选中态。"""
     window, left_menu, _title_state = _build_window()
     main_functions = _MainFunctionStub()
-
     controller = MainWindowController(
         window=window,
         main_functions=main_functions,
@@ -135,62 +135,11 @@ def test_button_to_column_action_chain():
         language=None,
         get_routes=lambda _language: {},
     )
-    controller.column_controller = ColumnController(
-        window=window,
-        main_functions=main_functions,
-        language=SimpleNamespace(
-            UI=SimpleNamespace(ui_Settings="Settings"),
-            custom_ui=SimpleNamespace(left_column_io_test_title="IO"),
-        ),
-    )
+    calls: list[bool] = []
+    controller.settings_controller = SimpleNamespace(toggle_settings_drawer=lambda: calls.append(True))
 
-    controller.handle_button(_FakeButton("btn_info"))
+    controller.handle_button(_FakeButton("btn_settings"))
 
-    assert left_menu.selected_tab_btn == "btn_info"
-    assert main_functions.left_toggle_count == 1
-    assert main_functions.left_menu_payloads
-    menu, _title, _icon = main_functions.left_menu_payloads[-1]
-    assert menu == "menu_2"
-
-
-def _settings_controller(window, main_functions):
-    return ColumnController(
-        window=window,
-        main_functions=main_functions,
-        language=SimpleNamespace(UI=SimpleNamespace(ui_Settings="Settings")),
-    )
-
-
-def test_info_button_switches_to_settings_from_other_left_menu():
-    window, left_menu, _title_state = _build_window()
-    window.ui.left_column.menus = SimpleNamespace(
-        menu_1="menu_1",
-        menu_2="menu_2",
-        currentWidget=lambda: "menu_1",
-    )
-    main_functions = _MainFunctionStub()
-    main_functions.left_visible = True
-
-    _settings_controller(window, main_functions).handle_info_button("btn_info")
-
-    assert main_functions.left_toggle_count == 0
-    assert main_functions.left_menu_payloads[-1][0] == "menu_2"
-    assert left_menu.selected_tab_btn == "btn_info"
-
-
-def test_info_button_closes_settings_drawer_when_already_open():
-    window, left_menu, _title_state = _build_window()
-    window.ui.left_column.menus = SimpleNamespace(
-        menu_1="menu_1",
-        menu_2="menu_2",
-        currentWidget=lambda: "menu_2",
-    )
-    main_functions = _MainFunctionStub()
-    main_functions.left_visible = True
-
-    _settings_controller(window, main_functions).handle_info_button("btn_info")
-
-    assert main_functions.left_toggle_count == 1
-    assert main_functions.left_visible is False
-    assert main_functions.left_menu_payloads == []
-    assert left_menu.deselect_count == 1
+    assert calls == [True]
+    assert left_menu.selected_page_btn is None
+    assert left_menu.deselect_count == 0

@@ -1,31 +1,45 @@
-"""外观配置抽屉的控件树构建。
+"""设置抽屉的控件树构建。
 
-把 ``CAppConfigurator`` 的界面装配拆出来：抽屉骨架（标题栏 + 分段导航 +
-四个单屏子页）、主题 / 材质 / 背景 / 界面分区，以及主题卡片与分区专用的小工具方法。
+把 ``CSettingsDrawer`` 的界面装配拆出来：抽屉骨架（标题栏 + 分段导航 +
+软件信息 / 外观 / 界面对应子页）、各设置分区，以及主题卡片与专用小工具方法。
 面板本身只保留状态、信号与交互逻辑。
 
-本模块不持有任何状态：``_ConfigSectionsMixin`` 依赖宿主提供的
-``_texts`` / ``_theme_cards`` 等属性，方法名与拆分前保持一致。
+本模块不持有跨页状态：``_SettingsSectionsMixin`` 依赖宿主提供的
+``_texts`` / ``_theme_cards`` 等属性。
 """
 
 from __future__ import annotations
 
+import os
+import platform
 from pathlib import Path
 
-from PySide6.QtCore import QRectF, QSize, QStandardPaths, Qt, Signal
-from PySide6.QtGui import QColor, QFont, QImageReader, QPainter, QPainterPath, QPen, QPixmap
+import PySide6
+from PySide6.QtCore import QRectF, QSize, QStandardPaths, Qt, QUrl, Signal
+from PySide6.QtGui import (
+    QColor,
+    QDesktopServices,
+    QFont,
+    QImageReader,
+    QPainter,
+    QPainterPath,
+    QPen,
+    QPixmap,
+)
 from PySide6.QtWidgets import (
     QFileDialog,
     QFrame,
     QGridLayout,
     QHBoxLayout,
     QLabel,
+    QScrollArea,
     QSizePolicy,
     QStackedWidget,
     QVBoxLayout,
     QWidget,
 )
 
+from sllkgui import __version__
 from sllkgui.appcore import (
     LANGUAGE_OPTIONS,
     AppSettings,
@@ -33,19 +47,21 @@ from sllkgui.appcore import (
     ColorPalette,
     Language,
     get_design_tokens,
+    get_theme_manager,
     load_user_settings,
     save_user_settings,
+    user_settings_path,
 )
 
-from ..acrylic import acrylic_transparency, glass_strength
-from ..custom_ui.button.button import CButton
-from ..custom_ui.close_button import CCloseButton
-from ..custom_ui.icon_utils import render_icon
-from ..custom_ui.line_edit.choice import CToggleSwitch
-from ..custom_ui.line_edit.select import CSelect
-from ..custom_ui.line_edit.slider import CSlider
-from ..custom_ui.line_edit.toggle_button import CSelectButton
-from ..custom_ui.panels.collapse import CollapseAnimator
+from ...acrylic import acrylic_transparency, glass_strength
+from ...custom_ui.button.button import CButton
+from ...custom_ui.close_button import CCloseButton
+from ...custom_ui.icon_utils import render_icon
+from ...custom_ui.line_edit.choice import CToggleSwitch
+from ...custom_ui.line_edit.select import CSelect
+from ...custom_ui.line_edit.slider import CSlider
+from ...custom_ui.line_edit.toggle_button import CSelectButton
+from ...custom_ui.panels.collapse import CollapseAnimator
 
 #: 主题卡片预览所用的调色板键
 _PREVIEW_KEYS = ("custom_dark_one", "custom_bg_one", "custom_context_color", "custom_text_title")
@@ -248,11 +264,44 @@ class _RecentThumb(QWidget):
         super().mouseReleaseEvent(event)
 
 
-class _ConfigSectionsMixin:
-    """把配置分区装配成四个单屏子页，由顶部分段导航切换。
+class _ElidedPathLabel(QLabel):
+    """按实际宽度中部省略的路径值；tooltip 保留全文。"""
+
+    def __init__(self, text: str = "", parent=None) -> None:
+        super().__init__(parent)
+        self.setProperty("role", "value")
+        self.setSizePolicy(QSizePolicy.Policy.Ignored, QSizePolicy.Policy.Preferred)
+        self.setMinimumWidth(0)
+        self.setTextInteractionFlags(Qt.TextInteractionFlag.TextSelectableByMouse)
+        font = QFont(AppSettings.family)
+        font.setPixelSize(11)
+        self.setFont(font)
+        self._full_text = ""
+        self.set_full_text(text)
+
+    def set_full_text(self, text: str) -> None:
+        self._full_text = str(text)
+        self.setToolTip(self._full_text)
+        self._apply_elide()
+
+    def full_text(self) -> str:
+        return self._full_text
+
+    def resizeEvent(self, event):  # noqa: N802 - 覆写 Qt 命名
+        super().resizeEvent(event)
+        self._apply_elide()
+
+    def _apply_elide(self) -> None:
+        self.setText(
+            self.fontMetrics().elidedText(self._full_text, Qt.TextElideMode.ElideMiddle, max(0, self.width()))
+        )
+
+
+class _SettingsSectionsMixin:
+    """把设置分区装配成「软件信息 / 外观 / 界面」三个子页。
 
     宿主需提供 ``_texts`` / ``_theme_cards`` 两个属性，以及各分区的
-    事件处理器与信号（见 ``CAppConfigurator``）。
+    事件处理器与信号（见 ``CSettingsDrawer``）。
     """
 
     def _setup_ui(self) -> None:
@@ -269,8 +318,10 @@ class _ConfigSectionsMixin:
         title_column = QVBoxLayout()
         title_column.setContentsMargins(0, 0, 0, 0)
         title_column.setSpacing(2)
-        self.header_title = self._register_text("language.UI.ui_Appearance", "外观配置", "header")
-        self.header_subtitle = self._register_text("language.UI.ui_AppearanceHint", "主题、材质、背景与界面", "hint")
+        self.header_title = self._register_text("language.UI.ui_Settings", "设置", "header")
+        self.header_subtitle = self._register_text(
+            "language.UI.ui_SettingsSubtitle", "软件、外观与界面", "hint"
+        )
         title_column.addWidget(self.header_title)
         title_column.addWidget(self.header_subtitle)
         header_layout.addLayout(title_column, 1)
@@ -291,14 +342,20 @@ class _ConfigSectionsMixin:
         root.addWidget(tabs_wrap)
 
         self.stack = QStackedWidget(self)
-        theme_page, theme_layout = self._new_page()
-        material_page, material_layout = self._new_page()
-        background_page, background_layout = self._new_page()
+        software_page, software_layout = self._new_scroll_page()
+        appearance_page, appearance_layout = self._new_scroll_page()
         interface_page, interface_layout = self._new_page()
 
-        self._build_theme_section(theme_layout)
-        self._build_material_section(material_layout)
-        self._build_background_section(background_layout)
+        self._build_software_sections(software_layout)
+        software_layout.addStretch(1)
+
+        self._build_theme_section(appearance_layout)
+        self._add_divider(appearance_layout)
+        self._build_material_section(appearance_layout)
+        self._add_divider(appearance_layout)
+        self._build_background_section(appearance_layout)
+        appearance_layout.addStretch(1)
+
         self._build_language_section(interface_layout)
         self._add_divider(interface_layout)
         self._build_menu_mode_section(interface_layout)
@@ -306,9 +363,10 @@ class _ConfigSectionsMixin:
         self._build_drawer_mode_section(interface_layout)
         interface_layout.addStretch(1)
 
-        for page in (theme_page, material_page, background_page, interface_page):
+        for page in (software_page, appearance_page, interface_page):
             self.stack.addWidget(page)
         root.addWidget(self.stack, 1)
+        self._refresh_software_info()
 
     def _new_page(self) -> tuple[QWidget, QVBoxLayout]:
         page = QWidget(self)
@@ -318,12 +376,36 @@ class _ConfigSectionsMixin:
         layout.setAlignment(Qt.AlignTop)
         return page, layout
 
+    def _new_scroll_page(self) -> tuple[QWidget, QVBoxLayout]:
+        """可滚动的单屏子页：内容高于抽屉时滚动，不压缩分区间距。"""
+        page = QWidget(self)
+        page_layout = QVBoxLayout(page)
+        page_layout.setContentsMargins(0, 0, 0, 0)
+        page_layout.setSpacing(0)
+
+        scroll = QScrollArea(page)
+        scroll.setWidgetResizable(True)
+        scroll.setFrameShape(QFrame.Shape.NoFrame)
+        scroll.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
+        scroll.setStyleSheet(
+            "QScrollArea { background: transparent; border: none; }"
+            " QScrollArea > QWidget > QWidget { background: transparent; }"
+        )
+        content = QWidget()
+        content.setStyleSheet("background: transparent;")
+        layout = QVBoxLayout(content)
+        layout.setContentsMargins(20, 8, 20, 20)
+        layout.setSpacing(14)
+        layout.setAlignment(Qt.AlignTop)
+        scroll.setWidget(content)
+        page_layout.addWidget(scroll)
+        return page, layout
+
     @staticmethod
     def _tab_labels() -> list[str]:
         return [
-            str(Language.resolve_key("language.UI.ui_TabTheme", "主题")),
-            str(Language.resolve_key("language.UI.ui_TabMaterial", "材质")),
-            str(Language.resolve_key("language.UI.ui_TabBackground", "背景")),
+            str(Language.resolve_key("language.UI.ui_SettingsSoftware", "软件信息")),
+            str(Language.resolve_key("language.UI.ui_TabAppearance", "外观")),
             str(Language.resolve_key("language.UI.ui_TabInterface", "界面")),
         ]
 
@@ -331,7 +413,7 @@ class _ConfigSectionsMixin:
         self.stack.setCurrentIndex(max(0, min(self.stack.count() - 1, int(index))))
 
     def _make_label(self, text: str, role: str) -> QLabel:
-        """创建一个随主题刷新颜色的标签；role 为 header / title / hint / value。"""
+        """创建一个随主题刷新颜色的标签；role 为 header / title / card_title / key / hint / value。"""
         label = QLabel(text, self)
         font = QFont(AppSettings.family)
         if role == "header":
@@ -340,9 +422,15 @@ class _ConfigSectionsMixin:
         elif role == "title":
             font.setPixelSize(13)
             font.setWeight(QFont.Weight.DemiBold)
+        elif role == "card_title":
+            font.setPixelSize(12)
+            font.setWeight(QFont.Weight.DemiBold)
         elif role == "value":
             font.setPixelSize(12)
             font.setWeight(QFont.Weight.DemiBold)
+        elif role == "key":
+            font.setPixelSize(11)
+            label.setProperty("role", "key")
         else:
             font.setPixelSize(12)
             label.setProperty("role", "hint")
@@ -371,6 +459,125 @@ class _ConfigSectionsMixin:
         divider.setProperty("role", "divider")
         divider.setFixedHeight(1)
         target.addWidget(divider)
+
+    # ------------------------------------------------------------------
+    # 软件信息
+    # ------------------------------------------------------------------
+    def _build_software_sections(self, target: QVBoxLayout) -> None:
+        software = self._settings_card(target, None, "SLLKGUI")
+        self._software_version = self._value_label(__version__)
+        self._software_status = self._value_label("")
+        self._software_pages = self._value_label("0")
+        self._add_info_row(
+            software,
+            self._key_label("language.UI.ui_SettingsVersion", "版本"),
+            self._software_version,
+        )
+        self._add_info_row(
+            software,
+            self._key_label("language.UI.ui_SettingsStatus", "状态"),
+            self._software_status,
+        )
+        self._add_info_row(
+            software,
+            self._key_label("language.UI.ui_SettingsPages", "页面"),
+            self._software_pages,
+        )
+
+        environment = self._settings_card(target, "language.UI.ui_SettingsEnvironment", "运行环境")
+        self._add_info_row(environment, self._key_label(None, "Python"), self._value_label(platform.python_version()))
+        self._add_info_row(
+            environment,
+            self._key_label(None, "Qt"),
+            self._value_label(f"PySide6 {PySide6.__version__}"),
+        )
+        self._add_info_row(
+            environment,
+            self._key_label(None, "OS"),
+            self._value_label(f"{platform.system()} {platform.release()}".strip()),
+        )
+
+        folders = self._settings_card(target, "language.UI.ui_SettingsFolders", "目录")
+        self._software_data_dir = _ElidedPathLabel(self._display_path(self._data_root()))
+        self._software_log_dir = _ElidedPathLabel(self._display_path(self._data_root() / "logs"))
+        self._add_info_row(
+            folders,
+            self._key_label("language.UI.ui_SettingsDataDir", "数据目录"),
+            self._software_data_dir,
+        )
+        self._add_info_row(
+            folders,
+            self._key_label("language.UI.ui_SettingsLogDir", "日志目录"),
+            self._software_log_dir,
+        )
+
+        actions = QHBoxLayout()
+        actions.setContentsMargins(0, 4, 0, 0)
+        actions.setSpacing(6)
+        actions.addStretch(1)
+        open_data = self._action_button("language.UI.ui_SettingsOpenData", "打开数据目录")
+        open_logs = self._action_button("language.UI.ui_SettingsOpenLogs", "打开日志目录")
+        open_data.clicked.connect(lambda: self._open_path(self._data_root()))
+        open_logs.clicked.connect(lambda: self._open_path(self._data_root() / "logs"))
+        actions.addWidget(open_data)
+        actions.addWidget(open_logs)
+        folders.addLayout(actions)
+
+    def _settings_card(self, target: QVBoxLayout, title_key: str | None, title_fallback: str) -> QVBoxLayout:
+        card = QFrame()
+        card.setObjectName("CSettingsCard_Frame")
+        layout = QVBoxLayout(card)
+        layout.setContentsMargins(12, 10, 12, 10)
+        layout.setSpacing(8)
+        title = self._register_text(title_key, title_fallback, "card_title") if title_key else self._make_label(
+            title_fallback, "card_title"
+        )
+        layout.addWidget(title)
+        target.addWidget(card)
+        return layout
+
+    def _add_info_row(self, target: QVBoxLayout, key: QLabel, value: QWidget) -> None:
+        row = QHBoxLayout()
+        row.setContentsMargins(0, 0, 0, 0)
+        row.setSpacing(8)
+        row.addWidget(key, 0, Qt.AlignTop)
+        row.addWidget(value, 1)
+        target.addLayout(row)
+
+    def _key_label(self, key: str | None, fallback: str) -> QLabel:
+        label = self._register_text(key, fallback, "key") if key else self._make_label(fallback, "key")
+        label.setFixedWidth(64)
+        label.setAlignment(Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignVCenter)
+        return label
+
+    def _value_label(self, text: str) -> QLabel:
+        label = self._make_label(text, "value")
+        label.setTextInteractionFlags(Qt.TextInteractionFlag.TextSelectableByMouse)
+        label.setWordWrap(True)
+        return label
+
+    def _action_button(self, key: str, fallback: str) -> CButton:
+        button = CButton(
+            str(Language.resolve_key(key, fallback)),
+            severity="secondary",
+            variant="outlined",
+            size="sm",
+        )
+        self._buttons.append((button, key, fallback))
+        return button
+
+    def _refresh_software_info(self) -> None:
+        if not hasattr(self, "_software_status"):
+            return
+        self._software_status.setText(f"{get_theme_manager().current()} · {Language.current()}")
+        try:
+            from sllkgui.gallery.registry import current_registry
+
+            registry = current_registry()
+            count = registry.surface_count() if registry is not None else 0
+        except Exception:  # noqa: BLE001 - 状态栏失败不影响设置页
+            count = 0
+        self._software_pages.setText(str(count))
 
     def _build_theme_section(self, target: QVBoxLayout) -> None:
         layout = self._add_section(
@@ -859,6 +1066,30 @@ class _ConfigSectionsMixin:
         self.background_clear_button.setText(Language.resolve_key("language.UI.ui_ClearBackground", "清除背景"))
         self._sync_background_controls()
         self._sync_background_chevron()
+
+    @staticmethod
+    def _data_root() -> Path:
+        return user_settings_path().parent.parent
+
+    @staticmethod
+    def _display_path(path: Path) -> str:
+        for env_name, prefix in (("APPDATA", "%APPDATA%"), ("LOCALAPPDATA", "%LOCALAPPDATA%")):
+            base = os.getenv(env_name, "").strip()
+            if not base:
+                continue
+            try:
+                return f"{prefix}\\{path.relative_to(Path(base))}"
+            except ValueError:
+                continue
+        try:
+            return f"~\\{path.relative_to(Path.home())}"
+        except ValueError:
+            return str(path)
+
+    @staticmethod
+    def _open_path(path: Path) -> None:
+        path.mkdir(parents=True, exist_ok=True)
+        QDesktopServices.openUrl(QUrl.fromLocalFile(str(path)))
 
     @staticmethod
     def _language_options() -> list[tuple[str, str]]:

@@ -59,12 +59,17 @@ def test_showcase_loads_ten_surfaces(tmp_path, prepared):
         _close(window)
 
 
-def test_core_store_loads_single_surface(tmp_path, prepared):
+def test_plugin_store_is_native_page(tmp_path, prepared):
+    """插件管理已移出插件协议：run 模式没有插件 Surface，但原生页面可构建。"""
+    from PySide6.QtWidgets import QWidget
+
+    from sllkgui.guis.windows.main_window.registry import ensure_registered_page
+
     window = _window(tmp_path, "run")
     try:
-        routes = list(window.gallery_registry.routes())
-        assert routes == ["com.sllkgui.core.store/store"]
-        assert window.open_route(routes[0])
+        assert window.gallery_registry.surface_count() == 0
+        assert ensure_registered_page(window, "page_native_plugin_store")
+        assert window.ui.load_pages.pages.findChild(QWidget, "page_native_plugin_store") is not None
     finally:
         _close(window)
 

@@ -1,8 +1,8 @@
 """基座菜单与页面路由聚合（Gallery 版）。
 
-窗口骨架只认这几个函数；插件来源由 :class:`GalleryRegistry` 提供。菜单按钮
-ID 与页面 objectName 都由路由 ``plugin_id/surface_id`` 派生，页面控件在首次
-导航时按需构建。
+窗口骨架只认这几个函数；插件页面由 :class:`GalleryRegistry` 提供，插件管理
+等基座原生页面由 :mod:`native_pages` 提供。插件菜单按钮 ID 与页面 objectName
+都由路由 ``plugin_id/surface_id`` 派生，页面控件在首次导航时按需构建。
 """
 
 from __future__ import annotations
@@ -12,17 +12,8 @@ from PySide6.QtWidgets import QWidget
 from sllkgui.appcore import Logger, record_event
 from sllkgui.gallery.registry import GalleryRegistry, current_registry
 
-#: 基座内置菜单：仅窗口控制入口（左列开关），不含页面
-BUILTIN_LEFT_MENU_ITEMS = [
-    {
-        "btn_icon": "icon_setting",
-        "btn_id": "btn_info",
-        "btn_text": "language.UI.ui_SoftwareInfo",
-        "btn_tooltip": "language.UI.ui_SoftwareInfo",
-        "show_top": False,
-        "is_active": False,
-    },
-]
+from .native_pages import NATIVE_PAGES, native_menu_items, native_page_for, native_page_routes
+
 BUILTIN_TITLE_MENU_ITEMS = [
     {
         "btn_icon": "icon_search",
@@ -32,10 +23,10 @@ BUILTIN_TITLE_MENU_ITEMS = [
         "is_active": False,
     },
     {
-        "btn_icon": "icon_palette",
-        "btn_id": "btn_themes",
-        "btn_text": "language.UI.ui_Appearance",
-        "btn_tooltip": "language.UI.ui_Appearance",
+        "btn_icon": "icon_setting",
+        "btn_id": "btn_settings",
+        "btn_text": "language.UI.ui_Settings",
+        "btn_tooltip": "language.UI.ui_Settings",
         "is_active": False,
     },
 ]
@@ -59,13 +50,27 @@ def load_registered_pages(window, *, eager: bool = False):
 
 
 def ensure_registered_page(window, page_object: str) -> bool:
-    """按 ``page_<路由>`` 构建 Surface 并加入页面栈（幂等）。"""
+    """按 ``page_<路由>`` 构建 Surface / 原生页面并加入页面栈（幂等）。"""
     if not page_object:
         return False
     pages = getattr(getattr(window, "ui", None), "load_pages", None)
     if pages is None:
         return False
     if pages.pages.findChild(QWidget, page_object) is not None:
+        return True
+    native = native_page_for(page_object)
+    if native is not None:
+        try:
+            widget = native.factory(window)
+        except Exception as exc:  # noqa: BLE001 - 单个原生页面失败不影响其它页面
+            Logger.exception(f"原生页面构建失败 {page_object}: {exc}")
+            return False
+        if not isinstance(widget, QWidget):
+            Logger.error(f"原生页面工厂未返回 QWidget: {page_object} -> {type(widget).__name__}")
+            return False
+        widget.setObjectName(page_object)
+        pages.pages.addWidget(widget)
+        record_event("native_page.opened", category="ui", payload={"page": page_object})
         return True
     registry = get_registry(window)
     surface = registry.route_for_page(page_object) if registry else None
@@ -91,24 +96,24 @@ def ensure_registered_page(window, page_object: str) -> bool:
 
 
 def get_page_routes(language=None):
-    registry = get_registry()
-    if registry is None:
-        return {}
     from sllkgui.appcore import Language
 
     # 旧调用方传入的是 Language 单例而非语言代码（PageRouterController 等），
     # 统一归一成字符串，避免 display_title 里 dict.get 抛 unhashable。
     code = language if isinstance(language, str) and language else Language.current()
-    return registry.page_routes(code)
+    registry = get_registry()
+    routes = registry.page_routes(code) if registry is not None else {}
+    routes.update(native_page_routes())
+    return routes
 
 
 def get_default_page_object():
+    """默认页面：优先插件的 default Surface，没有插件时回到原生插件管理。"""
     registry = get_registry()
-    if registry is None:
-        return ""
-    route = registry.default_route()
-    surface = registry.get(route)
-    return surface.page_object if surface is not None else ""
+    surface = registry.get(registry.default_route()) if registry is not None else None
+    if surface is not None:
+        return surface.page_object
+    return NATIVE_PAGES[0].page_object if NATIVE_PAGES else ""
 
 
 def get_menu_items(target: str):
@@ -117,7 +122,7 @@ def get_menu_items(target: str):
     if target == "LeftMenu":
         registry = get_registry()
         items = registry.menu_items() if registry is not None else []
-        return [*items, *[dict(item) for item in BUILTIN_LEFT_MENU_ITEMS]]
+        return [*items, *native_menu_items()]
     return []
 
 
@@ -126,7 +131,6 @@ PAGE_REGISTRY: list = []
 
 
 __all__ = [
-    "BUILTIN_LEFT_MENU_ITEMS",
     "BUILTIN_TITLE_MENU_ITEMS",
     "PAGE_REGISTRY",
     "ensure_registered_page",
