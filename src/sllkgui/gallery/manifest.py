@@ -133,7 +133,9 @@ def ensure_within(root: Path, relative: str | Path, *, code: str = PLUGIN_PATH_E
 
 
 def manifest_sha256(path: Path) -> str:
-    return hashlib.sha256(Path(path).read_bytes()).hexdigest()
+    """清单 SHA-256；统一换行后再哈希，保证 Windows/Linux 校验一致。"""
+    raw = Path(path).read_bytes().replace(b"\r\n", b"\n")
+    return hashlib.sha256(raw).hexdigest()
 
 
 def _read_yaml(path: Path) -> tuple[dict[str, Any], bytes]:
@@ -336,6 +338,6 @@ def load_manifest(path: Path, *, current_sllkgui: str | None = None) -> PluginMa
         surfaces=surfaces,
         dependencies=_parse_dependencies(data.get("dependencies")),
         permissions=_parse_permissions(data.get("permissions")),
-        manifest_sha256=hashlib.sha256(raw).hexdigest(),
+        manifest_sha256=hashlib.sha256(raw.replace(b"\r\n", b"\n")).hexdigest(),
         warnings=tuple(warnings),
     )

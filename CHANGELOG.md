@@ -3,9 +3,14 @@
 项目遵循[语义化版本](https://semver.org/lang/zh-CN/)：major 版本允许破坏性变更并显式列出；
 minor 与 patch 保持向后兼容。
 
-当前版本：`2.0.0`（见 `src/sllkgui/_version.py`），对应 tag `base-v2.0.0`。
+当前版本：`2.0.1`（见 `src/sllkgui/_version.py`），对应 tag `base-v2.0.1`。
 
 ---
+
+## 2.0.1（2026-11-12）
+
+- 修复 Windows 换行转换导致 `manifest_sha256` 与源条目不一致：清单哈希统一
+  按 LF 计算，Linux/macOS/Windows 校验结果一致。
 
 ## 2.0.0（2026-11-12）
 

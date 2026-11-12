@@ -100,7 +100,8 @@ def write_plugin(
 
 
 def manifest_sha256(root: Path) -> str:
-    return hashlib.sha256((Path(root) / "sllkgui-plugin.yml").read_bytes()).hexdigest()
+    raw = (Path(root) / "sllkgui-plugin.yml").read_bytes().replace(b"\r\n", b"\n")
+    return hashlib.sha256(raw).hexdigest()
 
 
 def git(*args: str, cwd: Path) -> str:
