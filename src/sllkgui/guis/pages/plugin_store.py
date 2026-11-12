@@ -47,6 +47,7 @@ from sllkgui.guicore import (
     CToast,
     CToggleSwitch,
     run_task,
+    single_shot,
 )
 from sllkgui.guicore.custom_ui.icon_utils import render_icon
 from sllkgui.guicore.custom_ui.panels.style import RADIUS, paint_surface, panel_colors, rounded_path
@@ -635,7 +636,9 @@ class _DetailDialogBase:
             self._executed = True
             callback()
 
-        self.dialog.closed.connect(once)
+        # 等详情对话框的模态状态与窗口激活彻底结束，再执行下一步；
+        # 否则紧接着弹出的确认框可能拿不到输入焦点，表现为整个窗口“卡死”。
+        self.dialog.closed.connect(lambda: single_shot(self.page, 0, once))
         self.dialog.reject()
 
     def _action(
@@ -1287,7 +1290,7 @@ class StorePage(QWidget):
     def schedule_reload(self) -> None:
         window = self.ctx.parent_window()
         if window is not None and hasattr(window, "reload_plugins"):
-            QTimer.singleShot(120, window.reload_plugins)
+            single_shot(window, 120, window.reload_plugins)
 
     def _theme_changed(self) -> None:
         for widget in self.findChildren(QWidget):
@@ -1348,16 +1351,19 @@ class StorePage(QWidget):
                 on_done(result)
             elif success_message is not None:
                 self.set_status(success_message(result), "success")
-            QTimer.singleShot(0, self.refresh_all)
+            single_shot(self, 0, self.refresh_all)
             if reload_plugins:
                 self.schedule_reload()
 
         def failed(error: str) -> None:
             finish()
             self._fail(error_code, f"{error_prefix}: {error}", RuntimeError(error))
-            QTimer.singleShot(0, self.refresh_all)
+            single_shot(self, 0, self.refresh_all)
 
-        run_task(self, lambda _emit: fn(), on_done=done, on_error=failed, name=name)
+        try:
+            run_task(self, lambda _emit: fn(), on_done=done, on_error=failed, name=name)
+        except Exception as exc:  # noqa: BLE001 - 任务启动失败不能让页面停在忙碌态
+            failed(str(exc))
 
     def _set_plugin_enabled(self, plugin_id: str, enabled: bool) -> None:
         if self._busy:
@@ -1370,7 +1376,7 @@ class StorePage(QWidget):
             self.set_status(self.ctx.text("status.action_done", "操作完成"), "success")
         except Exception as exc:  # noqa: BLE001 - 页面必须保持可用
             self._fail("PLUGIN_STORE_TOGGLE_FAILED", f"切换插件状态失败: {exc}", exc)
-        QTimer.singleShot(0, self.refresh_all)
+        single_shot(self, 0, self.refresh_all)
         self.schedule_reload()
 
     def _update_plugin(self, plugin_id: str) -> None:
@@ -1417,7 +1423,7 @@ class StorePage(QWidget):
         if manager is None or self._busy:
             return
         ok = CConfirmDialog.ask(
-            self,
+            self.ctx.parent_window() or self,
             title=self.ctx.text("installed.remove", "卸载"),
             message=self.ctx.text("confirm.remove", "确定卸载该插件？数据目录默认保留。"),
             severity="danger",
@@ -1439,19 +1445,8 @@ class StorePage(QWidget):
         if manager is None or self._busy:
             return
         plugin_id = str(record.get("id") or "")
-        permissions = ", ".join(str(item) for item in record.get("permissions") or []) or "-"
-        ok = CConfirmDialog.ask(
-            self,
-            title=self.ctx.text("discover.install", "安装"),
-            message=self.ctx.text("confirm.install", "安装 {id} v{version}？权限：{permissions}").format(
-                id=plugin_id,
-                version=record.get("version") or "?",
-                permissions=permissions,
-            ),
-            severity="info",
-        )
-        if not ok:
-            return
+        # 详情页本身已经展示权限与「安装」按钮，不再叠加一层确认框，
+        # 避免详情关闭动画尚未结束时弹出模态框导致窗口失去焦点。
         self._run_async(
             name="plugin_store.install",
             fn=lambda: manager.install(plugin_id, source_id=str(record.get("source") or "")),
@@ -1514,7 +1509,7 @@ class StorePage(QWidget):
         if sources is None or self._busy:
             return
         ok = CConfirmDialog.ask(
-            self,
+            self.ctx.parent_window() or self,
             title=self.ctx.text("sources.remove", "移除"),
             message=self.ctx.text("sources.confirm_remove", "移除源 {id}？已安装插件不受影响。").format(
                 id=source_id
@@ -1543,7 +1538,7 @@ class StorePage(QWidget):
             self.set_status(self.ctx.text("status.action_done", "操作完成"), "success")
         except Exception as exc:  # noqa: BLE001
             self._fail("PLUGIN_STORE_SOURCE_TOGGLE_FAILED", f"切换源状态失败: {exc}", exc)
-        QTimer.singleShot(0, self.refresh_all)
+        single_shot(self, 0, self.refresh_all)
 
 
 __all__ = ["PageContext", "StorePage", "build_plugin_store_page"]
