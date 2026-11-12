@@ -90,6 +90,41 @@ def test_tray_handle_clear_removes_actions():
     assert service.action_count("com.example.tray") == 0
 
 
+def test_tray_api_has_no_icon_control():
+    """图标与悬停提示是基座品牌，插件 API 里不应存在修改入口。"""
+    from sllkgui.gallery.api import GalleryTray
+
+    for name in ("set_icon", "set_tooltip"):
+        assert not hasattr(GalleryTray, name)
+        assert not hasattr(TrayHandle, name)
+
+
+def test_tray_action_errors_are_isolated():
+    service = TrayService()
+
+    def boom() -> None:
+        raise RuntimeError("boom")
+
+    service.add_action("com.example.tray:boom", "Boom", boom, plugin_id="com.example.tray")
+    action = service._actions["com.example.tray:boom"]
+    service._invoke(action)  # 不应向上抛异常
+
+
+def test_runtime_bootstrap_starts_resident_tray(tmp_path: Path, prepared, monkeypatch):
+    """托盘由基座常驻：即使没有插件注册动作，bootstrap 也要拉起。"""
+    calls: list[str] = []
+    monkeypatch.setattr(TrayService, "ensure_visible", lambda self: calls.append("visible") or True)
+
+    from sllkgui.window import load_gallery
+
+    window = load_gallery(data_dir=tmp_path / "gallery-resident")
+    try:
+        assert calls == ["visible"]
+    finally:
+        window._force_close = True
+        window.close()
+
+
 def test_context_tray_denied_without_permission(tmp_path: Path):
     ctx = _context(tmp_path, ())
     with pytest.raises(GalleryError) as exc:

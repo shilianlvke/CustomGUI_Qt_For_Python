@@ -118,7 +118,7 @@ PLUGIN = NotesPlugin()
 | `timing(name, payload=None)` | 上下文计时，自动记录 `duration_ms` |
 | `report_error(code, message, detail=None)` | 日志 + 遥测 + 非阻塞错误提示 |
 | `parent_window()` | Gallery 主窗口（对话框父级） |
-| `tray` | 基座托盘（需 `tray` 权限，见 `docs/TRAY.md`） |
+| `tray` | 基座常驻托盘的文本动作（图标/提示固定由基座持有，见 `docs/TRAY.md`） |
 
 ## 5. 多语言
 

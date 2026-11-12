@@ -1,21 +1,21 @@
-"""基座托盘服务：全进程唯一 ``QSystemTrayIcon``，插件只注册动作。
+"""基座托盘服务：全进程唯一 ``QSystemTrayIcon``，随基座启动常驻。
 
-设计约束：
+协议要点（详见 ``docs/TRAY.md``）：
 
-- 一个应用只有一个托盘图标，由 Gallery 窗口持有；插件不得自建托盘。
-- 菜单外壳固定包含「显示主窗口」「退出」，插件动作按 ``order`` 插入其前。
-- 托盘在插件首次注册动作/通知时惰性创建；系统托盘不可用时全部降级为空操作。
-- 插件卸载时按 ``plugin_id`` 清理动作，避免重载后残留。
+- 一个应用只有一个托盘图标，由基座持有并常驻；插件不得自建托盘；
+- 图标与悬停提示固定使用基座品牌，插件没有任何修改入口；
+- 菜单外壳固定包含「显示主窗口」「退出」，插件动作按 ``order`` 插入其前；
+- 插件动作以 ``plugin_id:action_id`` 命名隔离，卸载/重载时由基座清理；
+- 系统托盘不可用时全部降级为空操作，只告警一次。
 """
 
 from __future__ import annotations
 
 from collections.abc import Callable
 from dataclasses import dataclass
-from pathlib import Path
 from typing import Any
 
-from sllkgui.appcore import Language, Logger, record_event
+from sllkgui.appcore import AppSettings, Language, Logger, PathFactory, record_event
 
 from .api import GalleryTray, Permission
 from .errors import PLUGIN_PERMISSION_DENIED, GalleryError
@@ -38,7 +38,7 @@ def _tray_text(key: str, default: str) -> str:
 
 
 class TrayService:
-    """基座级托盘：动作注册、菜单重建、图标与通知。"""
+    """基座级托盘：常驻图标、动作注册、菜单重建与通知。"""
 
     def __init__(self) -> None:
         self._actions: dict[str, TrayAction] = {}
@@ -46,9 +46,6 @@ class TrayService:
         self._menu: Any = None
         self._show_window: Callable[[], None] | None = None
         self._quit_app: Callable[[], None] | None = None
-        self._tooltip = ""
-        self._icon_path = ""
-        self._icon_owner = ""
         self._warned_unavailable = False
 
     # ------------------------------------------------------------------
@@ -72,29 +69,49 @@ class TrayService:
         return self._icon is not None and bool(self._icon.isVisible())
 
     def ensure_visible(self) -> bool:
-        if self._icon is not None:
-            if not self._icon.isVisible():
-                self._icon.show()
-            return True
+        """确保基座托盘常驻；系统不支持时返回 ``False`` 并只告警一次。"""
         if not self.available():
             if not self._warned_unavailable:
                 self._warned_unavailable = True
                 Logger.warning("系统托盘不可用：托盘动作与通知已禁用")
             return False
+        from PySide6.QtWidgets import QMenu, QSystemTrayIcon
+
+        if self._icon is None:
+            self._menu = QMenu()
+            # 图标固定取基座品牌，插件没有任何替换入口
+            self._icon = QSystemTrayIcon(self._base_icon())
+            self._icon.setToolTip(self._tooltip_text())
+            self._icon.setContextMenu(self._menu)
+            self._icon.activated.connect(self._on_activated)
+            self._rebuild_menu()
+            record_event("tray.shown", category="gallery", payload={"actions": len(self._actions)})
+        if not self._icon.isVisible():
+            self._icon.show()
+        return True
+
+    def _base_icon(self):
+        """基座托盘图标：优先应用图标，缺失时回落到内置品牌图标。"""
         from PySide6.QtGui import QIcon
-        from PySide6.QtWidgets import QApplication, QMenu, QSystemTrayIcon
+        from PySide6.QtWidgets import QApplication
 
         app = QApplication.instance()
-        assert app is not None  # available() 已保证
-        self._menu = QMenu()
-        self._icon = QSystemTrayIcon(QIcon(self._icon_path) if self._icon_path else app.windowIcon())
-        self._icon.setToolTip(self._tooltip or _tray_text("custom_ui.sys_name", "SllkGUI"))
-        self._icon.setContextMenu(self._menu)
-        self._icon.activated.connect(self._on_activated)
-        self._rebuild_menu()
-        self._icon.show()
-        record_event("tray.shown", category="gallery", payload={"actions": len(self._actions)})
-        return True
+        icon = app.windowIcon() if app is not None else QIcon()
+        if icon.isNull():
+            for path in (
+                PathFactory.set_ico(AppSettings.logo),
+                PathFactory.set_svg_image(AppSettings.logo_title),
+            ):
+                icon = QIcon(path)
+                if not icon.isNull():
+                    break
+            if app is not None and not icon.isNull():
+                app.setWindowIcon(icon)
+        return icon
+
+    @staticmethod
+    def _tooltip_text() -> str:
+        return _tray_text("custom_ui.sys_name", "SllkGUI")
 
     def _on_activated(self, reason: Any) -> None:
         from PySide6.QtWidgets import QSystemTrayIcon
@@ -155,15 +172,6 @@ class TrayService:
     def remove_plugin(self, plugin_id: str) -> None:
         for action_id in [key for key, action in self._actions.items() if action.plugin_id == plugin_id]:
             self._actions.pop(action_id, None)
-        if self._icon_owner == plugin_id:
-            self._icon_path = ""
-            self._icon_owner = ""
-            if self._icon is not None:
-                from PySide6.QtWidgets import QApplication
-
-                app = QApplication.instance()
-                if app is not None:
-                    self._icon.setIcon(app.windowIcon())
         self._rebuild_menu()
 
     def action_count(self, plugin_id: str = "") -> int:
@@ -172,29 +180,8 @@ class TrayService:
         return sum(1 for action in self._actions.values() if action.plugin_id == plugin_id)
 
     # ------------------------------------------------------------------
-    # 图标 / 提示 / 通知
+    # 提示 / 通知
     # ------------------------------------------------------------------
-    def set_icon(self, path: str | Path | None, *, plugin_id: str = "") -> bool:
-        self._icon_path = str(path) if path else ""
-        self._icon_owner = plugin_id if path else ""
-        if self._icon is None:
-            return self.ensure_visible()
-        from PySide6.QtGui import QIcon
-        from PySide6.QtWidgets import QApplication
-
-        if self._icon_path:
-            icon = QIcon(self._icon_path)
-        else:
-            app = QApplication.instance()
-            icon = app.windowIcon() if app is not None else QIcon()
-        self._icon.setIcon(icon)
-        return True
-
-    def set_tooltip(self, text: str) -> None:
-        self._tooltip = text
-        if self._icon is not None:
-            self._icon.setToolTip(text or _tray_text("custom_ui.sys_name", "SllkGUI"))
-
     def show_message(self, title: str, message: str, *, level: str = "info", timeout_ms: int = 4000) -> bool:
         if not self.ensure_visible():
             return False
@@ -210,11 +197,21 @@ class TrayService:
         return True
 
     def refresh_texts(self) -> None:
+        """语言切换后刷新菜单外壳与悬停提示（插件动作文案由插件自己刷新）。"""
         self._rebuild_menu()
+        if self._icon is not None:
+            self._icon.setToolTip(self._tooltip_text())
 
     # ------------------------------------------------------------------
     # 菜单
     # ------------------------------------------------------------------
+    def _invoke(self, action: TrayAction) -> None:
+        """执行插件动作并隔离异常，避免单个回调打断 Qt 事件循环。"""
+        try:
+            action.callback()
+        except Exception as exc:  # noqa: BLE001 - 插件回调错误不得影响基座
+            Logger.exception(f"托盘动作失败 {action.plugin_id}:{action.action_id}: {exc}")
+
     def _rebuild_menu(self) -> None:
         if self._menu is None:
             return
@@ -222,7 +219,7 @@ class TrayService:
         ordered = sorted(self._actions.values(), key=lambda item: (item.order, item.action_id))
         for action in ordered:
             item = self._menu.addAction(action.text)
-            item.triggered.connect(lambda _checked=False, cb=action.callback: cb())
+            item.triggered.connect(lambda _checked=False, entry=action: self._invoke(entry))
         if ordered:
             self._menu.addSeparator()
         show = self._menu.addAction(_tray_text("UI.ui_TrayShowWindow", "显示主窗口"))
@@ -232,7 +229,10 @@ class TrayService:
 
 
 class TrayHandle(GalleryTray):
-    """单个插件的托盘句柄：权限校验 + 卸载清理。"""
+    """单个插件的托盘句柄：权限校验 + 卸载清理。
+
+    图标与悬停提示由基座固定持有，句柄只暴露动作与通知。
+    """
 
     def __init__(self, service: TrayService, plugin_id: str, permissions: tuple[Permission, ...]) -> None:
         self._service = service
@@ -250,14 +250,6 @@ class TrayHandle(GalleryTray):
 
     def available(self) -> bool:
         return self._service.available()
-
-    def set_icon(self, path: str | Path | None = None) -> bool:
-        self._require(Permission.TRAY, "设置托盘图标")
-        return self._service.set_icon(path, plugin_id=self._plugin_id)
-
-    def set_tooltip(self, text: str) -> None:
-        self._require(Permission.TRAY, "设置托盘提示")
-        self._service.set_tooltip(text)
 
     def add_action(self, action_id: str, text: str, callback: Callable[[], None], *, order: int = 100) -> None:
         self._require(Permission.TRAY, "注册托盘动作")

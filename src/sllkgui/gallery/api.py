@@ -39,21 +39,14 @@ class Permission(StrEnum):
 class GalleryTray(ABC):
     """基座托盘能力：全进程唯一图标，插件只注册动作与通知。
 
-    由基座负责图标、菜单外壳（显示主窗口/退出）、生命周期与语言切换；
-    插件不得自建 ``QSystemTrayIcon``。动作回调在 Qt 主线程执行。
+    托盘图标、悬停提示、菜单外壳（显示主窗口/退出）与生命周期全部由基座
+    持有并常驻；插件**不得**修改图标或提示，也不得自建 ``QSystemTrayIcon``。
+    插件只能在菜单里插入文本动作与发送系统通知，动作回调在 Qt 主线程执行。
     """
 
     @abstractmethod
     def available(self) -> bool:
         """当前环境是否支持系统托盘。"""
-
-    @abstractmethod
-    def set_icon(self, path: str | Path | None = None) -> bool:
-        """设置托盘图标；传 ``None`` 恢复基座默认图标。路径必须在插件目录内。"""
-
-    @abstractmethod
-    def set_tooltip(self, text: str) -> None:
-        """设置托盘悬停提示。"""
 
     @abstractmethod
     def add_action(

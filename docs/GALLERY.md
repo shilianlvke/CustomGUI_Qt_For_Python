@@ -90,11 +90,12 @@ sllkgui scaffold <dir> [--id ID] [--name NAME] [--source]
 
 ### 托盘
 
-- 插件通过 `ctx.tray` 使用基座唯一托盘，禁止自建 `QSystemTrayIcon`；
-  需要声明 `tray` 权限，通知另需 `notifications`。
+- 托盘是基座常驻能力：启动即显示，图标/悬停提示/菜单外壳由基座固定持有；
+  插件只能通过 `ctx.tray` 注册文本动作（需 `tray` 权限，通知另需
+  `notifications`），禁止自建 `QSystemTrayIcon`、禁止替换图标或提示。
 - 托盘可见时关闭主窗口只隐藏，插件与桌面小部件继续运行；托盘菜单的
-  「退出」才会执行 `shutdown()`。
-- 完整方案见 [TRAY.md](TRAY.md)。
+  「退出」才会执行 `shutdown()`；插件重载不销毁托盘。
+- 完整协议与一致性校验点见 [TRAY.md](TRAY.md)。
 
 ## 5. 安全
 

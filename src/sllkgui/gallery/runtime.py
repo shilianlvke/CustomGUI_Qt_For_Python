@@ -139,6 +139,8 @@ class GalleryRuntime:
                 if record is not None:
                     self.records.append(record)
         refresh_language_namespace()
+        # 基座托盘常驻：先于插件动作创建，插件只往菜单里加条目
+        self.tray.ensure_visible()
         Logger.info(
             f"Gallery 启动: mode={self.mode} 插件 {len(self.records)} 个 / "
             f"Surface {self.registry.surface_count()} 个"
@@ -207,7 +209,8 @@ class GalleryRuntime:
     # ------------------------------------------------------------------
     def reload(self) -> GalleryRegistry:
         Logger.info("Gallery 重新加载插件")
-        self.shutdown(clear_registry=False)
+        # 重载只重建插件，托盘作为基座常驻能力继续持有，避免图标闪烁
+        self.shutdown(clear_registry=False, dispose_tray=False)
         self.registry.clear()
         self.records.clear()
         self.registry_state = load_registry(self.store.registry_file, base_version=sllkgui.__version__)
@@ -217,10 +220,11 @@ class GalleryRuntime:
             self.manager.state = self.registry_state
         return self.bootstrap()
 
-    def shutdown(self, *, clear_registry: bool = True) -> None:
+    def shutdown(self, *, clear_registry: bool = True, dispose_tray: bool = True) -> None:
         unload_all(self.records)
         self.records.clear()
-        self.tray.dispose()
+        if dispose_tray:
+            self.tray.dispose()
         if clear_registry:
             self.registry.clear()
             set_current_registry(None)

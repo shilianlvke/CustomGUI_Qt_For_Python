@@ -3,9 +3,31 @@
 项目遵循[语义化版本](https://semver.org/lang/zh-CN/)：major 版本允许破坏性变更并显式列出；
 minor 与 patch 保持向后兼容。
 
-当前版本：`2.1.10`（见 `src/sllkgui/_version.py`），对应 tag `base-v2.1.10`。
+当前版本：`2.2.0`（见 `src/sllkgui/_version.py`），对应 tag `base-v2.2.0`。
 
 ---
+
+## 2.2.0（2026-11-12）
+
+托盘协议（破坏性变更，详见 `docs/TRAY.md`）：
+
+- 托盘改为**基座常驻**：`GalleryRuntime.bootstrap()` 即创建并显示唯一
+  `QSystemTrayIcon`，不再等插件首次注册动作；插件重载不销毁托盘，关窗隐藏
+  到托盘，只有应用退出才释放。
+- 插件 API 收敛为「文本动作 + 通知」：移除 `GalleryTray.set_icon()` 与
+  `set_tooltip()`；图标固定取应用图标（缺失回落内置品牌图标），悬停提示固定
+  取基座应用名。插件无法替换托盘图标或提示。
+- 动作回调增加异常隔离，单个插件动作失败不影响事件循环；语言切换时基座
+  同时刷新外壳文案与悬停提示。
+- 同步更新 `docs/TRAY.md`（所有权矩阵、权限边界、生命周期、一致性校验点）、
+  `docs/GALLERY.md`、`docs/PLUGIN.md`、`docs/PLUGIN_STANDARD.md`。
+
+插件更新可靠性：
+
+- 修复 Windows 上更新插件时报 `WinError 5` 的问题：旧目录被占用时先完整
+  复制到 history，再移入 trash，删除时清理 Git 只读对象属性；目录改名按
+  间隔重试，不再就地 `rmtree` 造成半删。
+- 暂存目录改用同一套重试/兜底移动逻辑。
 
 ## 2.1.10（2026-11-12）
 
