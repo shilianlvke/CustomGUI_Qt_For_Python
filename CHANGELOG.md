@@ -3,9 +3,16 @@
 项目遵循[语义化版本](https://semver.org/lang/zh-CN/)：major 版本允许破坏性变更并显式列出；
 minor 与 patch 保持向后兼容。
 
-当前版本：`2.1.5`（见 `src/sllkgui/_version.py`），对应 tag `base-v2.1.5`。
+当前版本：`2.1.6`（见 `src/sllkgui/_version.py`），对应 tag `base-v2.1.6`。
 
 ---
+
+## 2.1.6（2026-11-12）
+
+- 插件管理卡片层级加强：外层面板改用 `surface_card`（如 dracula `#44475a`），
+  内层插件/结果/来源/详情卡改用页面底色（`#333645`），描边统一取
+  `surface_interactive_pressed`（`#595D75`），不再与页面背景融在一起。
+- 悬停底色改用 `dark_four`，与常态卡片区分更明显；空态虚线同步使用实描边色。
 
 ## 2.1.5（2026-11-12）
 

@@ -30,9 +30,10 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
-from sllkgui.appcore import AppSettings, ColorPalette, get_theme_manager
-from sllkgui.guicore import CButton, CCard, CConfirmDialog, CHDiv, CInputText
+from sllkgui.appcore import AppSettings, ColorPalette, get_design_tokens, get_theme_manager
+from sllkgui.guicore import CButton, CConfirmDialog, CHDiv, CInputText
 from sllkgui.guicore.custom_ui.panels.style import RADIUS, paint_surface, panel_colors, qss_color
+from sllkgui.guicore.styles import card_surface_color
 from sllkgui.plugin import GalleryContext
 
 _DANGER = "#e5534b"
@@ -71,6 +72,25 @@ def _card_rect(widget: QWidget) -> QRectF:
     return QRectF(widget.rect()).adjusted(0.75, 0.75, -0.75, -0.75)
 
 
+def _surface_color() -> QColor:
+    """外层卡片底色：与 ``CCard`` 的 ``surface_card`` 一致（#44475a）。"""
+    return QColor(card_surface_color())
+
+
+def _inset_color() -> QColor:
+    """内层卡片底色：页面底色，和外层卡片形成明确层级（#333645）。"""
+    return QColor(ColorPalette.custom_bg_one)
+
+
+def _line_color() -> QColor:
+    """卡片描边：取交互按压层，保证在两种底色上都清晰可见（#595D75）。"""
+    return QColor(get_design_tokens().colors.surface_interactive_pressed)
+
+
+def _hover_color() -> QColor:
+    return QColor(ColorPalette.custom_dark_four)
+
+
 #: 与 py-rm page_kit 对齐的排版角色
 _ROLE_SIZES = {"eyebrow": 8, "title": 18, "section": 12, "metric": 24, "body": 10, "muted": 9}
 
@@ -103,17 +123,18 @@ class _ThemedLabel(QLabel):
 
 
 class _Panel(QFrame):
-    """py-rm SectionCard 风格的外层容器：圆角 + 描边 + 留白。"""
+    """py-rm Card 风格容器：圆角 + 明显描边 + 分层底色。"""
 
-    def __init__(self, parent=None) -> None:
+    def __init__(self, level: str = "outer", parent=None) -> None:
         super().__init__(parent)
+        self._level = level
         self.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
 
     def paintEvent(self, event) -> None:  # noqa: N802 - 覆写 Qt 命名
-        colors = panel_colors()
         painter = QPainter(self)
         painter.setRenderHint(QPainter.RenderHint.Antialiasing)
-        paint_surface(painter, _card_rect(self), RADIUS, background=colors["background"], border=colors["border"])
+        background = _surface_color() if self._level == "outer" else _inset_color()
+        paint_surface(painter, _card_rect(self), RADIUS, background=background, border=_line_color())
         painter.end()
 
 
@@ -195,15 +216,14 @@ class _EmptyCard(QFrame):
         self.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed)
 
     def paintEvent(self, event) -> None:  # noqa: N802 - 覆写 Qt 命名
-        colors = panel_colors()
         painter = QPainter(self)
         painter.setRenderHint(QPainter.RenderHint.Antialiasing)
         rect = _card_rect(self)
         painter.setBrush(Qt.BrushStyle.NoBrush)
-        painter.setPen(QPen(QColor(colors["border"]), 1, Qt.PenStyle.DashLine))
+        painter.setPen(QPen(_line_color(), 1, Qt.PenStyle.DashLine))
         painter.drawRoundedRect(rect, RADIUS, RADIUS)
         painter.setFont(_font(self.font(), 10))
-        painter.setPen(QColor(colors["muted"]))
+        painter.setPen(QColor(panel_colors()["muted"]))
         painter.drawText(rect, Qt.AlignmentFlag.AlignCenter, self._text)
         painter.end()
 
@@ -258,7 +278,7 @@ class _ModeCard(QFrame):
             background = _tint(colors["accent"], 34)
             border = _tint(colors["accent"], 96)
         elif self._hovered:
-            background = colors["hover"]
+            background = _hover_color()
         paint_surface(painter, rect, 10, background=background, border=border)
 
         if self._active:
@@ -324,7 +344,7 @@ class _StatTile(QFrame):
         painter = QPainter(self)
         painter.setRenderHint(QPainter.RenderHint.Antialiasing)
         rect = _card_rect(self)
-        paint_surface(painter, rect, RADIUS, background=colors["background"], border=colors["border"])
+        paint_surface(painter, rect, RADIUS, background=_surface_color(), border=_line_color())
         painter.setFont(_font(self.font(), 9))
         painter.setPen(QColor(colors["muted"]))
         painter.drawText(
@@ -386,8 +406,8 @@ class _PluginCard(QFrame):
         painter = QPainter(self)
         painter.setRenderHint(QPainter.RenderHint.Antialiasing)
         rect = _card_rect(self)
-        background = colors["hover"] if self._hovered and not self._selected else colors["background"]
-        border = QColor(colors["accent"]) if self._selected else QColor(colors["border"])
+        background = _hover_color() if self._hovered and not self._selected else _inset_color()
+        border = QColor(colors["accent"]) if self._selected else _line_color()
         paint_surface(painter, rect, RADIUS, background=background, border=border)
 
         name = str(self.record.get("name") or self.record.get("id") or "")
@@ -522,8 +542,8 @@ class _ResultCard(QFrame):
             painter,
             _card_rect(self),
             RADIUS,
-            background=colors["hover"] if self._hovered else colors["background"],
-            border=_tint(colors["accent"], 90) if self._hovered else colors["border"],
+            background=_hover_color() if self._hovered else _inset_color(),
+            border=_tint(colors["accent"], 120) if self._hovered else _line_color(),
         )
         painter.end()
 
@@ -578,15 +598,14 @@ class _SourceRow(QFrame):
         super().leaveEvent(event)
 
     def paintEvent(self, event) -> None:  # noqa: N802 - 覆写 Qt 命名
-        colors = panel_colors()
         painter = QPainter(self)
         painter.setRenderHint(QPainter.RenderHint.Antialiasing)
         paint_surface(
             painter,
             _card_rect(self),
             RADIUS,
-            background=colors["hover"] if self._hovered else colors["background"],
-            border=colors["border"],
+            background=_hover_color() if self._hovered else _inset_color(),
+            border=_line_color(),
         )
         painter.end()
 
@@ -656,7 +675,7 @@ class _InstalledPanel(QWidget):
         self._update_actions()
 
     def _build_detail(self) -> QWidget:
-        card = CCard()
+        card = _Panel("inner")
         card.setFixedWidth(310)
         box = QVBoxLayout(card)
         box.setContentsMargins(18, 16, 18, 16)
