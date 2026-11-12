@@ -1,26 +1,49 @@
-custom_dark_one: '#1c1c1c'  # 侧栏 / 最深背景（Fluent 中性色阶 900）
-custom_dark_two: '#202020'  # 次级背景
-custom_dark_three: '#242424' # 面板 / 卡片层
-custom_dark_four: '#2d2d2d'  # 悬浮层 / 选中块
-custom_bg_one: '#202020'    # 窗口主背景
-custom_bg_two: '#2b2b2b'
-custom_bg_three: '#323232'
-custom_icon_color: '#c5c5c5'
+# 深色主题 · Grove（林间）
+#
+# 表面阶梯（由深到浅，每一档相差约 3~5 个亮度单位，保证层次可辨认）：
+#   custom_dark_one   侧栏（下沉，最深）
+#   custom_bg_one     画布（窗口主背景）
+#   custom_dark_two   面板（标题栏 / 抽屉 / 区域卡片基底）
+#   custom_dark_three 卡片（内容卡片，最浅的静态表面）
+#   custom_dark_four  抬升层（中性按钮、下拉框、选中块）
+#   custom_bg_two     交互悬停
+#   custom_bg_three   交互按下
+#
+# 强调色取品牌 logo（猕猴桃）的果肉绿：深色主题用浅果绿 + 深色文字，
+# 浅色主题用深松绿 + 白色文字，两套都满足 AA 对比度。
+
+custom_dark_one: '#0d1113'   # 侧栏（下沉层）
+custom_dark_two: '#171c1f'   # 面板 / 标题栏
+custom_dark_three: '#1c2225' # 卡片
+custom_dark_four: '#242b2e'  # 抬升层 / 中性按钮
+
+custom_bg_one: '#121619'     # 画布（窗口主背景）
+custom_bg_two: '#2a3236'     # 悬停
+custom_bg_three: '#333c41'   # 按下
+
+custom_context_color: '#a3e57f'   # 品牌果绿（深色主题强调色）
+custom_context_hover: '#b7ee99'
+custom_context_pressed: '#8ad165'
+
+custom_icon_color: '#9caaa0'
 custom_icon_hover: '#ffffff'
-custom_icon_pressed: '#4cc2ff' # Windows 11 浅色强调蓝
+custom_icon_pressed: '#a3e57f'
 custom_icon_active: '#ffffff'
-custom_context_color: '#4cc2ff' # Fluent 强调色（深色主题）
-custom_context_hover: '#6fd0ff'
-custom_context_pressed: '#3aa7e0'
-custom_text_title: '#ffffff'
-custom_text_foreground: '#cfcfcf'
-custom_text_description: '#919191'
+
+custom_text_title: '#f4f7f3'
+custom_text_foreground: '#dfe6df'
+custom_text_description: '#98a59b'
 custom_text_active: '#ffffff'
+
 custom_white: '#ffffff'
-custom_pink: '#ff99a4'
-custom_green: '#6ccb5f'
-custom_red: '#ff99a4'
-custom_yellow: '#fce100'
-custom_bg_active_one: '#6ccb5f'
-custom_bg_active_two: '#fce100'
-custom_bg_active_three: '#ff99a4'
+custom_black: '#000000'
+custom_pink: '#f0a8c0'
+custom_green: '#6fd08c'
+custom_red: '#ff8f87'
+custom_yellow: '#f2c65a'
+custom_info: '#7cc7ff'   # 信息：冷蓝，与品牌果绿拉开色相
+custom_help: '#c9a7ff'   # 帮助：淡紫
+
+custom_bg_active_one: '#6fd08c'
+custom_bg_active_two: '#f2c65a'
+custom_bg_active_three: '#ff8f87'

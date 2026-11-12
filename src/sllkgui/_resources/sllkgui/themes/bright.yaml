@@ -1,26 +1,46 @@
-custom_dark_one: '#f3f3f3'  # 侧栏 / 最深背景（Fluent 中性色阶 50）
-custom_dark_two: '#f8f8f8'  # 次级背景
-custom_dark_three: '#ffffff' # 面板 / 卡片层
-custom_dark_four: '#e9e9e9'  # 悬浮层 / 选中块
-custom_bg_one: '#f3f3f3'    # 窗口主背景
-custom_bg_two: '#e8e8e8'
-custom_bg_three: '#d9d9d9'
-custom_icon_color: '#5c5c5c'
-custom_icon_hover: '#1a1a1a'
-custom_icon_pressed: '#0067c0'
-custom_icon_active: '#0067c0'
-custom_context_color: '#0067c0' # Fluent 强调色（浅色主题）
-custom_context_hover: '#1975c5'
-custom_context_pressed: '#00579f'
-custom_text_title: '#1a1a1a'
-custom_text_foreground: '#3d3d3d'
-custom_text_description: '#6a6a6a'
-custom_text_active: '#1a1a1a'
+# 浅色主题 · Porcelain（瓷白）
+#
+# 表面阶梯（由深到浅）：
+#   custom_dark_one   侧栏（暖灰，比画布稍深）
+#   custom_bg_one     画布（暖白瓷色，避免纯灰的冷硬感）
+#   custom_dark_two   面板 / 标题栏（近白）
+#   custom_dark_three 卡片（纯白，靠 1px 发丝线勾边）
+#   custom_dark_four  抬升层（中性按钮、选中块）
+#
+# 强调色沿用品牌果绿的深松绿版本：白底上作为正文色仍有 5:1 以上对比度。
+
+custom_dark_one: '#e5eae3'   # 侧栏
+custom_dark_two: '#fbfcfa'   # 面板 / 标题栏
+custom_dark_three: '#ffffff' # 卡片
+custom_dark_four: '#f4f7f2'  # 抬升层 / 中性按钮
+
+custom_bg_one: '#eef1ec'     # 画布（窗口主背景）
+custom_bg_two: '#e2e8de'     # 悬停
+custom_bg_three: '#d4ddd0'   # 按下
+
+custom_context_color: '#2c7a4b'   # 深松绿强调色
+custom_context_hover: '#348c58'
+custom_context_pressed: '#22603a'
+
+custom_icon_color: '#58675c'
+custom_icon_hover: '#14201a'
+custom_icon_pressed: '#2c7a4b'
+custom_icon_active: '#14201a'
+
+custom_text_title: '#141a15'
+custom_text_foreground: '#2c3730'
+custom_text_description: '#5c6a60'
+custom_text_active: '#0f140f'
+
 custom_white: '#ffffff'
-custom_pink: '#c42b1c'
-custom_green: '#0f7b0f'
-custom_red: '#c42b1c'
-custom_yellow: '#9d5d00'
-custom_bg_active_one: '#0f7b0f'
-custom_bg_active_two: '#9d5d00'
-custom_bg_active_three: '#c42b1c'
+custom_black: '#000000'
+custom_pink: '#b3244a'
+custom_green: '#147a3f'
+custom_red: '#b3312a'
+custom_yellow: '#8a6200'
+custom_info: '#1a6fa8'   # 信息：钢蓝
+custom_help: '#6d47b8'   # 帮助：紫罗兰
+
+custom_bg_active_one: '#147a3f'
+custom_bg_active_two: '#8a6200'
+custom_bg_active_three: '#b3312a'

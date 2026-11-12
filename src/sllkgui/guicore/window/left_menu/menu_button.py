@@ -11,9 +11,8 @@ from PySide6.QtCore import (
 from PySide6.QtGui import QColor, QPainter, QPixmap
 from PySide6.QtWidgets import QPushButton
 
-from sllkgui.appcore import AppSettings, ColorPalette, PathFactory
+from sllkgui.appcore import AppSettings, ColorPalette, PathFactory, get_design_tokens
 
-from ...acrylic import glass_tint
 from ...custom_ui import CToolTip
 
 
@@ -31,6 +30,18 @@ def _mix_color(start_color, end_color, progress) -> QColor:
         round(start.blue() + (end.blue() - start.blue()) * progress),
         round(start.alpha() + (end.alpha() - start.alpha()) * progress),
     )
+
+
+def _wash(color: str, alpha: int) -> QColor:
+    """把颜色转成指定不透明度的叠层色。
+
+    直接给 ``QColor`` 设 Alpha 即可：自绘在侧栏上时由 Qt 做混合，深浅主题
+    都成立；不再依赖 ``glass_tint``——后者在非亚克力模式下会返回不透明实色，
+    把侧栏的细微渐变盖成一块平色。
+    """
+    result = QColor(color)
+    result.setAlpha(max(0, min(255, int(alpha))))
+    return result
 
 
 class CLeftMenuButton(QPushButton):
@@ -105,7 +116,9 @@ class CLeftMenuButton(QPushButton):
         # RECTANGLES
         rect_inside = QRect(4, 5, self.width() - 8, self.height() - 10)
         rect_icon = QRect(0, 0, 50, self.height())
-        rect_blue = QRect(2, 8, 3, max(0, self.height() - 16))
+        #: 选中指示条宽度取设计令牌，避免各主题/版本之间手写值漂移
+        bar_width = get_design_tokens().size.accent_bar
+        rect_blue = QRect(2, 8, bar_width, max(0, self.height() - 16))
         # Fluent 选中条：左侧 3px 强调色竖条，不再使用整块选中胶囊
         rect_text = QRect(45, 0, self.width() - 50, self.height())
 
@@ -116,15 +129,14 @@ class CLeftMenuButton(QPushButton):
         p.drawRoundedRect(rect_inside, 4, 4)
 
         # ACTIVE BG：用剪裁从左向右展开，比透明度叠色更干净
-        # 玻璃模式下选中块也保持半透明，避免在亚克力底上出现一整块实色。
-        # 页面按钮与设置入口（tab）统一用主题强调色：否则底部齿轮只剩一块
-        # 灰白底，和悬停态几乎分不出来，看起来像没激活。
+        # 选中块统一用强调色的低透明度叠层：深色主题上是"荧光绿雾"，浅色主题
+        # 上是"淡苔绿"，两种底色下都能和普通的悬停色块区分开。
         if progress > 0:
             p.save()
             p.setClipRect(QRect(0, 0, round(self.width() * progress), self.height()))
-            p.setBrush(QColor(glass_tint(ColorPalette.custom_dark_four, 0.55)))
+            p.setBrush(_wash(ColorPalette.custom_context_color, 30))
             p.drawRoundedRect(rect_inside, 4, 4)
-            p.setBrush(QColor(glass_tint(ColorPalette.custom_context_color, 0.90)))
+            p.setBrush(QColor(ColorPalette.custom_context_color))
             p.drawRoundedRect(rect_blue, 1.5, 1.5)
             p.restore()
 
@@ -158,16 +170,18 @@ class CLeftMenuButton(QPushButton):
         self._sync_active_progress()
 
     # 普通态底色（按下/悬停各有对应层级，颜色实时取，主题切换后重绘即更新）
-    # 玻璃模式下普通态完全透明、悬停/按下才叠一层低透明度色块，让侧栏的
-    # 亚克力底透出来；颜色仍随主题变化（透明色也按主题色取值）。
+    # 常态完全透明，让侧栏的渐变/亚克力底透出来；悬停与按下叠一层正文色，
+    # 深色主题变亮、浅色主题变深，两个方向都能看出"被指到了"。
     def _normal_bg_color(self):
         # 展开态不再常亮：否则「隐藏」按钮和页面选中项各有一块浅色胶囊，
         # 看起来像同时选了两项。展开状态改由图标颜色表达（见 paintEvent）。
         if self._state == "hover":
-            return glass_tint(ColorPalette.custom_dark_three, 0.20)
+            return _wash(ColorPalette.custom_text_foreground, 22)
         if self._state == "pressed":
-            return glass_tint(ColorPalette.custom_dark_four, 0.28)
-        return glass_tint(ColorPalette.custom_dark_one, 0.0)
+            return _wash(ColorPalette.custom_text_foreground, 38)
+        # 常态：取当前主题正文色的 0% 叠层（完全透明），颜色仍随主题变化，
+        # 不会被缓存成某个主题的快照。
+        return _wash(ColorPalette.custom_text_foreground, 0)
 
     # 普通态图标色
     def _normal_icon_color(self):
@@ -258,7 +272,7 @@ class CLeftMenuButton(QPushButton):
         icon = QPixmap(self._base_icon(image))
         painter = QPainter(icon)
         painter.setCompositionMode(QPainter.CompositionMode_SourceIn)
-        painter.fillRect(icon.rect(), QColor(glass_tint(ColorPalette.custom_bg_one, 0.55)))
+        painter.fillRect(icon.rect(), _wash(ColorPalette.custom_bg_one, 140))
         qp.drawPixmap(width - 5, 0, icon)
         painter.end()
 

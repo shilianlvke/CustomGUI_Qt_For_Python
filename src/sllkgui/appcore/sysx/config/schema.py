@@ -684,6 +684,9 @@ class ThemeModel:
     custom_bg_active_one: str | None = None
     custom_bg_active_two: str | None = None
     custom_bg_active_three: str | None = None
+    custom_info: str | None = None
+    custom_help: str | None = None
+    custom_black: str | None = None
     custom_transparent: str | None = None
 
     @classmethod

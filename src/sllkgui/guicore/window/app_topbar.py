@@ -439,7 +439,7 @@ class CAppTopbar(QWidget):
         colors = get_design_tokens().colors
         painter = QPainter(self)
         painter.fillRect(self.rect(), QColor(colors.surface_panel))
-        painter.setPen(QPen(QColor(colors.surface_interactive_pressed), 1))
+        painter.setPen(QPen(QColor(colors.border_hairline), 1))
         painter.drawLine(0, self.height() - 1, self.width(), self.height() - 1)
         painter.end()
 

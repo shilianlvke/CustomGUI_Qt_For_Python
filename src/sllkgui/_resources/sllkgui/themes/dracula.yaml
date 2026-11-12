@@ -1,26 +1,41 @@
-custom_dark_one: '#282a36'  # 侧栏 / 最深背景
-custom_dark_two: '#2B2E3B'  # 次级背景
-custom_dark_three: '#44475a' # 面板 / 卡片层（比窗口更亮，保持与其它主题一致的层级）
-custom_dark_four: '#3C4052'  # 悬浮层 / 选中块
-custom_bg_one: '#333645'    # 窗口主背景
-custom_bg_two: '#4D5066'
-custom_bg_three: '#595D75'
-custom_icon_color: '#c3ccdf'
-custom_icon_hover: '#dce1ec'
-custom_icon_pressed: '#ff9ad5'
-custom_icon_active: '#f5f6f9'
-custom_context_color: '#ff9ad5' # 提亮后的 Dracula 粉，卡片上正文对比度 ≥ 4.5
+# 深色主题 · Orchid（夜樱）
+#
+# 保留 Dracula 的粉紫身份色，但把表面阶梯重排成与其它主题一致的五档：
+# 侧栏 -> 画布 -> 面板 -> 卡片 -> 抬升层，避免原配色里卡片比画布还亮
+# 导致的层级倒置。
+
+custom_dark_one: '#16171f'   # 侧栏（下沉层）
+custom_dark_two: '#262833'   # 面板 / 标题栏
+custom_dark_three: '#2d3040' # 卡片
+custom_dark_four: '#353949'  # 抬升层 / 中性按钮
+
+custom_bg_one: '#1e1f29'     # 画布（窗口主背景）
+custom_bg_two: '#3b3f52'     # 悬停
+custom_bg_three: '#474c63'   # 按下
+
+custom_context_color: '#ff9ad5'   # Dracula 粉（提亮版，卡片上对比度 ≥ 4.5）
 custom_context_hover: '#ffb3e2'
 custom_context_pressed: '#f582c6'
-custom_text_title: '#dce1ec'
-custom_text_foreground: '#f8f8f2'
-custom_text_description: '#b4badf' # 原 #979EC7 在卡片上仅 3.5:1，提亮到 ≥ 4.5
-custom_text_active: '#dce1ec'
+
+custom_icon_color: '#c3ccdf'
+custom_icon_hover: '#ffffff'
+custom_icon_pressed: '#ff9ad5'
+custom_icon_active: '#ffffff'
+
+custom_text_title: '#f8f8f2'
+custom_text_foreground: '#e8e8f2'
+custom_text_description: '#b9c0e0'
+custom_text_active: '#ffffff'
+
 custom_white: '#f5f6f9'
+custom_black: '#000000'
 custom_pink: '#ff79c6'
-custom_green: '#50fa7b'
-custom_red: '#ff5555'
-custom_yellow: '#f1fa8c'
-custom_bg_active_one: '#50fa7b'
-custom_bg_active_two: '#f1fa8c'
-custom_bg_active_three: '#ff5555'
+custom_green: '#6ee7a0'
+custom_red: '#ff7b7b'
+custom_yellow: '#f5dc8a'
+custom_info: '#8be9fd'   # 信息：Dracula 青
+custom_help: '#bd93f9'   # 帮助：Dracula 紫
+
+custom_bg_active_one: '#6ee7a0'
+custom_bg_active_two: '#f5dc8a'
+custom_bg_active_three: '#ff7b7b'

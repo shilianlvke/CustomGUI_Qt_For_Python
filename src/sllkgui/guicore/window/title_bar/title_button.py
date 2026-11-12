@@ -4,8 +4,14 @@ from PySide6.QtWidgets import QPushButton
 
 from sllkgui.appcore import ColorPalette
 
-from ...acrylic import glass_tint
 from ...custom_ui import CToolTip
+
+
+def _wash(color: str, alpha: int) -> QColor:
+    """把颜色转成指定不透明度的叠层色（深浅主题都能直接混在标题栏上）。"""
+    result = QColor(color)
+    result.setAlpha(max(0, min(255, int(alpha))))
+    return result
 
 
 # PY TITLE BUTTON
@@ -24,6 +30,7 @@ class CTitleButton(QPushButton):
         icon_color: str | None = None,
         icon_path="no_icon.svg",
         is_active=False,
+        danger: bool = False,
     ):
         super().__init__()
 
@@ -35,6 +42,8 @@ class CTitleButton(QPushButton):
         # PROPERTIES
         self._top_margin = self.height() + 6
         self._is_active = is_active
+        #: 关闭类按钮：悬停/按下用语义红色，和最小化/最大化区分开
+        self._danger = danger
         # Set Parameters
         self._set_bg_color = bg_color or ColorPalette.custom_dark_four
         self._set_icon_path = icon_path
@@ -77,14 +86,12 @@ class CTitleButton(QPushButton):
         if self._is_active:
             # 选中态用强调色的低透明度叠层：此前直接填 custom_text_foreground
             # （近白色），第二次打开外观抽屉时按钮会变成一块突兀的亮白底。
-            active_bg = QColor(ColorPalette.custom_context_color)
-            active_bg.setAlpha(38)
-            brush = QBrush(active_bg)
+            brush = QBrush(_wash(ColorPalette.custom_context_color, 46))
         else:
             if not self._icon_enter:
                 self._set_icon_color = ColorPalette.custom_icon_color  # Set icon color
                 # 常态透明：标题栏的玻璃底直接透出，只在悬停/按下时叠色块
-                self._set_bg_color = glass_tint(ColorPalette.custom_dark_three, 0.0)
+                self._set_bg_color = _wash(ColorPalette.custom_text_foreground, 0)
             # BRUSH
             brush = QBrush(QColor(self._set_bg_color))
 
@@ -104,18 +111,21 @@ class CTitleButton(QPushButton):
     # Functions with custom styles
     # ///////////////////////////////////////////////////////////////
     def change_style(self, event):
+        # 关闭按钮悬停/按下走语义红：与 Windows 原生标题栏一致，
+        # 让"点错会关窗"这件事在按下前就能被看出来。
+        hover_tint = ColorPalette.custom_red if self._danger else ColorPalette.custom_text_foreground
         if event == QEvent.Enter:
-            self._set_bg_color = glass_tint(ColorPalette.custom_bg_three, 0.24)
-            self._set_icon_color = ColorPalette.custom_icon_hover
+            self._set_bg_color = _wash(hover_tint, 30 if self._danger else 24)
+            self._set_icon_color = ColorPalette.custom_white if self._danger else ColorPalette.custom_icon_hover
         elif event == QEvent.Leave:
-            self._set_bg_color = glass_tint(ColorPalette.custom_dark_three, 0.0)
+            self._set_bg_color = _wash(ColorPalette.custom_text_foreground, 0)
             self._set_icon_color = ColorPalette.custom_icon_color
         elif event == QEvent.MouseButtonPress:
-            self._set_bg_color = glass_tint(ColorPalette.custom_bg_one, 0.34)
+            self._set_bg_color = _wash(hover_tint, 46 if self._danger else 38)
             self._set_icon_color = ColorPalette.custom_icon_pressed
         elif event == QEvent.MouseButtonRelease:
-            self._set_bg_color = glass_tint(ColorPalette.custom_bg_three, 0.24)
-            self._set_icon_color = ColorPalette.custom_icon_hover
+            self._set_bg_color = _wash(hover_tint, 30 if self._danger else 24)
+            self._set_icon_color = ColorPalette.custom_white if self._danger else ColorPalette.custom_icon_hover
 
     # MOUSE OVER
     # Event triggered when the mouse is over the BTN

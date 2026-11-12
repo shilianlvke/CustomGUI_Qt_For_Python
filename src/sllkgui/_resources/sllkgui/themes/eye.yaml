@@ -1,26 +1,41 @@
-custom_dark_one: '#eef6f1'  # 侧栏 / 最深背景（淡绿中性色阶）
-custom_dark_two: '#f4faf6'  # 次级背景
-custom_dark_three: '#ffffff' # 面板 / 卡片层
-custom_dark_four: '#e0ede5'  # 悬浮层 / 选中块
-custom_bg_one: '#eef6f1'    # 窗口主背景
-custom_bg_two: '#e2efe7'
-custom_bg_three: '#d3e5da'
-custom_icon_color: '#4f6f61'
-custom_icon_hover: '#2f5a48'
-custom_icon_pressed: '#0f7b5f'
-custom_icon_active: '#0f6b52'
-custom_context_color: '#0f7b5f' # 护眼主题的强调色
-custom_context_hover: '#199a76'
-custom_context_pressed: '#0a6049'
-custom_text_title: '#1f3a30'
-custom_text_foreground: '#3c5a4f'
-custom_text_description: '#5a7568'
-custom_text_active: '#1f3a30'
+# 护眼主题 · Moss（苔庭）
+#
+# 与 bright 共用同一套表面阶梯，只把画布换成低蓝光的苔绿纸色，
+# 并把强调色压成偏橄榄的森林绿——与 bright 的松绿拉开色相，避免
+# 两套浅色主题看起来是同一个主题。
+
+custom_dark_one: '#e3ecde'   # 侧栏
+custom_dark_two: '#fafcf7'   # 面板 / 标题栏
+custom_dark_three: '#ffffff' # 卡片
+custom_dark_four: '#f2f7ec'  # 抬升层 / 中性按钮
+
+custom_bg_one: '#edf3e9'     # 画布（苔绿纸色）
+custom_bg_two: '#dfe9d7'     # 悬停
+custom_bg_three: '#d0dcc6'   # 按下
+
+custom_context_color: '#4c7434'   # 橄榄森林绿强调色
+custom_context_hover: '#5a8840'
+custom_context_pressed: '#3b5c27'
+
+custom_icon_color: '#5a6a4d'
+custom_icon_hover: '#22301a'
+custom_icon_pressed: '#4c7434'
+custom_icon_active: '#22301a'
+
+custom_text_title: '#1b2415'
+custom_text_foreground: '#35422c'
+custom_text_description: '#5e6b52'
+custom_text_active: '#151d10'
+
 custom_white: '#ffffff'
-custom_pink: '#c42b1c'
-custom_green: '#0f7b0f'
-custom_red: '#c42b1c'
-custom_yellow: '#86610a'
-custom_bg_active_one: '#0f7b0f'
-custom_bg_active_two: '#86610a'
-custom_bg_active_three: '#c42b1c'
+custom_black: '#000000'
+custom_pink: '#a8385c'
+custom_green: '#2f7a2f'
+custom_red: '#b23a2c'
+custom_yellow: '#85620a'
+custom_info: '#336b8a'   # 信息：雾蓝（低饱和，保持护眼基调）
+custom_help: '#6b4f9c'   # 帮助：灰紫
+
+custom_bg_active_one: '#2f7a2f'
+custom_bg_active_two: '#85620a'
+custom_bg_active_three: '#b23a2c'

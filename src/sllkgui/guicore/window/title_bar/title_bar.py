@@ -5,7 +5,7 @@ from PySide6.QtWidgets import QFrame, QHBoxLayout, QLabel, QVBoxLayout, QWidget
 from sllkgui.appcore import AppSettings, ColorPalette, Language, PathFactory
 from sllkgui.guicore.custom_ui.div import CVDiv
 
-from ...acrylic import acrylic_active, glass_tint
+from ...acrylic import acrylic_active
 from .title_button import CTitleButton
 
 #: 非亚克力模式下留给窗口外阴影的边距（最大化时归零）。
@@ -37,6 +37,10 @@ class CTitleBar(QWidget):
     clicked = Signal(object)
     released = Signal(object)
 
+    #: 标题栏 logo 的显示边长。品牌标是一幅细节较多的插画，按 ``icon_size``
+    #: （16px）渲染会糊成一个色点；20px 在 40px 高的标题栏里仍然居中且可辨认。
+    LOGO_SIZE = 20
+
     def __init__(self, parent, app_parent):
         super().__init__()
         self._parent = parent
@@ -52,10 +56,12 @@ class CTitleBar(QWidget):
         # 参数
         self._logo_image = AppSettings.logo_title
         self._dark_one = ColorPalette.custom_dark_one
-        # 标题栏在玻璃模式下是半透明面板，按钮常态必须透明才能透出亚克力底
-        self._bg_color = glass_tint(ColorPalette.custom_dark_three, 0.0)
+        # 标题栏在玻璃模式下是半透明面板，按钮常态必须透明才能透出亚克力底；
+        # 这里必须用真正的透明色而不是「与标题栏同色」——非亚克力模式下
+        # glass_tint 不会降透明度，会在标题栏上留下一块实色方块。
+        self._bg_color = ColorPalette.custom_transparent
         self._div_color = ColorPalette.custom_bg_three
-        self._btn_bg_color = glass_tint(ColorPalette.custom_dark_three, 0.0)
+        self._btn_bg_color = ColorPalette.custom_transparent
         self._btn_bg_color_hover = ColorPalette.custom_bg_three
         self._btn_bg_color_pressed = ColorPalette.custom_bg_one
         self._context_color = ColorPalette.custom_context_color
@@ -79,8 +85,8 @@ class CTitleBar(QWidget):
         Language.subscribe(self.apply_language)
 
         # 设置logo宽度
-        self.top_logo.setMinimumWidth(AppSettings.icon_size)
-        self.top_logo.setMaximumWidth(AppSettings.icon_size)
+        self.top_logo.setMinimumWidth(self.LOGO_SIZE)
+        self.top_logo.setMaximumWidth(self.LOGO_SIZE)
 
         # self.top_logo.setPixmap(Functions.set_svg_image(logo_image))
 
@@ -313,7 +319,7 @@ class CTitleBar(QWidget):
         self.top_logo_layout.setContentsMargins(0, 0, 0, 0)
         self.logo_svg = QSvgWidget()
         self.logo_svg.load(PathFactory.set_svg_image(self._logo_image))
-        fit_logo_size(self.logo_svg, AppSettings.icon_size)
+        fit_logo_size(self.logo_svg, self.LOGO_SIZE)
         self.top_logo_layout.addWidget(self.logo_svg, Qt.AlignCenter, Qt.AlignCenter)
 
         # TITLE LABEL（字号/字体由 sllkgui.guicore/styles.py 的 #CTitleBar_Title_Label 提供）
@@ -348,7 +354,7 @@ class CTitleBar(QWidget):
             icon_path=PathFactory.set_svg_icon("icon_maximize"),
         )
 
-        # CLOSE BUTTON
+        # CLOSE BUTTON（关闭按钮悬停时走语义红，与系统标题栏一致）
         self.close_button = CTitleButton(
             self._parent,
             self._app_parent,
@@ -357,6 +363,7 @@ class CTitleBar(QWidget):
             icon_color=self._icon_color,
             radius=6,
             icon_path=PathFactory.set_svg_icon("icon_close"),
+            danger=True,
         )
 
         # ADD TO LAYOUT

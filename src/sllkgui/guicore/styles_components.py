@@ -4,7 +4,7 @@
 统一追加到宿主拼装的 ``self.style`` 字符串。本模块只做「颜色/状态/字体」的
 文本生成，配色值全部来自 :class:`~sllkgui.guicore.styles.Styles` 预先算好的
 调色属性（``tokens`` / ``glass`` / ``_stroke`` / ``_fill_*`` 等），因此
-``Styles`` 继承本 mixin 即可，行为与拆分前一致。
+``Styles`` 继承本 mixin 即可。
 
 ``_mix`` 放在这里供两侧共用：``Styles`` 的调色计算与本模块的输入框 hover
 描边都需要它，单独留在 ``styles.py`` 会形成循环导入。
@@ -32,18 +32,19 @@ class _ComponentStyles:
         """内容区与四向抽屉共用的区域背景卡片。
 
         卡片只提供**底色 + 圆角**，不再描边：描边会在卡片与内部内容之间夹出
-        一圈异色窄环，内容也就不可能和卡片"无缝拼接"。底色见
-        :func:`region_card_tint`，圆角取 ``radius.window``，五个区域完全同一
-        套规则，深浅主题自动跟随。
+        一圈异色窄环，内容也就不可能和卡片"无缝拼接"。底色是极轻的纵向
+        渐变（顶部略亮），让大面积板面不至于像一块死板的纯色。五个区域完全
+        同一套规则，深浅主题自动跟随。
 
         亚克力模式下底色是半透明玻璃层，与上方的标题栏/侧栏形成层次；页面
-        过场采用透明擦除，擦除空白直接露出这层玻璃，不再用实色近似。内容与
-        卡片齐平由挂载处保证（``ui_main`` 的内容区布局、三向栏目的标题条布局
-        边距均为 0），本文件只负责颜色，几何留在实例侧。
+        过场采用透明擦除，擦除空白直接露出这层玻璃。内容与卡片齐平由挂载处
+        保证（``ui_main`` 的内容区布局、三向栏目的标题条布局边距均为 0）。
         """
         self.style += f"""
             #CRegion_Card_Frame {{
-                background-color: {self._region_bg};
+                /* 实色兜底 + 极轻渐变：不支持渐变的样式引擎仍能拿到正确的底色 */
+                background-color: {self._region_tint};
+                background: {self._region_bg};
                 border: 0px solid transparent;
                 border-radius: {self.tokens.radius.window}px;
             }}
@@ -51,6 +52,7 @@ class _ComponentStyles:
                避免出现「有的全透明、有的实色」的不一致观感 */
             #CRegion_Card_Frame[overlay="true"] {{
                 background-color: {self._overlay_panel_bg};
+                background: {self._overlay_panel_bg};
                 border: 1px solid {self._overlay_panel_border};
                 border-radius: {self.tokens.radius.window}px;
             }}
@@ -61,6 +63,7 @@ class _ComponentStyles:
 
         ``CMenuButton`` / ``CPushButton`` 的圆角与边框宽度属实例级几何，由组件
         本地覆盖；这里只提供颜色、内边距与 ``::menu-indicator`` 的图标资源。
+        焦点态统一用 1px 强调色描边（不改变边框宽度，避免聚焦时内容位移）。
         """
         self.style += f"""
             #CMenuButton_PushButton {{
@@ -76,9 +79,12 @@ class _ComponentStyles:
             }}
             #CMenuButton_PushButton:pressed {{
                 background-color: {self._fill_pressed};
+                border-color: {self._stroke_strong};
             }}
             #CMenuButton_PushButton:focus {{
-                border: 2px solid {self._accent_border};
+                border-style: solid;
+                border-color: {self._accent_border};
+                background-color: {self._fill_hover};
             }}
             #CMenuButton_PushButton:disabled {{
                 background-color: {self._fill_rest};
@@ -110,9 +116,12 @@ class _ComponentStyles:
             }}
             #CPushButton_PushButton:pressed {{
                 background-color: {self._fill_pressed};
+                border-color: {self._stroke_strong};
             }}
             #CPushButton_PushButton:focus {{
-                border: 2px solid {self._accent_border};
+                border-style: solid;
+                border-color: {self._accent_border};
+                background-color: {self._fill_hover};
             }}
             #CPushButton_PushButton:disabled {{
                 background-color: {self._fill_rest};
@@ -130,7 +139,7 @@ class _ComponentStyles:
         hover 描边取「常态描边 → 正文色」的 35% 混合：深色主题变亮、浅色主题变深，
         两个方向都更醒目；玻璃模式下描边本身已是低透明度正文色，混合后仍是
         同一色相，不会出现"浮在玻璃上的另一个色块"。文字色用 ``text_active``
-        保证输入内容的可读性。
+        保证输入内容的可读性。聚焦只换描边色、不改宽度，避免输入时内容跳动。
         """
         border = self._control_stroke
         hover_border = _mix(border, self.tokens.colors.text_primary, 0.25)
@@ -147,9 +156,11 @@ class _ComponentStyles:
             }}
             #CInputText_LineEdit:hover, #CTextarea_PlainTextEdit:hover {{
                 border-color: {hover_border};
+                background-color: {self._fill_hover};
             }}
             #CInputText_LineEdit:focus, #CTextarea_PlainTextEdit:focus {{
-                border-bottom: 2px solid {self._accent_border};
+                border-color: {self._accent_border};
+                background-color: {self._fill_rest};
             }}
             #CInputText_LineEdit[invalid="true"], #CTextarea_PlainTextEdit[invalid="true"] {{
                 border-color: {self._danger};
@@ -160,7 +171,7 @@ class _ComponentStyles:
                 color: {self.tokens.colors.text_muted};
             }}
             #CLineEdit_LineEdit {{
-                background-color: {self._fill_rest};
+                background-color: {self._control_bg};
                 border-radius: {self.tokens.radius.control}px;
                 border: 1px solid {self._control_stroke};
                 padding-left: {self.tokens.spacing.padding_sm}px;
@@ -169,8 +180,11 @@ class _ComponentStyles:
                 selection-background-color: {self._accent_soft};
                 color: {self.tokens.colors.text_primary};
             }}
+            #CLineEdit_LineEdit:hover {{
+                border-color: {hover_border};
+            }}
             #CLineEdit_LineEdit:focus {{
-                border-bottom: 2px solid {self._accent_border};
+                border-color: {self._accent_border};
             }}
             #CLineEdit_LineEdit:disabled {{
                 color: {self.tokens.colors.text_muted};
@@ -197,7 +211,7 @@ class _ComponentStyles:
                 background-color: {self._fill_hover};
             }}
             #CComboBox_Field[focused="true"] {{
-                border-bottom: 2px solid {self._accent_border};
+                border-color: {self._accent_border};
                 background-color: {self._fill_hover};
             }}
             #CComboBox_Field:disabled {{
@@ -228,7 +242,9 @@ class _ComponentStyles:
                 background-color: {self._fill_pressed};
             }}
             #CStatusButton_PushButton:focus {{
-                border: 2px solid {self._accent_border};
+                border-style: solid;
+                border-color: {self._accent_border};
+                background-color: {self._fill_hover};
             }}
             #CStatusButton_PushButton:disabled {{
                 color: {self.tokens.colors.text_muted};
@@ -237,9 +253,11 @@ class _ComponentStyles:
             #CStatusButton_PushButton[status="1"] {{
                 border-color: {self._accent_border};
                 background-color: {self._accent_soft};
+                color: {self.tokens.colors.text_title};
             }}
             #CStatusButton_PushButton[status="-1"] {{
-                border-color: {self.tokens.colors.state_active};
+                border-color: {self._danger};
+                background-color: {self._accent_wash};
             }}
         """
 
@@ -250,18 +268,21 @@ class _ComponentStyles:
         下发的应用级样式表着色。圆角/边框宽度/菜单项内边距为实例级几何，由组件
         本地覆盖；``is_transparent`` 经动态属性 ``transparent`` 选择。
 
-        玻璃模式下菜单保持高不透明度（``GLASS_MENU``）：弹层背后没有应用窗口
-        的玻璃层可透，过低会直接看到未模糊的桌面。
+        菜单取当前主题最亮的表面（深色为抬升层、浅色为卡片白），并用比卡片
+        更清晰的发丝线勾边——弹层没有背景板衬托，全靠这一圈线立起来。
         """
         self.style += f"""
             #CMenu_Menu {{
                 border-style: solid;
-                border-color: {self._control_stroke_secondary};
+                border-color: {self._stroke_strong};
                 background-color: {self._menu_bg};
                 color: {self.tokens.colors.text_primary};
+                selection-color: {self.tokens.colors.text_title};
+                selection-background-color: transparent;
             }}
             #CMenu_Menu[transparent="true"] {{
                 background-color: {self.tokens.colors.border_transparent};
+                border-color: {self.tokens.colors.border_transparent};
             }}
             #CMenu_Menu::item {{
                 border-style: solid;
@@ -270,6 +291,14 @@ class _ComponentStyles:
             }}
             #CMenu_Menu::item:selected {{
                 background-color: {self._accent_soft};
+                color: {self.tokens.colors.text_title};
+            }}
+            #CMenu_Menu::item:disabled {{
+                color: {self.tokens.colors.text_muted};
+                background-color: transparent;
+            }}
+            #CMenu_Menu::separator {{
+                background-color: {self._hairline};
             }}
         """
 
@@ -277,7 +306,7 @@ class _ComponentStyles:
         """CShowCard：上下分区配色（颜色随主题；圆角由组件按实例覆盖）。"""
         self.style += f"""
             #CShowCard #topArea {{
-                background-color: {self._fill_pressed};
+                background-color: {self._fill_rest};
             }}
             #CShowCard #bottomArea {{
                 background-color: {self._fill_hover};
@@ -313,16 +342,18 @@ class _ComponentStyles:
             #label_tooltip {{
                 background-color: {self._tooltip_bg};
                 color: {self.tokens.colors.text_primary};
-                border: 1px solid {self._control_stroke_secondary};
+                border: 1px solid {self._stroke_strong};
                 font: {self.tokens.typography.weight_tooltip} {self.tokens.typography.size_text}pt "{self.tokens.typography.family}";
             }}
         """
 
     def update_title_bar_style(self):
-        """标题栏标题文字。"""
+        """标题栏标题文字：用标题色 + 半粗体，保证窗口标题是顶栏最重的一层。"""
         self.style += f"""
             #CTitleBar_Title_Label {{
+                color: {self.tokens.colors.text_title};
                 font: {self.tokens.typography.size_title}pt "{self.tokens.typography.family}";
+                font-weight: 600;
             }}
         """
 
@@ -330,14 +361,19 @@ class _ComponentStyles:
         """四向抽屉（栏目）的标题区与无背景容器框。
 
         左/右/顶/底四列同构：标题背景框 + 标题文字，图标位/按钮位/内容框保持
-        透明。背景框圆角与标题的内边距/字体是组件本地几何，由组件覆盖。容器框
-        改用 ID 选择器（原来是不带选择器的裸规则，会级联到所有子孙控件）。
+        透明。标题用标题色、副标题用弱化色，形成两级信息；圆角与内边距/字体
+        是组件本地几何，由组件覆盖。容器框改用 ID 选择器（原来是不带选择器的
+        裸规则，会级联到所有子孙控件）。
         """
         self.style += f"""
             #CLeftColumnTitle_Frame, #CTopColumnTitle_Frame, #CBottomColumnTitle_Frame {{
                 background-color: transparent;
             }}
             #CLeftColumnTitle_Label, #CTopColumnTitle_Label, #CBottomColumnTitle_Label {{
+                color: {self.tokens.colors.text_title};
+                background: none;
+            }}
+            #CLeftColumnTitle_Subtitle {{
                 color: {self.tokens.colors.text_muted};
                 background: none;
             }}
@@ -403,10 +439,10 @@ class _ComponentStyles:
                 alternate-background-color: {self._card_bg};
                 color: {self.tokens.colors.text_primary};
                 border: 1px solid {self._control_stroke_secondary};
-                border-radius: {self.tokens.radius.window}px;
+                border-radius: {radius}px;
                 gridline-color: {self._gridline};
                 selection-background-color: {selection};
-                selection-color: {self.tokens.colors.text_active};
+                selection-color: {self.tokens.colors.text_title};
                 outline: 0;
             }}
             #CDataTable_View::item, #CDataTable_FrozenView::item {{
@@ -455,17 +491,17 @@ class _ComponentStyles:
 
         历史实现只在表格与文件上传列表里各写了一份滚动条规则，
         ``CScrollArea``、``CTextarea`` 等可滚动控件没有规则，仍由平台样式
-        绘制（带上下箭头、方形深色轨道）。此前 ``CScrollArea`` 一直隐藏滚动条
-        所以看不出来；启用“按需显示”后，原生滚动条就与 Fluent 卡片格格不入。
-        这里改为一条**全局规则**统一横/纵滚动条，各组件不再各写一份：
+        绘制（带上下箭头、方形深色轨道）。这里改为一条**全局规则**统一横/纵
+        滚动条，各组件不再各写一份：
 
         - 轨道透明、无边框、无箭头（``add-line``/``sub-line`` 归零）；
-        - 把手 12px 轨道内缩 3px，得到 6px 宽的胶囊形（圆角 3px）；
+        - 把手 10px 轨道内缩 2px，得到 6px 宽的胶囊形（圆角 2px）——
+          再细就只剩视觉装饰、鼠标很难抓住；
         - 常态/悬停/按下三档透明度，深浅主题与亚克力开关下都保持可辨。
         """
         thickness = 10
-        inset = 3
-        min_length = 32
+        inset = 2
+        min_length = 28
         radius = 2
         self.style += f"""
             QScrollBar:vertical {{

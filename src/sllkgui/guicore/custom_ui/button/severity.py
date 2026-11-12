@@ -106,14 +106,29 @@ def _contrast_text(color: QColor) -> QColor:
 
 
 def _semantic_base(severity: Severity) -> QColor:
-    """语义色的主题基色；未单独定义的 severity 统一回落到强调色。"""
+    """语义色的主题基色；未单独定义的 severity 统一回落到强调色。
+
+    各主题都给了 success / warn / danger / info / help 五个独立色相：品牌强调
+    色已经占掉绿色，信息与帮助必须换色，否则「Primary / Success / Info / Help」
+    在按钮页上会变成四块几乎一样的绿。
+    """
     if severity is Severity.SUCCESS:
         return QColor(ColorPalette.custom_green)
     if severity is Severity.WARN:
         return QColor(ColorPalette.custom_yellow)
     if severity is Severity.DANGER:
         return QColor(ColorPalette.custom_red)
+    if severity is Severity.INFO:
+        return QColor(_palette_fallback("custom_info"))
+    if severity is Severity.HELP:
+        return QColor(_palette_fallback("custom_help"))
     return QColor(ColorPalette.custom_context_color)
+
+
+def _palette_fallback(name: str) -> str:
+    """读取可选语义色；旧品牌主题未定义时回落到强调色，不让按钮变透明。"""
+    value = getattr(ColorPalette, name, None)
+    return value if isinstance(value, str) and value.strip() else ColorPalette.custom_context_color
 
 
 def _neutral(dark: bool) -> tuple[QColor, QColor, QColor, QColor]:
@@ -253,7 +268,7 @@ def normalize_severity(value: str | Severity) -> Severity:
 def severity_color(severity: str | Severity) -> QColor:
     """语义色基色（实心标签/徽标底色）。"""
     severity = normalize_severity(severity)
-    if severity is Severity.PRIMARY or severity is Severity.INFO or severity is Severity.HELP:
+    if severity is Severity.PRIMARY:
         return QColor(ColorPalette.custom_context_color)
     if severity is Severity.SECONDARY:
         return QColor(ColorPalette.custom_dark_three)

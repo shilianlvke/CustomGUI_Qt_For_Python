@@ -1,7 +1,7 @@
 # 这里决定整个window的总体样式
 from PySide6.QtGui import QColor
 
-from sllkgui.appcore import AppSettings, ColorPalette, Logger, PathFactory, get_design_tokens
+from sllkgui.appcore import AppSettings, Logger, PathFactory, get_design_tokens
 
 from .acrylic import MIN_WINDOW_GLASS_ALPHA, acrylic_active, glass_alpha
 from .background import background_image_active
@@ -38,10 +38,34 @@ def _composite(front: str, alpha: float, back: str) -> str:
     ).name()
 
 
+def _gradient(top: str, bottom: str) -> str:
+    """纵向渐变写法；两层色差很小，只用来给大面积色块一点空气感。"""
+    return (
+        "qlineargradient(x1:0, y1:0, x2:0, y2:1,"
+        f" stop:0 {top}, stop:1 {bottom})"
+    )
+
+
+def _glass_gradient(top: str, bottom: str, alpha: float, minimum: float = 0.0) -> str:
+    """亚克力模式下的纵向渐变：两端共用同一不透明度，只有色相渐变。"""
+    scaled = glass_alpha(alpha, minimum=minimum)
+    return _gradient(_rgba(top, scaled), _rgba(bottom, scaled))
+
+
 def region_card_tint() -> str:
-    """区域背景卡片的玻璃色调（未叠加透明度）。"""
+    """区域背景卡片的玻璃色调（未叠加透明度）。
+
+    区域卡片是内容区与四向抽屉共用的"板面"，只比画布高半档：再亮就会和
+    内部卡片抢层次，再暗就退化成画布本身。
+    """
     colors = get_design_tokens().colors
-    return _mix(colors.surface_app, colors.surface_panel, 0.5)
+    return _mix(colors.surface_canvas, colors.surface_card, 0.62)
+
+
+def region_card_top() -> str:
+    """区域背景卡片渐变的顶部（略亮，制造自上而下的光感）。"""
+    colors = get_design_tokens().colors
+    return _mix(region_card_tint(), colors.text_primary, 0.03)
 
 
 def region_card_background() -> str:
@@ -57,7 +81,11 @@ def region_card_background() -> str:
         return tint
     colors = get_design_tokens().colors
     glass_cfg = AppSettings.glass
-    window = _composite(colors.surface_app, glass_alpha(glass_cfg.window, minimum=MIN_WINDOW_GLASS_ALPHA), colors.surface_app)
+    window = _composite(
+        colors.surface_app,
+        glass_alpha(glass_cfg.window, minimum=MIN_WINDOW_GLASS_ALPHA),
+        colors.surface_app,
+    )
     return _composite(tint, glass_alpha(glass_cfg.region), window)
 
 
@@ -93,33 +121,34 @@ def card_surface_color() -> QColor:
 def overlay_surface_color() -> QColor:
     """浮层表面（浮层菜单、浮层抽屉）的玻璃色。
 
-    浮层盖在正文之上，透明度保留 0.90 的下限，防止页面文字透上来干扰阅读。
+    浮层取当前主题最亮的那档表面：深色主题用抬升层，浅色主题用卡片白。
+    透明度保留 0.90 的下限，防止页面文字透上来干扰阅读。
     """
     colors = get_design_tokens().colors
     if not glass_surfaces():
-        return QColor(colors.surface_panel)
-    return _glass_color(colors.surface_panel, AppSettings.glass.overlay_panel, 0.90)
+        return QColor(colors.surface_overlay)
+    return _glass_color(colors.surface_overlay, AppSettings.glass.overlay_panel, 0.90)
 
 
 def overlay_border_color() -> QColor:
-    """浮层表面的描边色：玻璃模式取正文色 14%，实色模式取按下层色。"""
+    """浮层表面的描边色：玻璃模式取正文色 20%，实色模式取发丝线。"""
     colors = get_design_tokens().colors
     if not glass_surfaces():
-        return QColor(colors.surface_interactive_pressed)
+        return QColor(colors.border_soft)
     color = QColor(colors.text_primary)
-    color.setAlpha(round(255 * 0.14))
+    color.setAlpha(round(255 * 0.20))
     return color
 
 
 def card_stroke_color() -> QColor:
-    """卡片描边：玻璃模式取正文色 14%，实色模式取一层极淡的正文色细分隔线。
+    """卡片描边：玻璃模式取正文色 14%，实色模式取一档更明显的发丝线。
 
-    实色模式不能用 ``border_transparent``：深色主题里卡片底与抽屉底只差
-    两个色阶，没有描边卡片就等于不可见。
+    实色模式必须给卡片描边：深浅主题里卡片底与画布只差半档，没有描边
+    卡片就等于不可见；而描边过重会把卡片切成"九宫格"，因此只取 16%。
     """
     colors = get_design_tokens().colors
     if not glass_surfaces():
-        return QColor(_mix(colors.surface_app, colors.text_primary, 0.12))
+        return QColor(colors.border_soft)
     color = QColor(colors.text_primary)
     color.setAlpha(round(255 * 0.14))
     return color
@@ -140,6 +169,16 @@ class Styles(_ComponentStyles):
        令牌**（``sllkgui.appcore.sysx.modules.token_module``），组件暴露的几何参数默认取
        ``None`` 并回落到对应令牌，显式传参即可覆盖。
 
+    分层规则（本次重构的核心）：
+
+    - 七档中性色按「画布 → 侧栏 → 面板 → 卡片 → 抬升层」排布，**面板与卡片
+      不再同色**，标题栏、抽屉、内容卡片各自有独立的一档；
+    - 大面积色块（窗口、区域卡片）用极轻的纵向渐变，避免整屏纯色显得扁平；
+    - 描边统一走发丝线：深浅主题都用「画布 + 正文色 10~16%」的混合色，
+      既不抢内容，也不会在浅色主题里彻底消失；
+    - 强调色只出现在「状态」上（选中指示条、选中底、焦点环、主色文字），
+      不再大面积铺开。
+
     亚克力材质：``acrylic_active()`` 为真时，各层底色改用半透明 ``rgba()``，
     透出系统级模糊背景；不可用时保持原有的不透明主题色，避免「半透明但
     没有模糊」的脏画面。悬浮/按下等状态色同样按透明度分档，保证玻璃上仍然
@@ -147,7 +186,7 @@ class Styles(_ComponentStyles):
 
     外观由两部分拼成：**基础框架 QSS**（见 :meth:`_build_base_sheet`）与
     各组件族的片段（见 :mod:`sllkgui.guicore.styles_components`），后者按
-    固定顺序追加，输出文本与拆分前逐字一致。
+    固定顺序追加。
     """
 
     def __init__(self):
@@ -172,15 +211,18 @@ class Styles(_ComponentStyles):
         # 表面层按运行期「亚克力质感强度」降低不透明度，让系统模糊材质透出更多；
         # 浮层/工具提示保持原配置不缩放，避免菜单文字与页面互相穿透。
         # 主窗口底色保留最小 Alpha：分层窗口 Alpha=0 的像素会鼠标穿透。
+        window_top = _mix(colors.surface_canvas, colors.text_primary, 0.025)
+        window_bottom = _mix(colors.surface_canvas, colors.surface_sunken, 0.55)
         self._window_bg = (
-            _rgba(colors.surface_app, glass_alpha(glass_cfg.window, minimum=MIN_WINDOW_GLASS_ALPHA))
+            _glass_gradient(window_top, window_bottom, glass_cfg.window, minimum=MIN_WINDOW_GLASS_ALPHA)
             if glass
-            else colors.surface_app
+            else _gradient(window_top, window_bottom)
         )
+        sidebar_top = _mix(colors.surface_sidebar, colors.text_primary, 0.02)
         self._sidebar_bg = (
-            _rgba(colors.surface_sidebar, glass_alpha(glass_cfg.sidebar, minimum=min_sidebar))
+            _glass_gradient(sidebar_top, colors.surface_sidebar, glass_cfg.sidebar, minimum=min_sidebar)
             if glass
-            else colors.surface_sidebar
+            else _gradient(sidebar_top, colors.surface_sidebar)
         )
         self._panel_bg = (
             _rgba(colors.surface_panel, glass_alpha(glass_cfg.panel, minimum=min_surface))
@@ -188,56 +230,67 @@ class Styles(_ComponentStyles):
             else colors.surface_panel
         )
         self._card_bg = qss_color(card_surface_color())
+        self._region_tint = region_card_tint()
         self._region_bg = (
-            _rgba(region_card_tint(), glass_alpha(glass_cfg.region, minimum=min_surface))
+            _glass_gradient(
+                region_card_top(),
+                self._region_tint,
+                glass_cfg.region,
+                minimum=min_surface,
+            )
             if glass
-            else region_card_tint()
+            else _gradient(region_card_top(), self._region_tint)
         )
+        # 控件底色比卡片高一档：输入框、中性按钮在深浅主题里都能"浮"在卡片上
         self._control_bg = (
-            _rgba(colors.surface_sidebar, glass_alpha(glass_cfg.control, minimum=min_surface))
+            _rgba(colors.surface_raised, glass_alpha(glass_cfg.control, minimum=min_surface))
             if glass
-            else colors.surface_sidebar
+            else colors.surface_raised
         )
         self._menu_bg = (
-            _rgba(colors.surface_interactive, glass_alpha(glass_cfg.menu, minimum=0.85)) if glass else colors.surface_interactive
+            _rgba(colors.surface_overlay, glass_alpha(glass_cfg.menu, minimum=0.85))
+            if glass
+            else colors.surface_overlay
         )
         # Overlay 左菜单浮在内容之上，需要接近不透明的面板底色；沿用侧栏的
         # 0 透明度会让菜单和页面文字互相穿透。浮层抽屉共用同一套取值。
         self._overlay_panel_bg = qss_color(overlay_surface_color())
         self._overlay_panel_border = qss_color(overlay_border_color())
         self._tooltip_bg = (
-            _rgba(colors.surface_sidebar, glass_alpha(glass_cfg.tooltip, minimum=0.85)) if glass else colors.surface_sidebar
+            _rgba(colors.surface_overlay, glass_alpha(glass_cfg.tooltip, minimum=0.85))
+            if glass
+            else colors.surface_overlay
         )
 
         # 描边与状态层：玻璃模式用正文色的低透明度，深浅主题都会得到
         # 「深色上是白色高光、浅色上是灰色阴影」的 Fluent 分层效果
-        self._hairline = _rgba(colors.text_primary, 0.10) if glass else colors.surface_app
-        self._stroke = _rgba(colors.text_primary, 0.14) if glass else colors.border_transparent
-        self._stroke_strong = _rgba(colors.text_primary, 0.24) if glass else colors.surface_interactive_pressed
-        self._fill_rest = _rgba(colors.text_primary, 0.045) if glass else colors.surface_interactive
+        self._hairline = _rgba(colors.text_primary, 0.10) if glass else colors.border_hairline
+        self._stroke = _rgba(colors.text_primary, 0.16) if glass else colors.border_soft
+        self._stroke_strong = _rgba(colors.text_primary, 0.28) if glass else colors.border_strong
+        self._fill_rest = _rgba(colors.text_primary, 0.05) if glass else colors.surface_raised
         self._fill_hover = _rgba(colors.text_primary, 0.09) if glass else colors.surface_interactive_hover
         self._fill_pressed = _rgba(colors.text_primary, 0.14) if glass else colors.surface_interactive_pressed
-        self._accent_soft = _rgba(colors.border_context, 0.18) if glass else colors.surface_interactive_hover
-        self._accent_border = _rgba(colors.border_context, 0.70) if glass else colors.border_context
-        self._gridline = _rgba(colors.text_primary, 0.07) if glass else colors.surface_interactive_pressed
-        # 滚动条把手：玻璃模式与实色模式都用正文色 + 透明度，保证在卡片底色上
-        # 始终可辨；之前实色模式取 surface_interactive_pressed，与卡片底色几乎同值。
-        self._scroll_handle = _rgba(colors.text_primary, 0.42 if glass else 0.34)
-        self._scroll_handle_hover = _rgba(colors.text_primary, 0.62 if glass else 0.52)
-        self._scroll_handle_pressed = _rgba(colors.text_primary, 0.78 if glass else 0.66)
+        self._accent_soft = _rgba(colors.accent, 0.18) if glass else colors.accent_soft
+        self._accent_wash = _rgba(colors.accent, 0.10) if glass else colors.accent_wash
+        self._accent_border = _rgba(colors.accent, 0.85) if glass else colors.accent
+        self._gridline = _rgba(colors.text_primary, 0.07) if glass else _mix(colors.surface_card, colors.text_primary, 0.07)
+        # 滚动条把手：深浅主题都用正文色 + 透明度，保证在卡片底色上始终可辨
+        self._scroll_handle = _rgba(colors.text_primary, 0.36 if glass else 0.30)
+        self._scroll_handle_hover = _rgba(colors.text_primary, 0.56 if glass else 0.48)
+        self._scroll_handle_pressed = _rgba(colors.text_primary, 0.72 if glass else 0.64)
 
         # 每种模式下的具体描边
-        self._window_border = self._stroke if glass else colors.surface_interactive_pressed
-        self._card_border = self._stroke if glass else colors.border_transparent
-        #: 语义色：Fluent 的 error / success 直接取主题语义色
-        self._danger = QColor(ColorPalette.custom_red).name()
-        self._success = QColor(ColorPalette.custom_green).name()
-        #: Fluent 控件描边：输入框/按钮比卡片描边更深，保证浅色主题下可辨认
+        self._window_border = self._stroke if glass else colors.border_soft
+        self._card_border = self._stroke if glass else colors.border_soft
+        #: 语义色：直接取主题语义色
+        self._danger = QColor(colors.state_danger).name()
+        self._success = QColor(colors.state_success).name()
+        #: 控件描边：输入框/按钮比卡片描边更深，保证浅色主题下可辨认
         self._control_stroke = (
-            _rgba(colors.text_primary, 0.42) if glass else _mix(colors.surface_app, colors.text_primary, 0.42)
+            _rgba(colors.text_primary, 0.42) if glass else _mix(colors.surface_canvas, colors.text_primary, 0.34)
         )
         self._control_stroke_secondary = (
-            _rgba(colors.text_primary, 0.26) if glass else _mix(colors.surface_app, colors.text_primary, 0.26)
+            _rgba(colors.text_primary, 0.26) if glass else _mix(colors.surface_canvas, colors.text_primary, 0.20)
         )
 
         self.style = self._build_base_sheet()
@@ -257,15 +310,17 @@ class Styles(_ComponentStyles):
 
     def _build_base_sheet(self) -> str:
         """窗口框架、侧栏/面板/卡片等基础容器与 ``QFrame`` 兜底的 QSS。"""
+        tokens = self.tokens
         return f"""
             #CWindow_Frame {{
-                background-color: {self._window_bg};
-                border-radius: {self.tokens.radius.window}px;
-                border: {self.tokens.border.width}px solid {self._window_border};
+                background: {self._window_bg};
+                border-radius: {tokens.radius.window}px;
+                border: {tokens.border.width}px solid {self._window_border};
             }}
-            /* 设置背景图后由 CWindow.paintEvent 负责绘制，样式表底色必须透明 */
+            /* 设置背景图后由 CWindow.paintEvent 负责绘制，样式表底色必须透明
+               （必须用 background 覆盖，只写 background-color 会留下渐变） */
             #CWindow_Frame[hasBackgroundImage="true"] {{
-                background-color: transparent;
+                background: transparent;
             }}
             /* 最大化/贴边：由 CWindow 改这条动态属性即可，无需重建整张样式表 */
             #CWindow_Frame[frameStyle="flat"] {{
@@ -273,31 +328,55 @@ class Styles(_ComponentStyles):
                 border: 0px solid transparent;
             }}
             #CLeftMenu_Bg_Frame {{
-                background-color: {self._sidebar_bg};
+                background: {self._sidebar_bg};
             }}
             /* Overlay 模式：左菜单浮在内容区上，改用接近不透明的面板底色 */
             #CLeftMenu_Bg_Frame[overlay="true"] {{
-                background-color: {self._overlay_panel_bg};
+                background: {self._overlay_panel_bg};
                 border: 1px solid {self._overlay_panel_border};
             }}
             #CTitleBar_Bg_Frame {{
                 background-color: {self._panel_bg};
-                border-radius: {self.tokens.radius.window}px;
+                border-radius: {tokens.radius.window}px;
             }}
             #CCredits_Bg_Frame {{
                 background-color: {self._panel_bg};
-                border-radius: {self.tokens.radius.window}px;
+                border-radius: {tokens.radius.window}px;
             }}
             #CCredits_Bg_Frame QLabel {{
-                font: {self.tokens.typography.size_text}pt "{self.tokens.typography.family}";
-                color: {self.tokens.colors.text_primary};
-                padding-left: {self.tokens.spacing.padding_md}px;
-                padding-right: {self.tokens.spacing.padding_md}px;
+                font: {tokens.typography.size_caption}pt "{tokens.typography.family}";
+                color: {tokens.colors.text_muted};
+                padding-left: {tokens.spacing.padding_md}px;
+                padding-right: {tokens.spacing.padding_md}px;
             }}
             #CCard_Frame {{
-                border: {self.tokens.border.width}px solid {self._card_border};
-                border-radius: {self.tokens.radius.window}px;
+                border: {tokens.border.width}px solid {self._card_border};
+                border-radius: {tokens.radius.window}px;
                 background-color: {self._card_bg};
+            }}
+            /* 预览页分区卡片的标题行：强调色短竖线 + 标题 + 延伸发丝线 */
+            #CSectionTitle_Rule {{
+                background-color: {tokens.colors.accent};
+                border-radius: 1px;
+            }}
+            #CSectionTitle_Label {{
+                color: {tokens.colors.text_title};
+            }}
+            #CSectionTitle_Divider {{
+                background-color: {self._hairline};
+            }}
+            /* 预览区空状态：未安装插件时内容区只有这两行文字，
+               必须显式给色，否则 Qt 会用调色板的默认前景色（深色主题下不可见） */
+            #GalleryEmptyStateTitle {{
+                color: {tokens.colors.text_title};
+                font: {tokens.typography.size_display}pt "{tokens.typography.family}";
+                font-weight: 600;
+                background: transparent;
+            }}
+            #GalleryEmptyStateHint {{
+                color: {tokens.colors.text_muted};
+                font: {tokens.typography.size_text}pt "{tokens.typography.family}";
+                background: transparent;
             }}
             #CHDiv_Frame {{
                 background-color: {self._hairline};
@@ -306,7 +385,7 @@ class Styles(_ComponentStyles):
                 background-color: {self._hairline};
             }}
             QFrame {{
-                color: {self.tokens.colors.text_primary};
+                color: {tokens.colors.text_primary};
             }}
             /* 不给 QFrame 设全局 font：Qt 会为每个被样式化的 QFrame/QLabel
                建立字体解析缓存，首次应用样式表时实测多占约 65 MB。

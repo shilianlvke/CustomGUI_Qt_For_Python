@@ -8,44 +8,62 @@ _PALETTE_LOCK = threading.RLock()
 
 @dataclass
 class ColorHandler:
-    # 默认暗色系（Fluent 中性色阶）
-    custom_dark_one: str = "#1c1c1c"
-    custom_dark_two: str = "#202020"
-    custom_dark_three: str = "#242424"
-    custom_dark_four: str = "#2d2d2d"
+    """全局调色板（默认值与 ``themes/default.yaml`` 的 Grove 主题一致）。
 
-    # 背景色
-    custom_bg_one: str = "#202020"
-    custom_bg_two: str = "#2b2b2b"
-    custom_bg_three: str = "#323232"
-    custom_bg_active_one: str = "#6ccb5f"
-    custom_bg_active_two: str = "#fce100"
-    custom_bg_active_three: str = "#ff99a4"
+    七档中性色按**表面阶梯**编号，深浅主题共用同一套语义：
+
+    ====================== =========================================
+    ``custom_dark_one``    侧栏（下沉层，最深）
+    ``custom_bg_one``      画布（窗口主背景）
+    ``custom_dark_two``    面板（标题栏 / 抽屉 / 区域卡片基底）
+    ``custom_dark_three``  卡片（内容层）
+    ``custom_dark_four``   抬升层（中性按钮、下拉框、选中块）
+    ``custom_bg_two``      交互悬停
+    ``custom_bg_three``    交互按下
+    ====================== =========================================
+    """
+
+    # 表面阶梯
+    custom_dark_one: str = "#0d1113"
+    custom_dark_two: str = "#171c1f"
+    custom_dark_three: str = "#1c2225"
+    custom_dark_four: str = "#242b2e"
+
+    # 画布与交互层
+    custom_bg_one: str = "#121619"
+    custom_bg_two: str = "#2a3236"
+    custom_bg_three: str = "#333c41"
+    custom_bg_active_one: str = "#6fd08c"
+    custom_bg_active_two: str = "#f2c65a"
+    custom_bg_active_three: str = "#ff8f87"
 
     # 图标颜色
-    custom_icon_color: str = "#c5c5c5"
+    custom_icon_color: str = "#9caaa0"
     custom_icon_hover: str = "#ffffff"
-    custom_icon_pressed: str = "#4cc2ff"
+    custom_icon_pressed: str = "#a3e57f"
     custom_icon_active: str = "#ffffff"
 
-    # 上下文颜色
-    custom_context_color: str = "#4cc2ff"
-    custom_context_hover: str = "#6fd0ff"
-    custom_context_pressed: str = "#3aa7e0"
+    # 强调色（品牌果绿）
+    custom_context_color: str = "#a3e57f"
+    custom_context_hover: str = "#b7ee99"
+    custom_context_pressed: str = "#8ad165"
 
     # 文本颜色
-    custom_text_title: str = "#ffffff"
-    custom_text_foreground: str = "#cfcfcf"
-    custom_text_description: str = "#919191"
+    custom_text_title: str = "#f4f7f3"
+    custom_text_foreground: str = "#dfe6df"
+    custom_text_description: str = "#98a59b"
     custom_text_active: str = "#ffffff"
 
     # 基础颜色
     custom_white: str = "#ffffff"
     custom_black: str = "#000000"
-    custom_pink: str = "#ff99a4"
-    custom_green: str = "#6ccb5f"
-    custom_red: str = "#ff99a4"
-    custom_yellow: str = "#fce100"
+    custom_pink: str = "#f0a8c0"
+    custom_green: str = "#6fd08c"
+    custom_red: str = "#ff8f87"
+    custom_yellow: str = "#f2c65a"
+    # 语义色补充：信息 / 帮助各自有独立色相，避免与品牌强调色撞车
+    custom_info: str = "#7cc7ff"
+    custom_help: str = "#c9a7ff"
     custom_transparent: str = "transparent"
 
     def update(self, new_colors: dict) -> None:

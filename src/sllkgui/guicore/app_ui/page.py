@@ -30,20 +30,22 @@ from typing import Any, ClassVar
 
 from PySide6.QtCore import QMargins, Qt
 from PySide6.QtGui import QFont
-from PySide6.QtWidgets import QHBoxLayout, QLabel, QSizePolicy, QVBoxLayout, QWidget
+from PySide6.QtWidgets import QFrame, QHBoxLayout, QLabel, QSizePolicy, QVBoxLayout, QWidget
 
-from sllkgui.appcore import AppSettings, Language
+from sllkgui.appcore import AppSettings, Language, get_design_tokens
 from sllkgui.guicore.custom_ui import CCard, CScrollArea, CScrollTop
 
 __all__ = ["CPreviewPage"]
 
-#: 卡片外边距（左、上、右、下），与 Fluent 卡片的内边距一致
-_CARD_MARGINS = (12, 10, 12, 12)
+#: 卡片外边距（左、上、右、下）：比旧版稍大一档，让标题与内容有呼吸感
+_CARD_MARGINS = (14, 12, 14, 14)
 #: 卡片标题与内容之间、行与行之间的间距
-_CARD_SPACING = 8
+_CARD_SPACING = 10
 #: 页面内容区外边距与分区之间的间距
-_CONTENT_MARGINS = (6, 6, 6, 6)
-_CONTENT_SPACING = 6
+_CONTENT_MARGINS = (10, 10, 10, 10)
+_CONTENT_SPACING = 10
+#: 分区标题左侧强调色短竖线的尺寸（宽 × 高）
+_TITLE_RULE_SIZE = (3, 14)
 
 
 class CPreviewPage:
@@ -100,18 +102,50 @@ class CPreviewPage:
 
     @classmethod
     def title_font(cls) -> QFont:
-        """分区标题字体：半粗体，字号取 ``AppSettings`` 的标题档位。"""
+        """分区标题字体：半粗体 + 轻微字距，标题与正文之间形成层级。"""
+        tokens = get_design_tokens()
         size = AppSettings.title_size if cls.title_scale == "title" else AppSettings.subtitle_size
         font = QFont(AppSettings.family, size)
         font.setWeight(QFont.Weight.DemiBold)
+        font.setLetterSpacing(QFont.SpacingType.AbsoluteSpacing, tokens.typography.tracking_title)
         return font
 
     @classmethod
     def title_label(cls, text: str) -> QLabel:
-        """构造分区标题标签。"""
+        """构造分区标题标签（颜色由全局样式表的 ``#CSectionTitle_Label`` 提供）。"""
         label = QLabel(text)
+        label.setObjectName("CSectionTitle_Label")
         label.setFont(cls.title_font())
         return label
+
+    @classmethod
+    def title_row(cls, title: str) -> QHBoxLayout:
+        """分区标题行：强调色短竖线 + 标题 + 延伸到右端的发丝线。
+
+       竖线只需要几何量（尺寸与圆角），颜色来自全局样式表；这样主题切换时
+        标题行无需重建，颜色自动跟随。
+        """
+        row = QHBoxLayout()
+        row.setContentsMargins(0, 0, 0, 0)
+        row.setSpacing(8)
+
+        rule = QFrame()
+        rule.setObjectName("CSectionTitle_Rule")
+        rule.setFixedSize(*_TITLE_RULE_SIZE)
+        rule.setStyleSheet("#CSectionTitle_Rule { border-radius: 1px; }")
+
+        label = cls.title_label(title)
+        label.setSizePolicy(QSizePolicy.Policy.Preferred, QSizePolicy.Policy.Fixed)
+
+        divider = QFrame()
+        divider.setObjectName("CSectionTitle_Divider")
+        divider.setFixedHeight(1)
+        divider.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed)
+
+        row.addWidget(rule, 0, Qt.AlignVCenter)
+        row.addWidget(label, 0, Qt.AlignVCenter)
+        row.addWidget(divider, 1, Qt.AlignVCenter)
+        return row
 
     @classmethod
     def fixed(cls, widget: QWidget, width: int) -> QWidget:
@@ -124,28 +158,23 @@ class CPreviewPage:
     # ------------------------------------------------------------------
     @classmethod
     def card(cls, title: str, content: QWidget) -> CCard:
-        """单内容卡片：标题 + 一个控件。"""
+        """单内容卡片：标题行 + 一个控件。"""
         card = CCard()
         layout = QVBoxLayout(card)
         layout.setContentsMargins(QMargins(*_CARD_MARGINS))
         layout.setSpacing(_CARD_SPACING)
-        title_label = cls.title_label(title)
-        # 卡片被同行拉高时，标题不能跟着纵向膨胀，否则内容被推到底部。
-        title_label.setSizePolicy(QSizePolicy.Policy.Preferred, QSizePolicy.Policy.Fixed)
-        layout.addWidget(title_label)
+        layout.addLayout(cls.title_row(title))
         layout.addWidget(content, 1)
         return card
 
     @classmethod
     def section_card(cls, title: str, widgets: Sequence[QWidget], columns: int | None = None) -> CCard:
-        """多控件卡片：标题 + 按 ``columns`` 分行的控件，行内左对齐。"""
+        """多控件卡片：标题行 + 按 ``columns`` 分行的控件，行内左对齐。"""
         card = CCard()
         layout = QVBoxLayout(card)
         layout.setContentsMargins(QMargins(*_CARD_MARGINS))
         layout.setSpacing(_CARD_SPACING)
-        title_label = cls.title_label(title)
-        title_label.setSizePolicy(QSizePolicy.Policy.Preferred, QSizePolicy.Policy.Fixed)
-        layout.addWidget(title_label)
+        layout.addLayout(cls.title_row(title))
 
         step = max(1, int(columns or cls.columns))
         for start in range(0, len(widgets), step):
