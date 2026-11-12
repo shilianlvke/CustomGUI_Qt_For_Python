@@ -1,19 +1,21 @@
-"""浮层卡片：圆角、描边、主题底色（对话框与抽屉共用）。"""
+"""浮层卡片：圆角、描边、亚克力底色（对话框与抽屉共用）。"""
 
 from __future__ import annotations
 
 from PySide6.QtCore import QRectF, Qt
-from PySide6.QtGui import QColor, QPainter, QPainterPath, QPen
+from PySide6.QtGui import QPainter, QPainterPath, QPen
 from PySide6.QtWidgets import QFrame
 
-from sllkgui.appcore import AppSettings, get_design_tokens
-
-from ...acrylic import glass_surface
-from ..display.palette import tokens
+from ...styles import overlay_border_color, overlay_surface_color
 
 
 class COverlayCard(QFrame):
-    """浮层内容卡片。"""
+    """浮层内容卡片。
+
+    底色与右侧设置抽屉、浮层抽屉共用 ``overlay_surface_color`` /
+    ``overlay_border_color``：亚克力模式下随「质感强度」透出下层，
+    实色模式下退回主题的浮层表面，避免每种浮层各写一套色值。
+    """
 
     def __init__(self, parent=None, radius: int = 10):
         super().__init__(parent)
@@ -27,22 +29,12 @@ class COverlayCard(QFrame):
     def paintEvent(self, event):  # noqa: N802 - 覆写 Qt 命名
         painter = QPainter(self)
         painter.setRenderHint(QPainter.Antialiasing)
-        palette = tokens()
-        # 底色取主题的 surface_app，并随亚克力强度轻微透出下层；对话框本身
-        # 覆盖在遮罩之上，保留 90% 以上的不透明度，正文仍然清晰可读。
-        background = glass_surface(
-            get_design_tokens().colors.surface_app,
-            AppSettings.glass.overlay_panel,
-            minimum=0.90,
-        )
-        border = QColor(palette["border"])
-
         rect = QRectF(self.rect()).adjusted(0.5, 0.5, -0.5, -0.5)
         path = QPainterPath()
         path.addRoundedRect(rect, self._radius, self._radius)
-        painter.fillPath(path, background)
+        painter.fillPath(path, overlay_surface_color())
         painter.setBrush(Qt.NoBrush)
-        painter.setPen(QPen(border, 1))
+        painter.setPen(QPen(overlay_border_color(), 1))
         painter.drawPath(path)
         painter.end()
 

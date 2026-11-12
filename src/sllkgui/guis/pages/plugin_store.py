@@ -41,6 +41,7 @@ from sllkgui.guicore import (
     CConfirmDialog,
     CDataView,
     CDialog,
+    CHDiv,
     CInputText,
     CSelectButton,
     CToast,
@@ -48,7 +49,7 @@ from sllkgui.guicore import (
 )
 from sllkgui.guicore.custom_ui.icon_utils import render_icon
 from sllkgui.guicore.custom_ui.panels.style import RADIUS, paint_surface, panel_colors, rounded_path
-from sllkgui.guicore.styles import card_stroke_color, card_surface_color
+from sllkgui.guicore.styles import card_surface_color
 
 _MONO_FAMILIES = ["Cascadia Mono", "Consolas", "JetBrains Mono", "monospace"]
 
@@ -267,29 +268,6 @@ class _ElidedLabel(QWidget):
             Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignVCenter,
             metrics.elidedText(self._text, Qt.TextElideMode.ElideRight, max(0, self.width())),
         )
-        painter.end()
-
-
-class _GlassCard(QFrame):
-    """对话框内的玻璃卡片：与设置抽屉的 ``CSettingsCard_Frame`` 同一套取色。"""
-
-    def __init__(self, parent=None) -> None:
-        super().__init__(parent)
-        self.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Preferred)
-        try:
-            get_theme_manager().subscribe(self.update)
-        except Exception:  # noqa: BLE001 - 无主题管理器时保持初始配色
-            pass
-
-    def paintEvent(self, event) -> None:  # noqa: N802 - 覆写 Qt 命名
-        painter = QPainter(self)
-        painter.setRenderHint(QPainter.RenderHint.Antialiasing)
-        rect = QRectF(self.rect()).adjusted(0.5, 0.5, -0.5, -0.5)
-        path = rounded_path(rect, get_design_tokens().radius.control)
-        painter.fillPath(path, card_surface_color())
-        painter.setBrush(Qt.BrushStyle.NoBrush)
-        painter.setPen(QPen(card_stroke_color(), 1))
-        painter.drawPath(path)
         painter.end()
 
 
@@ -708,16 +686,13 @@ class _PluginDetailDialog(_DetailDialogBase):
         layout.setContentsMargins(0, 0, 0, 0)
         layout.setSpacing(12)
 
-        hero_card = _GlassCard()
-        hero_layout = QVBoxLayout(hero_card)
-        hero_layout.setContentsMargins(14, 12, 14, 12)
-        hero_layout.setSpacing(10)
-        hero_layout.addWidget(_detail_hero(record, self.ctx, installed=self.installed, icon="icon_store"))
+        layout.addWidget(_detail_hero(record, self.ctx, installed=self.installed, icon="icon_store"))
         summary = str(record.get("summary") or self.ctx.text("detail.no_description", "暂无简介"))
         summary_label = _ThemedLabel(summary, "muted")
         summary_label.setWordWrap(True)
-        hero_layout.addWidget(summary_label)
-        layout.addWidget(hero_card)
+        layout.addWidget(summary_label)
+        layout.addWidget(CHDiv())
+        layout.addWidget(_ThemedLabel(self.ctx.text("detail.meta", "基础信息"), "section"))
 
         items: list[tuple[str, str, bool]] = []
         version = str(record.get("version") or "?")
@@ -752,21 +727,8 @@ class _PluginDetailDialog(_DetailDialogBase):
         if repository:
             items.append((self.ctx.text("detail.repository", "仓库"), repository, True))
 
-        meta_card = _GlassCard()
-        meta_layout = QVBoxLayout(meta_card)
-        meta_layout.setContentsMargins(12, 10, 12, 10)
-        meta_layout.setSpacing(8)
-        meta_layout.addWidget(_ThemedLabel(self.ctx.text("detail.meta", "基础信息"), "section"))
-        meta_layout.addWidget(_meta_grid(items))
-        layout.addWidget(meta_card)
-
-        permission_card = _GlassCard()
-        permission_layout = QVBoxLayout(permission_card)
-        permission_layout.setContentsMargins(12, 10, 12, 10)
-        permission_layout.setSpacing(8)
-        permission_layout.addWidget(_permission_block(list(record.get("permissions") or []), self.ctx))
-        layout.addWidget(permission_card)
-
+        layout.addWidget(_meta_grid(items))
+        layout.addWidget(_permission_block(list(record.get("permissions") or []), self.ctx))
         self.dialog.add_widget(body)
 
     def _build_footer(self) -> None:
@@ -839,13 +801,9 @@ class _SourceDetailDialog(_DetailDialogBase):
         body = QWidget()
         layout = QVBoxLayout(body)
         layout.setContentsMargins(0, 0, 0, 0)
-        layout.setSpacing(12)
+        layout.setSpacing(14)
 
         key = "installed.enabled" if enabled else "installed.disabled"
-        hero_card = _GlassCard()
-        hero_layout = QVBoxLayout(hero_card)
-        hero_layout.setContentsMargins(14, 12, 14, 12)
-        hero_layout.setSpacing(10)
         hero = QWidget()
         hero_row = QHBoxLayout(hero)
         hero_row.setContentsMargins(0, 0, 0, 0)
@@ -863,18 +821,14 @@ class _SourceDetailDialog(_DetailDialogBase):
         chips.addStretch(1)
         column.addLayout(chips)
         hero_row.addLayout(column, 1)
-        hero_layout.addWidget(hero)
+        layout.addWidget(hero)
+
         url_label = _ThemedLabel(str(record.get("url") or ""), "muted", mono=True)
         url_label.setWordWrap(True)
-        hero_layout.addWidget(url_label)
-        layout.addWidget(hero_card)
-
-        meta_card = _GlassCard()
-        meta_layout = QVBoxLayout(meta_card)
-        meta_layout.setContentsMargins(12, 10, 12, 10)
-        meta_layout.setSpacing(8)
-        meta_layout.addWidget(_ThemedLabel(self.ctx.text("detail.meta", "基础信息"), "section"))
-        meta_layout.addWidget(
+        layout.addWidget(url_label)
+        layout.addWidget(CHDiv())
+        layout.addWidget(_ThemedLabel(self.ctx.text("detail.meta", "基础信息"), "section"))
+        layout.addWidget(
             _meta_grid(
                 [
                     (self.ctx.text("detail.source_id", "源 ID"), str(record.get("id") or ""), True),
@@ -886,7 +840,6 @@ class _SourceDetailDialog(_DetailDialogBase):
                 ]
             )
         )
-        layout.addWidget(meta_card)
         self.dialog.add_widget(body)
 
     def _build_footer(self) -> None:
@@ -1025,7 +978,14 @@ class _DiscoverPanel(_StorePanel):
             placeholder=self.ctx.text("discover.placeholder", "搜索插件名称、ID 或简介…"),
             icon="icon_search",
         )
-        self.refresh_btn = CButton("", icon="icon_refresh", variant="text", size="sm", fixed_width=30)
+        self.refresh_btn = CButton(
+            "",
+            icon="icon_refresh",
+            variant="text",
+            size="sm",
+            fixed_width=34,
+            icon_size=20,
+        )
         self.refresh_btn.setToolTip(self.ctx.text("discover.refresh_sources", "刷新源"))
         toolbar.addWidget(self.query, 1)
         toolbar.addWidget(self.refresh_btn)

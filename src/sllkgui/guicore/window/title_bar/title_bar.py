@@ -38,8 +38,8 @@ class CTitleBar(QWidget):
     released = Signal(object)
 
     #: 标题栏 logo 的显示边长。品牌标是一幅细节较多的插画，按 ``icon_size``
-    #: （16px）渲染会糊成一个色点；20px 在 40px 高的标题栏里仍然居中且可辨认。
-    LOGO_SIZE = 20
+    #: （16px）渲染会糊成一个色点；28px 在 40px 高的标题栏里仍然居中且辨认度更好。
+    LOGO_SIZE = 28
 
     def __init__(self, parent, app_parent):
         super().__init__()
