@@ -1,10 +1,10 @@
 # WINDOW SIZE 窗口大小
 startup_size: # 初始化窗口大小
-  - 1600
-  - 1200
+  - 1440
+  - 900
 minimum_size: # 最小窗口大小
-  - 1600
-  - 1200
+  - 1440
+  - 900
 
 # ICON SIZE 图标大小
 icon_size: 16
@@ -80,7 +80,7 @@ left_column_size: # 左侧菜单页大小
 # RIGHT MENU
 right_column_size: # 右侧菜单页大小（外观配置页需要更大的可用宽度）
   minimum: 0
-  maximum: 460
+  maximum: 360
 right_menu_content_margins: 3 # 左侧菜单边距✅
 right_title_bar_height: 40
 right_content_space: 6
