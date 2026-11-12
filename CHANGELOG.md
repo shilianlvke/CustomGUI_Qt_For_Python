@@ -3,9 +3,15 @@
 项目遵循[语义化版本](https://semver.org/lang/zh-CN/)：major 版本允许破坏性变更并显式列出；
 minor 与 patch 保持向后兼容。
 
-当前版本：`2.0.1`（见 `src/sllkgui/_version.py`），对应 tag `base-v2.0.1`。
+当前版本：`2.0.2`（见 `src/sllkgui/_version.py`），对应 tag `base-v2.0.2`。
 
 ---
+
+## 2.0.2（2026-11-12）
+
+- 修复点击 Gallery 左菜单时报 `TypeError: unhashable type: 'LanguageHandler'`：
+  `get_page_routes()` 与 `SurfaceRecord.display_title()` 统一把传入的
+  `Language` 单例归一为语言代码。
 
 ## 2.0.1（2026-11-12）
 

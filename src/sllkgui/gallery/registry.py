@@ -47,7 +47,7 @@ class SurfaceRecord:
         return f"page_{sanitize_route(self.route)}"
 
     def display_title(self, language: str | None = None) -> str:
-        current = language or Language.current()
+        current = language if isinstance(language, str) and language else Language.current()
         return self.title.get(current) or self.title.get("en_us") or self.surface_id
 
 

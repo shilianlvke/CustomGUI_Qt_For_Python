@@ -11,7 +11,7 @@
   <a href="CHANGELOG.md">更新日志</a>
 </p>
 
-> **版本 2.0.1**（tag `base-v2.0.1`）
+> **版本 2.0.2**（tag `base-v2.0.2`）
 >
 > 2.0 是破坏性重构：旧的 App 协议 v1/v2、`apps/`、`config.yml`、`plugins.yml`
 > 全部删除，不提供兼容层。插件改为「一个 Git 仓库 = 一个插件，多个 Surface」，
@@ -34,7 +34,7 @@ uv run sllkgui run --plugin-dir ..\my-plugin
 ## 安装
 
 ```powershell
-uv add "sllkgui @ git+https://gitee.com/shilianlvke/SllkGui.git@base-v2.0.1"
+uv add "sllkgui @ git+https://gitee.com/shilianlvke/SllkGui.git@base-v2.0.2"
 ```
 
 从源码运行：

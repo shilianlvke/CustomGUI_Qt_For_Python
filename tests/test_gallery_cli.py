@@ -5,7 +5,7 @@ from pathlib import Path
 
 from gallery_helpers import init_repo, write_plugin, write_source
 
-from sllkgui import cli
+from sllkgui import __version__, cli
 
 
 def test_parser_gallery_and_run():
@@ -65,7 +65,7 @@ def test_source_add_and_list(tmp_path: Path, capsys):
 def test_doctor_json(tmp_path: Path, capsys):
     assert cli.main(["doctor", "--json", "--data-dir", str(tmp_path / "data")]) == 0
     payload = json.loads(capsys.readouterr().out)
-    assert payload["version"] == "2.0.0"
+    assert payload["version"] == __version__
     assert "gallery_dir" in payload
 
 

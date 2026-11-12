@@ -96,7 +96,10 @@ def get_page_routes(language=None):
         return {}
     from sllkgui.appcore import Language
 
-    return registry.page_routes(language or Language.current())
+    # 旧调用方传入的是 Language 单例而非语言代码（PageRouterController 等），
+    # 统一归一成字符串，避免 display_title 里 dict.get 抛 unhashable。
+    code = language if isinstance(language, str) and language else Language.current()
+    return registry.page_routes(code)
 
 
 def get_default_page_object():
