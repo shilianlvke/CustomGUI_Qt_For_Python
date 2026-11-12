@@ -120,3 +120,37 @@ def test_window_navigation_reload_and_surface_helper(tmp_path, prepared):
         assert window.gallery_registry.surface_count() == 10
     finally:
         _close(window)
+
+
+def test_reload_rebuilds_surface_pages(tmp_path, prepared):
+    """重载后必须重建页面：旧页面持有旧插件运行时，直接复用会让新运行时永不启动。"""
+    from PySide6.QtWidgets import QWidget
+
+    def real_pages(stack):
+        return [
+            stack.widget(index)
+            for index in range(stack.count())
+            if stack.widget(index).objectName() not in {"Main_Page", "widget_show"}
+        ]
+
+    window = _window(tmp_path, "gallery")
+    try:
+        routes = list(window.gallery_registry.routes())
+        first_route, second_route = routes[0], routes[1]
+        assert window.open_route(first_route)
+        assert window.open_route(second_route)
+        pages = window.ui.load_pages.pages
+        assert len(real_pages(pages)) == 2
+        second_page_object = window.gallery_registry.get(second_route).page_object
+        stale_page = pages.findChild(QWidget, second_page_object)
+        assert stale_page is not None
+
+        window.reload_plugins()
+
+        # 旧页面全部移除，只重建当前路由的页面
+        assert len(real_pages(pages)) == 1
+        rebuilt = pages.findChild(QWidget, second_page_object)
+        assert rebuilt is not None
+        assert rebuilt is not stale_page
+    finally:
+        _close(window)

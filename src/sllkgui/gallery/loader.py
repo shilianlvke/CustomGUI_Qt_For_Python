@@ -7,6 +7,7 @@
 from __future__ import annotations
 
 import importlib.util
+import os
 import sys
 import uuid
 from collections.abc import Callable, Iterable
@@ -153,6 +154,28 @@ def _import_entry(root: Path, entry: str, plugin_id: str) -> tuple[ModuleType, l
     return module, created
 
 
+def _modules_under(root: Path) -> list[str]:
+    """返回所有从插件根目录导入的模块名（含顶层包与惰性导入的子模块）。
+
+    插件入口里的 ``import pyrm``、``importlib.import_module("surfaces.x")``
+    不带唯一入口模块前缀；只按前缀清理会让更新后的插件继续命中旧代码。
+    这里按模块文件的归属目录判断，重载/卸载后能彻底清掉插件自己的模块。
+    """
+    prefix = os.path.normcase(str(Path(root).resolve())) + os.sep
+    names: list[str] = []
+    for name, module in list(sys.modules.items()):
+        origin = getattr(module, "__file__", None)
+        if not origin:
+            continue
+        try:
+            path = os.path.normcase(os.path.abspath(origin))
+        except (OSError, TypeError):
+            continue
+        if path.startswith(prefix):
+            names.append(name)
+    return names
+
+
 def load_plugin(
     path: Path,
     store: GalleryStore,
@@ -255,7 +278,7 @@ def load_plugin(
         record._sys_path_added = sys_path_added  # type: ignore[attr-defined]
         return record
     except Exception as exc:  # noqa: BLE001 - 单个插件失败必须隔离
-        for name in module_names or []:
+        for name in {*module_names, *_modules_under(root)}:
             sys.modules.pop(name, None)
         _remove_sys_path(sys_path_added)
         context.clear_tray()
@@ -273,7 +296,7 @@ def unload_plugin(record: PluginRecord) -> None:
         Logger.warning(f"插件卸载钩子失败: {record.plugin_id}: {exc}")
     if record.context is not None:
         record.context.clear_tray()
-    for name in list(getattr(record, "_module_names", []) or []):
+    for name in {*(getattr(record, "_module_names", []) or []), *_modules_under(record.path)}:
         sys.modules.pop(name, None)
     _remove_sys_path(list(getattr(record, "_sys_path_added", []) or []))
     _LANG.pop(record.plugin_id, None)

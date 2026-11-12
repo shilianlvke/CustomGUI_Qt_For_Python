@@ -9,6 +9,7 @@ from PySide6.QtWidgets import QLabel, QMainWindow, QVBoxLayout, QWidget
 from sllkgui.appcore import Language, Logger, record_event
 from sllkgui.gallery.registry import SurfaceRecord
 from sllkgui.gallery.runtime import GalleryRuntime
+from sllkgui.guicore import CPageTransition
 from sllkgui.guis.windows.main_window.controller import MainWindowController
 from sllkgui.guis.windows.main_window.functions import MainFunctions
 from sllkgui.guis.windows.main_window.registry import (
@@ -111,8 +112,10 @@ class GalleryWindow(QMainWindow):
     # ------------------------------------------------------------------
     def reload_plugins(self) -> None:
         current = self._current_route
+        self._clear_pages()
         self.runtime.reload()
         self.gallery_registry = self.runtime.registry
+        self._current_route = ""
         self.ui.left_menu.clear_menus()
         self.ui.left_menu.add_menus(get_menu_items("LeftMenu"))
         target = current if self.gallery_registry.get(current) else self.runtime.default_route()
@@ -120,6 +123,21 @@ class GalleryWindow(QMainWindow):
             self.open_route(target)
         elif self.gallery_registry.surface_count() == 0 and not get_default_page_object():
             self._show_empty_state()
+
+    def _clear_pages(self) -> None:
+        """移除全部已构建页面，让重载后的插件重新构建 Surface。
+
+        插件页面持有插件运行时（如 py-rm 的 ``DesktopRuntime``）。只换注册表
+        而保留旧页面时，``ensure_registered_page`` 会命中原名控件直接返回，
+        新运行时永远不会启动，页面和桌面小部件就会停在旧数据上。
+        """
+        pages = self.ui.load_pages.pages
+        CPageTransition.cancel(pages)
+        while pages.count():
+            widget = pages.widget(0)
+            pages.removeWidget(widget)
+            widget.setParent(None)
+            widget.deleteLater()
 
     # ------------------------------------------------------------------
     # 空状态

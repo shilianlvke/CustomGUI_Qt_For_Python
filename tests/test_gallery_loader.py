@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import sys
 from pathlib import Path
 
 import pytest
@@ -54,3 +55,33 @@ def test_duplicate_plugin_skipped(tmp_path: Path):
     registry = GalleryRegistry()
     assert load_plugin(root, store, registry) is not None
     assert load_plugin(root, store, registry) is None
+
+
+def test_unload_purges_modules_imported_from_plugin_root(tmp_path: Path):
+    """插件仓库内的顶层包必须随卸载清理，否则更新后仍命中旧模块。"""
+    helper_name = "gallery_test_helper_pkg"
+    root = write_plugin(tmp_path / "hello")
+    helper = root / helper_name
+    helper.mkdir()
+    (helper / "__init__.py").write_text("VALUE = 'v1'\n", encoding="utf-8")
+    source = (root / "plugin.py").read_text(encoding="utf-8")
+    (root / "plugin.py").write_text(
+        f"{source}\nimport {helper_name}\n\nHELPER_VALUE = {helper_name}.VALUE\n",
+        encoding="utf-8",
+    )
+
+    registry = GalleryRegistry()
+    record = load_plugin(root, _store(tmp_path), registry)
+    assert record is not None
+    assert sys.modules[helper_name].VALUE == "v1"
+
+    unload_plugin(record)
+    assert helper_name not in sys.modules
+
+    # 模拟插件更新：同一路径换成新代码后重载，应读到新模块而不是缓存
+    (helper / "__init__.py").write_text("VALUE = 'v2'\nUPDATED = True\n", encoding="utf-8")
+    registry = GalleryRegistry()
+    record = load_plugin(root, _store(tmp_path), registry)
+    assert record is not None
+    assert sys.modules[helper_name].VALUE == "v2"
+    unload_plugin(record)
