@@ -49,7 +49,7 @@ class Ui_TopColumn:
         self.verticalLayout.setContentsMargins(5, 5, 5, 5)
         self.scrollArea = QScrollArea(self.menu_1)
         self.scrollArea.setObjectName("scrollArea")
-        self.scrollArea.setStyleSheet("background-color: rgba(255, 255, 255, 0);")
+        self.scrollArea.setStyleSheet("background-color: transparent;")
         self.scrollArea.setFrameShape(QFrame.NoFrame)
         self.scrollArea.setLineWidth(0)
         self.scrollArea.setVerticalScrollBarPolicy(Qt.ScrollBarAlwaysOff)

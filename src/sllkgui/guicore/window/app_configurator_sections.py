@@ -30,6 +30,7 @@ from sllkgui.appcore import (
     LANGUAGE_OPTIONS,
     AppSettings,
     AppThemes,
+    ColorPalette,
     Language,
     get_design_tokens,
     load_user_settings,
@@ -132,7 +133,9 @@ class _ThemeCard(QWidget):
             chip_path = QPainterPath()
             chip_path.addRoundedRect(chip, 4, 4)
             painter.fillPath(chip_path, QColor(value))
-            painter.setPen(QPen(QColor(255, 255, 255, 22), 1))
+            chip_border = QColor(ColorPalette.custom_white)
+            chip_border.setAlpha(22)
+            painter.setPen(QPen(chip_border, 1))
             painter.drawPath(chip_path)
         painter.end()
 

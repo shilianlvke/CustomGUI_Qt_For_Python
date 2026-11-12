@@ -1,5 +1,6 @@
 from .app import ButtonDecision, MainWindowButtonUseCase
 from .sysx import (
+    COLOR_SWATCHES,
     LANGUAGE_OPTIONS,
     AppError,
     AppLanguages,
@@ -47,6 +48,7 @@ __all__ = [
     "PicFixFactory",
     "get_app_context",
     "ColorPalette",
+    "COLOR_SWATCHES",
     "Language",
     "LANGUAGE_OPTIONS",
     "ThemeManager",

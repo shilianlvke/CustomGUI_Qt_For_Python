@@ -10,6 +10,7 @@ Listbox / Select / MultiSelect / TreeSelect ｜ ToggleButton / SelectButton ｜ 
 from PySide6.QtCore import QDate, QMargins, Qt
 from PySide6.QtWidgets import QHBoxLayout, QVBoxLayout, QWidget
 
+from sllkgui.appcore import ColorPalette
 from sllkgui.guicore import (
     CAutoComplete,
     CButton,
@@ -133,7 +134,7 @@ class InputPreviewPage(CPreviewPage):
 
     @staticmethod
     def _color_pickers():
-        return [CColorPicker("#22c55e")]
+        return [CColorPicker(ColorPalette.custom_green)]
 
     @staticmethod
     def _knobs():

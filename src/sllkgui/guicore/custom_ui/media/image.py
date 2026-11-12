@@ -54,7 +54,8 @@ class _PreviewButton(QAbstractButton):
         # 预览遮罩恒为暗色，工具按钮固定使用高对比浅色前景；跟随主题正文色
         # 时，浅色主题的深色图标会淹没在遮罩里几乎看不见。常态再垫一层淡
         # 白色底片，保证压在深色图片上也始终可辨认。
-        fill = QColor(255, 255, 255, 60 if self._hover else 28)
+        fill = QColor(ColorPalette.custom_white)
+        fill.setAlpha(60 if self._hover else 28)
         painter.setPen(Qt.NoPen)
         painter.setBrush(fill)
         painter.drawEllipse(QRectF(self.rect()).adjusted(1, 1, -1, -1))

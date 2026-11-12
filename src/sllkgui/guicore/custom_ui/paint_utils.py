@@ -7,6 +7,8 @@ import math
 from PySide6.QtCore import QPointF, QRectF, Qt
 from PySide6.QtGui import QColor, QPainter, QPainterPath, QPen, QPolygonF
 
+from sllkgui.appcore import ColorPalette
+
 
 def _pen(color, width: float) -> QPen:
     return QPen(QColor(color), width, Qt.SolidLine, Qt.RoundCap, Qt.RoundJoin)
@@ -128,7 +130,9 @@ def shadow_layers(
         rect = body_rect.adjusted(-spread, -spread + offset_y, spread, spread + offset_y)
         layer = QPainterPath()
         layer.addRoundedRect(rect, radius + max(0, spread), radius + max(0, spread))
-        result.append((layer.subtracted(body_path), QColor(0, 0, 0, alpha)))
+        shadow = QColor(ColorPalette.custom_black)
+        shadow.setAlpha(alpha)
+        result.append((layer.subtracted(body_path), shadow))
     return result
 
 

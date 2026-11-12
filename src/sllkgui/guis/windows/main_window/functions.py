@@ -11,7 +11,7 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
-from sllkgui.appcore import AppSettings
+from sllkgui.appcore import AppSettings, ColorPalette
 from sllkgui.guicore import CPageTransition
 from sllkgui.guicore.window.left_menu.overlay import (
     CLeftMenuOverlayTracker,
@@ -106,7 +106,9 @@ class MainFunctions:
         effect.setBlurRadius(28)
         effect.setXOffset(0)
         effect.setYOffset(8)
-        effect.setColor(QColor(0, 0, 0, 90))
+        shadow_color = QColor(ColorPalette.custom_black)
+        shadow_color.setAlpha(90)
+        effect.setColor(shadow_color)
         frame.setGraphicsEffect(effect)
         window._menu_overlay_shadow = effect
 

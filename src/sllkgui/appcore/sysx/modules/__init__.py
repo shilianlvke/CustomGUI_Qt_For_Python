@@ -1,3 +1,4 @@
+from .color_module import COLOR_SWATCHES as COLOR_SWATCHES
 from .color_module import ColorPalette as ColorPalette
 from .error_module import (
     AppError as AppError,
@@ -33,6 +34,7 @@ from .token_module import get_design_tokens as get_design_tokens
 __all__ = [
     "Logger",
     "ColorPalette",
+    "COLOR_SWATCHES",
     "Language",
     "ThemeManager",
     "get_theme_manager",

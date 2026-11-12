@@ -6,6 +6,8 @@ from PySide6.QtCore import QEasingCurve, QEvent, QPoint, QPropertyAnimation, QRe
 from PySide6.QtGui import QColor, QPainter
 from PySide6.QtWidgets import QDialog
 
+from sllkgui.appcore import ColorPalette
+
 from .card import COverlayCard
 
 
@@ -218,11 +220,15 @@ class _OverlayBase(QDialog):
         painter.fillRect(event.rect(), Qt.transparent)
         painter.setCompositionMode(QPainter.CompositionMode_SourceOver)
         painter.setRenderHint(QPainter.Antialiasing)
-        painter.fillRect(self.rect(), QColor(0, 0, 0, self._mask_alpha))
+        mask = QColor(ColorPalette.custom_black)
+        mask.setAlpha(self._mask_alpha)
+        painter.fillRect(self.rect(), mask)
 
         rect = QRectF(self._card.geometry())
         for offset, alpha in ((14, 10), (7, 18), (3, 28)):
-            painter.fillRect(rect.translated(0, offset).adjusted(6, 0, -6, 0), QColor(0, 0, 0, alpha))
+            shadow = QColor(ColorPalette.custom_black)
+            shadow.setAlpha(alpha)
+            painter.fillRect(rect.translated(0, offset).adjusted(6, 0, -6, 0), shadow)
         painter.end()
 
     # ------------------------------------------------------------------

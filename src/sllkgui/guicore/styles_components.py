@@ -359,34 +359,34 @@ class _ComponentStyles:
         使其改用 ``QStyleSheetStyle`` 绘制、不再画出原生点阵；若这里只写 ID
         选择器，子控件不受影响会重新画出灰色点阵，故须显式补一条后代规则。
         """
-        self.style += """
-            #top_left_grip, #top_right_grip, #bottom_left_grip, #bottom_right_grip {
-                background-color: #333;
-                border: 2px solid #55FF00;
-            }
+        self.style += f"""
+            #top_left_grip, #top_right_grip, #bottom_left_grip, #bottom_right_grip {{
+                background-color: {self.tokens.colors.surface_app};
+                border: 2px solid {self.tokens.colors.border_context};
+            }}
             #top_left_grip QSizeGrip, #top_right_grip QSizeGrip,
-            #bottom_left_grip QSizeGrip, #bottom_right_grip QSizeGrip {
+            #bottom_left_grip QSizeGrip, #bottom_right_grip QSizeGrip {{
                 background: transparent;
-            }
-            #top_grip {
-                background-color: rgb(85, 255, 255);
-            }
-            #bottom_grip {
-                background-color: rgb(85, 170, 0);
-            }
-            #left {
-                background-color: rgb(255, 121, 198);
-            }
-            #right {
-                background-color: rgb(255, 0, 127);
-            }
+            }}
+            #top_grip {{
+                background-color: {self.tokens.colors.border_context};
+            }}
+            #bottom_grip {{
+                background-color: {self.tokens.colors.state_active};
+            }}
+            #left {{
+                background-color: {self.tokens.colors.surface_interactive_pressed};
+            }}
+            #right {{
+                background-color: {self.tokens.colors.text_muted};
+            }}
             #top_left_grip[colored="false"], #top_right_grip[colored="false"],
             #bottom_left_grip[colored="false"], #bottom_right_grip[colored="false"],
             #top_grip[colored="false"], #bottom_grip[colored="false"],
-            #left[colored="false"], #right[colored="false"] {
+            #left[colored="false"], #right[colored="false"] {{
                 background: transparent;
                 border: none;
-            }
+            }}
         """
 
     def update_table_style(self):

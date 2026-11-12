@@ -16,7 +16,7 @@ from PySide6.QtCore import QEasingCurve, QEvent, QObject, QPoint, QRect, QRectF,
 from PySide6.QtGui import QColor, QPainter
 from PySide6.QtWidgets import QWidget
 
-from sllkgui.appcore import AppSettings
+from sllkgui.appcore import AppSettings, ColorPalette
 
 from ...custom_ui.display.palette import is_dark_theme
 
@@ -131,7 +131,9 @@ class CMenuOverlayScrim(QWidget):
         if self._alpha <= 0:
             return
         painter = QPainter(self)
-        painter.fillRect(QRectF(self.rect()), QColor(0, 0, 0, self._alpha))
+        scrim = QColor(ColorPalette.custom_black)
+        scrim.setAlpha(self._alpha)
+        painter.fillRect(QRectF(self.rect()), scrim)
         painter.end()
 
     def mousePressEvent(self, event):  # noqa: N802

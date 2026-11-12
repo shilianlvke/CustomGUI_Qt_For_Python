@@ -41,6 +41,7 @@ class ColorHandler:
 
     # 基础颜色
     custom_white: str = "#ffffff"
+    custom_black: str = "#000000"
     custom_pink: str = "#ff99a4"
     custom_green: str = "#6ccb5f"
     custom_red: str = "#ff99a4"
@@ -56,4 +57,33 @@ class ColorHandler:
 
 
 ColorPalette = ColorHandler()
-__all__ = ["ColorHandler", "ColorPalette"]
+
+#: 颜色选择器的预设色板（组件只引用，不在组件内定义颜色）
+COLOR_SWATCHES: tuple[str, ...] = (
+    "#ef4444",
+    "#f97316",
+    "#f59e0b",
+    "#eab308",
+    "#84cc16",
+    "#22c55e",
+    "#10b981",
+    "#14b8a6",
+    "#06b6d4",
+    "#0ea5e9",
+    "#3b82f6",
+    "#6366f1",
+    "#8b5cf6",
+    "#a855f7",
+    "#d946ef",
+    "#ec4899",
+    "#f43f5e",
+    "#64748b",
+    "#0f172a",
+    "#ffffff",
+    "#f1f5f9",
+    "#94a3b8",
+    "#475569",
+    "#000000",
+)
+
+__all__ = ["COLOR_SWATCHES", "ColorHandler", "ColorPalette"]

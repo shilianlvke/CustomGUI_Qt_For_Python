@@ -6,38 +6,19 @@ from PySide6.QtCore import QRectF, Qt, Signal
 from PySide6.QtGui import QColor, QPainter, QPen
 from PySide6.QtWidgets import QAbstractButton, QGridLayout, QLabel, QVBoxLayout, QWidget
 
-from sllkgui.appcore import AppSettings
+from sllkgui.appcore import COLOR_SWATCHES, AppSettings, ColorPalette
 
 from .input_style import colors, rounded_path
 from .overlay import CPopover
 
-#: Aura 常用色板（8 列 × 3 行）
-PALETTE = (
-    "#ef4444",
-    "#f97316",
-    "#f59e0b",
-    "#eab308",
-    "#84cc16",
-    "#22c55e",
-    "#10b981",
-    "#14b8a6",
-    "#06b6d4",
-    "#0ea5e9",
-    "#3b82f6",
-    "#6366f1",
-    "#8b5cf6",
-    "#a855f7",
-    "#d946ef",
-    "#ec4899",
-    "#f43f5e",
-    "#64748b",
-    "#0f172a",
-    "#ffffff",
-    "#f1f5f9",
-    "#94a3b8",
-    "#475569",
-    "#000000",
-)
+#: 预设色板统一放在主题模块，组件只引用
+PALETTE = COLOR_SWATCHES
+
+
+def _alpha(value: str, alpha: int) -> QColor:
+    color = QColor(value)
+    color.setAlpha(max(0, min(255, int(alpha))))
+    return color
 
 #: 色块按钮尺寸的兼容兜底值（运行时以配置为准）
 SWATCH = 40
@@ -64,7 +45,7 @@ class _SwatchButton(QAbstractButton):
         painter.setRenderHint(QPainter.Antialiasing)
         rect = QRectF(self.rect()).adjusted(1.5, 1.5, -1.5, -1.5)
         painter.setBrush(self._color)
-        painter.setPen(QPen(QColor(255, 255, 255, 90 if self._hover else 45), 1))
+        painter.setPen(QPen(_alpha(ColorPalette.custom_white, 90 if self._hover else 45), 1))
         painter.drawRoundedRect(rect, 4, 4)
         painter.end()
 
@@ -82,9 +63,9 @@ class CColorPicker(QWidget):
 
     colorChanged = Signal(str)
 
-    def __init__(self, color: str = "#568af2", parent=None):
+    def __init__(self, color: str = "", parent=None):
         super().__init__(parent)
-        self._color = QColor(color)
+        self._color = QColor(color or ColorPalette.custom_context_color)
         self._popover: CPopover | None = None
         self._open = False
         self._label: QLabel | None = None
@@ -126,7 +107,7 @@ class CColorPicker(QWidget):
         if self._color.lightness() > 230:
             inner = rect.adjusted(1, 1, -1, -1)
             painter.setBrush(Qt.NoBrush)
-            painter.setPen(QPen(QColor(0, 0, 0, 40), 1))
+            painter.setPen(QPen(_alpha(ColorPalette.custom_black, 40), 1))
             painter.drawPath(rounded_path(inner, 5))
         painter.end()
 

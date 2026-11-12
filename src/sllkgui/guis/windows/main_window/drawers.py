@@ -19,7 +19,7 @@ from PySide6.QtCore import QEasingCurve, QEvent, QObject, QPoint, QPropertyAnima
 from PySide6.QtGui import QColor
 from PySide6.QtWidgets import QGraphicsDropShadowEffect
 
-from sllkgui.appcore import AppSettings
+from sllkgui.appcore import AppSettings, ColorPalette
 
 #: 支持的两个取值
 DRAWER_MODES = ("static", "overlay")
@@ -448,7 +448,9 @@ class DrawerLayout:
     def _apply_shadow(self, name: str, frame) -> None:
         effect = QGraphicsDropShadowEffect(frame)
         effect.setBlurRadius(28)
-        effect.setColor(QColor(0, 0, 0, 90))
+        shadow_color = QColor(ColorPalette.custom_black)
+        shadow_color.setAlpha(90)
+        effect.setColor(shadow_color)
         effect.setXOffset(8 if name == "left" else 0)
         effect.setYOffset(8 if name == "top" else (-8 if name == "bottom" else 0))
         frame.setGraphicsEffect(effect)

@@ -20,8 +20,8 @@ class CTitleButton(QPushButton):
         width=30,
         height=30,
         radius=8,
-        bg_color="#343b48",
-        icon_color="#c3ccdf",
+        bg_color: str | None = None,
+        icon_color: str | None = None,
         icon_path="no_icon.svg",
         is_active=False,
     ):
@@ -36,9 +36,9 @@ class CTitleButton(QPushButton):
         self._top_margin = self.height() + 6
         self._is_active = is_active
         # Set Parameters
-        self._set_bg_color = bg_color
+        self._set_bg_color = bg_color or ColorPalette.custom_dark_four
         self._set_icon_path = icon_path
-        self._set_icon_color = icon_color
+        self._set_icon_color = icon_color or ColorPalette.custom_icon_color
         self._set_border_radius = radius
         # Parent
         self._parent = parent

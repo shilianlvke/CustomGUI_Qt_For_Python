@@ -3,9 +3,30 @@
 项目遵循[语义化版本](https://semver.org/lang/zh-CN/)：major 版本允许破坏性变更并显式列出；
 minor 与 patch 保持向后兼容。
 
-当前版本：`2.1.6`（见 `src/sllkgui/_version.py`），对应 tag `base-v2.1.6`。
+当前版本：`2.1.7`（见 `src/sllkgui/_version.py`），对应 tag `base-v2.1.7`。
 
 ---
+
+## 2.1.7（2026-11-12）
+
+全基座颜色审计：清理组件内私自硬编码的颜色，统一改为从主题模块取色。
+
+- 主题模块补齐基础色：`ColorPalette` 新增 `custom_black`；新增 `COLOR_SWATCHES`
+  预设色板，并经 `sllkgui.appcore` 公开导出，组件不再自带调色板常量。
+- 颜色选择器：移除 24 个硬编码色块与默认色 `#568af2`；默认色取
+  `custom_context_color`，描边取 `custom_white` / `custom_black` + alpha。
+- 按钮语义色（`severity.py`）：`#ffffff` / `#000000` / `#0b0b0b` 全部改为
+  `custom_white` / `custom_black` / `custom_transparent`。
+- 阴影与遮罩：窗口阴影、抽屉阴影、浮层遮罩、通知/提示气泡阴影、面板阴影层
+  统一由 `custom_black` + alpha 生成。
+- 白色叠加层：图片预览按钮底色、主题卡色板描边改为 `custom_white` + alpha。
+- `.ui` / `ui.py`：三向栏目滚动区的 `rgba(255, 255, 255, 0)` 改为透明关键字。
+- 窗口调试夹点 QSS：`#333` / `#55FF00` / `rgb(...)` 改为设计令牌颜色。
+- 插件管理页：删除 `_DANGER` / `_WARNING`，状态色改用 `custom_red` / `custom_yellow`。
+- Showcase 预览页：`palette(text)` / `palette(midlight)` 改为
+  `custom_text_foreground` / `custom_text_description`。
+- 架构门禁：颜色选择器改为从 `sllkgui.appcore` 公开 API 取色板，不再直接导入
+  `appcore.sysx` 内部模块。
 
 ## 2.1.6（2026-11-12）
 

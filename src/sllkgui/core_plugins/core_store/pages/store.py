@@ -36,8 +36,6 @@ from sllkgui.guicore.custom_ui.panels.style import RADIUS, paint_surface, panel_
 from sllkgui.guicore.styles import card_surface_color
 from sllkgui.plugin import GalleryContext
 
-_DANGER = "#e5534b"
-_WARNING = "#d29922"
 _MONO_FAMILIES = ["Cascadia Mono", "Consolas", "JetBrains Mono", "monospace"]
 
 
@@ -1223,9 +1221,9 @@ class StorePage(QWidget):
     def set_status(self, message: str, level: str = "info") -> None:
         colors = panel_colors()
         if level == "error":
-            color = _DANGER
+            color = ColorPalette.custom_red
         elif level == "warning":
-            color = _WARNING
+            color = ColorPalette.custom_yellow
         elif level == "success":
             color = qss_color(colors["accent"])
         else:

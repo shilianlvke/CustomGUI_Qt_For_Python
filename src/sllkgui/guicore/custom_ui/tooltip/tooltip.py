@@ -1,7 +1,7 @@
 from PySide6.QtGui import QColor
 from PySide6.QtWidgets import QGraphicsDropShadowEffect, QLabel
 
-from sllkgui.appcore import get_design_tokens
+from sllkgui.appcore import ColorPalette, get_design_tokens
 
 
 class CToolTip(QLabel):
@@ -49,7 +49,9 @@ class CToolTip(QLabel):
         self.shadow.setBlurRadius(16)
         self.shadow.setXOffset(0)
         self.shadow.setYOffset(4)
-        self.shadow.setColor(QColor(0, 0, 0, 60))
+        shadow_color = QColor(ColorPalette.custom_black)
+        shadow_color.setAlpha(60)
+        self.shadow.setColor(shadow_color)
         self.setGraphicsEffect(self.shadow)
 
     def _apply_geometry(self):

@@ -11,6 +11,7 @@ from .config import (
 )
 from .handlers import YamlHandler
 from .modules import (
+    COLOR_SWATCHES,
     AppError,
     ColorPalette,
     DesignTokens,
@@ -43,6 +44,7 @@ __all__ = [
     "PicFixFactory",
     "get_app_context",
     "ColorPalette",
+    "COLOR_SWATCHES",
     "Language",
     "LANGUAGE_OPTIONS",
     "ThemeManager",

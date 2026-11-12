@@ -2,6 +2,7 @@
 
 from PySide6.QtWidgets import QLabel, QVBoxLayout, QWidget
 
+from sllkgui.appcore import ColorPalette
 from sllkgui.guicore import CDataTable, CInputText, CPreviewPage, CTableColumn
 
 
@@ -79,7 +80,9 @@ class TablePreviewPage(CPreviewPage):
                 f"{cls.tr('rating')} {record.get('rating')}"
             )
             label.setWordWrap(True)
-            label.setStyleSheet("padding: 6px 12px; color: palette(text); background: transparent;")
+            label.setStyleSheet(
+                f"padding: 6px 12px; color: {ColorPalette.custom_text_foreground}; background: transparent;"
+            )
             return label
 
         table.set_row_detail_provider(detail)
@@ -88,7 +91,7 @@ class TablePreviewPage(CPreviewPage):
         layout.setContentsMargins(0, 0, 0, 0)
         layout.setSpacing(4)
         hint = QLabel(cls.tr("hint_expand"))
-        hint.setStyleSheet("color: palette(midlight);")
+        hint.setStyleSheet(f"color: {ColorPalette.custom_text_description};")
         layout.addWidget(hint)
         layout.addWidget(table, 1)
         return box

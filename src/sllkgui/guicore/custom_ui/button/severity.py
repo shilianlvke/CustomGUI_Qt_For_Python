@@ -59,8 +59,8 @@ class ButtonColors:
     active_text: QColor
 
 
-_TRANSPARENT = QColor(0, 0, 0, 0)
-_WHITE = QColor("#ffffff")
+_TRANSPARENT = QColor(ColorPalette.custom_transparent)
+_WHITE = QColor(ColorPalette.custom_white)
 
 
 def is_dark_theme() -> bool:
@@ -101,7 +101,7 @@ def _contrast_ratio(first: QColor, second: QColor) -> float:
 
 def _contrast_text(color: QColor) -> QColor:
     """在给定底色上挑一个可读的文字色（白或近黑）。"""
-    black = QColor("#0b0b0b")
+    black = QColor(ColorPalette.custom_black)
     return black if _contrast_ratio(black, color) >= _contrast_ratio(_WHITE, color) else _WHITE
 
 
@@ -202,7 +202,7 @@ def colors_for(severity: str | Severity, variant: str | Variant, plain: bool = F
 
     if severity is Severity.CONTRAST:
         if variant is Variant.SOLID:
-            base = QColor("#ffffff") if dark else QColor(ColorPalette.custom_text_title)
+            base = QColor(ColorPalette.custom_white) if dark else QColor(ColorPalette.custom_text_title)
             return _solid(base, _mix(base, rest, 0.08), _mix(base, rest, 0.14), _contrast_text(base))
         color = _WHITE if dark else QColor(ColorPalette.custom_text_title)
         return _tinted(
@@ -218,7 +218,7 @@ def colors_for(severity: str | Severity, variant: str | Variant, plain: bool = F
     active_tint = _alpha(base, 38 if not dark else 30)
 
     if variant is Variant.SOLID:
-        toward = _WHITE if dark else QColor("#000000")
+        toward = _WHITE if dark else QColor(ColorPalette.custom_black)
         return _solid(
             base,
             _mix(base, toward, 0.08),

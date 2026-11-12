@@ -346,7 +346,9 @@ class CWindow(QFrame):
             effect.setBlurRadius(int(shadow.blur_radius))
             effect.setXOffset(int(shadow.offset_x))
             effect.setYOffset(int(shadow.offset_y))
-            effect.setColor(QColor(0, 0, 0, int(shadow.alpha)))
+            shadow_color = QColor(ColorPalette.custom_black)
+            shadow_color.setAlpha(int(shadow.alpha))
+            effect.setColor(shadow_color)
             self.setGraphicsEffect(effect)
             self.shadow = effect
             return

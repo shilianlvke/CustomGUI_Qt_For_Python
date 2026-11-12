@@ -176,7 +176,7 @@ class CMessage(QFrame):
 
         layout.addLayout(text_layout, 1)
 
-        self._close_button = _CloseButton(QColor("#ffffff"), parent=self) if closable else None
+        self._close_button = _CloseButton(QColor(ColorPalette.custom_white), parent=self) if closable else None
         if self._close_button is not None:
             self._close_button.clicked.connect(self._on_close_clicked)
             layout.addWidget(self._close_button, 0, Qt.AlignTop)
@@ -215,7 +215,7 @@ class CMessage(QFrame):
 
     def set_closable(self, closable: bool) -> None:
         if closable and self._close_button is None:
-            self._close_button = _CloseButton(QColor("#ffffff"), parent=self)
+            self._close_button = _CloseButton(QColor(ColorPalette.custom_white), parent=self)
             self._close_button.clicked.connect(self._on_close_clicked)
             self.layout().addWidget(self._close_button, 0, Qt.AlignTop)
             self._apply_colors()
@@ -263,7 +263,7 @@ class CMessage(QFrame):
             painter.setPen(QPen(colors["border"], 1))
             painter.drawPath(path)
         else:
-            painter.fillPath(path, QColor(0, 0, 0, 0))
+            painter.fillPath(path, QColor(ColorPalette.custom_transparent))
             painter.setBrush(Qt.NoBrush)
             painter.setPen(QPen(colors["border"], 1))
             painter.drawPath(path)

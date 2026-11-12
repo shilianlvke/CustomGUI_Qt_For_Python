@@ -290,7 +290,7 @@ def test_app_settings_view_exposes_typed_fields():
     get_app_context(force_reload=True)
 
     assert AppSettings.family == "Segoe UI Variable"
-    assert AppSettings.startup_size == (960, 540)
+    assert AppSettings.startup_size == (1440, 900)
     assert AppSettings.lef_menu_size.minimum == 50
     assert AppSettings.left_column_size.maximum == 240
     assert AppSettings.logo == "icon"

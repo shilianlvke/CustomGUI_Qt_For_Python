@@ -67,8 +67,8 @@ def test_fluent_tokens_follow_all_four_themes(qapp):
         colors = colors_for(Severity.WARN, Variant.SOLID)
         assert colors.background.alpha() == 255
         assert colors.text.name() in {
-            QColor("#0b0b0b").name(),
-            QColor("#ffffff").name(),
+            QColor(ColorPalette.custom_black).name(),
+            QColor(ColorPalette.custom_white).name(),
         }
         tokens = get_design_tokens()
         assert tokens.radius.control == 4

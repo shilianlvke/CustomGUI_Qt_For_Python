@@ -117,7 +117,7 @@ def paint_surface(
     path = rounded_path(rect, panel_radius() if radius is None else radius)
     painter.fillPath(path, QColor(background or colors["background"]))
     if border is not None:
-        painter.setBrush(QColor(0, 0, 0, 0))
+        painter.setBrush(QColor(ColorPalette.custom_transparent))
         painter.setPen(QPen(QColor(border), 1))
         painter.drawPath(path)
     return path

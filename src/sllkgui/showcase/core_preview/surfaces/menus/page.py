@@ -2,6 +2,7 @@
 
 from PySide6.QtWidgets import QHBoxLayout, QLabel, QVBoxLayout, QWidget
 
+from sllkgui.appcore import ColorPalette
 from sllkgui.guicore import (
     CButton,
     CContextMenu,
@@ -104,7 +105,7 @@ class MenuPreviewPage(CPreviewPage):
         trigger = CButton(cls.tr("open_context"), icon="icon_menu", variant="outlined")
         trigger.clicked.connect(lambda: menu.show_at(trigger.mapToGlobal(trigger.rect().bottomLeft())))
         hint = QLabel(cls.tr("context_hint"))
-        hint.setStyleSheet("color: palette(midlight);")
+        hint.setStyleSheet(f"color: {ColorPalette.custom_text_description};")
         layout.addWidget(trigger)
         layout.addWidget(hint, 1)
         return box

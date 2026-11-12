@@ -6,7 +6,7 @@ from PySide6.QtCore import QEasingCurve, QRectF, QSize, Qt, QVariantAnimation
 from PySide6.QtGui import QColor, QFontMetrics, QPainter, QPen
 from PySide6.QtWidgets import QAbstractButton, QSizePolicy
 
-from sllkgui.appcore import AppSettings
+from sllkgui.appcore import AppSettings, ColorPalette
 
 from ..paint_utils import draw_check
 from .input_style import colors, field_font
@@ -231,7 +231,7 @@ class CToggleSwitch(_ChoiceBase):
 
             knob_color = contrast_text(accent)
         else:
-            knob_color = QColor("#ffffff")
+            knob_color = QColor(ColorPalette.custom_white)
         painter.setBrush(knob_color)
         painter.drawEllipse(knob)
 

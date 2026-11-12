@@ -21,7 +21,7 @@ from PySide6.QtCore import QRectF, QSize, Qt, QTimer, QVariantAnimation, Signal
 from PySide6.QtGui import QColor, QFont, QFontMetrics, QIcon, QPainter, QPainterPath, QPen, QPixmap
 from PySide6.QtWidgets import QPushButton, QSizePolicy
 
-from sllkgui.appcore import AppSettings
+from sllkgui.appcore import AppSettings, ColorPalette
 
 from ..icon_utils import render_icon
 from ..paint_utils import SHADOW_MARGINS, shadow_layers
@@ -496,7 +496,7 @@ class CButton(QPushButton):
         end_alpha = end.alphaF()
         alpha = start_alpha + (end_alpha - start_alpha) * t
         if alpha <= 0.0:
-            return QColor(0, 0, 0, 0)
+            return QColor(ColorPalette.custom_transparent)
         blended = []
         for begin, finish in (
             (start.redF(), end.redF()),

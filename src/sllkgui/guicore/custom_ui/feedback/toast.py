@@ -175,7 +175,9 @@ class CToast(QFrame):
         for offset, alpha in ((3, 12), (1, 24)):
             shadow = QPainterPath()
             shadow.addRoundedRect(card.translated(0, offset), 8, 8)
-            painter.fillPath(shadow, QColor(0, 0, 0, alpha))
+            shadow_color = QColor(ColorPalette.custom_black)
+            shadow_color.setAlpha(alpha)
+            painter.fillPath(shadow, shadow_color)
 
         path = QPainterPath()
         path.addRoundedRect(card, 8, 8)
