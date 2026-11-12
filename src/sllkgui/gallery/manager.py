@@ -59,6 +59,7 @@ class PluginManager:
         self.store = store
         self.state = state
         self.sources = sources
+        self._manifest_cache: dict[tuple[str, str], tuple[str, str]] = {}
         if base_version:
             self.state.base_version = base_version
 
@@ -80,9 +81,12 @@ class PluginManager:
     def installed_rows(self) -> list[dict[str, Any]]:
         rows: list[dict[str, Any]] = []
         for record in self.state.plugins.values():
+            name, summary = self._manifest_text(record.plugin_id, record.version)
             rows.append(
                 {
                     "id": record.plugin_id,
+                    "name": name,
+                    "summary": summary,
                     "version": record.version,
                     "source": record.source_id,
                     "repository": record.repository,
@@ -95,6 +99,20 @@ class PluginManager:
                 }
             )
         return rows
+
+    def _manifest_text(self, plugin_id: str, version: str) -> tuple[str, str]:
+        """已安装清单的展示名与简介；按 (id, version) 缓存，避免反复读盘。"""
+        key = (plugin_id, version)
+        cached = self._manifest_cache.get(key)
+        if cached is not None:
+            return cached
+        try:
+            manifest = load_manifest(self.store.plugin_path(plugin_id))
+        except Exception:  # noqa: BLE001 - 展示信息失败不影响插件管理
+            return "", ""
+        value = (manifest.name, manifest.description)
+        self._manifest_cache[key] = value
+        return value
 
     def search(self, query: str = "", *, source_id: str = "") -> list[dict[str, Any]]:
         index = self.sources.index()

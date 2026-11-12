@@ -242,5 +242,22 @@ class CDialog(_OverlayBase):
         footer.add_button(button)
         return button
 
+    def add_action_button(
+        self,
+        text: str,
+        callback=None,
+        *,
+        severity: str = "secondary",
+        variant: str = "outlined",
+        icon: str | None = None,
+    ):
+        """追加自定义动作按钮（不自动关闭对话框，由回调决定）。"""
+        footer = self._ensure_footer()
+        button = CButton(text, severity=severity, variant=variant, icon=icon)
+        if callback is not None:
+            button.clicked.connect(callback)
+        footer.add_button(button)
+        return button
+
 
 __all__ = ["CDialog"]

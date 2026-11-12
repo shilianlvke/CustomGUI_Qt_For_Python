@@ -207,6 +207,26 @@ plugin_store:
     installed: 已安装
     discover: 发现
     sources: 源
+  view:
+    grid: 网格
+    list: 列表
+  detail:
+    meta: 基础信息
+    permissions: 权限
+    installed: 已安装
+    not_installed: 未安装
+    no_description: 暂无简介
+    available: 可用版本
+    previous: 上一版本
+    compliance: 合规级别
+    author: 作者
+    categories: 分类
+    repository: 仓库
+    status: 状态
+    source_id: 源 ID
+    url: 地址
+    last_refresh: 最近刷新
+    trust: 信任级别
   installed:
     filter: 过滤插件…
     update: 更新
@@ -234,6 +254,7 @@ plugin_store:
   sources:
     placeholder: Git 仓库地址
     add: 添加
+    detail_title: 源详情
     refresh_all: 全部刷新
     refresh: 刷新
     remove: 移除
@@ -246,6 +267,8 @@ plugin_store:
     action_done: 操作完成
     action_failed: '操作失败: {error}'
     install_done: '已安装 {count} 个插件'
+    up_to_date: 已是最新版本
+    update_done: '已更新到 v{version}'
     refreshing: 正在刷新源…
     refresh_done: 源刷新完成
   confirm:

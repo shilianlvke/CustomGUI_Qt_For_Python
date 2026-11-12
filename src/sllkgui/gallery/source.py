@@ -391,6 +391,16 @@ class SourceManager:
         shutil.rmtree(self.store.source_path(source_id), ignore_errors=True)
         Logger.info(f"移除源: {source_id}")
 
+    def set_enabled(self, source_id: str, enabled: bool) -> SourceRecord:
+        """启用/停用源：停用后索引与批量刷新都会跳过该源。"""
+        record = self.state.get(source_id)
+        if record is None:
+            raise GalleryError(SOURCE_NOT_FOUND, f"源不存在: {source_id}")
+        record.enabled = bool(enabled)
+        self.save()
+        Logger.info(f"{'启用' if enabled else '停用'}源: {source_id}")
+        return record
+
     def _derive_id(self, url: str) -> str:
         name = url.rstrip("/").rsplit("/", 1)[-1]
         if name.endswith(".git"):

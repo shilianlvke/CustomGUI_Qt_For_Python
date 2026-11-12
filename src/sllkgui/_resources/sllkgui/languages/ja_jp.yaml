@@ -208,6 +208,26 @@ plugin_store:
     installed: 導入済み
     discover: 見つける
     sources: ソース
+  view:
+    grid: グリッド
+    list: リスト
+  detail:
+    meta: 基本情報
+    permissions: 権限
+    installed: 導入済み
+    not_installed: 未導入
+    no_description: 説明なし
+    available: 利用可能バージョン
+    previous: 前のバージョン
+    compliance: コンプライアンス
+    author: 作者
+    categories: カテゴリ
+    repository: リポジトリ
+    status: 状態
+    source_id: ソース ID
+    url: URL
+    last_refresh: 最終更新
+    trust: 信頼レベル
   installed:
     filter: プラグインを絞り込む…
     update: 更新
@@ -235,6 +255,7 @@ plugin_store:
   sources:
     placeholder: Git リポジトリの URL
     add: 追加
+    detail_title: ソースの詳細
     refresh_all: すべて更新
     refresh: 再読み込み
     remove: 削除
@@ -247,6 +268,8 @@ plugin_store:
     action_done: 完了
     action_failed: '操作に失敗しました: {error}'
     install_done: '{count} 個のプラグインをインストールしました'
+    up_to_date: 最新バージョンです
+    update_done: 'v{version} に更新しました'
     refreshing: ソースを更新しています…
     refresh_done: ソースを更新しました
   confirm:

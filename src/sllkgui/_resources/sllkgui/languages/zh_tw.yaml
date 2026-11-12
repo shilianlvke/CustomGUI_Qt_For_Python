@@ -208,6 +208,26 @@ plugin_store:
     installed: 已安裝
     discover: 探索
     sources: 來源
+  view:
+    grid: 網格
+    list: 列表
+  detail:
+    meta: 基礎資訊
+    permissions: 權限
+    installed: 已安裝
+    not_installed: 未安裝
+    no_description: 暫無簡介
+    available: 可用版本
+    previous: 上一版本
+    compliance: 合規級別
+    author: 作者
+    categories: 分類
+    repository: 倉庫
+    status: 狀態
+    source_id: 來源 ID
+    url: 位址
+    last_refresh: 最近重新整理
+    trust: 信任級別
   installed:
     filter: 篩選外掛…
     update: 更新
@@ -235,6 +255,7 @@ plugin_store:
   sources:
     placeholder: Git 倉庫位址
     add: 新增
+    detail_title: 來源詳情
     refresh_all: 全部重新整理
     refresh: 重新整理
     remove: 移除
@@ -247,6 +268,8 @@ plugin_store:
     action_done: 操作完成
     action_failed: '操作失敗: {error}'
     install_done: '已安裝 {count} 個外掛'
+    up_to_date: 已是最新版本
+    update_done: '已更新到 v{version}'
     refreshing: 正在重新整理來源…
     refresh_done: 來源重新整理完成
   confirm:

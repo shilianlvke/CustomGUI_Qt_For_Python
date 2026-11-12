@@ -207,6 +207,26 @@ plugin_store:
     installed: Installed
     discover: Discover
     sources: Sources
+  view:
+    grid: Grid
+    list: List
+  detail:
+    meta: Basic info
+    permissions: Permissions
+    installed: Installed
+    not_installed: Not installed
+    no_description: No description yet
+    available: Available version
+    previous: Previous version
+    compliance: Compliance
+    author: Author
+    categories: Categories
+    repository: Repository
+    status: Status
+    source_id: Source ID
+    url: URL
+    last_refresh: Last refresh
+    trust: Trust level
   installed:
     filter: Filter plugins…
     update: Update
@@ -234,6 +254,7 @@ plugin_store:
   sources:
     placeholder: Git repository URL
     add: Add
+    detail_title: Source details
     refresh_all: Refresh all
     refresh: Refresh
     remove: Remove
@@ -246,6 +267,8 @@ plugin_store:
     action_done: Done
     action_failed: 'Action failed: {error}'
     install_done: 'Installed {count} plugins'
+    up_to_date: Up to date
+    update_done: 'Updated to v{version}'
     refreshing: Refreshing sources…
     refresh_done: Sources refreshed
   confirm:
