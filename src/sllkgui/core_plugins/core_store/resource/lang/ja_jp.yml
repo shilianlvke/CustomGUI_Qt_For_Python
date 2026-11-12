@@ -1,56 +1,48 @@
 store:
   title: プラグイン管理
-  subtitle: インストール・更新・ソースをひとつのワークスペースで
-  refresh: 更新
+  subtitle: 導入済み・検索・ソースを 1 ページで
+  refresh: すべて更新
 stats:
   installed: 導入済み
   enabled: 有効
   sources: ソース
-modes:
+sections:
   installed: 導入済み
   discover: 見つける
   sources: ソース
 installed:
-  filter: プラグインを絞り込む…
+  empty: まだ何も入っていません。「見つける」へ
+  enabled: 有効
+  disabled: 無効
   update: 更新
   rollback: ロールバック
   enable: 有効化
   disable: 無効化
   remove: 削除
-  empty: プラグインはまだありません
-  select_hint: プラグインを選択して詳細を表示
-  detail_title: プラグインの詳細
-  version: バージョン
-  source: ソース
-  commit: コミット
-  path: パス
-  permissions: 権限
-  enabled: 有効
-  disabled: 無効
 discover:
   placeholder: 名前・ID・概要を検索…
-  hint: 左でプラグインを選び、右のインストール待ちに追加します
   search: 検索
   refresh_sources: ソースを更新
-  clear: クリア
-  install: インストール待ち
-  queue_summary: 'インストール待ち · {count}'
-  confirm: "待ち行列の {count} 個をインストールしますか？\n{names}"
+  empty: インストール可能なプラグインがありません
+  install: インストール
+  permissions: '{count} 件の権限'
 sources:
   placeholder: Git リポジトリの URL
   add: 追加
   refresh_all: すべて更新
-  hint: 並び順が優先度です。上にあるソースが優先されます
-  remove: ソースを削除
+  remove: 削除
+  empty: ソースが設定されていません
+  official: 公式
+  user: ユーザー
   confirm_remove: 'ソース {id} を削除しますか？導入済みプラグインは残ります。'
-  refreshing: ソースを更新しています…
-  refresh_done: ソースを更新しました
-  order_saved: ソースの優先度を保存しました
   added: 'ソース {id} を追加しました'
 status:
   ready: 準備完了
   action_done: 完了
   action_failed: '操作に失敗しました: {error}'
   install_done: '{count} 個のプラグインをインストールしました'
+  refreshing: ソースを更新しています…
+  refresh_done: ソースを更新しました
 confirm:
   remove: このプラグインを削除しますか？データディレクトリは既定で保持されます。
+  install: '{id} v{version} をインストールしますか？権限: {permissions}'

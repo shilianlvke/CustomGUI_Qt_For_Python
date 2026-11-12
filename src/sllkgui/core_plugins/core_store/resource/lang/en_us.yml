@@ -1,56 +1,48 @@
 store:
   title: Plugin Manager
-  subtitle: Install, update and manage sources in one workspace
-  refresh: Refresh
+  subtitle: Installed, discover and sources — all on one page
+  refresh: Refresh all
 stats:
   installed: Installed
   enabled: Enabled
   sources: Sources
-modes:
+sections:
   installed: Installed
   discover: Discover
   sources: Sources
 installed:
-  filter: Filter plugins…
+  empty: Nothing installed yet — browse Discover
+  enabled: Enabled
+  disabled: Disabled
   update: Update
   rollback: Rollback
   enable: Enable
   disable: Disable
   remove: Remove
-  empty: No plugins installed yet
-  select_hint: Select a plugin to inspect it
-  detail_title: Plugin details
-  version: Version
-  source: Source
-  commit: Commit
-  path: Path
-  permissions: Permissions
-  enabled: Enabled
-  disabled: Disabled
 discover:
-  placeholder: Search name, ID or summary…
-  hint: Pick plugins on the left and build an install queue on the right
+  placeholder: Search plugin name, ID or summary…
   search: Search
   refresh_sources: Refresh sources
-  clear: Clear
-  install: Install queue
-  queue_summary: 'Install queue · {count}'
-  confirm: "Install {count} plugins from the queue?\n{names}"
+  empty: No installable plugins match
+  install: Install
+  permissions: '{count} permissions'
 sources:
   placeholder: Git repository URL
   add: Add
   refresh_all: Refresh all
-  hint: Order is priority — sources higher in the list win
-  remove: Remove source
+  remove: Remove
+  empty: No plugin sources configured
+  official: Official
+  user: User
   confirm_remove: 'Remove source {id}? Installed plugins are kept.'
-  refreshing: Refreshing sources…
-  refresh_done: Sources refreshed
-  order_saved: Source priority saved
   added: 'Added source {id}'
 status:
   ready: Ready
   action_done: Done
   action_failed: 'Action failed: {error}'
   install_done: 'Installed {count} plugins'
+  refreshing: Refreshing sources…
+  refresh_done: Sources refreshed
 confirm:
   remove: Remove this plugin? Its data directory is kept by default.
+  install: 'Install {id} v{version}? Permissions: {permissions}'

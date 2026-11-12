@@ -47,6 +47,11 @@ def test_core_plugin_not_preferred_as_default(tmp_path: Path):
     )
     # 非核心插件优先
     assert registry.default_route().startswith("com.example.")
+    menu = {item["btn_id"]: item for item in registry.menu_items()}
+    hello_btn = registry.get("com.example.hello/home").button_id
+    core_btn = registry.get("com.example.core/home").button_id
+    assert menu[hello_btn]["show_top"] is True
+    assert menu[core_btn]["show_top"] is False
     registry.remove("com.example.hello")
     assert registry.default_route() == "com.example.core/home"
 

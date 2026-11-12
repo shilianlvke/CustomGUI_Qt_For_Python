@@ -1,56 +1,48 @@
 store:
   title: 插件管理
-  subtitle: 安装、更新与来源，在同一个工作台完成
-  refresh: 刷新
+  subtitle: 已安装、发现与来源，在一页内完成
+  refresh: 全部刷新
 stats:
   installed: 已安装
   enabled: 启用中
   sources: 来源
-modes:
+sections:
   installed: 已安装
   discover: 发现
-  sources: 源
+  sources: 来源
 installed:
-  filter: 过滤插件…
+  empty: 还没有安装插件，去「发现」看看
+  enabled: 已启用
+  disabled: 已停用
   update: 更新
   rollback: 回滚
   enable: 启用
-  disable: 禁用
+  disable: 停用
   remove: 卸载
-  empty: 还没有安装插件
-  select_hint: 选择一个插件查看详情
-  detail_title: 插件详情
-  version: 版本
-  source: 来源
-  commit: 提交
-  path: 目录
-  permissions: 权限
-  enabled: 已启用
-  disabled: 已禁用
 discover:
-  placeholder: 搜索名称、ID 或简介…
-  hint: 左侧挑选可安装插件，右侧是安装队列
+  placeholder: 搜索插件名称、ID 或简介…
   search: 搜索
   refresh_sources: 刷新源
-  clear: 清空
-  install: 安装队列
-  queue_summary: 安装队列 · {count}
-  confirm: "安装队列中的 {count} 个插件？\n{names}"
+  empty: 没有匹配的可安装插件
+  install: 安装
+  permissions: '{count} 项权限'
 sources:
   placeholder: Git 仓库地址
   add: 添加
   refresh_all: 全部刷新
-  hint: 顺序即优先级，越靠前越先被采用
-  remove: 移除源
+  remove: 移除
+  empty: 还没有配置插件源
+  official: 官方
+  user: 用户
   confirm_remove: '移除源 {id}？已安装插件不受影响。'
-  refreshing: 正在刷新源…
-  refresh_done: 源刷新完成
-  order_saved: 已保存源优先级
   added: '已添加源 {id}'
 status:
   ready: 就绪
   action_done: 操作完成
   action_failed: '操作失败: {error}'
   install_done: '已安装 {count} 个插件'
+  refreshing: 正在刷新源…
+  refresh_done: 源刷新完成
 confirm:
   remove: 确定卸载该插件？数据目录默认保留。
+  install: '安装 {id} v{version}？权限：{permissions}'

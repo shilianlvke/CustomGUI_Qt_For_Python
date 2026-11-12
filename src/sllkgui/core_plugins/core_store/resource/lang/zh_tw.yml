@@ -1,56 +1,48 @@
 store:
   title: 外掛管理
-  subtitle: 安裝、更新與來源，在同一個工作台完成
-  refresh: 重新整理
+  subtitle: 已安裝、探索與來源，在同一頁完成
+  refresh: 全部重新整理
 stats:
   installed: 已安裝
   enabled: 啟用中
   sources: 來源
-modes:
+sections:
   installed: 已安裝
   discover: 探索
   sources: 來源
 installed:
-  filter: 篩選外掛…
+  empty: 尚無已安裝外掛，去「探索」看看
+  enabled: 已啟用
+  disabled: 已停用
   update: 更新
   rollback: 回滾
   enable: 啟用
   disable: 停用
   remove: 解除安裝
-  empty: 尚無已安裝外掛
-  select_hint: 選擇一個外掛查看詳情
-  detail_title: 外掛詳情
-  version: 版本
-  source: 來源
-  commit: 提交
-  path: 目錄
-  permissions: 權限
-  enabled: 已啟用
-  disabled: 已停用
 discover:
-  placeholder: 搜尋名稱、ID 或簡介…
-  hint: 左側挑選可安裝外掛，右側是安裝佇列
+  placeholder: 搜尋外掛名稱、ID 或簡介…
   search: 搜尋
   refresh_sources: 重新整理來源
-  clear: 清空
-  install: 安裝佇列
-  queue_summary: 安裝佇列 · {count}
-  confirm: "安裝佇列中的 {count} 個外掛？\n{names}"
+  empty: 沒有符合的可安裝外掛
+  install: 安裝
+  permissions: '{count} 項權限'
 sources:
   placeholder: Git 倉庫位址
   add: 新增
   refresh_all: 全部重新整理
-  hint: 順序即優先級，越前面越先被採用
-  remove: 移除來源
+  remove: 移除
+  empty: 尚未設定外掛來源
+  official: 官方
+  user: 使用者
   confirm_remove: '移除來源 {id}？已安裝外掛不受影響。'
-  refreshing: 正在重新整理來源…
-  refresh_done: 來源重新整理完成
-  order_saved: 已儲存來源優先級
   added: '已新增來源 {id}'
 status:
   ready: 就緒
   action_done: 操作完成
   action_failed: '操作失敗: {error}'
   install_done: '已安裝 {count} 個外掛'
+  refreshing: 正在重新整理來源…
+  refresh_done: 來源重新整理完成
 confirm:
   remove: 確定解除安裝該外掛？資料目錄預設保留。
+  install: '安裝 {id} v{version}？權限：{permissions}'
