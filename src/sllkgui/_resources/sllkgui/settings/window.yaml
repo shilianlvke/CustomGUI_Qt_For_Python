@@ -1,10 +1,10 @@
 # WINDOW SIZE 窗口大小
 startup_size: # 初始化窗口大小
-  - 960
-  - 540
+  - 1600
+  - 1200
 minimum_size: # 最小窗口大小
-  - 960
-  - 540
+  - 1600
+  - 1200
 
 # ICON SIZE 图标大小
 icon_size: 16

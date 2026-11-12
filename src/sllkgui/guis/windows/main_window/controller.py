@@ -39,7 +39,12 @@ class _WindowStateTracker(QObject):
             return
         updates = {}
         if size is not None and size.width() > 0 and size.height() > 0:
-            updates["startup_size"] = [size.width(), size.height()]
+            # 不把小于 minimum_size 的尺寸写回 user.yaml
+            minimum = window.minimumSize()
+            updates["startup_size"] = [
+                max(size.width(), minimum.width()),
+                max(size.height(), minimum.height()),
+            ]
         config = getattr(getattr(window, "ui", None), "theme_config", None)
         transparency = getattr(config, "transparency", None)
         strength = getattr(config, "appearance_strength", None)

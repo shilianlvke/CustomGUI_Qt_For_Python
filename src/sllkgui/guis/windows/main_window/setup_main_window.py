@@ -100,6 +100,29 @@ class SetupMainWindow:
         # )
         # MainFunctions.set_right_column_menu(self, self.ui.right_column.menu_1)
         SetupMainWindow.clamp_to_screen(self)
+        SetupMainWindow.apply_minimum_size(self)
+
+    @staticmethod
+    def apply_minimum_size(window):
+        """应用 ``window.yaml`` 的 ``minimum_size``。
+
+        配置的最小尺寸不会自动生效到 QWidget；这里显式设置，并保证当前窗口
+        不小于它。若屏幕可用区域更小，则以屏幕为上限，避免窗口永远超出屏幕。
+        """
+        try:
+            min_width, min_height = (int(value) for value in AppSettings.minimum_size)
+        except (TypeError, ValueError):
+            return
+        if min_width <= 0 or min_height <= 0:
+            return
+        screen = window.screen() or QGuiApplication.primaryScreen()
+        if screen is not None:
+            available = screen.availableGeometry()
+            min_width = min(min_width, available.width())
+            min_height = min(min_height, available.height())
+        window.setMinimumSize(min_width, min_height)
+        if window.width() < min_width or window.height() < min_height:
+            window.resize(max(window.width(), min_width), max(window.height(), min_height))
 
     @staticmethod
     def restore_ui_state(window) -> dict:
@@ -128,6 +151,9 @@ class SetupMainWindow:
             Language.apply(language)
 
         size = state.get("startup_size")
+        if not (isinstance(size, (list, tuple)) and len(size) == 2):
+            # user.yaml 没记录过尺寸时回落到 window.yaml 的 startup_size
+            size = AppSettings.startup_size
         if isinstance(size, (list, tuple)) and len(size) == 2:
             try:
                 width, height = int(size[0]), int(size[1])

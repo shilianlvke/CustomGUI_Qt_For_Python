@@ -3,9 +3,17 @@
 项目遵循[语义化版本](https://semver.org/lang/zh-CN/)：major 版本允许破坏性变更并显式列出；
 minor 与 patch 保持向后兼容。
 
-当前版本：`2.1.3`（见 `src/sllkgui/_version.py`），对应 tag `base-v2.1.3`。
+当前版本：`2.1.4`（见 `src/sllkgui/_version.py`），对应 tag `base-v2.1.4`。
 
 ---
+
+## 2.1.4（2026-11-12）
+
+- 修复 `window.yaml` 的 `minimum_size` 只存在于 Schema、从未作用到窗口的问题：
+  启动时显式 `setMinimumSize`，并把当前窗口放大到该尺寸（屏幕更小时以屏幕
+  可用区域为上限）。
+- `user.yaml` 没有窗口尺寸时回落到 `window.yaml` 的 `startup_size`。
+- 关闭窗口写入 `user.yaml` 时不再保存小于 `minimum_size` 的尺寸。
 
 ## 2.1.3（2026-11-12）
 
