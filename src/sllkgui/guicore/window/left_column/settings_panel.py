@@ -31,7 +31,6 @@ from sllkgui.appcore import (
     AppSettings,
     Language,
     get_design_tokens,
-    get_plugin_registry,
     get_theme_manager,
     user_settings_path,
 )
@@ -300,7 +299,10 @@ class CSettingsPanel(QWidget):
         language = Language.current()
         self._status.setText(f"{theme} · {language}")
         try:
-            count = len(get_plugin_registry().page_plugins())
+            from sllkgui.gallery.registry import current_registry
+
+            registry = current_registry()
+            count = registry.surface_count() if registry is not None else 0
         except Exception:
             count = 0
         self._page_count.setText(str(count))

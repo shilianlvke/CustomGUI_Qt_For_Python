@@ -1,0 +1,39 @@
+installed:
+  title: Installed Plugins
+search:
+  title: Find Plugins
+  placeholder: Search by name or ID
+sources:
+  title: Sources
+  placeholder: Git repository URL
+actions:
+  refresh: Refresh
+  refresh_sources: Refresh Sources
+  update: Update
+  rollback: Rollback
+  disable: Disable
+  enable: Enable
+  remove: Remove
+  search: Search
+  install: Install
+  add: Add
+columns:
+  id: Plugin
+  name: Name
+  version: Version
+  source: Source
+  enabled: Enabled
+  compliance: Compliance
+  path: Path
+  permissions: Permissions
+  url: URL
+  trust: Trust
+  last_refresh: Last Refresh
+status:
+  enabled: Yes
+  disabled: No
+empty: No records
+confirm:
+  install: Install this plugin? Check source, version and permissions.
+  remove: Remove this plugin? Its data directory is kept by default.
+  remove_source: Remove this source? Installed plugins are not affected.

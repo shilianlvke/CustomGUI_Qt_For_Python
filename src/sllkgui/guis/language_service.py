@@ -75,20 +75,17 @@ def apply_language(language: str, window=None) -> str:
 
 
 def _notify_plugins_language_changed(language: str) -> None:
-    """语言切换成功后通知所有 v2 插件；单个钩子异常被隔离，不影响切换。
+    """语言切换成功后通知全部 Gallery 插件；单个钩子异常被隔离。"""
+    from sllkgui.gallery.registry import current_registry
 
-    延迟导入 ``app_state`` 避免加载器与语言服务之间的循环 import。
-    """
-    from . import app_state
-
-    for handle in app_state.handles:
-        plugin = handle.plugin
-        if plugin is None:
-            continue
+    registry = current_registry()
+    if registry is None:
+        return
+    for record in registry.plugins():
         try:
-            plugin.on_language_changed(language)
+            record.plugin.on_locale_changed(language)
         except Exception as exc:
-            Logger.warning(f"应用 on_language_changed 失败: {handle.name}: {exc}")
+            Logger.warning(f"插件 on_locale_changed 失败: {record.plugin_id}: {exc}")
 
 
 def switch_language(window=None) -> str:

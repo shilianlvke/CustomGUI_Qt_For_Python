@@ -1,0 +1,98 @@
+schema: 1
+api: 1
+
+id: com.sllkgui.showcase.core_preview
+name: SllkGUI Core Preview
+version: 2.0.0
+description: 基座内置组件预览，仅在 sllkgui gallery 模式加载
+license: MulanPSL-2.0
+entry: plugin.py
+
+requires:
+  sllkgui: ">=2.0.0,<3.0.0"
+  python: ">=3.12"
+
+surfaces:
+  - id: buttons
+    title:
+      zh_cn: 按钮
+      zh_tw: 按鈕
+      en_us: Buttons
+      ja_jp: ボタン
+    icon: resource/icon/buttons.svg
+    default: true
+    order: 10
+  - id: tables
+    title:
+      zh_cn: 表格
+      zh_tw: 表格
+      en_us: Tables
+      ja_jp: テーブル
+    icon: resource/icon/tables.svg
+    order: 20
+  - id: data
+    title:
+      zh_cn: 数据展示
+      zh_tw: 資料展示
+      en_us: Data Display
+      ja_jp: データ表示
+    icon: resource/icon/data.svg
+    order: 30
+  - id: feedback
+    title:
+      zh_cn: 反馈
+      zh_tw: 回饋
+      en_us: Feedback
+      ja_jp: フィードバック
+    icon: resource/icon/feedback.svg
+    order: 40
+  - id: inputs
+    title:
+      zh_cn: 输入
+      zh_tw: 輸入
+      en_us: Inputs
+      ja_jp: 入力
+    icon: resource/icon/inputs.svg
+    order: 50
+  - id: media
+    title:
+      zh_cn: 媒体
+      zh_tw: 媒體
+      en_us: Media
+      ja_jp: メディア
+    icon: resource/icon/media.svg
+    order: 60
+  - id: menus
+    title:
+      zh_cn: 菜单
+      zh_tw: 選單
+      en_us: Menus
+      ja_jp: メニュー
+    icon: resource/icon/menus.svg
+    order: 70
+  - id: overlays
+    title:
+      zh_cn: 浮层
+      zh_tw: 浮層
+      en_us: Overlays
+      ja_jp: オーバーレイ
+    icon: resource/icon/overlays.svg
+    order: 80
+  - id: panels
+    title:
+      zh_cn: 面板
+      zh_tw: 面板
+      en_us: Panels
+      ja_jp: パネル
+    icon: resource/icon/panels.svg
+    order: 90
+  - id: shell
+    title:
+      zh_cn: 外壳
+      zh_tw: 外殼
+      en_us: Shell
+      ja_jp: シェル
+    icon: resource/icon/shell.svg
+    order: 100
+
+permissions: []

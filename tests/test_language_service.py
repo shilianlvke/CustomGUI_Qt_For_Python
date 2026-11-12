@@ -23,18 +23,15 @@ def _restore_language():
     apply_language("zh_cn")
 
 
-def test_apply_language_replaces_base_and_apps():
+def test_apply_language_replaces_base():
     apply_language("en_us")
 
-    # 应用语言注入（真实 Apps 目录，当前仅有按钮预览应用）
-    assert Language.app.button_preview.app_text == "Buttons"
     assert current_language() == "en_us"
 
 
 def test_apply_language_zh_cn():
     apply_language("zh_cn")
 
-    assert Language.app.button_preview.app_text == "按钮预览"
     assert Language.UI.ui_SwitchLanguage == "切换语言"
     assert current_language() == "zh_cn"
 
@@ -296,31 +293,31 @@ def test_apply_language_rolls_back_user_settings_on_refresh_failure(monkeypatch)
         apply_language("zh_cn")
 
 
-def test_language_hooks_are_invoked():
-    """语言切换成功后调用 v2 插件的 on_language_changed，单个钩子失败被隔离。"""
-    # FIX-11: 协议声明了钩子但全库零调用点；成功分支须触发且失败隔离。
-    from sllkgui.guis import app_state
+def test_language_hooks_are_invoked(monkeypatch):
+    """语言切换成功后调用 Gallery 插件的 on_locale_changed，单个钩子失败被隔离。"""
+    import sllkgui.gallery.registry as gallery_registry
 
     calls = []
 
     class _Plugin:
-        def on_language_changed(self, language):
+        def on_locale_changed(self, language):
             calls.append(language)
 
     class _BoomPlugin:
-        def on_language_changed(self, language):
+        def on_locale_changed(self, language):
             raise RuntimeError("hook boom")
 
-    original = app_state.handles
-    app_state.handles = [
-        SimpleNamespace(name="boom", plugin=_BoomPlugin()),
-        SimpleNamespace(name="ok", plugin=_Plugin()),
-        SimpleNamespace(name="v1", plugin=None),
-    ]
+    class _Registry:
+        def plugins(self):
+            return [
+                SimpleNamespace(plugin_id="boom", plugin=_BoomPlugin()),
+                SimpleNamespace(plugin_id="ok", plugin=_Plugin()),
+            ]
+
+    monkeypatch.setattr(gallery_registry, "current_registry", lambda: _Registry())
     try:
         result = apply_language("en_us")
         assert result == "en_us", "a failing hook must not break the switch"
-        assert calls == ["en_us"], "on_language_changed must be invoked on success"
+        assert calls == ["en_us"], "on_locale_changed must be invoked on success"
     finally:
-        app_state.handles = original
         apply_language("zh_cn")

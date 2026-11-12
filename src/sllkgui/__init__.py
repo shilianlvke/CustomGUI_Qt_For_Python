@@ -1,14 +1,16 @@
 """SllkGUI —— 基于 PySide6 的开源 UI 基座。
 
-包结构（一个顶层包，四个子包）：:
+包结构（一个顶层包，五个子包）：:
 
-    sllkgui.appcore    逻辑层：配置、主题/语言/令牌、插件协议、错误边界、工具
+    sllkgui.appcore    逻辑层：配置、主题/语言/令牌、错误边界、工具
     sllkgui.guicore    UI 组件与全局样式（设计令牌驱动）
-    sllkgui.guis       窗口装配：主窗口、页面栈、插件加载、语言服务
-    sllkgui._resources 只读默认资源（主题/语言/图标/设置）
+    sllkgui.guis       窗口装配：主窗口、页面栈、语言服务
+    sllkgui.gallery    插件协议、源、存储、加载与 Gallery 外壳
+    sllkgui.showcase   内置组件预览插件（gallery 模式）
+    sllkgui.core_plugins 核心插件（run 模式）
 
-对外稳定面：``configure()`` / ``current_config()`` / ``reset_config()`` / ``__version__``，
-以及 ``sllkgui.appcore``、``sllkgui.window`` 两个门面。
+对外稳定面：``configure()`` / ``current_config()`` / ``reset_config()`` /
+``__version__``，以及 ``sllkgui.plugin``、``sllkgui.window`` 两个门面。
 """
 
 from __future__ import annotations

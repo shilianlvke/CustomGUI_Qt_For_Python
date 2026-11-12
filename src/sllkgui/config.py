@@ -1,18 +1,15 @@
-"""全局配置 API：把原先散落在 5 个环境变量里的路径约定收拢成一个显式入口。
+"""全局配置 API：把路径约定收拢成一个显式入口。
 
-旧的用法（仍然兼容）::
-
-    os.environ["SLLKGUI_APPS_DIR"] = "./apps"
-    os.environ["SLLKGUI_DATA_DIR"] = "./data"
-    from sllkgui.appcore import get_app_context      # 必须在上面之后
-
-新用法::
+用法::
 
     import sllkgui
-    sllkgui.configure(apps_dir="./apps", data_dir="./data")
+    sllkgui.configure(data_dir="./data", gallery_dir="./data/gallery")
     from sllkgui.appcore import get_app_context      # 顺序不再重要
 
 优先级：**显式参数 > ``SLLKGUI_*`` 环境变量 > 内置默认值**。
+
+``gallery_dir`` 是插件安装根目录；旧的 ``SLLKGUI_APPS_DIR`` 已随 App 协议
+一起删除，不再生效。
 """
 
 from __future__ import annotations
@@ -36,18 +33,18 @@ class ConfigAlreadyLoadedError(RuntimeError):
 class AppConfig:
     """基座的运行期配置。所有字段为 ``None`` 时回落到环境变量/默认值。"""
 
-    apps_dir: Path | None = None
+    gallery_dir: Path | None = None
     resource_dirs: tuple[Path, ...] = ()
     data_dir: Path | None = None
     diagnostics_dir: Path | None = None
     builtin_menus: bool | None = None
     env_fallback: bool = True
 
-    def resolved_apps_dir(self) -> Path | None:
-        if self.apps_dir is not None:
-            return self.apps_dir
+    def resolved_gallery_dir(self) -> Path | None:
+        if self.gallery_dir is not None:
+            return self.gallery_dir
         if self.env_fallback:
-            value = _env_path("SLLKGUI_APPS_DIR")
+            value = _env_path("SLLKGUI_GALLERY_DIR")
             if value is not None:
                 return value
         return None
@@ -124,7 +121,7 @@ def current_config() -> AppConfig:
 
 def configure(
     *,
-    apps_dir: str | os.PathLike[str] | None = None,
+    gallery_dir: str | os.PathLike[str] | None = None,
     resource_dirs: tuple[str | os.PathLike[str], ...] | list[str | os.PathLike[str]] | None = None,
     data_dir: str | os.PathLike[str] | None = None,
     diagnostics_dir: str | os.PathLike[str] | None = None,
@@ -134,7 +131,7 @@ def configure(
 ) -> AppConfig:
     """设置全局配置并返回生效值。
 
-    ``apps_dir`` / ``data_dir`` / ``diagnostics_dir`` / ``builtin_menus`` 传
+    ``gallery_dir`` / ``data_dir`` / ``diagnostics_dir`` / ``builtin_menus`` 传
     ``None`` 时保留上次调用的值（首次为 ``None``，由环境变量或默认值回落）；
     ``resource_dirs`` 传 ``None`` 保留、传空序列清空覆盖层；``env_fallback``
     传 ``None`` 保留上次值（打开时以 ``SLLKGUI_*`` 环境变量兜底）。
@@ -153,7 +150,7 @@ def configure(
 
     _ACTIVE = replace(
         _ACTIVE,
-        apps_dir=_as_path(apps_dir) or _ACTIVE.apps_dir,
+        gallery_dir=_as_path(gallery_dir) or _ACTIVE.gallery_dir,
         resource_dirs=_as_paths(resource_dirs) if resource_dirs is not None else _ACTIVE.resource_dirs,
         data_dir=_as_path(data_dir) or _ACTIVE.data_dir,
         diagnostics_dir=_as_path(diagnostics_dir) or _ACTIVE.diagnostics_dir,
@@ -201,7 +198,7 @@ def _log_effective_config(config: AppConfig) -> None:
     resources = ", ".join(str(path) for path in config.resolved_resource_dirs()) or "-"
     _log_configure_event(
         "配置生效："
-        f"apps={config.resolved_apps_dir() or '-'} "
+        f"gallery={config.resolved_gallery_dir() or '-'} "
         f"data={config.resolved_data_dir() or '-'} "
         f"diagnostics={config.resolved_diagnostics_dir()} "
         f"resources=[{resources}] "

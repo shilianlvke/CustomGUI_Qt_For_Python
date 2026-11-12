@@ -135,6 +135,15 @@ class CLeftMenu(QWidget):
             button.setText(resolver(text_key, fallback))
             button.set_tooltip(resolver(tooltip_key, fallback))
 
+    def clear_menus(self) -> None:
+        """移除全部页面菜单按钮（插件重载后重建菜单用）。"""
+        for button in self._menu_buttons.values():
+            button.setParent(None)
+            button.deleteLater()
+        self._menu_buttons.clear()
+        self._menu_lang_keys.clear()
+        self.div_bottom.hide()
+
     def active_button_id(self):
         """返回当前激活的菜单按钮 ID（无激活按钮时返回 None）。"""
         for btn_id, button in self._menu_buttons.items():

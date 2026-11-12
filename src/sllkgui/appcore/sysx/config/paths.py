@@ -9,8 +9,8 @@
     包含 ``resource/`` 的覆盖根目录。例如 PyCL2 仓库根目录。
 ``SLLKGUI_ROOT_DIR``
     兼容旧版本的覆盖根目录，同样按其中的 ``resource/`` 查找。
-``SLLKGUI_APPS_DIR``
-    应用插件目录，默认是当前项目的 ``Apps/``。
+``SLLKGUI_GALLERY_DIR``
+    插件安装根目录（默认 ``<data_root>/gallery``）。
 ``SLLKGUI_DATA_DIR``
     可写数据根目录（日志、遥测、用户配置），默认程序运行根目录。
 
@@ -35,7 +35,7 @@ def _cfg():
     return current_config()
 
 _ROOT_ENV = "SLLKGUI_ROOT_DIR"
-_APPS_ENV = "SLLKGUI_APPS_DIR"
+_GALLERY_ENV = "SLLKGUI_GALLERY_DIR"
 _RESOURCE_ENV = "SLLKGUI_RESOURCE_DIR"
 _DATA_ENV = "SLLKGUI_DATA_DIR"
 
@@ -50,40 +50,25 @@ def resource_root() -> Path:
     return _package_resource_root().resolve()
 
 
-def _app_overlay_roots() -> list[Path]:
-    """各应用自带的品牌覆盖层（``<app>/brand``，其下直接是 ``sllkgui/``）。
+def gallery_root() -> Path:
+    """返回插件安装根目录（``configure(gallery_dir=...)`` / 环境变量优先）。"""
+    configured = _cfg().resolved_gallery_dir()
+    if configured is not None:
+        return configured
+    custom = _env_path(_GALLERY_ENV)
+    if custom is not None:
+        return custom
+    return data_root() / "gallery"
 
-    为什么要有这一层
-    ----------------
-    应用不该把自己的主题/语言/图标塞进**项目根**的 ``resource/``——那会让
-    应用仓库根目录被基座资源污染，且必须先于基座导入配好环境变量。改成
-    「资产跟着插件走」：``apps/<app>/brand/sllkgui/...``，基座扫描
-    ``apps_dir`` 时自动纳入解析链，应用侧零配置。
 
-    只做**文件判断**，不 import 任何应用代码，因此不会产生循环依赖；
-    只有真的存在 ``brand/sllkgui/`` 的目录才会被当作资源根——这一点很
-    重要：``<app>/sllkgui`` 直接当根会让 ``sllkgui/themes`` 拼成
-    ``sllkgui/sllkgui/themes``（多一层），只有 ``<app>/brand`` 这一层
-    才是「其下直接是 ``sllkgui/``」的正确语义。
-    """
-    try:
-        base = apps_root()
-    except Exception:
-        return []
-    if not base.is_dir():
-        return []
-    overlays: list[Path] = []
-    try:
-        children = sorted(base.iterdir())
-    except OSError:
-        return []
-    for child in children:
-        if not child.is_dir():
-            continue
-        brand = child / "brand"
-        if (brand / "sllkgui").is_dir():
-            overlays.append(brand)
-    return overlays
+def showcase_root() -> Path:
+    """返回基座内置组件预览插件根（``<package>/showcase``）。"""
+    return package_root() / "showcase"
+
+
+def core_plugins_root() -> Path:
+    """返回基座核心插件根（``<package>/core_plugins``）。"""
+    return package_root() / "core_plugins"
 
 
 def _configured_roots() -> list[Path]:
@@ -106,18 +91,10 @@ def resource_roots() -> list[Path]:
 
     - 基座包内：``sllkgui/_resources/sllkgui/...``
     - 应用覆盖：``<root>/resource/sllkgui/...``（历史布局，仍兼容）
-    - 应用品牌层：``<apps_dir>/<app>/brand/sllkgui/...``（推荐）
 
-    覆盖目录里若有 ``<root>/resource`` 时自动下沉一级，让几种根的语义对齐。
-
-    解析顺序：显式 ``configure()`` / 环境变量 → 各应用品牌层 → 基座包内。
-    品牌层排在基座之前，才能覆盖基座默认的主题与图标。
+    解析顺序：显式 ``configure()`` / 环境变量 → 基座包内。
     """
     roots: list[Path] = list(_configured_roots())
-    for overlay in _app_overlay_roots():
-        resolved = overlay.resolve()
-        if resolved not in roots:
-            roots.append(resolved)
     roots.append(resource_root())
     return roots
 
@@ -155,36 +132,6 @@ def source_root() -> Path | None:
     """
     candidate = package_root().parent.parent
     return candidate if (candidate / "pyproject.toml").is_file() else None
-
-
-def apps_root() -> Path:
-    """返回应用模组目录（``configure(apps_dir=...)`` / ``SLLKGUI_APPS_DIR`` 优先）。
-
-    显式配置与环境变量兜底统一由 ``current_config().resolved_apps_dir()``
-    处理（``env_fallback`` 关闭时不读环境变量）；两者都未命中时再按
-    「由近及远」探测，第一个存在的目录胜出：
-
-    1. ``data_root()/apps`` —— 用户运行 ``sllkgui install-demo`` 的落地位置
-    2. ``<仓库根>/apps`` / ``<src>/apps`` / ``<包>/apps``（存在即用）
-    3. 兜底返回仓库根 ``apps/``（可能不存在，调用方自行判断空目录）
-
-    注意：src layout 下 ``package_root()`` 是 ``src/sllkgui``，
-    它的上两级才是仓库根，所以探测表里要带上 ``parent.parent``。
-    """
-    configured = _cfg().resolved_apps_dir()
-    if configured is not None:
-        return configured
-
-    candidates = [
-        data_root() / "apps",
-        package_root().parent.parent / "apps",
-        package_root().parent / "apps",
-        package_root() / "apps",
-    ]
-    for candidate in candidates:
-        if candidate.is_dir():
-            return candidate
-    return package_root().parent.parent / "apps"
 
 
 def program_root() -> Path:

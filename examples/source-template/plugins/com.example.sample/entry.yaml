@@ -1,0 +1,25 @@
+schema: 1
+id: com.example.sample
+name: Sample
+summary: Sample 插件
+description: |
+  由 sllkgui scaffold 生成的源条目模板。
+author: maintainer
+license: MIT
+repository: https://gitee.com/example/sllkgui-sample.git
+categories:
+  - tools
+icon: icon.svg
+compliance: 1
+
+versions:
+  - version: 0.1.0
+    ref: v0.1.0
+    commit: 0000000000000000000000000000000000000000
+    manifest_sha256: 0000000000000000000000000000000000000000000000000000000000000000
+    api: 1
+    sllkgui: ">=2.0.0,<3.0.0"
+    python: ">=3.12"
+    permissions:
+      - filesystem.write
+    yanked: false

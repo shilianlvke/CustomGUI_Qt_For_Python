@@ -98,16 +98,10 @@ def _build_window():
 def test_button_to_page_route_chain():
     window, left_menu, title_state = _build_window()
     main_functions = _MainFunctionStub()
-    plugin_calls = []
-
-    class _Registry:
-        def execute_command(self, command_id, _window, _btn):
-            plugin_calls.append(command_id)
 
     controller = MainWindowController(
         window=window,
         main_functions=main_functions,
-        plugin_registry_getter=lambda: _Registry(),
         event_recorder=lambda *args, **kwargs: None,
         logger=SimpleNamespace(debug=lambda *_args, **_kwargs: None),
     )
@@ -123,7 +117,6 @@ def test_button_to_page_route_chain():
     assert window._selected_page == "home_page"
     assert left_menu.selected_page_btn == "btn_home"
     assert title_state["text"] == "Home"
-    assert plugin_calls == []
 
 
 def test_button_to_column_action_chain():
@@ -133,7 +126,6 @@ def test_button_to_column_action_chain():
     controller = MainWindowController(
         window=window,
         main_functions=main_functions,
-        plugin_registry_getter=lambda: SimpleNamespace(execute_command=lambda *_args: None),
         event_recorder=lambda *args, **kwargs: None,
         logger=SimpleNamespace(debug=lambda *_args, **_kwargs: None),
     )
@@ -159,34 +151,6 @@ def test_button_to_column_action_chain():
     assert main_functions.left_menu_payloads
     menu, _title, _icon = main_functions.left_menu_payloads[-1]
     assert menu == "menu_2"
-
-
-def test_unhandled_button_falls_back_to_plugin_command_chain():
-    window, _left_menu, _title_state = _build_window()
-    main_functions = _MainFunctionStub()
-    plugin_calls = []
-
-    class _Registry:
-        def execute_command(self, command_id, _window, _btn):
-            plugin_calls.append(command_id)
-
-    controller = MainWindowController(
-        window=window,
-        main_functions=main_functions,
-        plugin_registry_getter=lambda: _Registry(),
-        event_recorder=lambda *args, **kwargs: None,
-        logger=SimpleNamespace(debug=lambda *_args, **_kwargs: None),
-    )
-    controller.page_router = PageRouterController(
-        window=window,
-        main_functions=main_functions,
-        language=None,
-        get_routes=lambda _language: {},
-    )
-
-    controller.handle_button(_FakeButton("cmd_custom"))
-
-    assert plugin_calls == ["cmd_custom"]
 
 
 def _settings_controller(window, main_functions):

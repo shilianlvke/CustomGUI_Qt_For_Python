@@ -7,7 +7,6 @@ from sllkgui.appcore import (
     Logger,
     MainWindowButtonUseCase,
     PathFactory,
-    get_plugin_registry,
     get_theme_manager,
     load_user_settings,
     record_event,
@@ -253,6 +252,13 @@ class ThemeController:
         self.refresh_styles()
         save_user_settings(theme_name=self._theme_manager.current())
 
+    def detach(self) -> None:
+        """窗口关闭时退订主题变更，避免已销毁窗口继续响应全局主题切换。"""
+        try:
+            self._theme_manager.unsubscribe(self._apply_styles)
+        except Exception as exc:  # noqa: BLE001 - 退订失败不应阻塞关闭
+            self._logger.debug(f"主题订阅退订失败: {exc}")
+
 
 class ColumnController:
     def __init__(self, window, main_functions=MainFunctions, language=Language):
@@ -333,14 +339,12 @@ class MainWindowController:
         self,
         window,
         main_functions=MainFunctions,
-        plugin_registry_getter=get_plugin_registry,
         event_recorder=record_event,
         logger=Logger,
         button_use_case=None,
     ):
         self._window = window
         self._main_functions = main_functions
-        self._plugin_registry_getter = plugin_registry_getter
         self._record_event = event_recorder
         self._logger = logger
         self._button_use_case = button_use_case or MainWindowButtonUseCase()
@@ -509,10 +513,6 @@ class MainWindowController:
         if decision.kind == "page_route":
             page_name, title = decision.payload
             self.page_router.switch_page(btn_name, page_name, title)
-            return
-
-        if decision.kind == "plugin_command":
-            self._plugin_registry_getter().execute_command(btn_name, self._window, btn)
             return
 
         if decision.kind != "action":

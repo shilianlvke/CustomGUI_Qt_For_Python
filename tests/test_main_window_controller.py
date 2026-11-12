@@ -1,6 +1,6 @@
 from types import SimpleNamespace
 
-from sllkgui.guis.windows.main_window.controller import MainWindowController, PageRouterController, ThemeController
+from sllkgui.guis.windows.main_window.controller import PageRouterController, ThemeController
 
 
 class _StubMainFunctions:
@@ -79,39 +79,3 @@ def test_theme_controller_cycles_expected_theme_sequence():
 
     assert style_calls == ["demo-style", "demo-style", "demo-style"]
     assert manager.current() == "default"  # default -> eye -> bright -> default
-
-
-def test_main_window_controller_dispatches_plugin_command_when_unhandled():
-    calls = []
-
-    class _Registry:
-        def execute_command(self, command_id, window, btn):
-            calls.append((command_id, window, btn.objectName()))
-
-    window = SimpleNamespace(
-        ui=SimpleNamespace(
-            left_menu=SimpleNamespace(deselect_all_tab=lambda *_args, **_kwargs: None),
-            title_bar=SimpleNamespace(),
-        )
-    )
-
-    controller = MainWindowController(
-        window=window,
-        main_functions=_StubMainFunctions,
-        plugin_registry_getter=lambda: _Registry(),
-        event_recorder=lambda *args, **kwargs: None,
-        logger=SimpleNamespace(debug=lambda *_args, **_kwargs: None),
-    )
-    controller.page_router = SimpleNamespace(route_for=lambda _name: None, switch_page=lambda *_args: None)
-    controller.column_controller = SimpleNamespace(
-        handle_info_button=lambda *_args: None,
-        handle_more_button=lambda *_args: None,
-        handle_top_settings_button=lambda *_args: None,
-    )
-    controller.theme_controller = SimpleNamespace(cycle_theme=lambda: None)
-
-    btn = _FakeButton("cmd_custom")
-    controller.handle_button(btn)
-
-    assert calls
-    assert calls[0][0] == "cmd_custom"

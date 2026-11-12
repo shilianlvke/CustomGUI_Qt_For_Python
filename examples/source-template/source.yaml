@@ -1,0 +1,8 @@
+schema: 1
+id: my-team
+name: My SllkGUI Source
+description: 自建 SllkGUI 插件源
+maintainers:
+  - maintainer
+homepage: https://gitee.com/example/sllkgui-source
+updated_at: 2026-11-12

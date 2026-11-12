@@ -1,0 +1,268 @@
+buttons:
+  app_text: Buttons
+  app_tooltip: Buttons
+  group_default: Default
+  group_severities: Severities
+  group_text: Text
+  group_outlined: Outlined
+  group_group: Group
+  group_split: SplitButton
+  group_templating: Templating
+  group_icons: Icons
+  group_raised: Raised
+  group_rounded: Rounded
+  group_rounded_icons: Rounded Icons
+  group_rounded_text: Rounded Text
+  group_rounded_outlined: Rounded Outlined
+  group_loading: Loading
+  btn_submit: Submit
+  btn_disabled: Disabled
+  btn_link: Link
+  btn_plain: Plain
+  btn_save: Save
+  btn_delete: Delete
+  btn_cancel: Cancel
+tables:
+  app_text: Table Preview
+  app_tooltip: Data table and pagination
+  group_filter: Filtering
+  group_frozen: Frozen Columns
+  group_expand: Row Expansion
+  group_grouping: Grouping
+  col_name: Name
+  col_category: Category
+  col_price: Price
+  col_rating: Reviews
+  col_status: Status
+  status_instock: In Stock
+  status_lowstock: Low Stock
+  status_outofstock: Out Of Stock
+  search_placeholder: Search table…
+  rating: Rating
+  hint_expand: 'Tip: double-click a row to expand details'
+data:
+  app_text: Data Views
+  app_tooltip: Lists, trees and timeline
+  empty: No records found
+  layout_list: List
+  layout_grid: Grid
+  picklist: PickList
+  orderlist: OrderList
+  group_dataview: DataView
+  group_pick_order: PickList / OrderList
+  group_tree: Tree
+  group_treetable: TreeTable
+  group_timeline: Timeline
+  col_name: Name
+  col_size: Size
+  col_type: Type
+  event_1_title: Kickoff
+  event_1_desc: Requirements reviewed and components split.
+  event_2_title: First build
+  event_2_desc: Table and list components accepted.
+  event_3_title: Theme pass
+  event_3_desc: Color regression across four themes.
+  event_4_title: Release prep
+  event_4_desc: Docs and automated tests completed.
+feedback:
+  app_text: Feedback
+  app_tooltip: Feedback & Status
+  group_message: Message
+  group_message_variant: Message Variants
+  group_toast: Toast
+  group_tag: Tag
+  group_badge: Badge
+  group_chip: Chip
+  group_avatar: Avatar
+  group_skeleton: Skeleton
+  group_progress: ProgressBar
+  group_divider: Divider
+  toast_success: Success
+  toast_info: Info
+  toast_warn: Warn
+  toast_error: Error
+  toast_clear: Clear
+inputs:
+  app_text: Inputs
+  app_tooltip: Inputs
+  group_inputtext: InputText
+  group_sizes: Sizes
+  group_icons: Icons
+  group_floatlabel: Float Label
+  group_textarea: Textarea
+  group_autocomplete: AutoComplete
+  group_datepicker: DatePicker
+  group_inputnumber: InputNumber
+  group_slider: Slider
+  group_rating: Rating
+  group_colorpicker: ColorPicker
+  group_knob: Knob
+  group_radio: RadioButton
+  group_checkbox: Checkbox
+  group_toggleswitch: ToggleSwitch
+  group_listbox: Listbox
+  group_select: Select
+  group_multiselect: MultiSelect
+  group_treeselect: TreeSelect
+  group_togglebutton: ToggleButton
+  group_selectbutton: SelectButton
+  group_inputgroup: InputGroup
+media:
+  app_text: Media & Charts
+  app_tooltip: Images, uploads, charts and misc
+  group_image: Image
+  group_carousel: Carousel
+  group_galleria: Galleria
+  group_file: FileUpload
+  group_chart: Chart
+  group_misc: Misc
+  image_caption: Click the image to open the preview
+  carousel_item: Carousel item
+  carousel_desc: Loops, paging and indicator dots.
+  gallery_item: Gallery item
+  file_hint: Drop files here or click to browse
+  files: files
+  chart_title: Monthly trend
+  chart_bar: Quarterly comparison
+  chart_pie: Distribution
+  series: Series
+  search_hint: Input with icons
+  confirm_message: Are you sure you want to continue?
+  true: 'Yes'
+  false: 'No'
+  confirm_open: Open confirm popup
+  accepted: Accepted
+  rejected: Rejected
+  file_advanced: Advanced upload (drop area)
+  file_basic: Basic upload (compact button)
+menus:
+  app_text: Menu Preview
+  app_tooltip: Menu family and stepper
+  group_menubar: Menubar
+  group_tiered: TieredMenu
+  group_mega: MegaMenu
+  group_panel: PanelMenu
+  group_context: ContextMenu
+  group_tabmenu: TabMenu
+  group_stepper: Stepper
+  menu_file: File
+  menu_new: New
+  menu_open: Open
+  menu_save: Save
+  menu_edit: Edit
+  menu_copy: Copy
+  menu_paste: Paste
+  menu_view: View
+  menu_components: Components
+  menu_forms: Forms
+  menu_pages: Pages
+  menu_dashboard: Dashboard
+  menu_settings: Settings
+  menu_disabled: Disabled
+  context_hint: Open the context menu below the button
+  open_context: Open context menu
+  tab_home: Home
+  tab_components: Components
+  tab_settings: Settings
+  step_1: Account
+  step_2: Profile
+  step_3: Confirm
+  step_1_body: Fill in account information.
+  step_2_body: Complete your profile.
+  step_3_body: Review and finish.
+overlays:
+  app_text: Overlays
+  app_tooltip: Dialog & Drawer
+  group_dialog: Dialog
+  group_drawer: Drawer
+  group_confirm: ConfirmDialog
+  group_panel: OverlayPanel
+  dialog_basic: Basic
+  dialog_no_header: No Header
+  dialog_large: Large
+  drawer_left: Left Drawer
+  drawer_right: Right Drawer
+  drawer_top: Top Drawer
+  drawer_bottom: Bottom Drawer
+  confirm_info: Info
+  confirm_success: Success
+  confirm_warn: Warn
+  confirm_error: Error
+  panel_show: Open Panel
+  dialog_title: Edit Profile
+  dialog_text: Changes take effect as soon as you save.
+  dialog_accept: Save
+  dialog_cancel: Cancel
+  confirm_title: Delete file
+  confirm_message: This action cannot be undone. Continue?
+  toast_saved: Saved
+  toast_confirmed: Confirmed
+  toast_cancelled: Cancelled
+  panel_title: Account
+  panel_action: Sign out
+  drawer_left_title: Software Info
+  drawer_top_title: Filters
+  drawer_bottom_title: Details
+  drawer_note: 'All four directions are columns docked around the content area: left/right are the built-in columns, top/bottom share the same structure; click again or press the column''s × to close.'
+  confirm_accept: OK
+  confirm_reject: Cancel
+panels:
+  app_text: Panel Preview
+  app_tooltip: Tabs and Accordion
+  group_toolbar: Toolbar
+  group_tabs: Tabs
+  group_accordion: Accordion
+  group_panel: Panel
+  group_fieldset: Fieldset
+  group_splitter: Splitter
+  group_form: Form Layout
+  group_navigation: Navigation
+  toolbar_search: Search…
+  toolbar_save: Save
+  tab_header_1: Header 1
+  tab_header_2: Header 2
+  tab_header_3: Header 3
+  tab_disabled: Disabled
+  tab_document: Document
+  tab_image: Image
+  tab_content_1: Content area of tab one.
+  tab_content_2: Content area of tab two.
+  tab_content_3: Content area of tab three.
+  accordion_header_1: User
+  accordion_header_2: Preferences
+  accordion_header_3: Help
+  accordion_body_1: 'Accordion body one: in single mode opening a panel collapses the others.'
+  accordion_body_2: 'Accordion body two: supports icons, expand animation and keyboard.'
+  accordion_body_3: 'Accordion body three: click the header row to toggle.'
+  panel_title: Panel Title
+  panel_subtitle: Collapsible panel with subtitle
+  panel_toggle_title: Click title to toggle
+  panel_body: Panel body content, any widget can be placed here.
+  fieldset_legend: Basic Info
+  fieldset_toggle_legend: Toggleable Fieldset
+  fieldset_body: Fieldset content, the legend sits on the border.
+  splitter_top: Top Pane
+  splitter_bottom: Bottom Pane
+  form_firstname: Firstname
+  form_lastname: Lastname
+  form_bio: Bio
+  form_bio_help: Tell us a bit about yourself (optional).
+  step_account: Account
+  step_personal: Personal
+  step_payment: Payment
+  step_confirm: Confirm
+  crumb_home: Home
+  crumb_components: Components
+  crumb_panels: Panels
+shell:
+  app_text: Shell Preview
+  app_tooltip: Topbar, nested menu and appearance
+  group_topbar: AppTopbar
+  group_menu: AppMenu
+  group_config: AppConfigurator
+  group_ui: UI Components
+  group_forms: Forms
+  group_pages: Pages
+  menu_dashboard: Dashboard
+  menu_settings: Settings
+  open_config: Appearance

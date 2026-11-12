@@ -25,6 +25,7 @@ classifiers = [
 dependencies = [
     "pyside6>=6.10.1,<7",
     "pyyaml>=6.0.3,<7",
+    "packaging>=24",
 ]
 
 [project.optional-dependencies]
@@ -101,13 +102,7 @@ check_untyped_defs = true
 warn_unused_ignores = false
 
 [tool.hatch.build.targets.sdist]
-include = ["src/sllkgui", "apps", "examples", "docs", "tests", "scripts"]
+include = ["src/sllkgui", "examples", "docs", "tests", "scripts"]
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/sllkgui"]
-
-# 内置示例随 wheel 分发，让 `sllkgui install-demo` / `sllkgui examples`
-# 在只装了 wheel 的机器上也能用（"开箱即用"的关键一环）。
-[tool.hatch.build.targets.wheel.force-include]
-"apps" = "sllkgui/apps"
-"examples/hello_world" = "sllkgui/examples/hello_world"

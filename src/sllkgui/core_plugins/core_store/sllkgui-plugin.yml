@@ -1,0 +1,44 @@
+schema: 1
+api: 1
+
+id: com.sllkgui.core.store
+name: SllkGUI Plugin Manager
+version: 2.0.0
+description: 基座核心插件管理：已安装、搜索安装与源管理
+license: MulanPSL-2.0
+entry: plugin.py
+
+requires:
+  sllkgui: ">=2.0.0,<3.0.0"
+  python: ">=3.12"
+
+surfaces:
+  - id: installed
+    title:
+      zh_cn: 已安装插件
+      zh_tw: 已安裝外掛
+      en_us: Installed Plugins
+      ja_jp: インストール済み
+    icon: resource/icon/installed.svg
+    default: true
+    order: 10
+  - id: search
+    title:
+      zh_cn: 搜索插件
+      zh_tw: 搜尋外掛
+      en_us: Find Plugins
+      ja_jp: プラグイン検索
+    icon: resource/icon/search.svg
+    order: 20
+  - id: sources
+    title:
+      zh_cn: 插件源
+      zh_tw: 外掛來源
+      en_us: Sources
+      ja_jp: ソース
+    icon: resource/icon/sources.svg
+    order: 30
+
+permissions:
+  - filesystem.write
+  - network

@@ -3,7 +3,7 @@
 - ``Language`` 单例同时是「文本容器」与「切换协调器」；
 - ``apply``：重装基座语言包 -> 注入 App 语言（通过注册的 provider）
   -> 通知订阅者（菜单/标题/页面等组件自刷新）；
-- App 语言提供者由 ``sllkgui.guis.app_loader`` 注册（sllkgui.appcore 不依赖表现层）；
+- App 语言提供者由 ``sllkgui.gallery.loader`` 注册（sllkgui.appcore 不依赖表现层）；
 - 订阅使用弱引用，组件销毁后自动移除。
 
 使用::
@@ -272,13 +272,14 @@ class LanguageHandler:
                 self._listeners.append(callback)
 
     def unsubscribe(self, callback: Callable[[], None]) -> None:
-        """退订（按等价回调移除）。"""
+        """退订（按等价回调移除，含绑定方法）。"""
+
+        def _same(entry) -> bool:
+            target = entry() if isinstance(entry, weakref.WeakMethod) else entry
+            return target == callback
+
         with self._lock:
-            self._listeners = [
-                entry
-                for entry in self._listeners
-                if not (isinstance(entry, weakref.WeakMethod) and entry() is callback) and entry is not callback
-            ]
+            self._listeners = [entry for entry in self._listeners if not _same(entry)]
 
     def _remove_listener(self, ref) -> None:
         with self._lock:

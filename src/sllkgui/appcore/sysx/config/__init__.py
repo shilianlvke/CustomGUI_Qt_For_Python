@@ -18,7 +18,7 @@
 """
 
 from .mapping import Attrs, to_attrs
-from .paths import apps_root
+from .paths import gallery_root
 from .registry import (
     AppLanguages,
     AppOthers,
@@ -35,5 +35,5 @@ __all__ = [
     "get_app_context",
     "Attrs",
     "to_attrs",
-    "apps_root",
+    "gallery_root",
 ]

@@ -69,3 +69,5 @@ __pypackages__/
 # 其他
 *.mo
 *.pot
+
+/gallery/

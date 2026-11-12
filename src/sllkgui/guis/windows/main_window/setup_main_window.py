@@ -1,5 +1,3 @@
-import os
-
 from PySide6.QtCore import Qt
 from PySide6.QtGui import QGuiApplication
 from PySide6.QtWidgets import QWidget
@@ -10,13 +8,10 @@ from sllkgui.appcore import (
     AppThemes,
     Language,
     Logger,
-    MenuPlugin,
-    get_plugin_registry,
     get_theme_manager,
     load_user_settings,
 )
 from sllkgui.guicore import CGrips, set_acrylic_transparency, set_glass_strength
-from sllkgui.guis.app_loader import load_apps
 
 from .functions import MainFunctions
 from .registry import (
@@ -26,39 +21,6 @@ from .registry import (
     get_page_routes,
     load_registered_pages,
 )
-
-BUILTIN_TITLE_MENU_PLUGINS = [
-    MenuPlugin(
-        plugin_id="builtin.menu.title.search",
-        target="TitleMenu",
-        item={
-            "btn_icon": "icon_search",
-            "btn_id": "btn_search",
-            "btn_tooltip": "language.UI.ui_Search",
-            "is_active": False,
-        },
-    ),
-    MenuPlugin(
-        plugin_id="builtin.menu.title.appearance",
-        target="TitleMenu",
-        item={
-            "btn_icon": "icon_palette",
-            "btn_id": "btn_themes",
-            "btn_tooltip": "language.UI.ui_Appearance",
-            "is_active": False,
-        },
-    ),
-]
-
-
-def register_builtin_title_menus():
-    demo_menus = os.getenv("SLLKGUI_BUILTIN_MENUS", "1").strip().lower() not in {"0", "false", "no", "off"}
-    registry = get_plugin_registry()
-    for plugin in BUILTIN_TITLE_MENU_PLUGINS:
-        if not demo_menus and plugin.plugin_id == "builtin.menu.title.search":
-            continue
-        if plugin.plugin_id not in registry._menus:
-            registry.register_menu(plugin)
 
 
 class SetupMainWindow:
@@ -91,8 +53,6 @@ class SetupMainWindow:
         # 先恢复用户上次保存的主题 / 语言 / 窗口尺寸，再装载应用与页面，
         # 保证菜单文案、页面语言与窗口几何一次到位（避免启动后再重建）。
         user_state = SetupMainWindow.restore_ui_state(self)
-        # 装载 Apps 目录下的应用模组（菜单 + 页面 + 语言）
-        load_apps()
         # 添加标题描述
         self.setWindowTitle(Language.custom_ui.sys_name)
         self.ui.title_bar.set_title(Language.custom_ui.sys_name)
@@ -303,7 +263,6 @@ class SetupMainWindow:
         )
 
     def menu_add_btn(self):
-        register_builtin_title_menus()
         left_menu_items = get_menu_items("LeftMenu")
         title_menu_items = get_menu_items("TitleMenu")
         self.ui.left_menu.add_menus(left_menu_items)

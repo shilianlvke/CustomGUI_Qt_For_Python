@@ -1,0 +1,39 @@
+installed:
+  title: インストール済み
+search:
+  title: プラグイン検索
+  placeholder: 名前または ID で検索
+sources:
+  title: ソース
+  placeholder: Git リポジトリ URL
+actions:
+  refresh: 更新
+  refresh_sources: ソースを更新
+  update: アップデート
+  rollback: ロールバック
+  disable: 無効化
+  enable: 有効化
+  remove: 削除
+  search: 検索
+  install: インストール
+  add: 追加
+columns:
+  id: プラグイン
+  name: 名前
+  version: バージョン
+  source: ソース
+  enabled: 有効
+  compliance: コンプライアンス
+  path: パス
+  permissions: 権限
+  url: URL
+  trust: 信頼
+  last_refresh: 最終更新
+status:
+  enabled: はい
+  disabled: いいえ
+empty: レコードがありません
+confirm:
+  install: このプラグインをインストールしますか？ソース、バージョン、権限を確認してください。
+  remove: このプラグインを削除しますか？データディレクトリは既定で保持されます。
+  remove_source: このソースを削除しますか？インストール済みプラグインには影響しません。

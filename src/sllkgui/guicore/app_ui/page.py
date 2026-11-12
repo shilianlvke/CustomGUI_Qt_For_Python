@@ -64,6 +64,9 @@ class CPreviewPage:
     #: 是否在滚动区挂「回到顶部」浮动按钮
     scroll_top: ClassVar[bool] = False
 
+    #: 插件 Surface 注入的翻译函数：``(key, default) -> str``；为空时走 Language
+    _translator: ClassVar[Any] = None
+
     # ------------------------------------------------------------------
     # 语言
     # ------------------------------------------------------------------
@@ -74,8 +77,15 @@ class CPreviewPage:
 
     @classmethod
     def tr(cls, key: str, default: str | None = None) -> str:
-        """在 ``app.<slug>`` 命名空间内取文案，缺省回落到 ``key`` 本身。"""
-        return str(Language.resolve(f"{cls.lang_namespace()}.{key}", default if default is not None else key))
+        """优先用插件注入的翻译函数；否则在 ``app.<slug>`` 命名空间内取文案。"""
+        fallback = default if default is not None else key
+        translator = getattr(cls, "_translator", None)
+        if translator is not None:
+            try:
+                return str(translator(key, fallback))
+            except Exception:  # noqa: BLE001 - 翻译失败回落到基座语言表
+                pass
+        return str(Language.resolve(f"{cls.lang_namespace()}.{key}", fallback))
 
     # ------------------------------------------------------------------
     # 标识与排版基元

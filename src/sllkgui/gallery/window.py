@@ -1,0 +1,195 @@
+"""Gallery 外壳窗口：组件预览与插件运行共用同一套窗口骨架。"""
+
+from __future__ import annotations
+
+from pathlib import Path
+
+from PySide6.QtWidgets import QLabel, QMainWindow, QVBoxLayout, QWidget
+
+from sllkgui.appcore import Language, Logger, record_event
+from sllkgui.gallery.registry import SurfaceRecord
+from sllkgui.gallery.runtime import GalleryRuntime
+from sllkgui.guis.windows.main_window.controller import MainWindowController
+from sllkgui.guis.windows.main_window.functions import MainFunctions
+from sllkgui.guis.windows.main_window.registry import ensure_registered_page, get_menu_items
+from sllkgui.guis.windows.main_window.setup_main_window import SetupMainWindow
+from sllkgui.guis.windows.main_window.ui_main import UiMainWindow
+
+
+class GalleryWindow(QMainWindow):
+    """插件 Surface 宿主；路由切换、菜单重建与空状态都在这里。"""
+
+    def __init__(self, runtime: GalleryRuntime, route: str = "", parent=None) -> None:
+        super().__init__(parent)
+        self.runtime = runtime
+        self.gallery_registry = runtime.registry
+        self._current_route = ""
+        self.setObjectName("GalleryWindow")
+        self.setMouseTracking(True)
+        self.ui = UiMainWindow()
+        self.ui.setup_ui(self)
+        runtime.set_navigation(self.open_route, lambda: self)
+        SetupMainWindow.setup_gui(self)
+        self.controller = MainWindowController(self)
+        title = "SllkGUI Gallery" if runtime.mode == "gallery" else "SllkGUI"
+        self.setWindowTitle(title)
+        self.ui.title_bar.set_title(title)
+        if self.gallery_registry.surface_count() == 0:
+            self._show_empty_state()
+        target = route or runtime.default_route()
+        if target:
+            self.open_route(target)
+
+    # ------------------------------------------------------------------
+    # 窗口骨架信号槽（与宿主 MainWindow 约定一致）
+    # ------------------------------------------------------------------
+    def btn_clicked(self) -> None:
+        button = SetupMainWindow.setup_btns(self)
+        if button is not None:
+            self.controller.handle_button(button)
+
+    def btn_released(self) -> None:
+        SetupMainWindow.setup_btns(self)
+
+    def resizeEvent(self, event) -> None:  # noqa: N802 - 覆写 Qt 命名
+        SetupMainWindow.resize_grips(self)
+        super().resizeEvent(event)
+
+    def mousePressEvent(self, event) -> None:  # noqa: N802 - 覆写 Qt 命名
+        self.dragPos = event.globalPosition().toPoint()
+        self.focusNextChild()
+
+    # ------------------------------------------------------------------
+    # 导航
+    # ------------------------------------------------------------------
+    def open_route(self, route: str) -> bool:
+        surface = self.gallery_registry.get(route)
+        if surface is None:
+            Logger.warning(f"路由不存在: {route}")
+            return False
+        if not ensure_registered_page(self, surface.page_object):
+            return False
+        page = self.ui.load_pages.pages.findChild(QWidget, surface.page_object)
+        if page is None:
+            return False
+        previous = self.ui.left_menu.active_button_id()
+        self.ui.left_menu.select_only_one(surface.button_id)
+        MainFunctions.set_page(
+            self,
+            page,
+            menu=self.ui.left_menu,
+            button_id=surface.button_id,
+            previous_button_id=previous,
+        )
+        self.ui.title_bar.set_title(surface.display_title(Language.current()))
+        self._current_route = route
+        record_event(
+            "surface.navigated",
+            category="gallery",
+            payload={"route": route, "mode": self.runtime.mode},
+        )
+        return True
+
+    def open_surface(self, plugin_id: str, surface_id: str) -> bool:
+        return self.open_route(f"{plugin_id}/{surface_id}")
+
+    def current_route(self) -> str:
+        return self._current_route
+
+    # ------------------------------------------------------------------
+    # 重载
+    # ------------------------------------------------------------------
+    def reload_plugins(self) -> None:
+        current = self._current_route
+        self.runtime.reload()
+        self.gallery_registry = self.runtime.registry
+        self.ui.left_menu.clear_menus()
+        self.ui.left_menu.add_menus(get_menu_items("LeftMenu"))
+        target = current if self.gallery_registry.get(current) else self.runtime.default_route()
+        if target:
+            self.open_route(target)
+        elif self.gallery_registry.surface_count() == 0:
+            self._show_empty_state()
+
+    # ------------------------------------------------------------------
+    # 空状态
+    # ------------------------------------------------------------------
+    def _show_empty_state(self) -> None:
+        pages = self.ui.load_pages.pages
+        existing = pages.findChild(QWidget, "GalleryEmptyState")
+        if existing is not None:
+            pages.setCurrentWidget(existing)
+            return
+        page = QWidget()
+        page.setObjectName("GalleryEmptyState")
+        layout = QVBoxLayout(page)
+        layout.setContentsMargins(24, 24, 24, 24)
+        layout.addStretch(1)
+        title = QLabel("尚未安装插件" if Language.current().startswith("zh") else "No plugins installed")
+        title.setObjectName("GalleryEmptyStateTitle")
+        hint = QLabel(
+            "打开左侧「插件管理」搜索并安装插件。"
+            if Language.current().startswith("zh")
+            else "Open Plugin Manager to search and install plugins."
+        )
+        hint.setObjectName("GalleryEmptyStateHint")
+        layout.addWidget(title)
+        layout.addWidget(hint)
+        layout.addStretch(1)
+        pages.addWidget(page)
+        pages.setCurrentWidget(page)
+
+    # ------------------------------------------------------------------
+    # 生命周期
+    # ------------------------------------------------------------------
+    def closeEvent(self, event) -> None:  # noqa: N802 - 覆写 Qt 命名
+        try:
+            self.controller.theme_controller.detach()
+        except Exception as exc:  # noqa: BLE001 - 退订失败不应阻塞退出
+            Logger.debug(f"Gallery 主题订阅清理失败: {exc}")
+        try:
+            self.runtime.shutdown()
+        except Exception as exc:  # noqa: BLE001 - 关闭失败不应阻塞退出
+            Logger.debug(f"Gallery 关闭时清理失败: {exc}")
+        super().closeEvent(event)
+
+
+def _run_window(runtime: GalleryRuntime, route: str) -> GalleryWindow:
+    runtime.bootstrap()
+    return GalleryWindow(runtime, route)
+
+
+def load_gallery(
+    *,
+    route: str = "",
+    data_dir: Path | str | None = None,
+) -> GalleryWindow:
+    runtime = GalleryRuntime("gallery", data_dir=Path(data_dir) if data_dir else None)
+    return _run_window(runtime, route)
+
+
+def load_run(
+    *,
+    route: str = "",
+    data_dir: Path | str | None = None,
+    gallery_dir: Path | str | None = None,
+    plugin_dirs: list[Path | str] | None = None,
+    safe_mode: bool = False,
+    allow_local: bool = False,
+) -> GalleryWindow:
+    runtime = GalleryRuntime(
+        "run",
+        data_dir=Path(data_dir) if data_dir else None,
+        gallery_dir=Path(gallery_dir) if gallery_dir else None,
+        plugin_dirs=[Path(item) for item in (plugin_dirs or [])],
+        safe_mode=safe_mode,
+        allow_local=allow_local,
+    )
+    return _run_window(runtime, route)
+
+
+def surface_of(window: GalleryWindow) -> SurfaceRecord | None:
+    return window.gallery_registry.get(window.current_route())
+
+
+__all__ = ["GalleryWindow", "load_gallery", "load_run", "surface_of"]

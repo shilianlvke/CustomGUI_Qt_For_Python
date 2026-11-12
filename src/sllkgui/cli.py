@@ -1,272 +1,118 @@
 """``sllkgui`` 命令行入口。
 
-四个子命令，覆盖「装上就能看到东西」到「装错了能自己查」：
+职责边界：
 
-=================  ================================================
-``run``            用指定（或自动发现）的应用目录启动主窗口
-``install-demo``   把包内自带的 10 个示例应用复制到可写目录
-``examples``       导出最小可运行工程骨架，作为新项目起点
-``doctor``         打印全部路径与发现结果，排查「为什么窗口是空的」
-=================  ================================================
+============  ============================================================
+``gallery``   只加载基座内置组件预览，不读插件存储/源、不联网
+``run``       加载核心插件 + 已安装插件（+ ``--plugin-dir`` 开发插件）
+``plugin``    源搜索、安装、更新、回滚、卸载、启停、校验、lint
+``source``    源列表、添加、移除、刷新
+``doctor``    路径与安装状态诊断
+``scaffold``  生成插件/源仓库骨架
+============  ============================================================
 
-``install-demo`` 与 ``examples`` 读的是内置示例目录：wheel 安装时在包内
-（由 ``pyproject.toml`` 的 ``force-include`` 注入 ``sllkgui/apps`` 与
-``sllkgui/examples``），源码树运行时回落到仓库根的 ``apps/`` 与
-``examples/hello_world/`` —— 两种形态下命令行为一致。
-
-设计约定：模块顶层只依赖标准库、不导入 PySide6；``doctor`` 在加载应用或读取配置时会
-传递导入 Qt，但不创建 QApplication，因此没有显示环境的服务器上也能跑。
+``plugin`` / ``source`` / ``doctor`` / ``scaffold`` 不导入 PySide6，可在无
+显示环境运行；只有 ``gallery`` / ``run`` 才启动 Qt。
 """
 
 from __future__ import annotations
 
 import argparse
-import shutil
+import json
 import sys
 from pathlib import Path
+from typing import Any
 
-__all__ = ["main"]
-
-
-def _package_dir() -> Path:
-    from sllkgui import package_root
-
-    return package_root()
+__all__ = ["build_parser", "main"]
 
 
-def _absolute(value: str | None) -> str | None:
-    """把命令行给的相对路径按**当前工作目录**解析成绝对路径。
+# ----------------------------------------------------------------------
+# 通用
+# ----------------------------------------------------------------------
+def _version() -> str:
+    from sllkgui import __version__
 
-    ``--apps-dir apps`` 若原样下传，会被资源解析器当成「资源根下的相对路径」
-    去 wheel 包内找，找到的是不存在的目录——用户看到「窗口是空的」而不是
-    一条能读懂的报错。路径语义必须在入口处就定死。
-    """
+    return __version__
+
+
+def _absolute(value: str | None) -> Path | None:
     if not value:
         return None
-    return str(Path(value).expanduser().resolve())
+    return Path(value).expanduser().resolve()
 
 
-def _bundled_dir(relative: str) -> Path | None:
-    """内置示例目录：包内优先，源码树（仓库根）兜底。"""
-    from sllkgui.appcore.sysx.config.paths import source_root
-
-    for base in (_package_dir(), source_root()):
-        if base is None:
-            continue
-        candidate = base / relative
-        if candidate.is_dir():
-            return candidate
-    return None
+def _print(message: str = "") -> None:
+    print(message)
 
 
-def _demo_source() -> Path | None:
-    """自带的示例应用目录（wheel 在包内，源码树在仓库 ``apps/``）。"""
-    return _bundled_dir("apps")
+def _emit(payload: Any, as_json: bool) -> None:
+    if as_json:
+        print(json.dumps(payload, ensure_ascii=False, indent=2))
+        return
+    if isinstance(payload, list):
+        for item in payload:
+            print(item if isinstance(item, str) else json.dumps(item, ensure_ascii=False))
+        return
+    print(json.dumps(payload, ensure_ascii=False, indent=2) if isinstance(payload, dict) else payload)
 
 
-def _example_source() -> Path | None:
-    """最小可运行工程骨架目录。"""
-    return _bundled_dir("examples/hello_world")
+def _confirm(args: argparse.Namespace, message: str) -> bool:
+    if getattr(args, "yes", False):
+        return True
+    if not sys.stdin.isatty():
+        print(f"✗ {message}（非交互环境请加 --yes）")
+        return False
+    answer = input(f"{message} [y/N] ").strip().lower()
+    return answer in {"y", "yes"}
 
 
-# ----------------------------------------------------------------------
-# install-demo
-# ----------------------------------------------------------------------
-def _cmd_install_demo(args: argparse.Namespace) -> int:
-    source = _demo_source()
-    if source is None:
-        print("✗ 找不到内置示例应用（包内与仓库 apps/ 都不存在）。")
-        print("  请改用：sllkgui examples --copy DIR 导出最小工程骨架。")
-        return 1
+def _gallery_dir(args: argparse.Namespace) -> Path:
+    from sllkgui.appcore.sysx.config.paths import data_root, gallery_root
 
-    from sllkgui.appcore.sysx.config.paths import data_root
-
-    dest = Path(args.dest).expanduser().resolve() if args.dest else data_root() / "apps"
-    # 只有 --force 会删除目标目录，相交校验也只在此时需要：源码树里
-    # _demo_source() 回落到 source_root()/apps，而默认 dest 恰为
-    # data_root()/apps，不带 --force 时只是「已存在，跳过」，并无删除风险。
-    if args.force:
-        src_resolved, dest_resolved = source.resolve(), dest.resolve()
-        if (
-            src_resolved == dest_resolved
-            or src_resolved.is_relative_to(dest_resolved)
-            or dest_resolved.is_relative_to(src_resolved)
-        ):
-            print("✗ 目标目录与内置示例源目录相同或互相包含，拒绝覆盖以免删除内置示例。")
-            print(f"  源目录：{src_resolved}")
-            print(f"  目标目录：{dest_resolved}")
-            return 1
-
-    dest.mkdir(parents=True, exist_ok=True)
-
-    copied, skipped = [], []
-    for app_dir in sorted(p for p in source.iterdir() if p.is_dir()):
-        target = dest / app_dir.name
-        if target.is_symlink():
-            print(f"✗ 目标为符号链接，拒绝覆盖：{target}")
-            return 1
-        if target.exists() and not args.force:
-            skipped.append(app_dir.name)
-            continue
-        try:
-            if target.exists():
-                shutil.rmtree(target)
-            shutil.copytree(app_dir, target)
-        except OSError as exc:
-            print(f"✗ 复制应用 {app_dir.name} 失败：{exc}")
-            if target.exists():
-                shutil.rmtree(target, ignore_errors=True)
-            return 1
-        copied.append(app_dir.name)
-
-    print(f"示例应用目录：{dest}")
-    for name in copied:
-        print(f"  + {name}")
-    for name in skipped:
-        print(f"  = {name}（已存在，跳过；加 --force 覆盖）")
-    if not copied and not skipped:
-        print("  （包内没有示例应用）")
-    return 0
+    explicit = _absolute(getattr(args, "gallery_dir", None))
+    if explicit is not None:
+        return explicit
+    data = _absolute(getattr(args, "data_dir", None))
+    if data is not None:
+        return data / "gallery"
+    return gallery_root() or (data_root() / "gallery")
 
 
-# ----------------------------------------------------------------------
-# examples
-# ----------------------------------------------------------------------
-def _cmd_examples(args: argparse.Namespace) -> int:
-    if not args.copy:
-        source = _example_source()
-        if source is None:
-            print("✗ 找不到内置示例工程。")
-            return 1
-        print(f"内置示例位置：{source}")
-        print("用 sllkgui examples --copy DIR 导出到自己的工程目录。")
-        return 0
-
-    source = _example_source()
-    if source is None:
-        print("✗ 找不到内置示例工程。")
-        return 1
-
-    dest = Path(args.copy).expanduser().resolve()
-    if dest.exists() and any(dest.iterdir()):
-        print(f"✗ 目标目录非空：{dest}")
-        return 1
-    dest.mkdir(parents=True, exist_ok=True)
-    for item in source.iterdir():
-        target = dest / item.name
-        if item.is_dir():
-            shutil.copytree(item, target)
-        else:
-            shutil.copy2(item, target)
-    print(f"已导出最小工程到：{dest}")
-    print(f"下一步：cd {dest} && python main.py")
-    return 0
-
-
-# ----------------------------------------------------------------------
-# doctor
-# ----------------------------------------------------------------------
-def _mark(ok: bool) -> str:
-    return "✓" if ok else "✗"
-
-
-def _cmd_doctor(args: argparse.Namespace) -> int:
+def _services(args: argparse.Namespace):
+    """构造不依赖 Qt 的 store/state/source/manager。"""
     from sllkgui import __version__
-    from sllkgui.appcore.sysx.config.paths import apps_root, data_root, resource_roots
+    from sllkgui.gallery.manager import PluginManager
+    from sllkgui.gallery.source import SourceManager
+    from sllkgui.gallery.state import load_registry, load_sources
+    from sllkgui.gallery.store import GalleryStore
 
-    print("SllkGUI doctor")
-    print("=" * 56)
-    print(f"{_mark(True)} 版本          : {__version__}")
-    print(f"{_mark(True)} 包目录        : {_package_dir()}")
-
-    roots = resource_roots()
-    for index, root in enumerate(roots):
-        sllkgui = root / "sllkgui"
-        print(f"{_mark(sllkgui.is_dir())} 资源根 #{index}     : {root}")
-        if not sllkgui.is_dir():
-            print("    提示：该根下缺少 sllkgui/ 目录，主题/语言/设置都会缺失")
-
-    data = data_root()
-    data_ok = data.exists()
-    print(f"{_mark(data_ok)} 数据根        : {data}{'' if data_ok else '（尚未创建）'}")
-
-    # ``--apps-dir`` 显式指定时以它为准：默认应用目录不存在、但用户指了别的
-    # 目录时，仍然要打印「发现/加载」结果，否则排查信息在最需要的时候缺席。
-    explicit = _absolute(args.apps_dir)
-
-    # 归属校验：显式路径必须位于已配置的应用根或数据根之下，避免 doctor
-    # 顺手扫描/执行外部目录里的插件代码；--allow-external 显式放行。
-    if explicit and not args.allow_external:
-        resolved = Path(explicit).resolve()
-        owned_roots = [Path(root).resolve() for root in (apps_root(), data_root()) if root is not None]
-        if not any(resolved.is_relative_to(root) for root in owned_roots):
-            print(f"✗ --apps-dir 指向已配置应用根之外的目录：{resolved}")
-            print("  已拒绝诊断；如确需诊断该目录，请加 --allow-external（仅用于可信目录）。")
-            return 1
-    if explicit and args.allow_external:
-        print(f"⚠ 警告：--allow-external 已启用，--apps-dir 可指向任意目录：{Path(explicit).resolve()}")
-        print("  请确认目录可信；加 --load 会执行其中的应用入口代码。")
-
-    apps = Path(explicit) if explicit else apps_root()
-    apps_ok = apps.is_dir()
-    print(f"{_mark(apps_ok)} 应用目录      : {apps}{'' if explicit else '（默认）'}")
-    if not apps_ok:
-        print("    提示：sllkgui install-demo 可放入示例应用")
-
-    print("-" * 56)
-    if apps_ok:
-        try:
-            from sllkgui.window import discover_app_dirs
-
-            dirs = discover_app_dirs(explicit)
-            print(f"发现应用      : {len(dirs)} 个")
-            for app_dir in dirs:
-                print(f"  - {app_dir.name}")
-            if args.load:
-                from sllkgui.window import load_app_handles
-
-                handles = load_app_handles(explicit)
-                print(f"成功加载      : {len(handles)} 个")
-                for handle in handles:
-                    module = handle.module.__name__ if handle.module else "（无 gui/main.py）"
-                    print(f"  + {handle.name}  ->  {module}")
-            else:
-                print("提示：默认不执行应用代码；需要加载请加 --load")
-        except Exception as exc:  # noqa: BLE001 - doctor 只做展示，不能自己崩
-            print(f"✗ 应用发现/加载失败  : {exc}")
-            return 1
-        print("-" * 56)
-
-    try:
-        from sllkgui.appcore import AppLanguages, AppSettings, AppThemes, get_app_context
-
-        get_app_context()
-        print(f"{_mark(True)} 当前主题      : {AppSettings.theme_name}（共 {len(AppThemes)} 套）")
-        print(f"{_mark(True)} 当前语言      : {AppSettings.language}（共 {len(AppLanguages)} 种）")
-    except Exception as exc:  # noqa: BLE001
-        print(f"✗ 配置加载失败  : {exc}")
-        return 1
-
-    print("=" * 56)
-    print("排查建议：窗口是空的 → 看「应用目录」是否存在且「发现应用」非 0。")
-    return 0
+    store = GalleryStore(_gallery_dir(args))
+    store.ensure_layout()
+    state = load_registry(store.registry_file, base_version=__version__)
+    sources_state = load_sources(store.sources_file)
+    sources = SourceManager(store, sources_state, allow_local=bool(getattr(args, "allow_local", False)))
+    sources.ensure_official()
+    manager = PluginManager(store, state, sources, base_version=__version__)
+    return store, state, sources, manager
 
 
 # ----------------------------------------------------------------------
-# run
+# gallery / run
 # ----------------------------------------------------------------------
-def _cmd_run(args: argparse.Namespace) -> int:
+def _cmd_window(args: argparse.Namespace, mode: str) -> int:
     import sllkgui
 
-    apps_dir = _absolute(args.apps_dir)
-    data_dir = _absolute(args.data_dir)
-    if apps_dir:
-        sllkgui.configure(apps_dir=apps_dir, force_reload=True)
-    if data_dir:
-        sllkgui.configure(data_dir=data_dir, force_reload=True)
+    data_dir = _absolute(getattr(args, "data_dir", None))
+    gallery_dir = _absolute(getattr(args, "gallery_dir", None))
+    if data_dir is not None or gallery_dir is not None:
+        sllkgui.configure(
+            data_dir=data_dir,
+            gallery_dir=gallery_dir,
+            force_reload=True,
+        )
 
     from PySide6.QtGui import QIcon
-    from PySide6.QtWidgets import QApplication, QMainWindow
+    from PySide6.QtWidgets import QApplication
 
     from sllkgui.appcore import (
         AppLanguages,
@@ -277,7 +123,6 @@ def _cmd_run(args: argparse.Namespace) -> int:
         PathFactory,
         get_app_context,
     )
-    from sllkgui.window import MainWindowController, SetupMainWindow, UiMainWindow, load_apps
 
     get_app_context()
     ColorPalette.update(AppThemes[AppSettings.theme_name].data)
@@ -289,88 +134,412 @@ def _cmd_run(args: argparse.Namespace) -> int:
     if icon_path and Path(icon_path).is_file():
         app.setWindowIcon(QIcon(icon_path))
 
-    try:
-        load_apps(apps_dir)
-    except Exception as exc:  # noqa: BLE001 - 加载失败也要把空态窗口显示出来
-        print(f"应用加载失败：{exc}", file=sys.stderr)
+    from sllkgui.window import load_gallery, load_run
 
-    class MainWindow(QMainWindow):
-        def __init__(self) -> None:
-            super().__init__()
-            self.setObjectName("CustomUI")
-            self.setMouseTracking(True)
-            self.resize(AppSettings.startup_size[0], AppSettings.startup_size[1])
-            self.setMinimumSize(AppSettings.minimum_size[0], AppSettings.minimum_size[1])
-            self.ui = UiMainWindow()
-            self.ui.setup_ui(self)
-            SetupMainWindow.setup_gui(self)
-            self.controller = MainWindowController(self)
-            self.show()
-
-        def btn_clicked(self):  # noqa: ANN201 - Qt 信号槽约定
-            btn = SetupMainWindow.setup_btns(self)
-            if btn is not None:
-                self.controller.handle_button(btn)
-
-        def btn_released(self):  # noqa: ANN201
-            SetupMainWindow.setup_btns(self)
-
-        def resizeEvent(self, event):  # noqa: N802 - Qt 命名
-            SetupMainWindow.resize_grips(self)
-
-        def mousePressEvent(self, event):  # noqa: N802
-            self.dragPos = event.globalPosition().toPoint()
-            self.focusNextChild()
-
-    window = MainWindow()  # noqa: F841 - Qt 需要持有引用
+    if mode == "gallery":
+        window = load_gallery(route=args.surface or "", data_dir=data_dir)
+    else:
+        window = load_run(
+            route=args.surface or "",
+            data_dir=data_dir,
+            gallery_dir=gallery_dir,
+            plugin_dirs=[Path(item).expanduser().resolve() for item in (args.plugin_dir or [])],
+            safe_mode=bool(args.safe_mode),
+            allow_local=bool(getattr(args, "allow_local", False)),
+        )
+    window.show()
     return int(app.exec())
 
 
+def _cmd_gallery(args: argparse.Namespace) -> int:
+    return _cmd_window(args, "gallery")
+
+
+def _cmd_run(args: argparse.Namespace) -> int:
+    return _cmd_window(args, "run")
+
+
+# ----------------------------------------------------------------------
+# source
+# ----------------------------------------------------------------------
+def _cmd_source_list(args: argparse.Namespace) -> int:
+    _store, _state, sources, _manager = _services(args)
+    rows = [
+        {
+            "id": item.source_id,
+            "url": item.url,
+            "trust": item.trust,
+            "enabled": item.enabled,
+            "last_refresh": item.last_refresh,
+            "commit": item.commit,
+        }
+        for item in sources.list()
+    ]
+    _emit(rows, args.json)
+    return 0
+
+
+def _cmd_source_add(args: argparse.Namespace) -> int:
+    _store, _state, sources, _manager = _services(args)
+    record = sources.add(
+        args.url,
+        source_id=args.id or "",
+        trust=args.trust,
+        refresh=bool(args.refresh),
+    )
+    _print(f"✓ 已添加源 {record.source_id}: {record.url}")
+    return 0
+
+
+def _cmd_source_remove(args: argparse.Namespace) -> int:
+    _store, _state, sources, _manager = _services(args)
+    if not _confirm(args, f"确定移除源 {args.id}？"):
+        return 1
+    sources.remove(args.id)
+    _print(f"✓ 已移除源 {args.id}")
+    return 0
+
+
+def _cmd_source_refresh(args: argparse.Namespace) -> int:
+    _store, _state, sources, _manager = _services(args)
+    if args.id:
+        records = [sources.refresh(args.id)]
+    else:
+        records = sources.refresh_all()
+    for record in records:
+        _print(f"✓ {record.source_id} @ {record.commit[:8]}")
+    return 0
+
+
+def _cmd_source_info(args: argparse.Namespace) -> int:
+    _store, _state, sources, _manager = _services(args)
+    info = sources.info(args.id)
+    _emit(
+        {
+            "id": info.source_id,
+            "name": info.name,
+            "description": info.description,
+            "maintainers": list(info.maintainers),
+            "homepage": info.homepage,
+            "updated_at": info.updated_at,
+            "path": str(info.path or ""),
+        },
+        args.json,
+    )
+    return 0
+
+
+# ----------------------------------------------------------------------
+# plugin
+# ----------------------------------------------------------------------
+def _cmd_plugin_search(args: argparse.Namespace) -> int:
+    _store, _state, _sources, manager = _services(args)
+    _emit(manager.search(args.query or "", source_id=args.source or ""), args.json)
+    return 0
+
+
+def _cmd_plugin_info(args: argparse.Namespace) -> int:
+    _store, _state, _sources, manager = _services(args)
+    _emit(manager.info(args.id), True)
+    return 0
+
+
+def _cmd_plugin_install(args: argparse.Namespace) -> int:
+    _store, _state, sources, manager = _services(args)
+    if args.url:
+        if not _confirm(args, f"从 {args.url} 安装插件？"):
+            return 1
+        result = manager.install(url=args.url, ref=args.ref or "", allow_local=bool(args.allow_local))
+    else:
+        if not args.id:
+            _print("✗ 必须提供插件 id 或 --url")
+            return 1
+        entry = manager.info(args.id)["sources"]
+        permissions = ""
+        if entry:
+            version = next((item for item in entry[0]["versions"] if not item["yanked"]), None)
+            permissions = ", ".join(version["permissions"]) if version and "permissions" in version else "-"
+        if not _confirm(args, f"安装 {args.id}？权限：{permissions or '-'}"):
+            return 1
+        result = manager.install(
+            args.id,
+            version=args.version or "",
+            source_id=args.source or "",
+            allow_local=bool(sources.allow_local),
+        )
+    _emit(result, args.json)
+    return 0
+
+
+def _cmd_plugin_list(args: argparse.Namespace) -> int:
+    _store, _state, _sources, manager = _services(args)
+    _emit(manager.installed_rows(), args.json)
+    return 0
+
+
+def _cmd_plugin_update(args: argparse.Namespace) -> int:
+    _store, _state, _sources, manager = _services(args)
+    if args.all:
+        results = manager.update_all(dry_run=bool(args.dry_run))
+    else:
+        if not args.id:
+            _print("✗ 必须提供插件 id 或 --all")
+            return 1
+        results = [manager.update(args.id, dry_run=bool(args.dry_run))]
+    _emit(results, args.json)
+    return 0
+
+
+def _cmd_plugin_rollback(args: argparse.Namespace) -> int:
+    _store, _state, _sources, manager = _services(args)
+    _emit(manager.rollback(args.id), args.json)
+    return 0
+
+
+def _cmd_plugin_remove(args: argparse.Namespace) -> int:
+    _store, _state, _sources, manager = _services(args)
+    if not _confirm(args, f"确定卸载 {args.id}？"):
+        return 1
+    _emit(manager.remove(args.id, force=bool(args.force), purge=bool(args.purge)), args.json)
+    return 0
+
+
+def _cmd_plugin_toggle(args: argparse.Namespace, enabled: bool) -> int:
+    _store, _state, _sources, manager = _services(args)
+    _emit(manager.set_enabled(args.id, enabled), args.json)
+    return 0
+
+
+def _cmd_plugin_verify(args: argparse.Namespace) -> int:
+    _store, _state, _sources, manager = _services(args)
+    results = manager.verify(args.id or "")
+    _emit(results, args.json)
+    return 0 if all(item["ok"] for item in results) else 1
+
+
+def _cmd_plugin_lint(args: argparse.Namespace) -> int:
+    from sllkgui.gallery.lint import lint_plugin
+
+    report = lint_plugin(Path(args.path))
+    _emit(report.to_dict(), args.json)
+    if not report.ok:
+        return 1
+    return 0
+
+
+def _cmd_plugin_doctor(args: argparse.Namespace) -> int:
+    store, state, sources, _manager = _services(args)
+    payload = {
+        "base_version": _version(),
+        "gallery_dir": str(store.root),
+        "registry": str(store.registry_file),
+        "sources_file": str(store.sources_file),
+        "sources": [item.source_id for item in sources.list()],
+        "plugins": [
+            {"id": record.plugin_id, "version": record.version, "enabled": record.enabled}
+            for record in state.plugins.values()
+        ],
+    }
+    _emit(payload, args.json)
+    return 0
+
+
+# ----------------------------------------------------------------------
+# doctor / scaffold
+# ----------------------------------------------------------------------
+def _cmd_doctor(args: argparse.Namespace) -> int:
+    from sllkgui import package_root
+    from sllkgui.appcore.sysx.config.paths import data_root, gallery_root, resource_roots
+
+    store, state, sources, _manager = _services(args)
+    payload = {
+        "version": _version(),
+        "package_root": str(package_root()),
+        "resource_roots": [str(item) for item in resource_roots()],
+        "data_root": str(data_root()),
+        "gallery_root": str(gallery_root()),
+        "gallery_dir": str(store.root),
+        "sources": [item.source_id for item in sources.list()],
+        "installed": [
+            {"id": record.plugin_id, "version": record.version, "enabled": record.enabled}
+            for record in state.plugins.values()
+        ],
+    }
+    if args.json:
+        _emit(payload, True)
+        return 0
+    _print("SllkGUI doctor")
+    _print("=" * 56)
+    for key, value in payload.items():
+        if isinstance(value, list):
+            _print(f"{key}:")
+            for item in value:
+                _print(f"  - {item}")
+        else:
+            _print(f"{key}: {value}")
+    return 0
+
+
+def _cmd_scaffold(args: argparse.Namespace) -> int:
+    from sllkgui.gallery.scaffold import scaffold_plugin, scaffold_source
+
+    if args.source:
+        target = scaffold_source(
+            Path(args.dir),
+            source_id=args.id or "my-team",
+            source_name=args.name or "My SllkGUI Source",
+        )
+    else:
+        target = scaffold_plugin(
+            Path(args.dir),
+            plugin_id=args.id or "com.example.sample",
+            name=args.name or "Sample",
+        )
+    _print(f"✓ 已生成模板: {target}")
+    return 0
+
+
+# ----------------------------------------------------------------------
+# 解析器
 # ----------------------------------------------------------------------
 def build_parser() -> argparse.ArgumentParser:
-    parser = argparse.ArgumentParser(
-        prog="sllkgui",
-        description="SllkGUI —— 基于 PySide6 的桌面 UI 基座。",
-    )
+    parser = argparse.ArgumentParser(prog="sllkgui", description="SllkGUI —— 基于 PySide6 的桌面 UI 基座。")
     parser.add_argument("--version", action="version", version=f"%(prog)s {_version()}")
     sub = parser.add_subparsers(dest="command")
 
-    run = sub.add_parser("run", help="启动主窗口（自动发现应用）")
-    run.add_argument("--apps-dir", help="应用目录（默认自动探测）")
-    run.add_argument("--data-dir", help="可写数据目录（日志/遥测）")
+    gallery = sub.add_parser("gallery", help="组件预览模式（只加载内置预览插件）")
+    gallery.add_argument("--surface", help="直接打开的路由 plugin_id/surface_id")
+    gallery.add_argument("--data-dir", help="可写数据目录")
+    gallery.set_defaults(func=_cmd_gallery)
+
+    run = sub.add_parser("run", help="运行模式（核心插件 + 已安装插件）")
+    run.add_argument("--surface", help="直接打开的路由 plugin_id/surface_id")
+    run.add_argument("--data-dir", help="可写数据目录")
+    run.add_argument("--gallery-dir", help="插件安装根目录")
+    run.add_argument("--plugin-dir", action="append", help="本地开发插件目录（可重复）")
+    run.add_argument("--safe-mode", action="store_true", help="只加载核心插件")
+    run.add_argument("--allow-local", action="store_true", help="允许 file:// 插件源")
     run.set_defaults(func=_cmd_run)
 
-    install = sub.add_parser("install-demo", help="安装内置示例应用到数据目录")
-    install.add_argument("--dest", help="目标目录（默认 <data_root>/apps）")
-    install.add_argument("--force", action="store_true", help="覆盖已存在的同名应用")
-    install.set_defaults(func=_cmd_install_demo)
+    source = sub.add_parser("source", help="插件源管理")
+    source_sub = source.add_subparsers(dest="source_command")
+    source_common = dict(
+        data_dir=("--data-dir", {"help": "可写数据目录"}),
+        gallery_dir=("--gallery-dir", {"help": "插件安装根目录"}),
+        allow_local=("--allow-local", {"action": "store_true", "help": "允许 file:// 源"}),
+        json=("--json", {"action": "store_true", "help": "输出 JSON"}),
+    )
 
-    examples = sub.add_parser("examples", help="查看或导出最小可运行工程")
-    examples.add_argument("--copy", metavar="DIR", help="把示例工程复制到 DIR")
-    examples.set_defaults(func=_cmd_examples)
+    def _with_common(target: argparse.ArgumentParser) -> argparse.ArgumentParser:
+        for name, kwargs in source_common.values():
+            target.add_argument(name, **kwargs)
+        return target
 
-    doctor = sub.add_parser("doctor", help="打印路径与配置诊断信息")
-    doctor.add_argument("--apps-dir", help="检查指定应用目录")
-    doctor.add_argument("--load", action="store_true", help="显式加载并执行应用入口代码，仅用于可信目录")
-    doctor.add_argument("--allow-external", action="store_true", help="允许 --apps-dir 指向已配置应用根之外的目录")
+    src_list = _with_common(source_sub.add_parser("list", help="列出源"))
+    src_list.set_defaults(func=_cmd_source_list)
+    src_add = _with_common(source_sub.add_parser("add", help="添加源"))
+    src_add.add_argument("url")
+    src_add.add_argument("--id", help="源 id（默认从 URL 推导）")
+    src_add.add_argument("--trust", choices=("user", "official"), default="user")
+    src_add.add_argument("--refresh", action="store_true", help="添加后立即刷新")
+    src_add.add_argument("--yes", action="store_true")
+    src_add.set_defaults(func=_cmd_source_add)
+    src_remove = _with_common(source_sub.add_parser("remove", help="移除源"))
+    src_remove.add_argument("id")
+    src_remove.add_argument("--yes", action="store_true")
+    src_remove.set_defaults(func=_cmd_source_remove)
+    src_refresh = _with_common(source_sub.add_parser("refresh", help="刷新源"))
+    src_refresh.add_argument("id", nargs="?")
+    src_refresh.add_argument("--all", action="store_true")
+    src_refresh.set_defaults(func=_cmd_source_refresh)
+    src_info = _with_common(source_sub.add_parser("info", help="源详情"))
+    src_info.add_argument("id")
+    src_info.set_defaults(func=_cmd_source_info)
+
+    plugin = sub.add_parser("plugin", help="插件管理")
+    plugin_sub = plugin.add_subparsers(dest="plugin_command")
+
+    def _plugin_parser(name: str, help_text: str) -> argparse.ArgumentParser:
+        target = _with_common(plugin_sub.add_parser(name, help=help_text))
+        return target
+
+    p_search = _plugin_parser("search", "搜索插件")
+    p_search.add_argument("query", nargs="?")
+    p_search.add_argument("--source")
+    p_search.set_defaults(func=_cmd_plugin_search)
+    p_info = _plugin_parser("info", "插件详情")
+    p_info.add_argument("id")
+    p_info.set_defaults(func=_cmd_plugin_info)
+    p_install = _plugin_parser("install", "安装插件")
+    p_install.add_argument("id", nargs="?")
+    p_install.add_argument("--version")
+    p_install.add_argument("--source")
+    p_install.add_argument("--url")
+    p_install.add_argument("--ref")
+    p_install.add_argument("--yes", action="store_true")
+    p_install.set_defaults(func=_cmd_plugin_install)
+    p_list = _plugin_parser("list", "列出已安装插件")
+    p_list.set_defaults(func=_cmd_plugin_list)
+    p_update = _plugin_parser("update", "更新插件")
+    p_update.add_argument("id", nargs="?")
+    p_update.add_argument("--all", action="store_true")
+    p_update.add_argument("--dry-run", action="store_true")
+    p_update.add_argument("--yes", action="store_true")
+    p_update.set_defaults(func=_cmd_plugin_update)
+    p_rollback = _plugin_parser("rollback", "回滚插件")
+    p_rollback.add_argument("id")
+    p_rollback.set_defaults(func=_cmd_plugin_rollback)
+    p_remove = _plugin_parser("remove", "卸载插件")
+    p_remove.add_argument("id")
+    p_remove.add_argument("--force", action="store_true")
+    p_remove.add_argument("--purge", action="store_true")
+    p_remove.add_argument("--yes", action="store_true")
+    p_remove.set_defaults(func=_cmd_plugin_remove)
+    p_enable = _plugin_parser("enable", "启用插件")
+    p_enable.add_argument("id")
+    p_enable.set_defaults(func=lambda args: _cmd_plugin_toggle(args, True))
+    p_disable = _plugin_parser("disable", "禁用插件")
+    p_disable.add_argument("id")
+    p_disable.set_defaults(func=lambda args: _cmd_plugin_toggle(args, False))
+    p_verify = _plugin_parser("verify", "校验已安装插件")
+    p_verify.add_argument("id", nargs="?")
+    p_verify.set_defaults(func=_cmd_plugin_verify)
+    p_lint = _plugin_parser("lint", "检查插件开发规范")
+    p_lint.add_argument("path")
+    p_lint.set_defaults(func=_cmd_plugin_lint)
+    p_doctor = _plugin_parser("doctor", "插件状态诊断")
+    p_doctor.set_defaults(func=_cmd_plugin_doctor)
+
+    doctor = _with_common(sub.add_parser("doctor", help="路径与安装状态诊断"))
     doctor.set_defaults(func=_cmd_doctor)
+
+    scaffold = sub.add_parser("scaffold", help="生成插件/源仓库模板")
+    scaffold.add_argument("dir")
+    scaffold.add_argument("--id")
+    scaffold.add_argument("--name")
+    scaffold.add_argument("--source", action="store_true", help="生成源仓库模板")
+    scaffold.set_defaults(func=_cmd_scaffold)
 
     return parser
 
 
-def _version() -> str:
-    from sllkgui import __version__
-
-    return __version__
-
-
 def main(argv: list[str] | None = None) -> int:
+    from sllkgui.gallery.errors import GalleryError
+
     parser = build_parser()
     args = parser.parse_args(argv)
     if not getattr(args, "func", None):
         parser.print_help()
         return 0
-    return int(args.func(args))
+    try:
+        return int(args.func(args))
+    except GalleryError as exc:
+        print(f"✗ {exc.code}: {exc.message}", file=sys.stderr)
+        if exc.detail:
+            print(f"  {exc.detail}", file=sys.stderr)
+        return 1
+    except KeyboardInterrupt:
+        return 130
 
 
 if __name__ == "__main__":

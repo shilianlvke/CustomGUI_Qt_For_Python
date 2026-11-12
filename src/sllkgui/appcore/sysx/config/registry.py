@@ -192,7 +192,7 @@ class _ContextData:
 class ConfigContext:
     """已加载的配置上下文（settings / themes / languages / others）。
 
-    注意与 :class:`sllkgui.guis.app_loader.AppContext`（应用插件上下文）区分：
+    注意与 :class:`sllkgui.gallery.context.GalleryContextImpl`（插件上下文）区分：
     本类是配置框架内部对象，不对外导出。
 
     FIX-07: 4 个分组通过 :class:`_ContextData` 快照整体发布，避免
