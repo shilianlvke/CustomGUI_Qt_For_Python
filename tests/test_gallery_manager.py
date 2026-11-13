@@ -157,3 +157,27 @@ def test_enable_fails_when_dependency_disabled(tmp_path: Path):
         assert exc.code == "PLUGIN_DEPENDENCY_DISABLED"
     else:  # pragma: no cover
         raise AssertionError("disabled dependency must block enable")
+
+
+def test_plugin_icon_shared_between_search_and_installed(tmp_path: Path):
+    _plugin, source, sources, manager, _store = _setup(tmp_path)
+    entry = source / "plugins" / "com.example.hello" / "entry.yaml"
+    data = yaml.safe_load(entry.read_text(encoding="utf-8"))
+    data["icon"] = "icon.svg"
+    entry.write_text(yaml.safe_dump(data, allow_unicode=True, sort_keys=False), encoding="utf-8")
+    git("add", "-A", cwd=source)
+    git("commit", "-q", "-m", "icon", cwd=source)
+    sources.refresh("test")
+
+    manager.install("com.example.hello", source_id="test")
+    discover = next(row for row in manager.search("hello") if row["id"] == "com.example.hello")
+    installed = next(row for row in manager.installed_rows() if row["id"] == "com.example.hello")
+    assert discover["icon"] == installed["icon"]
+    assert Path(discover["icon"]).is_file()
+
+
+def test_plugin_icon_empty_when_entry_has_none(tmp_path: Path):
+    _plugin, _source, _sources, manager, _store = _setup(tmp_path)
+    manager.install("com.example.hello", source_id="test")
+    assert manager.search("hello")[0]["icon"] == ""
+    assert manager.installed_rows()[0]["icon"] == ""

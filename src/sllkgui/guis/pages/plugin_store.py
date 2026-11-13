@@ -13,8 +13,8 @@ from __future__ import annotations
 from collections.abc import Callable
 from typing import Any
 
-from PySide6.QtCore import QRectF, Qt, QTimer, Signal
-from PySide6.QtGui import QColor, QFont, QFontMetrics, QPainter, QPen
+from PySide6.QtCore import QRectF, QSize, Qt, QTimer, Signal
+from PySide6.QtGui import QColor, QFont, QFontMetrics, QIcon, QPainter, QPen, QPixmap
 from PySide6.QtWidgets import (
     QFrame,
     QGridLayout,
@@ -273,12 +273,38 @@ class _ElidedLabel(QWidget):
         painter.end()
 
 
-class _IconTile(QWidget):
-    """条目/详情页的产品图标：强调色淡底 + 单色图标。"""
+#: 插件自带图标（彩色 SVG/PNG）的位图缓存（键：路径、像素尺寸、像素比）
+_PLUGIN_ICON_CACHE: dict[tuple[str, int, float], QPixmap] = {}
 
-    def __init__(self, icon: str, size: int = 38, parent=None) -> None:
+
+def _plugin_icon_pixmap(path: str, size: int, dpr: float) -> QPixmap | None:
+    """按设备像素比加载插件图标文件；缺失或解析失败返回 None。"""
+    if not path:
+        return None
+    ratio = max(1.0, float(dpr))
+    target = max(1, round(size * ratio))
+    key = (path, target, round(ratio, 2))
+    cached = _PLUGIN_ICON_CACHE.get(key)
+    if cached is not None:
+        return cached
+    icon = QIcon(path)
+    if icon.isNull():
+        return None
+    pixmap = icon.pixmap(QSize(target, target))
+    if pixmap.isNull():
+        return None
+    pixmap.setDevicePixelRatio(ratio)
+    _PLUGIN_ICON_CACHE[key] = pixmap
+    return pixmap
+
+
+class _IconTile(QWidget):
+    """条目/详情页的产品图标：强调色淡底 + 单色图标或插件自带图标。"""
+
+    def __init__(self, icon: str, size: int = 38, parent=None, *, icon_file: str = "") -> None:
         super().__init__(parent)
         self._icon = icon
+        self._icon_file = icon_file
         self._size = max(24, int(size))
         self.setFixedSize(self._size, self._size)
 
@@ -298,7 +324,10 @@ class _IconTile(QWidget):
         painter.setPen(QPen(border, 1))
         painter.drawPath(path)
 
-        pixmap = render_icon(self._icon, QColor(colors["text"]), self._size - 16, self.devicePixelRatioF())
+        inner = self._size - 16
+        pixmap = _plugin_icon_pixmap(self._icon_file, inner, self.devicePixelRatioF())
+        if pixmap is None:
+            pixmap = render_icon(self._icon, QColor(colors["text"]), inner, self.devicePixelRatioF())
         if pixmap is not None and not pixmap.isNull():
             dpr = pixmap.devicePixelRatio() or 1.0
             width = pixmap.width() / dpr
@@ -463,6 +492,7 @@ def _build_entry(
         title = item_id or str(record.get("url") or "")
         subtitle = str(record.get("url") or "")
         icon = "icon_database"
+        icon_file = ""
         trust = str(record.get("trust") or "user")
         trust_text = ctx.text("sources.official", "官方") if trust == "official" else ctx.text("sources.user", "用户")
         badges.append((trust_text, trust == "official"))
@@ -470,6 +500,7 @@ def _build_entry(
         title = str(record.get("name") or item_id)
         subtitle = str(record.get("summary") or item_id)
         icon = "icon_store"
+        icon_file = str(record.get("icon") or "")
         version = str(record.get("version") or "?")
         badges.append((f"v{version}", True))
         if record.get("installed"):
@@ -481,6 +512,7 @@ def _build_entry(
         version = str(record.get("version") or "?")
         subtitle = str(record.get("summary") or f"{record.get('source') or '-'} · v{version}")
         icon = "icon_store"
+        icon_file = str(record.get("icon") or "")
         badges.append((f"v{version}", True))
 
     has_toggle = kind in {"installed", "source"} or (kind == "discover" and bool(record.get("installed")))
@@ -494,7 +526,7 @@ def _build_entry(
         layout.setSpacing(8)
         top = QHBoxLayout()
         top.setSpacing(8)
-        top.addWidget(_IconTile(icon, 40))
+        top.addWidget(_IconTile(icon, 40, icon_file=icon_file))
         top.addStretch(1)
         if toggle is not None:
             top.addWidget(toggle, 0, Qt.AlignmentFlag.AlignTop)
@@ -515,7 +547,7 @@ def _build_entry(
     layout = QHBoxLayout(root)
     layout.setContentsMargins(2, 2, 2, 2)
     layout.setSpacing(12)
-    layout.addWidget(_IconTile(icon, 38), 0, Qt.AlignmentFlag.AlignTop)
+    layout.addWidget(_IconTile(icon, 38, icon_file=icon_file), 0, Qt.AlignmentFlag.AlignTop)
     column = QVBoxLayout()
     column.setSpacing(4)
     title_row = QHBoxLayout()
@@ -1051,6 +1083,7 @@ class _DiscoverPanel(_StorePanel):
                     "permissions": list(current.get("permissions") or []),
                     "compliance": current.get("compliance"),
                     "repository": str(current.get("repository") or ""),
+                    "icon": str(current.get("icon") or ""),
                     "installed": True,
                     "enabled": bool(current.get("enabled")),
                     "installed_version": str(current.get("version") or ""),

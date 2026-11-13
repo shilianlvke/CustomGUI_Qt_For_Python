@@ -79,6 +79,7 @@ class PluginManager:
     # 查询
     # ------------------------------------------------------------------
     def installed_rows(self) -> list[dict[str, Any]]:
+        icons = self._icon_map()
         rows: list[dict[str, Any]] = []
         for record in self.state.plugins.values():
             name, summary = self._manifest_text(record.plugin_id, record.version)
@@ -96,9 +97,39 @@ class PluginManager:
                     "enabled": record.enabled,
                     "path": record.path,
                     "previous": dict(record.previous or {}),
+                    "icon": icons.get(record.plugin_id, ""),
                 }
             )
         return rows
+
+    def _icon_map(self, index: SourceIndex | None = None) -> dict[str, str]:
+        """源注册表声明的插件图标：``{plugin_id: 绝对路径}``。
+
+        发现页与已安装页共用这一份映射，保证同一插件在两处展示同一个图标；
+        每个插件取首个声明了图标的源条目，索引不可用时返回空表（页面回落到
+        内置默认图标）。
+        """
+        try:
+            index = index if index is not None else self.sources.index()
+        except Exception as exc:  # noqa: BLE001 - 图标缺失不应影响插件列表
+            Logger.debug(f"读取源图标失败: {exc}")
+            return {}
+        icons: dict[str, str] = {}
+        for plugin_id, entries in index.entries.items():
+            for entry in entries:
+                icon = self._entry_icon(entry)
+                if icon:
+                    icons[plugin_id] = icon
+                    break
+        return icons
+
+    @staticmethod
+    def _entry_icon(entry: PluginEntry) -> str:
+        """源条目图标（相对条目目录）的绝对路径；未声明或文件缺失时返回空串。"""
+        if not entry.icon or entry.path is None:
+            return ""
+        candidate = entry.path / entry.icon
+        return str(candidate) if candidate.is_file() else ""
 
     def _manifest_text(self, plugin_id: str, version: str) -> tuple[str, str]:
         """已安装清单的展示名与简介；按 (id, version) 缓存，避免反复读盘。"""
@@ -116,6 +147,7 @@ class PluginManager:
 
     def search(self, query: str = "", *, source_id: str = "") -> list[dict[str, Any]]:
         index = self.sources.index()
+        icons = self._icon_map(index)
         rows: list[dict[str, Any]] = []
         needle = (query or "").strip().lower()
         for plugin_id, entries in sorted(index.entries.items()):
@@ -140,6 +172,7 @@ class PluginManager:
                         "permissions": list(latest.permissions),
                         "compliance": entry.compliance,
                         "repository": entry.repository,
+                        "icon": icons.get(plugin_id, ""),
                     }
                 )
         return rows
