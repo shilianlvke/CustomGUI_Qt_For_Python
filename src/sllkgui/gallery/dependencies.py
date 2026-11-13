@@ -172,25 +172,75 @@ def _mono_font() -> Any:
     return font
 
 
-def _command_block(text: str, parent: Any, *, colors: Any, radius: int) -> Any:
-    """可选中复制的命令块：等宽、自动换行、用基座令牌着色。"""
+def _command_block(text: str, parent: Any, *, colors: Any, radius: int, width: int) -> Any:
+    """命令块：等宽、按任意字符换行、无滚动条、高度随内容自适应。"""
     from PySide6.QtCore import Qt
-    from PySide6.QtWidgets import QLabel
+    from PySide6.QtGui import QTextOption
+    from PySide6.QtWidgets import QFrame, QPlainTextEdit, QSizePolicy
 
-    block = QLabel(text, parent)
-    block.setWordWrap(True)
-    block.setTextFormat(Qt.PlainText)
-    block.setTextInteractionFlags(Qt.TextSelectableByMouse)
-    block.setFont(_mono_font())
-    block.setCursor(Qt.IBeamCursor)
-    block.setStyleSheet(
-        f"color: {colors.text_primary};"
-        f" background: {colors.surface_sunken};"
-        f" border: 1px solid {colors.border_hairline};"
-        f" border-radius: {radius}px;"
-        " padding: 10px 12px;"
+    view = QPlainTextEdit(text, parent)
+    view.setReadOnly(True)
+    view.setFrameShape(QFrame.Shape.NoFrame)
+    view.setLineWrapMode(QPlainTextEdit.LineWrapMode.WidgetWidth)
+    view.setWordWrapMode(QTextOption.WrapMode.WrapAtWordBoundaryOrAnywhere)
+    view.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
+    view.setVerticalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
+    view.setFont(_mono_font())
+    view.setCursor(Qt.IBeamCursor)
+    view.setViewportMargins(10, 8, 10, 8)
+    view.setStyleSheet(
+        "QPlainTextEdit{"
+        f"color:{colors.text_primary};background:{colors.surface_sunken};"
+        f"border:1px solid {colors.border_hairline};border-radius:{radius}px;"
+        "}"
+        "QScrollBar{width:0;height:0;}"
     )
-    return block
+    view.setSizePolicy(QSizePolicy.Policy.Ignored, QSizePolicy.Policy.Fixed)
+    document = view.document()
+    document.setTextWidth(max(160, width - 24))
+    height = int(document.size().height()) + 18
+    view.setFixedHeight(max(48, min(height, 140)))
+    return view
+
+
+def _copy_button(text: str, parent: Any) -> Any:
+    """轻量复制按钮，复制后短暂反馈，避免用户手抄命令。"""
+    from PySide6.QtCore import QTimer
+    from PySide6.QtWidgets import QApplication
+
+    from sllkgui.guicore import CButton
+
+    button = CButton("复制", severity="secondary", variant="text", size="sm", parent=parent)
+
+    def copy() -> None:
+        QApplication.clipboard().setText(text)
+        button.setText("已复制")
+
+        def restore() -> None:
+            try:
+                button.setText("复制")
+            except RuntimeError:
+                pass
+
+        QTimer.singleShot(1200, restore)
+
+    button.clicked.connect(copy)
+    return button
+
+
+def _caption_row(caption: str, command: str, parent: Any, *, colors: Any) -> Any:
+    from PySide6.QtWidgets import QHBoxLayout, QLabel, QWidget
+
+    row = QWidget(parent)
+    layout = QHBoxLayout(row)
+    layout.setContentsMargins(0, 0, 0, 0)
+    layout.setSpacing(8)
+    label = QLabel(caption, row)
+    label.setStyleSheet(f"color:{colors.text_muted};background:transparent;")
+    layout.addWidget(label)
+    layout.addStretch(1)
+    layout.addWidget(_copy_button(command, row))
+    return row
 
 
 def _exec_overlay(dialog: Any) -> None:
@@ -219,57 +269,77 @@ def _ask_choice(
         return "skip"
     if _gui_available():
         from PySide6.QtCore import Qt
-        from PySide6.QtWidgets import QLabel, QVBoxLayout, QWidget
+        from PySide6.QtWidgets import QHBoxLayout, QLabel, QSizePolicy, QVBoxLayout, QWidget
 
         from sllkgui.appcore import get_design_tokens
-        from sllkgui.guicore import CDialog, CHDiv
+        from sllkgui.guicore import CDialog
 
         design = get_design_tokens()
         colors = design.colors
-        dialog = CDialog(title=title, width=560, closable=True, parent=_dialog_parent(parent))
+        radius = design.radius.control
+        width = 620
+        dialog = CDialog(title=title, width=width, closable=True, parent=_dialog_parent(parent))
         dialog.setAttribute(Qt.WA_DeleteOnClose, True)
 
-        summary = QLabel(f"插件 {subject} 缺少以下 Python 依赖", dialog.card())
+        head = QWidget(dialog.card())
+        head_layout = QHBoxLayout(head)
+        head_layout.setContentsMargins(0, 0, 0, 0)
+        head_layout.setSpacing(8)
+        tag = QLabel("插件", head)
+        tag.setStyleSheet(f"color:{colors.text_muted};background:transparent;")
+        name = QLabel(subject, head)
+        name.setFont(_mono_font())
+        name.setTextInteractionFlags(Qt.TextSelectableByMouse)
+        name.setStyleSheet(f"color:{colors.accent};background:transparent;")
+        head_layout.addWidget(tag)
+        head_layout.addWidget(name, 1)
+        dialog.add_widget(head)
+
+        summary = QLabel(f"缺少 {len(packages)} 个 Python 依赖，安装后重新加载插件即可。", dialog.card())
         summary.setWordWrap(True)
-        summary.setTextFormat(Qt.PlainText)
-        summary.setStyleSheet(f"color: {colors.text_primary}; background: transparent;")
+        summary.setSizePolicy(QSizePolicy.Policy.Ignored, QSizePolicy.Policy.Preferred)
+        summary.setStyleSheet(f"color:{colors.text_primary};background:transparent;")
         dialog.add_widget(summary)
 
         package_box = QWidget(dialog.card())
         package_box.setAttribute(Qt.WA_StyledBackground, True)
         package_box.setStyleSheet(
-            f"background: {colors.surface_sunken};"
-            f" border: 1px solid {colors.border_hairline};"
-            f" border-radius: {design.radius.control}px;"
+            f"background:{colors.surface_sunken};"
+            f"border:1px solid {colors.border_hairline};"
+            f"border-radius:{radius}px;"
         )
         package_layout = QVBoxLayout(package_box)
-        package_layout.setContentsMargins(14, 10, 14, 10)
+        package_layout.setContentsMargins(12, 8, 12, 8)
         package_layout.setSpacing(4)
         for spec in packages:
-            row = QLabel(f"• {spec}", package_box)
+            row = QLabel(spec, package_box)
             row.setTextFormat(Qt.PlainText)
+            row.setTextInteractionFlags(Qt.TextSelectableByMouse)
             row.setFont(_mono_font())
-            row.setStyleSheet(f"color: {colors.text_primary}; background: transparent;")
+            row.setSizePolicy(QSizePolicy.Policy.Ignored, QSizePolicy.Policy.Preferred)
+            row.setStyleSheet(f"color:{colors.text_primary};background:transparent;")
             package_layout.addWidget(row)
         dialog.add_widget(package_box)
 
-        dialog.add_widget(CHDiv())
-
-        intro = QLabel(
-            "自动安装会使用 uv 把依赖安装到当前 Python 环境。\n"
-            f"镜像源：{_redact(index_url) or '默认'}",
+        hint = QLabel(
+            "自动安装使用 uv 安装到当前 Python 环境 · 镜像源："
+            + (_redact(index_url) or "默认"),
             dialog.card(),
         )
-        intro.setWordWrap(True)
-        intro.setTextFormat(Qt.PlainText)
-        intro.setStyleSheet(f"color: {colors.text_muted}; background: transparent;")
-        dialog.add_widget(intro)
+        hint.setWordWrap(True)
+        hint.setSizePolicy(QSizePolicy.Policy.Ignored, QSizePolicy.Policy.Preferred)
+        hint.setStyleSheet(f"color:{colors.text_muted};background:transparent;")
+        dialog.add_widget(hint)
 
-        caption = QLabel("手动安装命令", dialog.card())
-        caption.setStyleSheet(f"color: {colors.text_muted}; background: transparent;")
-        dialog.add_widget(caption)
+        dialog.add_widget(_caption_row("手动安装命令", command, dialog.card(), colors=colors))
         dialog.add_widget(
-            _command_block(command, dialog.card(), colors=colors, radius=design.radius.control)
+            _command_block(
+                command,
+                dialog.card(),
+                colors=colors,
+                radius=radius,
+                width=width - 40,
+            )
         )
 
         choice = {"value": "skip"}
@@ -281,12 +351,12 @@ def _ask_choice(
             else:
                 dialog.accept()
 
+        dialog.add_action_button("跳过", lambda: pick("skip"))
+        dialog.add_action_button("手动安装", lambda: pick("manual"))
         auto_button = dialog.add_action_button(
             "自动安装", lambda: pick("auto"), severity="primary", variant="solid"
         )
         auto_button.setDefault(True)
-        dialog.add_action_button("手动安装", lambda: pick("manual"))
-        dialog.add_action_button("跳过", lambda: pick("skip"))
         _exec_overlay(dialog)
         return choice["value"]
 
@@ -309,20 +379,31 @@ def _show_manual(*, title: str, command: str, parent: Any) -> None:
     text = f"请手动执行：\n\n{command}"
     if _gui_available():
         from PySide6.QtCore import Qt
-        from PySide6.QtWidgets import QLabel
+        from PySide6.QtWidgets import QLabel, QSizePolicy
 
         from sllkgui.appcore import get_design_tokens
         from sllkgui.guicore import CDialog
 
         design = get_design_tokens()
-        dialog = CDialog(title=title, width=520, accept_text="关闭", parent=_dialog_parent(parent))
+        colors = design.colors
+        width = 560
+        dialog = CDialog(title=title, width=width, accept_text="关闭", parent=_dialog_parent(parent))
         dialog.setAttribute(Qt.WA_DeleteOnClose, True)
 
-        hint = QLabel("请手动执行以下命令：", dialog.card())
-        hint.setStyleSheet(f"color: {design.colors.text_muted}; background: transparent;")
+        hint = QLabel("在终端中执行以下命令完成安装：", dialog.card())
+        hint.setWordWrap(True)
+        hint.setSizePolicy(QSizePolicy.Policy.Ignored, QSizePolicy.Policy.Preferred)
+        hint.setStyleSheet(f"color:{colors.text_muted};background:transparent;")
         dialog.add_widget(hint)
+        dialog.add_widget(_caption_row("安装命令", command, dialog.card(), colors=colors))
         dialog.add_widget(
-            _command_block(command, dialog.card(), colors=design.colors, radius=design.radius.control)
+            _command_block(
+                command,
+                dialog.card(),
+                colors=colors,
+                radius=design.radius.control,
+                width=width - 40,
+            )
         )
         _exec_overlay(dialog)
         return
