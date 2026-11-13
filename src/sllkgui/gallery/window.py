@@ -2,12 +2,15 @@
 
 from __future__ import annotations
 
+import ctypes
+import sys
 from pathlib import Path
 
+from PySide6.QtCore import QTimer
 from PySide6.QtGui import QPixmapCache
 from PySide6.QtWidgets import QLabel, QMainWindow, QVBoxLayout, QWidget
 
-from sllkgui.appcore import Language, Logger, record_event
+from sllkgui.appcore import AppSettings, Language, Logger, PathFactory, record_event
 from sllkgui.gallery.registry import SurfaceRecord
 from sllkgui.gallery.runtime import GalleryRuntime
 from sllkgui.guicore import CPageTransition
@@ -21,6 +24,51 @@ from sllkgui.guis.windows.main_window.registry import (
 )
 from sllkgui.guis.windows.main_window.setup_main_window import SetupMainWindow
 from sllkgui.guis.windows.main_window.ui_main import UiMainWindow
+
+#: Win32 常量：窗口显示后重设原生图标（见 :func:`_reapply_taskbar_icon`）
+_WM_SETICON = 0x0080
+_ICON_SMALL = 0
+_ICON_BIG = 1
+_IMAGE_ICON = 1
+_LR_LOADFROMFILE = 0x00000010
+_LR_DEFAULTSIZE = 0x00000040
+#: 按槽位缓存 HICON，避免窗口每次显示都重复加载图标句柄
+_TASKBAR_ICONS: dict[int, int] = {}
+
+
+def _reapply_taskbar_icon(window: QMainWindow) -> None:
+    """窗口显示后重设一次原生图标，刷新 Windows 任务栏按钮。
+
+    Windows 11 的任务栏按钮可能在 Qt 写入窗口图标之前就创建完成，按钮会一直
+    沿用系统默认图标；显示时重新发送 ``WM_SETICON`` 可强制任务栏重新取图标。
+    """
+    if sys.platform != "win32":  # pragma: no cover - 非 Windows 无此问题
+        return
+    try:
+        icon_path = PathFactory.set_ico(AppSettings.logo)
+        if not icon_path or not Path(icon_path).is_file():
+            return
+        hwnd = int(window.winId())
+        if not hwnd:
+            return
+        user32 = ctypes.WinDLL("user32", use_last_error=True)
+        for slot in (_ICON_SMALL, _ICON_BIG):
+            hicon = _TASKBAR_ICONS.get(slot)
+            if not hicon:
+                hicon = user32.LoadImageW(
+                    None,
+                    str(icon_path),
+                    _IMAGE_ICON,
+                    0,
+                    0,
+                    _LR_LOADFROMFILE | _LR_DEFAULTSIZE,
+                )
+                if not hicon:
+                    continue
+                _TASKBAR_ICONS[slot] = hicon
+            user32.SendMessageW(hwnd, _WM_SETICON, slot, hicon)
+    except (AttributeError, OSError) as exc:  # pragma: no cover - 仅 Windows 真实窗口路径
+        Logger.debug(f"重设任务栏图标失败: {exc}")
 
 
 class GalleryWindow(QMainWindow):
@@ -251,6 +299,9 @@ class GalleryWindow(QMainWindow):
         if callable(restore):
             restore()
         super().showEvent(event)
+        # 每次显示都会重建任务栏按钮；延后到窗口完成映射后再设一次图标，
+        # 避免按钮沿用系统默认图标。
+        QTimer.singleShot(0, lambda: _reapply_taskbar_icon(self))
 
     def _trim_ui_caches(self) -> None:
         """托盘隐藏时释放纯 UI 缓存，重新显示会自动重建。
