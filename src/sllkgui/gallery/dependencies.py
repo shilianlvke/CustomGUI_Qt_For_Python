@@ -154,36 +154,150 @@ def _redact(index_url: str) -> str:
     return f"{scheme}://***@{rest.split('@', 1)[-1]}" if rest else index_url
 
 
+def _dialog_parent(parent: Any) -> Any:
+    """没有显式父窗口时挂到当前活动窗口，浮层才能铺在正确的窗口上。"""
+    from PySide6.QtWidgets import QApplication
+
+    return parent if parent is not None else QApplication.activeWindow()
+
+
+def _mono_font() -> Any:
+    """命令块等宽字体：优先开发者字体，缺失时回落到通用等宽。"""
+    from PySide6.QtGui import QFont
+
+    font = QFont()
+    font.setFamilies(["Cascadia Mono", "Consolas", "JetBrains Mono", "monospace"])
+    font.setStyleHint(QFont.StyleHint.Monospace)
+    font.setPixelSize(12)
+    return font
+
+
+def _command_block(text: str, parent: Any, *, colors: Any, radius: int) -> Any:
+    """可选中复制的命令块：等宽、自动换行、用基座令牌着色。"""
+    from PySide6.QtCore import Qt
+    from PySide6.QtWidgets import QLabel
+
+    block = QLabel(text, parent)
+    block.setWordWrap(True)
+    block.setTextFormat(Qt.PlainText)
+    block.setTextInteractionFlags(Qt.TextSelectableByMouse)
+    block.setFont(_mono_font())
+    block.setCursor(Qt.IBeamCursor)
+    block.setStyleSheet(
+        f"color: {colors.text_primary};"
+        f" background: {colors.surface_sunken};"
+        f" border: 1px solid {colors.border_hairline};"
+        f" border-radius: {radius}px;"
+        " padding: 10px 12px;"
+    )
+    return block
+
+
+def _exec_overlay(dialog: Any) -> None:
+    """阻塞到浮层彻底关闭（含退场动画），避免下一个浮层抢不到焦点。"""
+    from PySide6.QtCore import QEventLoop
+
+    loop = QEventLoop()
+    dialog.closed.connect(loop.quit)
+    dialog.open_dialog()
+    loop.exec()
+
+
 def _ask_choice(
     *,
     title: str,
-    message: str,
-    detail: str,
+    plugin_id: str,
+    packages: list[str],
+    index_url: str,
+    command: str,
     parent: Any,
     interactive: bool,
 ) -> str:
     """返回 ``auto`` / ``manual`` / ``skip``。"""
+    subject = plugin_id or "插件"
     if not interactive:
         return "skip"
     if _gui_available():
-        from PySide6.QtWidgets import QMessageBox
+        from PySide6.QtCore import Qt
+        from PySide6.QtWidgets import QLabel, QVBoxLayout, QWidget
 
-        box = QMessageBox(parent)
-        box.setWindowTitle(title)
-        box.setText(message)
-        box.setInformativeText(detail)
-        auto = box.addButton("自动安装", QMessageBox.ButtonRole.AcceptRole)
-        manual = box.addButton("手动安装", QMessageBox.ButtonRole.ActionRole)
-        box.addButton("跳过", QMessageBox.ButtonRole.RejectRole)
-        box.exec()
-        clicked = box.clickedButton()
-        if clicked is auto:
-            return "auto"
-        if clicked is manual:
-            return "manual"
-        return "skip"
+        from sllkgui.appcore import get_design_tokens
+        from sllkgui.guicore import CDialog, CHDiv
+
+        design = get_design_tokens()
+        colors = design.colors
+        dialog = CDialog(title=title, width=560, closable=True, parent=_dialog_parent(parent))
+        dialog.setAttribute(Qt.WA_DeleteOnClose, True)
+
+        summary = QLabel(f"插件 {subject} 缺少以下 Python 依赖", dialog.card())
+        summary.setWordWrap(True)
+        summary.setTextFormat(Qt.PlainText)
+        summary.setStyleSheet(f"color: {colors.text_primary}; background: transparent;")
+        dialog.add_widget(summary)
+
+        package_box = QWidget(dialog.card())
+        package_box.setAttribute(Qt.WA_StyledBackground, True)
+        package_box.setStyleSheet(
+            f"background: {colors.surface_sunken};"
+            f" border: 1px solid {colors.border_hairline};"
+            f" border-radius: {design.radius.control}px;"
+        )
+        package_layout = QVBoxLayout(package_box)
+        package_layout.setContentsMargins(14, 10, 14, 10)
+        package_layout.setSpacing(4)
+        for spec in packages:
+            row = QLabel(f"• {spec}", package_box)
+            row.setTextFormat(Qt.PlainText)
+            row.setFont(_mono_font())
+            row.setStyleSheet(f"color: {colors.text_primary}; background: transparent;")
+            package_layout.addWidget(row)
+        dialog.add_widget(package_box)
+
+        dialog.add_widget(CHDiv())
+
+        intro = QLabel(
+            "自动安装会使用 uv 把依赖安装到当前 Python 环境。\n"
+            f"镜像源：{_redact(index_url) or '默认'}",
+            dialog.card(),
+        )
+        intro.setWordWrap(True)
+        intro.setTextFormat(Qt.PlainText)
+        intro.setStyleSheet(f"color: {colors.text_muted}; background: transparent;")
+        dialog.add_widget(intro)
+
+        caption = QLabel("手动安装命令", dialog.card())
+        caption.setStyleSheet(f"color: {colors.text_muted}; background: transparent;")
+        dialog.add_widget(caption)
+        dialog.add_widget(
+            _command_block(command, dialog.card(), colors=colors, radius=design.radius.control)
+        )
+
+        choice = {"value": "skip"}
+
+        def pick(value: str) -> None:
+            choice["value"] = value
+            if value == "skip":
+                dialog.reject()
+            else:
+                dialog.accept()
+
+        auto_button = dialog.add_action_button(
+            "自动安装", lambda: pick("auto"), severity="primary", variant="solid"
+        )
+        auto_button.setDefault(True)
+        dialog.add_action_button("手动安装", lambda: pick("manual"))
+        dialog.add_action_button("跳过", lambda: pick("skip"))
+        _exec_overlay(dialog)
+        return choice["value"]
+
     if not sys.stdin.isatty():
         return "skip"
+    message = f"插件 {subject} 缺少 Python 依赖：\n" + "\n".join(f"  - {item}" for item in packages)
+    detail = (
+        "自动安装会使用 uv 把依赖安装到当前 Python 环境。\n"
+        f"镜像源：{_redact(index_url) or '默认'}\n\n"
+        f"手动安装命令：\n{command}"
+    )
     print(message)
     print(detail)
     print("[1] 自动安装  [2] 手动安装  [0] 跳过")
@@ -195,13 +309,22 @@ def _show_manual(*, title: str, command: str, parent: Any) -> None:
     text = f"请手动执行：\n\n{command}"
     if _gui_available():
         from PySide6.QtCore import Qt
-        from PySide6.QtWidgets import QMessageBox
+        from PySide6.QtWidgets import QLabel
 
-        box = QMessageBox(parent)
-        box.setWindowTitle(title)
-        box.setText(text)
-        box.setTextInteractionFlags(Qt.TextInteractionFlag.TextSelectableByMouse)
-        box.exec()
+        from sllkgui.appcore import get_design_tokens
+        from sllkgui.guicore import CDialog
+
+        design = get_design_tokens()
+        dialog = CDialog(title=title, width=520, accept_text="关闭", parent=_dialog_parent(parent))
+        dialog.setAttribute(Qt.WA_DeleteOnClose, True)
+
+        hint = QLabel("请手动执行以下命令：", dialog.card())
+        hint.setStyleSheet(f"color: {design.colors.text_muted}; background: transparent;")
+        dialog.add_widget(hint)
+        dialog.add_widget(
+            _command_block(command, dialog.card(), colors=design.colors, radius=design.radius.control)
+        )
+        _exec_overlay(dialog)
         return
     print(text)
 
@@ -428,7 +551,6 @@ def ensure_python_dependencies(
     if not missing:
         return []
     command = manual_command(missing, index_url)
-    message = f"插件 {plugin_id or '插件'} 缺少 Python 依赖：\n" + "\n".join(f"  - {item}" for item in missing)
     if not install:
         raise GalleryError(
             PYTHON_DEPENDENCY_MISSING,
@@ -439,12 +561,10 @@ def ensure_python_dependencies(
 
     choice = _ask_choice(
         title="缺少插件依赖",
-        message=message,
-        detail=(
-            "自动安装会使用 uv 把依赖安装到当前 Python 环境。\n"
-            f"镜像源：{_redact(index_url) or '默认'}\n\n"
-            f"手动安装命令：\n{command}"
-        ),
+        plugin_id=plugin_id,
+        packages=missing,
+        index_url=index_url,
+        command=command,
         parent=parent,
         interactive=interactive,
     )

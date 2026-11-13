@@ -128,7 +128,18 @@ def test_ensure_tools_non_interactive_does_not_raise(monkeypatch):
 
 def test_ask_choice_non_interactive_returns_skip(monkeypatch):
     monkeypatch.setattr(deps.sys.stdin, "isatty", lambda: False)
-    assert deps._ask_choice(title="t", message="m", detail="d", parent=None, interactive=True) == "skip"
+    assert (
+        deps._ask_choice(
+            title="t",
+            plugin_id="demo.plugin",
+            packages=["foo>=1"],
+            index_url="",
+            command="uv pip install foo",
+            parent=None,
+            interactive=True,
+        )
+        == "skip"
+    )
 
 
 def test_manual_command_contains_mirror(monkeypatch):
