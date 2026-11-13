@@ -12,6 +12,7 @@ from sllkgui.gallery.runtime import GalleryRuntime
 from sllkgui.guicore import CPageTransition
 from sllkgui.guis.windows.main_window.controller import MainWindowController
 from sllkgui.guis.windows.main_window.functions import MainFunctions
+from sllkgui.guis.windows.main_window.native_pages import NATIVE_PAGES, NativePage
 from sllkgui.guis.windows.main_window.registry import (
     ensure_registered_page,
     get_default_page_object,
@@ -119,10 +120,38 @@ class GalleryWindow(QMainWindow):
         self.ui.left_menu.clear_menus()
         self.ui.left_menu.add_menus(get_menu_items("LeftMenu"))
         target = current if self.gallery_registry.get(current) else self.runtime.default_route()
-        if target:
-            self.open_route(target)
-        elif self.gallery_registry.surface_count() == 0 and not get_default_page_object():
+        if target and self.open_route(target):
+            return
+        # 停用了最后一个插件时不存在任何 Surface：回到基座原生页面，
+        # 不能把页面栈清空后停在空白背景上。
+        if not self._open_default_native_page():
             self._show_empty_state()
+
+    def _open_default_native_page(self) -> bool:
+        for native in NATIVE_PAGES:
+            if self._open_native_page(native):
+                return True
+        return False
+
+    def _open_native_page(self, native: NativePage) -> bool:
+        if not ensure_registered_page(self, native.page_object):
+            return False
+        page = self.ui.load_pages.pages.findChild(QWidget, native.page_object)
+        if page is None:
+            return False
+        previous = self.ui.left_menu.active_button_id()
+        self.ui.left_menu.select_only_one(native.button_id)
+        MainFunctions.set_page(
+            self,
+            page,
+            menu=self.ui.left_menu,
+            button_id=native.button_id,
+            previous_button_id=previous,
+        )
+        title = str(Language.resolve_key(native.title_key, native.title_fallback))
+        self.ui.title_bar.set_title(title)
+        self._current_route = ""
+        return True
 
     def _clear_pages(self) -> None:
         """移除全部已构建页面，让重载后的插件重新构建 Surface。

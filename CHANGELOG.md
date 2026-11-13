@@ -3,9 +3,15 @@
 项目遵循[语义化版本](https://semver.org/lang/zh-CN/)：major 版本允许破坏性变更并显式列出；
 minor 与 patch 保持向后兼容。
 
-当前版本：`2.2.0`（见 `src/sllkgui/_version.py`），对应 tag `base-v2.2.0`。
+当前版本：`2.2.1`（见 `src/sllkgui/_version.py`），对应 tag `base-v2.2.1`。
 
 ---
+
+## 2.2.1（2026-11-13）
+
+- 修复停用最后一个插件后内容区空白：`reload_plugins` 在重载后若不存在任何
+  Surface，回到基座「插件管理」原生页面并选中左侧入口，不再留下空的页面栈。
+- 新增回归测试：无插件重载后必须停在 `page_native_plugin_store`。
 
 ## 2.2.0（2026-11-12）
 

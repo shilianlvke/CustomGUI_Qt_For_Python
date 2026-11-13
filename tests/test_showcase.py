@@ -122,6 +122,31 @@ def test_window_navigation_reload_and_surface_helper(tmp_path, prepared):
         _close(window)
 
 
+def test_reload_without_plugins_returns_to_plugin_store(tmp_path, prepared):
+    """停用最后一个插件后重载：页面应回到「插件管理」，不能留下空白页。"""
+    from sllkgui.window import load_run
+
+    window = load_run(
+        data_dir=tmp_path / "run-empty",
+        gallery_dir=tmp_path / "run-empty" / "gallery",
+        plugin_dirs=[],
+        allow_local=True,
+        install_missing_deps=False,
+        interactive=False,
+        check_tools=False,
+    )
+    try:
+        assert window.gallery_registry.surface_count() == 0
+        window.reload_plugins()
+        pages = window.ui.load_pages.pages
+        current = pages.currentWidget()
+        assert current is not None
+        assert current.objectName() == "page_native_plugin_store"
+        assert window.ui.left_menu.active_button_id() == "btn_native_plugin_store"
+    finally:
+        _close(window)
+
+
 def test_reload_rebuilds_surface_pages(tmp_path, prepared):
     """重载后必须重建页面：旧页面持有旧插件运行时，直接复用会让新运行时永不启动。"""
     from PySide6.QtWidgets import QWidget
