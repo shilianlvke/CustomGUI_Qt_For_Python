@@ -3,9 +3,22 @@
 项目遵循[语义化版本](https://semver.org/lang/zh-CN/)：major 版本允许破坏性变更并显式列出；
 minor 与 patch 保持向后兼容。
 
-当前版本：`2.2.1`（见 `src/sllkgui/_version.py`），对应 tag `base-v2.2.1`。
+当前版本：`2.2.2`（见 `src/sllkgui/_version.py`），对应 tag `base-v2.2.2`。
 
 ---
+
+## 2.2.2（2026-11-13）
+
+托盘态内存优化：
+
+- 关闭到托盘时释放三项纯 UI 缓存：背景图解码/缩放缓存、全局
+  `QPixmapCache`、页面切换中的过场快照；重新显示时按需重建，插件运行时
+  与桌面小部件不受影响。
+- `CWindow` 新增 `release_background_pixmap()` / `restore_background_pixmap()`：
+  4K 背景原图解码约 30MB + 窗口尺寸缓存约 5MB，隐藏期间不再常驻。
+- 实测（1440×900 + 4K 背景 + py-rm）：关闭到托盘后工作集下降约 40MB，
+  重新显示后恢复；无背景时收益约 5–10MB（缓存与过场快照）。
+- 新增回归测试：隐藏后背景缓存释放、重新显示后按路径恢复。
 
 ## 2.2.1（2026-11-13）
 

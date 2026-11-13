@@ -56,6 +56,8 @@ class CWindow(QFrame):
         self._background_pixmap = QPixmap()
         self._background_cache: QPixmap | None = None
         self._background_cache_key: tuple | None = None
+        #: 托盘隐藏时释放过解码结果，重新显示需要按路径重载
+        self._background_released = False
         self.apply_style()
         self.set_shadow_enabled(AppSettings.custom_title_bar and AppSettings.window_shadow)
 
@@ -152,12 +154,39 @@ class CWindow(QFrame):
         self._background_pixmap = pixmap
         self._background_cache = None
         self._background_cache_key = None
+        self._background_released = False
         self.setProperty("hasBackgroundImage", valid)
         set_background_image_active(valid)
         # 各层表面需要重新计算透明度，不能只 repolish 当前控件。
         self.apply_style()
         self.update()
         return valid
+
+    def release_background_pixmap(self) -> None:
+        """释放背景图的解码与缩放缓存（托盘隐藏时调用）。
+
+        原图按 4K 解码可达 30MB 以上，缩放缓存又是窗口尺寸的一份拷贝；
+        隐藏期间两者都不需要，路径保留，重新显示时按需重载。
+        """
+        if self._background_pixmap.isNull() and self._background_cache is None:
+            return
+        self._background_pixmap = QPixmap()
+        self._background_cache = None
+        self._background_cache_key = None
+        self._background_released = True
+
+    def restore_background_pixmap(self) -> None:
+        """从原路径重载背景图（窗口重新显示时调用）。"""
+        if not self._background_released:
+            return
+        self._background_released = False
+        if not self._background_image:
+            return
+        pixmap = QPixmap(self._background_image)
+        if pixmap.isNull():
+            return
+        self._background_pixmap = pixmap
+        self.update()
 
     def set_background_fit(self, fit: str) -> str:
         """切换适应模式并立即重绘；未知模式回落到 fill。"""

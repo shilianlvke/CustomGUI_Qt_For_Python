@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
+from PySide6.QtGui import QPixmapCache
 from PySide6.QtWidgets import QLabel, QMainWindow, QVBoxLayout, QWidget
 
 from sllkgui.appcore import Language, Logger, record_event
@@ -226,6 +227,7 @@ class GalleryWindow(QMainWindow):
         # 插件启用托盘时，关闭窗口只隐藏，保留桌面小部件与运行时
         if not self._force_close and self.runtime.tray.is_active():
             event.ignore()
+            self._trim_ui_caches()
             self.hide()
             record_event("window.hidden_to_tray", category="gallery", payload={"mode": self.runtime.mode})
             return
@@ -242,6 +244,27 @@ class GalleryWindow(QMainWindow):
         except Exception as exc:  # noqa: BLE001 - 关闭失败不应阻塞退出
             Logger.debug(f"Gallery 关闭时清理失败: {exc}")
         super().closeEvent(event)
+
+    def showEvent(self, event) -> None:  # noqa: N802 - 覆写 Qt 命名
+        # 托盘隐藏期间释放过背景图解码缓存，显示前按路径重载
+        restore = getattr(self.ui.window, "restore_background_pixmap", None)
+        if callable(restore):
+            restore()
+        super().showEvent(event)
+
+    def _trim_ui_caches(self) -> None:
+        """托盘隐藏时释放纯 UI 缓存，重新显示会自动重建。
+
+        - 过场快照：切换页面中途隐藏时，两张全窗口 pixmap 会一直常驻；
+        - QPixmapCache：图标/皮肤缩略图的全局缓存（上限 10MB）；
+        - 背景图：4K 原图解码约 30MB，窗口尺寸缩放缓存再占一份。
+        插件运行时与桌面小部件不受影响，页面控件保留以便瞬时恢复。
+        """
+        CPageTransition.cancel(self.ui.load_pages.pages)
+        QPixmapCache.clear()
+        release = getattr(self.ui.window, "release_background_pixmap", None)
+        if callable(release):
+            release()
 
 
 def _run_window(runtime: GalleryRuntime, route: str) -> GalleryWindow:

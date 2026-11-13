@@ -95,6 +95,8 @@ sllkgui scaffold <dir> [--id ID] [--name NAME] [--source]
   `notifications`），禁止自建 `QSystemTrayIcon`、禁止替换图标或提示。
 - 托盘可见时关闭主窗口只隐藏，插件与桌面小部件继续运行；托盘菜单的
   「退出」才会执行 `shutdown()`；插件重载不销毁托盘。
+- 隐藏到托盘时基座会释放背景图解码缓存、`QPixmapCache` 与过场快照
+  （4K 背景约省 30MB），重新显示时按需重建。
 - 完整协议与一致性校验点见 [TRAY.md](TRAY.md)。
 
 ## 5. 安全

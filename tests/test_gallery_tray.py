@@ -150,3 +150,32 @@ def test_window_close_hides_to_tray_when_active(tmp_path: Path, prepared):
     window._force_close = True
     window.close()
     assert window.runtime.records == []
+
+
+def test_close_to_tray_releases_ui_caches(tmp_path: Path, prepared):
+    """托盘隐藏期间释放背景图解码缓存，重新显示时按路径恢复。"""
+    from PySide6.QtCore import Qt
+    from PySide6.QtGui import QImage
+
+    from sllkgui.window import load_gallery
+
+    window = load_gallery(data_dir=tmp_path / "gallery-trim")
+    surface = window.ui.window
+    image = QImage(320, 200, QImage.Format.Format_RGB32)
+    image.fill(Qt.GlobalColor.darkCyan)
+    wallpaper = tmp_path / "wallpaper.jpg"
+    assert image.save(str(wallpaper), "JPG")
+    assert surface.set_background_image(str(wallpaper), "fill")
+    assert not surface._background_pixmap.isNull()
+
+    window.runtime.tray.is_active = lambda: True  # type: ignore[method-assign]
+    window.show()
+    window.close()
+    assert window.isVisible() is False
+    assert surface._background_pixmap.isNull()
+
+    window.show()
+    assert not surface._background_pixmap.isNull()
+
+    window._force_close = True
+    window.close()
