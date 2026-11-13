@@ -76,3 +76,24 @@ def test_global_language_singleton_still_works():
         assert Language.current() == "zh_cn"
     finally:
         Language.apply(original)
+
+
+def test_resolve_flat_surface_title_for_dotted_plugin_id(handler):
+    """插件菜单键：扁平标题键 + 反向域名插件 id 应按 4 种语言解析。"""
+    titles = {"zh_cn": "小部件", "zh_tw": "小工具", "en_us": "Widgets", "ja_jp": "ウィジェット"}
+    handler.register_app_provider(
+        lambda lang: {"com.example.hello": {"surface.home.title": titles.get(lang, titles["en_us"])}}
+    )
+
+    for language in ("zh_cn", "zh_tw", "en_us", "ja_jp"):
+        handler.apply(language)
+        assert handler.resolve("app.com.example.hello.surface.home.title", "MISS") == titles[language]
+        key = "language.app.com.example.hello.surface.home.title"
+        assert handler.resolve_key(key, "MISS") == titles[language]
+
+
+def test_resolve_nested_app_text_still_works(handler):
+    """嵌套命名空间（不带点）的原有解析行为不能回归。"""
+    handler.register_app_provider(lambda lang: {"example": {"page": {"title": "标题"}}})
+    handler.apply("zh_cn")
+    assert handler.resolve("app.example.page.title") == "标题"

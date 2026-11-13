@@ -23,7 +23,7 @@ from collections.abc import Callable
 from dataclasses import dataclass, field
 from typing import Any
 
-from ..config.mapping import Attrs, to_attrs
+from ..config.mapping import to_attrs
 from .logger_module import Logger
 from .telemetry_module import record_event
 
@@ -160,17 +160,40 @@ class LanguageHandler:
         self.update(new_str)
 
     def resolve(self, path: str, default: Any = None) -> Any:
-        """按点号路径读取嵌套文本，如 ``"app.p2ptest_home.app_text"``。"""
+        """按点号路径读取嵌套文本，如 ``"app.p2ptest_home.app_text"``。
+
+        每层先尝试「最长前缀整段命中」，未命中再按单段向下读取。这样既能
+        读到插件语言的扁平键（``surface.home.title``），也能处理本身带点的
+        命名空间（插件 id 是反向域名，``app.com.example.plugin...``）。
+        """
         value: Any = self
-        for part in path.split("."):
+        parts = path.split(".")
+        index = 0
+        while index < len(parts):
+            matched = False
+            for end in range(len(parts), index, -1):
+                key = ".".join(parts[index:end])
+                if isinstance(value, dict):
+                    if key not in value:
+                        continue
+                    value = value[key]
+                elif hasattr(value, key):
+                    value = getattr(value, key)
+                else:
+                    continue
+                index = end
+                matched = True
+                break
+            if matched:
+                continue
+            part = parts[index]
             if isinstance(value, dict) and part in value:
-                value = value[part]
-            elif isinstance(value, Attrs) and part in value:
                 value = value[part]
             elif hasattr(value, part):
                 value = getattr(value, part)
             else:
                 return default
+            index += 1
         return value
 
     def resolve_key(self, key: str, default: Any = None) -> Any:
