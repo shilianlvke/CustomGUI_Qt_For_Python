@@ -81,15 +81,16 @@ flowchart TB
 
 ## 3. 快速开始（推荐：使用启动器）
 
-### 3.1 两个启动器文件
+### 3.1 从发行版仓库获取启动器
 
-启动器以独立文件分发，不在 Python 包内；本仓库只包含 Python 源码。
-当前工作区中的实际路径：
+启动器以独立文件分发，不在 Python 包内；本仓库只包含基座源码、资源与文档，
+不包含启动器二进制。请从项目的**发行版仓库**获取 `SllkGuiLauncher.bat` 或
+`SllkGuiLauncher.exe`（具体下载地址以发行版仓库页面为准）。
 
-| 文件 | 实际路径 | 说明 |
+| 文件 | 版本形态 | 说明 |
 | --- | --- | --- |
-| `SllkGuiLauncher.bat` | `d:\PyPRG\PRG_Base_SllkGui\SllkGuiLauncher.bat` | **明文版**。内容是可直接查看、搜索和修改的批处理 + PowerShell 脚本；适合审计、二次修改和排查问题 |
-| `SllkGuiLauncher.exe` | `d:\PyPRG\PRG_Base_SllkGui\SllkGuiLauncher.exe` | **压缩版**。把同一套启动逻辑压缩内嵌到单个 exe 中，体积更小；适合日常分发和双击使用 |
+| `SllkGuiLauncher.bat` | **明文版** | 内容是可直接查看、搜索和修改的批处理 + PowerShell 脚本；适合审计、二次修改和排查问题 |
+| `SllkGuiLauncher.exe` | **压缩版** | 把同一套启动逻辑压缩内嵌到单个 exe 中，体积更小；适合日常分发和双击使用 |
 
 两者的功能、页面、初始化流程和运行目录一致：
 
@@ -101,13 +102,13 @@ flowchart TB
 > `SllkGuiLauncher.exe` 未做代码签名，Windows SmartScreen 可能提示「未知发布者」。
 > 介意时可以直接使用明文 `SllkGuiLauncher.bat`，或先打开 bat 查看内容。
 
-当前工作区的实际布局：
+**放置位置**：把启动器放在与 `SllkGui` 目录**同级**的父目录中，例如：
 
 ```text
-d:\PyPRG\PRG_Base_SllkGui\
+<发行版目录>\
 ├─ SllkGuiLauncher.bat      # 明文启动器
 ├─ SllkGuiLauncher.exe      # 压缩启动器（二选一）
-├─ runtime\                 # 首次运行自动创建，不属于本仓库
+├─ runtime\                 # 首次运行自动创建，不属于源码仓库
 │  ├─ base\                 # 自动克隆的基座源码
 │  ├─ tools\                # 便携版 uv / git
 │  ├─ data\                 # 基座数据目录（配置、插件、日志）
@@ -115,14 +116,14 @@ d:\PyPRG\PRG_Base_SllkGui\
 │  ├─ cache\                # 下载缓存
 │  ├─ config.json           # 镜像源、模式等设置
 │  └─ base-ref.json         # 当前基座版本记录
-└─ SllkGui\                 # 本仓库（Python 源码）
+└─ SllkGui\                 # 本仓库（从源码仓库克隆）
 ```
 
 > 启动器**不会复用**旁边的 `SllkGui\` 源码目录，而是独立维护 `runtime\base\`。
 > 两者互不影响：你可以一边用启动器运行正式版，一边在本仓库里改源码。
 
 启动器也可以放在任意可写目录。若所在目录不可写，运行目录会自动回退到
-`%LOCALAPPDATA%\SllkGuiLauncher`。
+当前用户的本地应用数据目录。
 
 ### 3.2 首次初始化会做什么
 
@@ -454,13 +455,13 @@ uv sync --extra dev
 覆盖优先级：**显式 `configure(data_dir=...)` / `--data-dir` > 环境变量 > 默认值**。
 
 ```powershell
-uv run sllkgui run --data-dir D:\SllkGuiData
+uv run sllkgui run --data-dir .\mydata
 ```
 
 也可以设置环境变量：
 
 ```powershell
-$env:SLLKGUI_DATA_DIR = "D:\SllkGuiData"
+$env:SLLKGUI_DATA_DIR = ".\mydata"
 uv run sllkgui run
 ```
 
