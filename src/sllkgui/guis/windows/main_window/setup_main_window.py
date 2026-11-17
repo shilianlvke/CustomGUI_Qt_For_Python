@@ -150,7 +150,7 @@ class SetupMainWindow:
         if isinstance(language, str) and language in LANGUAGE_OPTIONS and language != Language.current():
             Language.apply(language)
 
-        size = state.get("startup_size")
+        size = state.get("startup_size") if state.get("remember_window_size", True) else None
         if not (isinstance(size, (list, tuple)) and len(size) == 2):
             # user.yaml 没记录过尺寸时回落到 window.yaml 的 startup_size
             size = AppSettings.startup_size

@@ -1,4 +1,4 @@
-from PySide6.QtCore import QEvent, QObject, QTimer
+from PySide6.QtCore import QEvent, QObject, Qt, QTimer
 from PySide6.QtWidgets import QPushButton, QWidget
 
 from sllkgui.appcore import (
@@ -12,7 +12,15 @@ from sllkgui.appcore import (
     record_event,
     save_user_settings,
 )
-from sllkgui.guicore import CSettingsDrawer, Styles, acrylic_active, apply_acrylic
+from sllkgui.guicore import (
+    CSettingsDrawer,
+    CSettingsWindow,
+    Styles,
+    acrylic_active,
+    apply_acrylic,
+    set_acrylic_transparency,
+    set_glass_strength,
+)
 
 from .functions import MainFunctions
 from .registry import ensure_registered_page, get_page_routes
@@ -45,6 +53,10 @@ class _WindowStateTracker(QObject):
                 max(size.width(), minimum.width()),
                 max(size.height(), minimum.height()),
             ]
+        state = load_user_settings()
+        if state.get("remember_window_size", True) is False:
+            # 用户关闭了「记住窗口尺寸」：不写 startup_size，下次用配置文件里的值
+            updates.pop("startup_size", None)
         config = getattr(getattr(window, "ui", None), "settings_drawer", None)
         transparency = getattr(config, "transparency", None)
         strength = getattr(config, "appearance_strength", None)
@@ -118,6 +130,10 @@ class SettingsController:
         self._record_event = event_recorder
         #: 设置抽屉惰性创建回调（由 MainWindowController 提供）
         self._config_provider = config_provider
+        #: 独立设置窗口（打开时创建，关闭即销毁；下次打开重新读盘）
+        self._settings_window: CSettingsWindow | None = None
+        #: 实时预览主题时不落盘，保存由设置会话统一负责
+        self._previewing_theme = False
         # 主题变更 -> 重建全局样式并应用（弱引用订阅）
         self._theme_manager.subscribe(self._apply_styles)
         config = self._config(create=False)
@@ -151,6 +167,113 @@ class SettingsController:
             except Exception as exc:
                 self._logger.warning(f"自定义主题切换失败，回退到基座主题循环: {exc}")
         self._theme_manager.cycle()
+
+    # ------------------------------------------------------------------
+    # 独立设置窗口
+    # ------------------------------------------------------------------
+    def open_settings_window(self) -> bool:
+        """打开独立设置窗口；已打开时聚焦到现有实例。"""
+        if self._settings_window is not None:
+            self._settings_window.open_settings()
+            return True
+        window = CSettingsWindow(self._window, host=self._window)
+        window.setAttribute(Qt.WidgetAttribute.WA_DeleteOnClose, True)
+        window.previewChanged.connect(self._preview_setting)
+        window.settingsSaved.connect(self._apply_saved_settings)
+        window.closed.connect(self._on_settings_window_closed)
+        window.destroyed.connect(self._forget_settings_window)
+        self._settings_window = window
+        window.open_settings()
+        self._sync_settings_button(True)
+        self._record_event("ui.settings_window_open", category="ui", payload={})
+        return True
+
+    def close_settings_window(self) -> None:
+        window = self._settings_window
+        if window is not None:
+            window.close()
+
+    def _on_settings_window_closed(self) -> None:
+        self._settings_window = None
+        self._sync_settings_button(False)
+        self._record_event("ui.settings_window_close", category="ui", payload={})
+
+    def _forget_settings_window(self, *_args) -> None:
+        self._settings_window = None
+
+    def _preview_setting(self, key: str, value) -> None:
+        """设置窗口的实时预览：只改运行期观感，不写用户配置。"""
+        if key == "core.appearance.theme":
+            self._apply_theme_preview(str(value))
+        elif key == "core.appearance.transparency":
+            set_acrylic_transparency(int(value))
+            self.refresh_acrylic()
+            if self._settings_window is not None:
+                apply_acrylic(self._settings_window)
+        elif key == "core.appearance.glass_strength":
+            set_glass_strength(int(value))
+            self.refresh_styles()
+        elif key in ("core.appearance.background_image", "core.appearance.background_fit"):
+            self._apply_background_preview(key, value)
+
+    def _apply_theme_preview(self, name: str) -> None:
+        self._previewing_theme = True
+        try:
+            self._theme_manager.apply(name)
+        finally:
+            self._previewing_theme = False
+
+    def _apply_background_preview(self, key: str, value) -> None:
+        window = self._settings_window
+        if window is None:
+            return
+        session = window.session()
+        path = str(value) if key.endswith("background_image") else str(session.value("core.appearance.background_image"))
+        fit = str(value) if key.endswith("background_fit") else str(session.value("core.appearance.background_fit"))
+        self._apply_background(path, fit)
+
+    def _apply_saved_settings(self, changes: dict) -> None:
+        """保存成功后应用非预览类设置（语言 / 布局 / 窗口记忆）。"""
+        if "core.appearance.theme" in changes:
+            self._previewing_theme = True
+            try:
+                self._theme_manager.apply(str(changes["core.appearance.theme"]))
+            finally:
+                self._previewing_theme = False
+        if "core.appearance.transparency" in changes:
+            set_acrylic_transparency(int(changes["core.appearance.transparency"]))
+            self.refresh_acrylic()
+        if "core.appearance.glass_strength" in changes:
+            set_glass_strength(int(changes["core.appearance.glass_strength"]))
+            self.refresh_styles()
+        if "core.appearance.background_image" in changes or "core.appearance.background_fit" in changes:
+            window = self._settings_window
+            session = window.session() if window is not None else None
+            path = str(
+                changes.get(
+                    "core.appearance.background_image",
+                    session.value("core.appearance.background_image") if session is not None else "",
+                )
+            )
+            fit = str(
+                changes.get(
+                    "core.appearance.background_fit",
+                    session.value("core.appearance.background_fit") if session is not None else "fill",
+                )
+            )
+            self._apply_background(path, fit)
+        if "core.interface.menu_mode" in changes:
+            self._apply_menu_mode(str(changes["core.interface.menu_mode"]))
+        if "core.interface.drawer_mode" in changes:
+            self._apply_drawer_mode(str(changes["core.interface.drawer_mode"]))
+        if "core.interface.language" in changes:
+            from sllkgui.guis.language_service import apply_language
+
+            apply_language(str(changes["core.interface.language"]), self._window)
+            # 语言重建后关闭窗口，避免旧文案与新界面并存
+            self.close_settings_window()
+            return
+        self._sync_settings_button(self._settings_window is not None)
 
     def toggle_settings_drawer(self) -> bool:
         """打开/收起右侧设置抽屉。
@@ -255,7 +378,9 @@ class SettingsController:
 
     def _apply_styles(self):
         self.refresh_styles()
-        save_user_settings(theme_name=self._theme_manager.current())
+        # 设置窗口里的主题预览不落盘：用户点「保存」时才由会话统一写入
+        if not self._previewing_theme:
+            save_user_settings(theme_name=self._theme_manager.current())
 
     def detach(self) -> None:
         """窗口关闭时退订主题变更，避免已销毁窗口继续响应全局主题切换。"""
@@ -549,16 +674,28 @@ class MainWindowController:
         return bool(toggle())
 
     def _handle_settings_button(self):
-        """标题栏设置按钮：打开/收起右侧设置抽屉。
+        """标题栏设置按钮：优先打开独立设置窗口。
 
-        兼容只注入了旧 ``cycle_theme`` 的测试桩/自定义控制器；真实控制器
-        始终具备 ``toggle_settings_drawer``。
+        兼容旧宿主 / 测试桩：没有 ``open_settings_window`` 时回落到抽屉，
+        再没有则回落到旧的主题循环。
         """
+        opener = getattr(self.settings_controller, "open_settings_window", None)
+        if callable(opener):
+            opener()
+            return
         toggle = getattr(self.settings_controller, "toggle_settings_drawer", None)
         if callable(toggle):
             toggle()
-        else:
-            self.settings_controller.cycle_theme()
+            return
+        self.settings_controller.cycle_theme()
+
+    def open_settings_window(self) -> bool:
+        """内置快捷键入口：打开独立设置窗口。"""
+        opener = getattr(self.settings_controller, "open_settings_window", None)
+        if not callable(opener):
+            toggle = getattr(self.settings_controller, "toggle_settings_drawer", None)
+            return bool(toggle()) if callable(toggle) else False
+        return bool(opener())
 
     def _handle_top_settings_button(self, btn):
         """顶栏设置按钮开合右列时，按抽屉的实际状态同步设置按钮。"""

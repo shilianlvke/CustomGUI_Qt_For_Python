@@ -63,6 +63,7 @@ from .display import (
 from .display import (
     CText as CText,
 )
+from .display import CThemeCard as CThemeCard
 from .div import CHDiv as CHDiv
 from .div import CVDiv as CVDiv
 from .feedback import CMessage as CMessage
@@ -169,6 +170,7 @@ from .panels import (
 from .panels import (
     CBreadcrumb as CBreadcrumb,
 )
+from .panels import CEditActionBar as CEditActionBar
 from .panels import (
     CFieldset as CFieldset,
 )
@@ -178,9 +180,15 @@ from .panels import (
 from .panels import (
     CFormGrid as CFormGrid,
 )
+from .panels import CInfoRow as CInfoRow
 from .panels import (
     CPanel as CPanel,
 )
+from .panels import CSettingGroup as CSettingGroup
+from .panels import CSettingRow as CSettingRow
+from .panels import CSideNav as CSideNav
+from .panels import CSideNavGroup as CSideNavGroup
+from .panels import CSideNavItem as CSideNavItem
 from .panels import (
     CSplitter as CSplitter,
 )
@@ -197,6 +205,7 @@ from .panels import (
     CToolbar as CToolbar,
 )
 from .picture import CPixmap as CPixmap
+from .picture import CThumbnail as CThumbnail
 from .scroll import CScrollArea as CScrollArea
 from .scroll import CScrollTop as CScrollTop
 from .tooltip import CToolTip as CToolTip
@@ -234,6 +243,7 @@ __all__ = [
     "CCard",
     "CShowCard",
     "CPixmap",
+    "CThumbnail",
     "CHDiv",
     "CVDiv",
     "CInputText",
@@ -267,6 +277,7 @@ __all__ = [
     "CPageTransition",
     "CTag",
     "CText",
+    "CThemeCard",
     "CBadge",
     "CChip",
     "CAvatar",
@@ -292,6 +303,13 @@ __all__ = [
     "CFormField",
     "CBreadcrumb",
     "CSteps",
+    "CSideNav",
+    "CSideNavGroup",
+    "CSideNavItem",
+    "CSettingGroup",
+    "CSettingRow",
+    "CInfoRow",
+    "CEditActionBar",
     "CImage",
     "CCarousel",
     "CGalleria",

@@ -7,6 +7,7 @@ from .progress import CProgressBar as CProgressBar
 from .skeleton import CSkeleton as CSkeleton
 from .tag import CTag as CTag
 from .text import CText as CText
+from .theme_card import CThemeCard as CThemeCard
 
 __all__ = [
     "CTag",
@@ -18,4 +19,5 @@ __all__ = [
     "CProgressBar",
     "CDivider",
     "CText",
+    "CThemeCard",
 ]
