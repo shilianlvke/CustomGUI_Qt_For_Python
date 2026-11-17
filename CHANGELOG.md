@@ -3,7 +3,25 @@
 项目遵循[语义化版本](https://semver.org/lang/zh-CN/)：major 版本允许破坏性变更并显式列出；
 minor 与 patch 保持向后兼容。
 
-当前版本：`2.6.1`（见 `src/sllkgui/_version.py`），对应 tag `base-v2.6.1`。
+当前版本：`2.7.0`（见 `src/sllkgui/_version.py`），对应 tag `base-v2.7.0`。
+
+---
+
+## 2.7.0（2026-11-17）
+
+统一设置支持「非值行」，插件可以把操作入口直接放进设置页：
+
+- **动作行**：`SettingsSection(actions=(Setting.action(...),))`，渲染为标题 +
+  说明 + 右侧按钮；命令由设置页执行并隔离异常，不参与保存 / 恢复默认。
+- **信息行**：`SettingsSection(info=(Setting.info(...),))`，值在页面构建与
+  `sync_from_session()` 时由插件运行时求值；求值失败显示占位符，不影响整页。
+- **页面刷新**：`GallerySettings.refresh()` / `ctx.settings.refresh()` 经新的
+  页面变更总线通知设置窗口，按命名空间重建对应插件页；保留当前页、滚动位置
+  与未保存草稿，窗口未打开时为空操作。
+- `SettingsPage` 的重复键校验覆盖值项 / 信息行 / 动作行三类；`specs()` 仍只
+  返回值项，新增 `actions()` / `infos()`。
+- 组件库新增 `CActionRow`；`CInfoRow` 增加 `value()` 读取当前文本。
+- 文档：`docs/SETTINGS.md`、`docs/PLUGIN.md` 补充声明与刷新协议。
 
 ---
 
