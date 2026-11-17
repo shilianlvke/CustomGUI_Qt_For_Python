@@ -119,19 +119,14 @@
   /* ------------------------------ 设置窗口 ------------------------------ */
   .settings-window {
     position: relative;
-    width: min(1080px, 94vw);
-    height: min(730px, 88vh);
+    width: min(1152px, 94vw);
+    height: min(720px, 88vh);
     display: flex;
     flex-direction: column;
     border-radius: var(--radius-window);
-    border: 1px solid rgba(223, 230, 223, 0.14);
-    background: linear-gradient(180deg, rgba(28, 34, 37, 0.86), rgba(18, 22, 25, 0.88));
+    background: linear-gradient(180deg, rgba(28, 34, 37, 0.88), rgba(18, 22, 25, 0.90));
     backdrop-filter: blur(34px) saturate(135%);
     -webkit-backdrop-filter: blur(34px) saturate(135%);
-    box-shadow:
-      0 40px 110px rgba(0, 0, 0, 0.62),
-      0 12px 30px rgba(0, 0, 0, 0.38),
-      inset 0 1px 0 rgba(255, 255, 255, 0.06);
     overflow: hidden;
   }
   /* 极轻噪点，避免大面积玻璃看起来“塑料” */
@@ -979,12 +974,6 @@
         <span class="titlebar-sub">基座与插件配置，统一位置、统一保存</span>
       </div>
       <div class="window-actions">
-        <button class="win-btn" title="最小化" aria-label="最小化">
-          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14"/></svg>
-        </button>
-        <button class="win-btn" title="最大化" aria-label="最大化">
-          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="4" width="16" height="16" rx="1.5"/></svg>
-        </button>
         <button class="win-btn close" title="关闭" aria-label="关闭" onclick="tryClose()">
           <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 6l12 12M18 6 6 18"/></svg>
         </button>

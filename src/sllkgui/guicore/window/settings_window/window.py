@@ -14,12 +14,10 @@
 
 from __future__ import annotations
 
-from PySide6.QtCore import QPoint, Qt, QTimer, Signal
+from PySide6.QtCore import QEvent, QPoint, QRectF, Qt, QTimer, Signal
 from PySide6.QtGui import QColor, QFont, QPainter, QPainterPath, QPen
 from PySide6.QtWidgets import (
     QDialog,
-    QFrame,
-    QGraphicsDropShadowEffect,
     QHBoxLayout,
     QLabel,
     QSizePolicy,
@@ -40,14 +38,13 @@ from sllkgui.appcore import (
 )
 
 from ...acrylic import apply_acrylic
-from ...custom_ui.button.button import CButton
 from ...custom_ui.close_button import CCloseButton
 from ...custom_ui.line_edit.input_text import CInputText
 from ...custom_ui.overlay.confirm import CConfirmDialog
 from ...custom_ui.panels.settings import CEditActionBar
 from ...custom_ui.panels.side_nav import CSideNav, CSideNavGroup, CSideNavItem
 from ...custom_ui.scroll.scroll_area import CScrollArea
-from ...styles import overlay_border_color, overlay_surface_color, qss_color
+from ...styles import overlay_surface_color, qss_color
 from .pages import AboutPage, SchemaPage, ShortcutsPage, build_plugin_empty_page
 
 _PAGE_ABOUT = "__about__"
@@ -57,25 +54,8 @@ _PLUGIN_EMPTY_PREFIX = "__plugin_empty__:"
 _THEME_NAMES = {"default": "Grove"}
 
 
-class _WindowCard(QFrame):
-    """窗口卡片：圆角玻璃底 + 发丝描边（自绘，随主题重绘）。"""
-
-    def paintEvent(self, event):  # noqa: N802 - 覆写 Qt 命名
-        tokens = get_design_tokens()
-        painter = QPainter(self)
-        painter.setRenderHint(QPainter.Antialiasing)
-        rect = self.rect().adjusted(1, 1, -1, -1)
-        path = QPainterPath()
-        path.addRoundedRect(rect, tokens.radius.window, tokens.radius.window)
-        painter.fillPath(path, overlay_surface_color())
-        painter.setBrush(Qt.NoBrush)
-        painter.setPen(QPen(overlay_border_color(), 1))
-        painter.drawPath(path)
-        painter.end()
-
-
 class _TitleBar(QWidget):
-    """标题栏：应用标识、标题、副标题、最小化与关闭，可拖动窗口。"""
+    """标题栏：应用标识、标题、副标题与关闭按钮，可拖动窗口。"""
 
     def __init__(self, window: CSettingsWindow):
         super().__init__(window)
@@ -108,18 +88,6 @@ class _TitleBar(QWidget):
         layout.addWidget(self.title, 0, Qt.AlignVCenter)
         layout.addWidget(self.subtitle, 0, Qt.AlignVCenter)
         layout.addStretch(1)
-
-        self.minimize = CButton(
-            "",
-            icon="icon_minimize",
-            variant="text",
-            size="sm",
-            fixed_width=32,
-            icon_size=12,
-            parent=self,
-        )
-        self.minimize.clicked.connect(window.showMinimized)
-        layout.addWidget(self.minimize, 0, Qt.AlignVCenter)
 
         self.close_button = CCloseButton(QColor(get_design_tokens().colors.text_primary), size=28, radius=6, parent=self)
         self.close_button.clicked.connect(window.close)
@@ -189,8 +157,8 @@ class CSettingsWindow(QDialog):
         self.setWindowFlags(Qt.Dialog | Qt.FramelessWindowHint | Qt.NoDropShadowWindowHint)
         self.setAttribute(Qt.WA_TranslucentBackground)
         self.setModal(False)
-        self.setMinimumSize(920, 620)
-        self.resize(1064, 720)
+        self.setMinimumSize(640, 480)
+        self.resize(960, 600)
 
         ensure_core_pages(session.registry if session is not None else None)
         self._session = session if session is not None else SettingsSession()
@@ -214,30 +182,21 @@ class CSettingsWindow(QDialog):
     # 构建
     # ------------------------------------------------------------------
     def _build_ui(self) -> None:
-        outer = QVBoxLayout(self)
-        outer.setContentsMargins(20, 20, 20, 20)
-        self._card = _WindowCard(self)
-        self._card.setObjectName("CSettingsWindow_Card")
-        shadow = QGraphicsDropShadowEffect(self._card)
-        shadow.setBlurRadius(32)
-        shadow.setColor(QColor(0, 0, 0, 130))
-        shadow.setOffset(0, 12)
-        self._card.setGraphicsEffect(shadow)
-        outer.addWidget(self._card)
-
-        card_layout = QVBoxLayout(self._card)
-        card_layout.setContentsMargins(0, 0, 0, 0)
-        card_layout.setSpacing(0)
+        # 窗口本身就是唯一表面：不再套内层卡片，避免边框 / 背景 / 阴影 / 外边距
+        # 形成「窗口里还有一层面板」的包裹感。
+        root_layout = QVBoxLayout(self)
+        root_layout.setContentsMargins(0, 0, 0, 0)
+        root_layout.setSpacing(0)
 
         self._title_bar = _TitleBar(self)
-        card_layout.addWidget(self._title_bar)
+        root_layout.addWidget(self._title_bar)
 
-        body = QWidget(self._card)
+        body = QWidget(self)
         body.setStyleSheet("background: transparent;")
         body_layout = QHBoxLayout(body)
         body_layout.setContentsMargins(0, 0, 0, 0)
         body_layout.setSpacing(0)
-        card_layout.addWidget(body, 1)
+        root_layout.addWidget(body, 1)
 
         # 左侧导航
         nav_column = QWidget(body)
@@ -725,7 +684,6 @@ class CSettingsWindow(QDialog):
             update = getattr(view, "update_style", None)
             if callable(update):
                 update()
-        self._card.update()
         self.update()
 
     def update_theme_label(self) -> None:
@@ -742,18 +700,38 @@ class CSettingsWindow(QDialog):
         self.theme_label.setText(f"{label} · {mode}")
 
     def paintEvent(self, event):  # noqa: N802 - 覆写 Qt 命名
-        # 卡片自身绘制；窗口背景保持透明，让亚克力模糊透出
-        return
+        """绘制窗口自身表面；不再有内层卡片或描边。"""
+        tokens = get_design_tokens()
+        painter = QPainter(self)
+        painter.setRenderHint(QPainter.Antialiasing)
+        path = QPainterPath()
+        path.addRoundedRect(QRectF(self.rect()), tokens.radius.window, tokens.radius.window)
+        painter.fillPath(path, overlay_surface_color())
+        painter.end()
 
     # ------------------------------------------------------------------
     # 展示 / 关闭
     # ------------------------------------------------------------------
     def open_settings(self) -> None:
-        self._center_on_parent()
+        self._fit_to_parent()
         self.show()
         self.raise_()
         self.activateWindow()
         self.search.setFocus(Qt.OtherFocusReason)
+
+    def _fit_to_parent(self) -> None:
+        """窗口宽高取主界面的 80%，并居中于主界面。"""
+        parent = self.parentWidget()
+        if parent is not None and parent.isVisible():
+            width = max(1, int(parent.width() * 0.8))
+            height = max(1, int(parent.height() * 0.8))
+        else:
+            screen = self.screen()
+            area = screen.availableGeometry() if screen is not None else None
+            width = max(1, int(area.width() * 0.8)) if area is not None else 960
+            height = max(1, int(area.height() * 0.8)) if area is not None else 600
+        self.resize(width, height)
+        self._center_on_parent()
 
     def _center_on_parent(self) -> None:
         parent = self.parentWidget()
@@ -773,8 +751,16 @@ class CSettingsWindow(QDialog):
             )
 
     def showEvent(self, event):  # noqa: N802 - 覆写 Qt 命名
+        parent = self.parentWidget()
+        if parent is not None:
+            parent.installEventFilter(self)
         super().showEvent(event)
         apply_acrylic(self)
+
+    def eventFilter(self, obj, event):  # noqa: N802 - 覆写 Qt 命名
+        if obj is self.parentWidget() and event.type() == QEvent.Type.Resize and self.isVisible():
+            QTimer.singleShot(0, self._fit_to_parent)
+        return super().eventFilter(obj, event)
 
     def keyPressEvent(self, event):  # noqa: N802 - 覆写 Qt 命名
         if event.key() == Qt.Key.Key_Escape:
@@ -809,6 +795,9 @@ class CSettingsWindow(QDialog):
             self._confirmed_close = True
             QTimer.singleShot(0, self.close)
             return
+        parent = self.parentWidget()
+        if parent is not None:
+            parent.removeEventFilter(self)
         try:
             get_theme_manager().unsubscribe(self._on_theme_applied)
         except Exception:  # noqa: BLE001 - 退订失败不阻塞关闭

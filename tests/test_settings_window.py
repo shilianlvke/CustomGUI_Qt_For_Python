@@ -8,7 +8,8 @@ from pathlib import Path
 os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
 
 import pytest
-from PySide6.QtWidgets import QApplication
+from PySide6.QtTest import QTest
+from PySide6.QtWidgets import QApplication, QMainWindow
 
 from sllkgui.appcore import (
     AppLanguages,
@@ -149,6 +150,25 @@ def test_inline_validation_error_survives_sync(prepared):
     assert "不能大于" in row.error()
     assert window.action_bar.isVisible()
     assert not session.is_dirty()
+
+
+def test_window_size_is_eighty_percent_of_host(prepared):
+    _window, session, _core, _store = prepared
+    host = QMainWindow()
+    host.resize(1200, 800)
+    host.show()
+    QApplication.processEvents()
+    window = CSettingsWindow(host, session=SettingsSession(session.registry, session.store), host=host)
+    window.open_settings()
+    QApplication.processEvents()
+    assert (window.width(), window.height()) == (960, 640)
+
+    host.resize(1400, 900)
+    QTest.qWait(50)
+    assert (window.width(), window.height()) == (1120, 720)
+    window.close()
+    host.close()
+    host.deleteLater()
 
 
 def test_search_filters_navigation(prepared):
