@@ -83,16 +83,47 @@ apps_root()                             # -> Path
 运行时修改的外观偏好写入 `<data_root>/settings/user.yaml`（默认落在程序运行
 根目录下的 `settings/user.yaml`，可用 `configure(data_dir=...)` 或
 `SLLKGUI_DATA_DIR` 覆盖），只记录改动过的键。文件首行带
-`schema_version`（当前为 `4`）；缺失该键按 v1 读取，高于当前版本时只读取
+`schema_version`（当前为 `5`）；缺失该键按 v1 读取，高于当前版本时只读取
 已知字段并告警，**回写时保留原版本号与所有未知键、绝不降级**：
 
 | 字段 | 来源 | 写入时机 |
 | --- | --- | --- |
-| `theme_name` | 主题卡片 / 深色模式 | 主题切换后立即写入 |
-| `language` | 设置抽屉语言选择 | 语言切换完成后立即写入 |
-| `menu_mode` | 左菜单 Static / Overlay | 切换后立即写入 |
-| `drawer_mode` | 四向抽屉 Static / Overlay（外观「界面」页） | 切换后立即写入 |
-| `startup_size` | 窗口尺寸 | 正常关闭窗口时写入（最大化/最小化/全屏跳过） |
+| `theme_name` | 设置窗口「外观」主题卡片 | 点「保存」时写入 |
+| `language` | 设置窗口「界面」语言选择 | 点「保存」时写入 |
+| `menu_mode` | 左菜单 Static / Overlay | 点「保存」时写入 |
+| `drawer_mode` | 四向抽屉 Static / Overlay | 点「保存」时写入 |
+| `acrylic_transparency` / `glass_strength` | 材质滑块 | 点「保存」时写入 |
+| `background_image` / `background_fit` | 背景设置 | 点「保存」时写入 |
+| `remember_window_size` | 启动与窗口 | 点「保存」时写入 |
+| `startup_size` | 窗口尺寸 | 正常关闭且「记住窗口尺寸」开启时写入（最大化/最小化/全屏跳过） |
+
+插件配置独立存放在 `<data_root>/settings/plugins/<plugin_id>.yaml`，每个插件
+一个文件，键为 `plugin.<plugin_id>.<key>`；详见 `docs/SETTINGS.md`。
+
+### 统一设置
+
+```python
+from sllkgui.appcore import (
+    SettingsSession, SettingsPage, SettingsSection, Setting,
+    ensure_core_pages, settings_registry,
+)
+
+ensure_core_pages()                 # 幂等：注册基座三张页
+session = SettingsSession()         # 读取当前注册表 + 存储
+session.set("core.appearance.theme", "bright")
+session.save()                      # 按命名空间写入，失败保留脏值
+session.discard()                   # 放弃未保存改动
+
+# 插件侧（见 docs/SETTINGS.md）
+ctx.settings.define(SettingsPage(page_id="", title="插件设置", sections=(...)))
+ctx.settings.get("key", default)
+ctx.settings.set("key", value)
+```
+
+公开类：`SettingsSession`、`SettingsRegistry`、`SettingsStore`、`SettingSpec`
+（别名 `Setting`）、`SettingsPage`、`SettingsSection`、`SettingOption`、
+`SettingsError` / `SettingsConflictError` / `SettingsValidationError`。
+窗口：`sllkgui.guicore.CSettingsWindow`。
 | `acrylic_transparency` | 设置「外观 / 窗口透明度」滑块 | 拖动过程中节流写入，松手再落盘一次 |
 | `glass_strength` | 设置「外观 / 亚克力质感强度」滑块 | 拖动过程中节流写入，松手再落盘一次 |
 | `background_image` | 设置「外观 / 个性化设置背景」 | 选择/清除背景图时立即写入，空字符串表示纯色 |

@@ -166,7 +166,7 @@ class GalleryShortcut(ABC):
 | id | 序列 | 动作 |
 | --- | --- | --- |
 | `base.search` | `primary+k` | 打开标题栏搜索弹层（页面快速跳转） |
-| `base.settings` | `primary+,` | 打开/收起右侧设置抽屉 |
+| `base.settings` | `primary+,` | 打开独立设置窗口 |
 
 内置项 `owner="sllkgui.base"`、`priority=PRIORITY_BASE`、`locked=True`，
 绑定在宿主窗口上；窗口重建时先注销旧条目再注册，不会堆叠。

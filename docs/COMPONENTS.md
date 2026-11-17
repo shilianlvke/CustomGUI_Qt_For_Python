@@ -18,6 +18,7 @@
 | 反馈 | `CMessage` `CToast` |
 | 文件/图表 | `CFileUpload` `CChart` |
 | 布局 | `CFluid` `CTabs` `CAccordion` `CAccordionPanel` `CFieldset` `CFormField` `CFormGrid` `CScrollArea` `CScrollTop` `CSplitter` `CSplitterHandle` `CToolbar` |
+| 设置与导航 | `CSettingsWindow` `CSideNav` `CSideNavGroup` `CSideNavItem` `CSettingGroup` `CSettingRow` `CInfoRow` `CEditActionBar` `CThemeCard` `CThumbnail` |
 | 窗口部件 | `CWindow` `CTitleBar` `CLeftMenu` `CLeftColumn` `CTopColumn` `CBottomColumn` `CGrips` `CCredits` `CAppTopbar` `CAppMenu` `CAppMenuItem` `CSettingsDrawer` |
 | 材质 | `apply_acrylic` `remove_acrylic` `acrylic_active` `acrylic_opacity` `acrylic_supported` `acrylic_tint` `glass_tint` |
 
@@ -180,6 +181,41 @@ CToolbar(spacing=8)                   # add_start / add_center / add_end
 CScrollArea() / CScrollTop()
 ```
 
+### 设置与导航
+
+```python
+from sllkgui.guicore import (
+    CSettingsWindow, CSideNav, CSideNavGroup, CSideNavItem,
+    CSettingGroup, CSettingRow, CInfoRow, CEditActionBar,
+    CThemeCard, CThumbnail,
+)
+
+window = CSettingsWindow(parent, session=session, host=parent)
+window.open_settings()
+
+nav = CSideNav([
+    CSideNavGroup("基座设置", (
+        CSideNavItem("appearance", "外观", "icon_palette", keywords="主题 材质"),
+    )),
+])
+nav.itemClicked.connect(on_page)
+
+group = CSettingGroup("行为", "保存后立即生效")
+row = CSettingRow("auto_save", "自动保存", "关闭后需手动保存", control=switch)
+row.resetRequested.connect(on_reset)
+row.set_modified(True)
+row.set_error("取值超出范围")
+group.add_row(row)
+
+bar = CEditActionBar()
+bar.set_dirty_count(2)
+bar.set_saving(True)
+bar.set_reset_visible(True)
+
+card = CThemeCard("default", "默认深色 · 果绿强调")
+thumb = CThumbnail("/path/to/image.png", width=64, height=40)
+```
+
 ### 文件与图表
 
 ```python
@@ -212,6 +248,7 @@ CSettingsDrawer(window)                    # 右侧设置抽屉（软件信息 /
 | `CGrips` | 八方向缩放夹点 |
 | `CCredits` | 底部版权/版本栏，订阅语言变化 |
 | `CAppTopbar` / `CAppMenu` / `CAppMenuItem` / `CSettingsDrawer` | 应用壳层 |
+| `CSettingsWindow` | 独立设置窗口：分类导航、声明页渲染、脏值保存 / 放弃 / 关闭确认 |
 
 右列 `Ui_RightColumn` 由 `sllkgui.guis` 再导出（实现位于 `guicore.window`）。
 

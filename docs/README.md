@@ -7,7 +7,8 @@
 | --- | --- | --- |
 | [../README.md](../README.md) | 定位、版本状态、安装、快速开始、目录结构、配置与限制 | 第一次接触项目的人 |
 | [ARCHITECTURE.md](ARCHITECTURE.md) | 分层、包地图、启动时序、资源解析、扩展点、架构债 | 要改基座或做技术评审的人 |
-| [PLUGIN.md](PLUGIN.md) | 应用目录、清单字段、协议 v1/v2、`AppContext`、语言与品牌层 | 写业务应用的人 |
+| [PLUGIN.md](PLUGIN.md) | 插件结构、清单字段、`GalleryContext`、设置、快捷键、语言 | 写插件的人 |
+| [SETTINGS.md](SETTINGS.md) | 统一设置系统：命名空间、存储、基座页面、插件 `ctx.settings`、组件与保存语义 | 改设置或给插件加配置的人 |
 | [COMPONENTS.md](COMPONENTS.md) | 组件分类、常用签名、窗口部件、设计令牌、设置项速查 | 写界面的人 |
 | [API.md](API.md) | 门面 API 速查：配置、主题、语言、插件、遥测、存储、任务 | 集成基座的人 |
 | [contributing.md](contributing.md) | 环境、分层规则、代码约定、测试、提交与发版 | 贡献者 |

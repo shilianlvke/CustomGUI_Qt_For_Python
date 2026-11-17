@@ -14,6 +14,7 @@
   <a href="docs/ARCHITECTURE.md">架构</a> ·
   <a href="docs/PLUGIN.md">插件协议</a> ·
   <a href="docs/COMPONENTS.md">组件速查</a> ·
+  <a href="docs/SETTINGS.md">设置系统</a> ·
   <a href="CHANGELOG.md">更新日志</a>
 </p>
 
@@ -28,7 +29,7 @@ SllkGUI 既是一个可以直接运行的桌面应用外壳，也是一套给 Py
 - 自定义无边框窗口：拖动、双击最大化、最小化/最大化/关闭、阴影、圆角、窗口缩放。
 - 统一的视觉系统：设计令牌、主题、语义色、字体、间距、动画时长。
 - 一套可复用的组件库：按钮、输入、表格、树、菜单、对话框、通知、图表等。
-- 左侧菜单、右侧设置抽屉、顶部/底部抽屉、页面切换动画。
+- 左侧菜单、独立设置窗口、顶部/底部抽屉、页面切换动画。
 - 主题与语言切换，用户偏好自动保存。
 - 插件发现、安装、更新、回滚、启停、卸载，以及插件依赖检查。
 - 常驻系统托盘、统一的快捷键表（全局/局部作用域、平台修饰键、优先级与冲突检测）、
@@ -355,24 +356,35 @@ SllkGui/
 - 窗口阴影、圆角、边框、缩放手柄，最大化和亚克力模式下自动铺满。
 - Windows 11 亚克力（Acrylic）材质，其它平台自动回落到不透明主题底色。
 - 背景图片，支持 `fill` / `fit` / `stretch` / `tile` / `center` 五种适应模式。
-- 左菜单、顶部抽屉、底部抽屉、右侧设置抽屉。
+- 左菜单、独立设置窗口、顶部/底部抽屉。
 - 菜单与抽屉支持 `static`（占位）和 `overlay`（浮层）两种模式。
 - 页面切换动画，时长可在 `settings/window.yaml` 中调整。
 - 标题栏搜索：按页面标题实时过滤并跳转。
 - 窗口正常关闭时保存尺寸，下次启动恢复，且不会小于配置的最小尺寸。
 
-### 7.2 设置抽屉
+### 7.2 统一设置窗口
 
-右侧「设置」抽屉包含：
+标题栏「设置」或 `primary+,` 打开独立设置窗口。基座按能力分类，插件按插件
+分组，全部使用同一套声明模型与保存语义：
 
-- 主题选择：`Default`、`Bright`、`Dracula`、`Eye`。
-- 语言选择：简体中文、繁體中文、English、日本語。
-- 左菜单模式与抽屉模式：`static` / `overlay`。
-- 亚克力透明度与玻璃质感强度。
-- 背景图片选择、适应模式、最近使用图片。
-- 软件信息与界面相关设置。
+- **外观**：主题卡片、深色模式、窗口透明度、亚克力质感、背景图与适应模式。
+- **界面**：语言、左菜单模式、抽屉模式（`static` / `overlay`）。
+- **启动与窗口**：记住窗口尺寸，当前 / 最小 / 启动尺寸只读信息。
+- **快捷键**：基座与插件绑定按 owner 分组、冲突计数。
+- **关于**：版本、运行环境、目录与配置存储位置。
+- **插件设置**：插件在 `on_load` 里调用 `ctx.settings.define(...)` 声明，
+  自动出现在左侧「插件设置」分组；没有声明的插件显示「未声明」空状态。
 
-用户改动只写入 `<data_root>/settings/user.yaml`，不会修改随包发布的默认资源。
+编辑先进草稿，底部操作栏显示未保存数量；保存后按命名空间写入。主题 / 材质 /
+背景实时预览，放弃或关闭时按基线还原。配置键带命名空间，不会互相覆盖：
+
+| 来源 | 完整键 | 存储 |
+| --- | --- | --- |
+| 基座 | `core.appearance.theme` | `<data_root>/settings/user.yaml` |
+| 插件 | `plugin.<plugin_id>.<key>` | `<data_root>/settings/plugins/<plugin_id>.yaml` |
+
+详见 [docs/SETTINGS.md](docs/SETTINGS.md)；高保真原型见
+[docs/prototype/settings-window.html](docs/prototype/settings-window.html)。
 
 ### 7.3 组件库
 
@@ -388,6 +400,7 @@ SllkGui/
 | 浮层与反馈 | `CDialog` `CConfirmDialog` `CConfirmPopup` `CToolTip` `CMessage` `CToast` |
 | 文件与图表 | `CFileUpload` `CChart` |
 | 布局 | `CTabs` `CAccordion` `CFieldset` `CFormField` `CFormGrid` `CScrollArea` `CSplitter` `CToolbar` |
+| 设置与导航 | `CSettingsWindow` `CSideNav` `CSettingGroup` `CSettingRow` `CInfoRow` `CEditActionBar` `CThemeCard` `CThumbnail` |
 | 窗口部件 | `CWindow` `CTitleBar` `CLeftMenu` `CSettingsDrawer` `CGrips` `CCredits` |
 
 完整签名与用法见 [docs/COMPONENTS.md](docs/COMPONENTS.md)。
@@ -405,7 +418,7 @@ SllkGui/
 
 - 基座在 `QApplication` 上装唯一事件过滤器，内置功能与插件注册到同一张表。
 - 支持 `global` / `local` 作用域、`primary` 平台修饰键、优先级与冲突策略。
-- 内置：`primary+k` 打开页面搜索，`primary+,` 打开设置抽屉（锁定，插件不可覆盖）。
+- 内置：`primary+k` 打开页面搜索，`primary+,` 打开设置窗口（锁定，插件不可覆盖）。
 - 插件通过 `ctx.shortcuts` 注册（需 `shortcuts` 权限），卸载时由加载器统一清理。
 
 详见 [docs/SHORTCUTS.md](docs/SHORTCUTS.md)。

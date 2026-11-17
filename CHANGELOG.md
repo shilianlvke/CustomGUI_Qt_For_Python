@@ -9,6 +9,30 @@ minor 与 patch 保持向后兼容。
 
 ## 2.3.0（2026-11-17）
 
+统一设置系统（新增，详见 `docs/SETTINGS.md`）：
+
+- 右侧设置抽屉升级为**独立设置窗口**：左侧分组导航（基座设置 / 插件设置）、
+  搜索、页面标题与说明、底部脏值操作栏；主题 / 材质 / 背景实时预览，保存才
+  落盘，关闭时对未保存改动二次确认。
+- 新增 `appcore.settings` 配置框架：`SettingSpec` / `SettingsSection` /
+  `SettingsPage` 声明模型，`SettingsRegistry` 按命名空间去重，`SettingsStore`
+  分层存储，`SettingsSession` 统一「草稿 / 保存 / 放弃 / 恢复默认」，并通过
+  `SettingsChangeBus` 把保存结果广播给插件。
+- 基座配置迁移到统一框架：外观（主题 / 透明度 / 质感 / 背景）、界面（语言 /
+  菜单模式 / 抽屉模式）、启动与窗口（新增 `remember_window_size`）；配置键
+  使用 `core.<page>.<key>`，沿用 `user.yaml` 历史扁平键，无需迁移旧文件。
+- 插件设置协议：新增 `GalleryContext.settings` 与 `sllkgui.plugin` 门面的
+  `Setting` / `SettingsPage` / `SettingsSection` / `SettingOption`；插件键统一
+  加 `plugin.<plugin_id>.` 前缀，写 `settings/plugins/<plugin_id>.yaml`，
+  一插件一文件，卸载只撤注册不删配置。
+- 组件库新增 `CSideNav` / `CSettingGroup` / `CSettingRow` / `CInfoRow` /
+  `CEditActionBar` / `CThemeCard` / `CThumbnail`，基座与插件共用。
+- 新增高保真原型 `docs/prototype/settings-window.html`（Grove 深色主题 +
+  亚克力），覆盖导航、分组、脏值 / 保存中 / 已保存 / 校验错误 / 插件空状态。
+- 新增测试 `tests/test_settings_framework.py`、`tests/test_settings_window.py`、
+  `tests/test_plugin_settings.py`；`user.yaml` Schema 升至 v5（新增
+  `remember_window_size`）。
+
 系统级快捷键适配（新增协议，详见 `docs/SHORTCUTS.md`）：
 
 - 新增 `guicore.shortcuts.ShortcutRegistry`：在 `QApplication` 上装唯一事件过滤器
