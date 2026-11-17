@@ -3,7 +3,28 @@
 项目遵循[语义化版本](https://semver.org/lang/zh-CN/)：major 版本允许破坏性变更并显式列出；
 minor 与 patch 保持向后兼容。
 
-当前版本：`2.5.0`（见 `src/sllkgui/_version.py`），对应 tag `base-v2.5.0`。
+当前版本：`2.6.0`（见 `src/sllkgui/_version.py`），对应 tag `base-v2.6.0`。
+
+---
+
+## 2.6.0（2026-11-17）
+
+自绘菜单补齐 `docs/POPUP_MENU.md` §11 列出的三项能力：
+
+- **勾选态**：`MenuItem.checked` 取 `None`（普通项）/ `True` / `False`。勾号画在
+  图标列内（10px、1.6px 圆头描边、强调色），点击或 `Enter` / `Space` 翻转后先发
+  `toggled(item, checked)` 再发 `triggered` 并关闭；禁用项不可翻转，勾号用弱化色。
+- **图标列对齐**：面板内只要有一条带图标或可勾选的行，整列统一留白
+  `icon_size + icon_gap`（默认 24px），图标与勾号水平/垂直居中，所有文案从同一
+  起点开始；既无图标也无可勾选项的面板不留空列。
+- **亚克力质感**：弹层前整屏截屏 → 缩到 1/16 再放大到 1/4（低成本高斯近似）→
+  按屏幕坐标裁进面板圆角路径，再叠约 75% 的主题底色；`MenuStyle.backdrop_tint`
+  控制透出比例（下限 alpha 90 保证亮底可读）。模糊图整屏只截一次，子菜单展开
+  时按坐标重新裁切；关闭即释放；底色不透明时**完全不截屏**，零额外开销。
+- 阴影改为只画在面板**之外**（从窗口区域里减去面板圆角路径），避免半透明面板
+  把阴影透上来发灰。
+- 新增访问器 `icon_column(depth)`、`uses_backdrop()`、`backdrop()` 与
+  `toggled` 信号；`_activate_row` 统一了鼠标与键盘的执行路径。
 
 ---
 

@@ -221,3 +221,81 @@ def test_hover_opens_submenu_with_delay(app):
         assert menu.visible_labels()[1] == ["开始专注", "暂停"]
     finally:
         menu.dismiss()
+
+
+# ----------------------------------------------------------------------
+# §11：勾选态、图标列、亚克力底
+# ----------------------------------------------------------------------
+def test_checkable_item_toggles_and_emits(app):
+    items = [MenuItem(label="开机自启", key="auto", checked=False), MenuItem(label="退出", key="quit")]
+    menu = _open(items)
+    states: list[tuple[str, bool]] = []
+    menu.toggled.connect(lambda item, state: states.append((item.key, state)))
+    try:
+        assert menu.activate_active() is True
+        assert items[0].checked is True
+        assert states == [("auto", True)]
+        assert menu.is_open() is False
+    finally:
+        menu.dismiss()
+
+
+def test_checked_item_starts_checked_and_unchecked_starts_empty(app):
+    items = [MenuItem(label="A", checked=True), MenuItem(label="B", checked=False), MenuItem(label="C")]
+    menu = _open(items)
+    try:
+        assert [item.checked for item in menu.items()] == [True, False, None]
+        assert menu.icon_column(0) > 0, "可勾选项必须占用图标列"
+    finally:
+        menu.dismiss()
+
+
+def test_disabled_checkable_item_does_not_toggle(app):
+    items = [MenuItem(label="专注模式", checked=False, disabled=True)]
+    menu = _open(items)
+    try:
+        menu.set_active_index(0)
+        assert menu.activate_active() is False
+        assert items[0].checked is False
+    finally:
+        menu.dismiss()
+
+
+def test_icon_and_check_share_one_column(app):
+    """有图标/可勾选项时整列留白，其他行文案不会左移。"""
+    mixed = CPopupMenu([MenuItem(label="A", icon="icon_home"), MenuItem(label="B", checked=True), MenuItem(label="C")])
+    plain = CPopupMenu([MenuItem(label="A"), MenuItem(label="B")])
+    assert mixed.icon_column(0) > 0
+    assert plain.icon_column(0) == 0
+
+
+def test_backdrop_is_composited_when_background_translucent(app):
+    """半透明底色 + 模糊底：面板像素应带上背景色，而不是纯底色。"""
+    from PySide6.QtCore import QPoint, QRect
+    from PySide6.QtGui import QColor, QPixmap
+
+    menu = CPopupMenu([MenuItem(label="A")], style=MenuStyle(background="#00000080"))
+    menu.popup(QPoint(120, 120), above=False, align="left")
+    try:
+        assert menu.uses_backdrop() is True
+        pixmap = QPixmap(40, 40)
+        pixmap.fill(QColor("#00ff00"))
+        menu._backdrop = pixmap
+        menu._backdrop_rect = QRect(menu.pos(), menu.size())
+        image = menu.grab().toImage()
+        color = image.pixelColor(menu.width() // 2, menu.height() // 2)
+        assert color.green() > color.red(), "模糊底应透到面板上"
+    finally:
+        menu.dismiss()
+
+
+def test_opaque_style_skips_backdrop(app):
+    from PySide6.QtCore import QPoint
+
+    menu = CPopupMenu([MenuItem(label="A")], style=MenuStyle(background="#101010"))
+    menu.popup(QPoint(120, 120))
+    try:
+        assert menu.uses_backdrop() is False
+        assert menu.backdrop() is None
+    finally:
+        menu.dismiss()

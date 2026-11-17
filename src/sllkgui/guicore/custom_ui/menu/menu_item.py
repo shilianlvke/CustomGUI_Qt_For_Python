@@ -25,6 +25,8 @@ class MenuItem:
         disabled: 禁用项不响应点击，文字使用弱化色。
         separator: 为真时该行渲染为分隔线，其余字段忽略。
         key: 业务标识，随 ``itemClicked`` 一起回传。
+        checked: ``None`` 表示普通项；``True`` / ``False`` 表示可勾选项的当前
+            状态。勾号占用图标列，与原生菜单一致。
     """
 
     label: str = ""
@@ -34,6 +36,7 @@ class MenuItem:
     disabled: bool = False
     separator: bool = False
     key: str | None = None
+    checked: bool | None = None
 
     def __post_init__(self) -> None:
         if not isinstance(self.label, str):
@@ -46,7 +49,7 @@ class MenuItem:
         return bool(self.items)
 
 
-_ALLOWED_KEYS = ("label", "icon", "command", "items", "disabled", "separator", "key")
+_ALLOWED_KEYS = ("label", "icon", "command", "items", "disabled", "separator", "key", "checked")
 
 
 def as_menu_item(value: MenuItem | dict[str, Any] | str | None) -> MenuItem:

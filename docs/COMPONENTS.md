@@ -124,6 +124,8 @@ from sllkgui.guicore.custom_ui.menu import CPopupMenu, MenuStyle
 
 popup = CPopupMenu(items, style=MenuStyle(row_height=34))
 popup.triggered.connect(lambda item: print(item.key))
+# 勾选态：MenuItem(label="开机自启", key="autostart", checked=True)
+# 勾选态：MenuItem(label="开机自启", key="autostart", checked=True)
 popup.popup(QCursor.pos(), above=True, align="right")
 # move_active / open_active_submenu / close_submenu / activate_active 也可由宿主调用
 

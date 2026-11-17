@@ -62,6 +62,7 @@ menu.popup(QCursor.pos(), above=True, align="right")   # 贴底边向上展开�
 | `disabled` | `bool` | 禁用：弱化色、不响应点击、键盘跳过 |
 | `separator` | `bool` | 渲染为分隔线 |
 | `key` | `str \| None` | 业务标识，随 `triggered` 回传 |
+| `checked` | `bool \| None` | `None` 普通项；`True/False` 可勾选项，勾号占图标列 |
 
 ## 5. 样式：`MenuStyle`
 
@@ -77,6 +78,7 @@ menu.popup(QCursor.pos(), above=True, align="right")   # 贴底边向上展开�
 | `icon_size` / `icon_gap` | `16 / 8` | 图标 |
 | `min_width` / `max_width` | `180 / 420` | 面板宽度区间 |
 | `font_size` / `shadow` | `14 / 14` | 字号与阴影留白 |
+| `backdrop_tint` | `0.25` | 模糊底透出比例（0 全按主题底色，1 全透明） |
 
 ```python
 menu.set_style(MenuStyle(row_height=30, font_size=13, shadow=10))
@@ -118,18 +120,61 @@ menu.colors()["background"]      # 查看当前实际生效的配色（主题 + 
 | 悬停行 | 高亮；若该行有子菜单，150ms 后自动展开 |
 | 悬停另一个父行 | 立即收起已展开的下一级 |
 | 点击父行 | 立即展开（不等延迟） |
-| 点击普通行 | 发 `triggered` → 关闭 |
+| 点击普通行 | 发 `triggered` → 关闭；可勾选项先翻转并发 `toggled` |
 | 滚轮 | 在指针所在面板滚动，一次 3 行；滚动时收起该面板子菜单 |
 | `↑` `↓` | 当前面板内移动，跳过禁用与分隔线，首尾循环 |
 | `→` | 展开子菜单并把高亮移到子菜单第一项 |
 | `←` | 收起一级，高亮回到父行 |
-| `Enter` / `Space` | 执行；父项则展开 |
+| `Enter` / `Space` | 执行；父项则展开；可勾选项先翻转再执行 |
 | `Home` / `End` | 跳到首 / 尾可选项，并滚入可视区 |
 | `Esc` | 有子菜单先收一级，否则整体关闭 |
 | `Tab` | 直接关闭 |
 
 关闭条件：点击菜单外部（`Qt.Popup` 语义）、窗口失活（Alt+Tab / 切应用）、
 执行完动作、`dismiss()`、`Esc` 到根级。
+
+### 7.1 勾选态
+
+```python
+MenuItem(label="开机自启", key="autostart", checked=True)    # 已选中
+MenuItem(label="声音提示", key="sound", checked=False)        # 未选中
+MenuItem(label="普通项", key="plain")                         # checked=None
+```
+
+- 勾号画在**图标列**内（10px、1.6px 圆头描边、强调色），与原生菜单一致；
+- 可勾选项不再绘制自己的 `icon`：一列只放一个视觉元素，避免「图标 + 勾」挤在一起；
+- 点击或 `Enter`/`Space` 翻转 `item.checked`，先发 `toggled(item, checked)`
+  再发 `triggered`，随后关闭菜单（与原生行为一致）；
+- 禁用项（`disabled=True`）不可翻转，勾号用弱化色；
+- `checked` 是**值对象上的状态**：菜单不保存副本，宿主每次 `set_items` 重建时
+  需把最新状态写回（托盘是每次打开前重新编译菜单项，天然满足）。
+
+### 7.2 图标列对齐
+
+- 面板内只要有**一条**带 `icon` 或可勾选的行，整列留出
+  `icon_size + icon_gap`（默认 24px），所有文案从同一起点开始；
+- 没有图标也没有勾选项的面板不留空列，避免窄菜单出现莫名缩进；
+- 图标与勾号都按 16px 列宽**水平居中、垂直居中**，不随文字长度抖动；
+- 列宽按面板独立计算（与原生菜单一致），子菜单不会继承父面板的列宽。
+
+### 7.3 亚克力质感
+
+```text
+popup()
+  ├─ 判定：底色 alpha < 250（glass_surface 决定，支持亚克力且开启质感才成立）
+  ├─ 截屏 screen.grabWindow(0) → 缩到 1/16 → 放大到 1/4（低成本高斯近似）
+  └─ 绘制：按屏幕坐标把模糊图贴进面板圆角路径，再叠 75% 主题底色
+```
+
+- 模糊图**整屏只截一次**，子菜单展开导致窗口变大/左移时按屏幕坐标重新裁切，
+  不会把菜单自己拍进去；
+- `backdrop_tint` 控制透出比例，默认 0.25（底色 alpha 约 0.75），下限 90
+  保证亮色桌面下文字仍可读；
+- 阴影只画在面板**之外**（用面板圆角路径从窗口区域里减掉），否则半透明面板
+  会把阴影透上来发灰；
+- 关闭时释放模糊图；`uses_backdrop() == False`（不透明底色）时**完全不截屏**，
+  零额外开销；
+- 只覆盖锚点所在屏：菜单跨屏时另一侧只有底色，不会串用别屏的模糊。
 
 ## 8. 边界处理
 
@@ -166,7 +211,8 @@ menu.colors()["background"]      # 查看当前实际生效的配色（主题 + 
    真实状态不一致；
 3. **弹层不再有原生无障碍树**：`QMenu` 会被读屏器识别为菜单，自绘控件需要
    通过 `setAccessibleName`（已设「菜单」）与后续 `QAccessibleInterface` 补齐；
-4. **勾选态尚未实现**：`MenuItem` 没有 `checked` 字段，需要时先扩展模型与绘制；
+4. **勾选态用 `MenuItem.checked`**：`QAction.setCheckable(True)` 对应
+   `checked=False`，`setChecked()` 对应改 `item.checked` 后 `update()`；
 5. **不要用 `palette()` 这个名字**暴露配色：会覆盖 `QWidget.palette()`，
    组件用的是 `colors()`。
 
@@ -190,6 +236,6 @@ def show_menu(self, anchor=None):
 | 项 | 说明 |
 | --- | --- |
 | 无障碍 | 只设置了 `accessibleName`，没有完整的 `QAccessible` 角色与子节点 |
-| 勾选态 / 图标列 | 数据模型未提供 `checked`，图标列宽按需渲染而非对齐 |
-| 亚克力 | 面板为不透明底色；要做毛玻璃需在窗口层合成，当前未实现 |
+| 跨屏模糊 | 只截锚点所在屏；菜单跨显示器时另一侧仅显示底色 |
+| 亚克力来源 | 截屏 + 缩放模糊，不调用系统 DWM，透明区域不会穿透点击 |
 | 输入法 | 菜单不接收文本输入，中文输入法弹窗不受影响 |

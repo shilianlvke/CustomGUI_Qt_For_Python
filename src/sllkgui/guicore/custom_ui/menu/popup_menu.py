@@ -27,7 +27,17 @@ from collections.abc import Iterable, Sequence
 from dataclasses import dataclass
 
 from PySide6.QtCore import QEvent, QPoint, QPointF, QRect, QRectF, Qt, QTimer, Signal
-from PySide6.QtGui import QColor, QFont, QFontMetrics, QGuiApplication, QPainter, QPainterPath, QPen
+from PySide6.QtGui import (
+    QColor,
+    QFont,
+    QFontMetrics,
+    QGuiApplication,
+    QPainter,
+    QPainterPath,
+    QPen,
+    QPixmap,
+    QRegion,
+)
 from PySide6.QtWidgets import QWidget
 
 from ..icon_utils import render_icon
@@ -57,6 +67,12 @@ SHADOW = 14
 SUBMENU_DELAY = 150
 #: 滚轮一格滚动的行数
 WHEEL_ROWS = 3
+#: 勾号尺寸与线宽（占图标列，与原生菜单一致）
+CHECK_SIZE = 10
+CHECK_WIDTH = 1.6
+#: 背景模糊：先缩到 1/16 再放大到 1/4，等价于一次低成本高斯近似
+BACKDROP_DOWNSCALE = 16
+BACKDROP_UPSCALE = 4
 
 
 @dataclass
@@ -88,6 +104,8 @@ class MenuStyle:
     max_width: int = 420
     font_size: int = 14
     shadow: int = SHADOW
+    #: 模糊底透出比例：0 完全按主题底色，1 全透明；仅在截到模糊底时生效
+    backdrop_tint: float = 0.25
 
 
 @dataclass
@@ -115,6 +133,7 @@ class _Panel:
         self.rect = QRect()
         self.scroll = 0
         self.hover = -1
+        self.icon_column = 0
         self.open_index: int | None = None
         self.parent: _Panel | None = None
         self.child: _Panel | None = None
@@ -140,6 +159,8 @@ class CPopupMenu(QWidget):
         ``closed()``：完全关闭（含点击外部、Esc、选中后自动关闭）。
 
     交互约定：
+        - 勾选：``MenuItem.checked`` 非 ``None`` 即为可勾选项，勾号占图标列；
+          点击 / ``Enter`` / ``Space`` 切换并发 ``toggled(item, checked)``；
         - 鼠标：悬停高亮；悬停带子菜单的项 150ms 后自动展开，点击父项立即展开；
         - 键盘：``↑↓`` 移动（跳过禁用项与分隔线、首尾循环）、``→`` 展开、
           ``←`` 收起、``Enter`` / ``Space`` 执行、``Home`` / ``End`` 跳首尾、
@@ -148,6 +169,7 @@ class CPopupMenu(QWidget):
     """
 
     triggered = Signal(object)
+    toggled = Signal(object, bool)
     hovered = Signal(object)
     aboutToShow = Signal()
     aboutToHide = Signal()
@@ -179,6 +201,9 @@ class CPopupMenu(QWidget):
         self._closing = False
         self._was_active = False
         self._last_hover: MenuItem | None = None
+        # 亚克力：整屏截图 + 模糊，按面板裁剪后垫在底色下面
+        self._backdrop: QPixmap | None = None
+        self._backdrop_rect = QRect()
 
         self._hover_timer = QTimer(self)
         self._hover_timer.setSingleShot(True)
@@ -244,6 +269,7 @@ class CPopupMenu(QWidget):
         self._close_all_submenus()
         self._layout(anchor, above=above, align=align)
         self._apply_geometry()
+        self._capture_backdrop()
         self._root.hover = self._first_selectable(self._root)
         self.aboutToShow.emit()
         self.show()
@@ -286,6 +312,11 @@ class CPopupMenu(QWidget):
     def scroll_offset(self, depth: int = 0) -> int:
         panel = self._panel_at_depth(depth)
         return panel.scroll if panel is not None else 0
+
+    def icon_column(self, depth: int = 0) -> int:
+        """该面板为图标/勾号预留的列宽（0 表示整列不占位）。"""
+        panel = self._panel_at_depth(depth)
+        return panel.icon_column if panel is not None else 0
 
     def content_height(self, depth: int = 0) -> int:
         panel = self._panel_at_depth(depth)
@@ -341,12 +372,20 @@ class CPopupMenu(QWidget):
 
     def activate_active(self) -> bool:
         panel = self._active_panel()
-        row = self._row(panel, panel.hover)
+        return self._activate_row(panel, panel.hover, focus_first=True)
+
+    def _activate_row(self, panel: _Panel | None, index: int, *, focus_first: bool = False) -> bool:
+        """执行一行：父项展开子菜单，普通项发 ``triggered``，可勾选项先翻转。"""
+        row = self._row(panel, index)
         if row is None or not row.selectable:
             return False
         if row.item.items:
-            self._open_submenu(panel, panel.hover, focus_first=True)
+            self._open_submenu(panel, index, focus_first=focus_first)
             return True
+        if row.item.checked is not None:
+            row.item.checked = not row.item.checked
+            self.toggled.emit(row.item, row.item.checked)
+            self.update()
         self._emit_triggered(row.item)
         return True
 
@@ -367,6 +406,13 @@ class CPopupMenu(QWidget):
     def _measure_panel(self, panel: _Panel) -> None:
         style = self._style
         metrics = QFontMetrics(self._font())
+        # 图标列：只要本面板有一条带图标或可勾选的行，整列统一留白，
+        # 保证所有文案左对齐（否则有无图标的行会各差 24px）
+        panel.icon_column = (
+            style.icon_size + style.icon_gap
+            if any(not item.separator and (item.icon is not None or item.checked is not None) for item in panel.items)
+            else 0
+        )
         width = style.min_width
         top = style.padding
         panel.rows = []
@@ -376,10 +422,9 @@ class CPopupMenu(QWidget):
             top += height
             if item.separator:
                 continue
-            icon = style.icon_size + style.icon_gap if item.icon is not None else 0
             arrow = style.arrow_space if item.items else 0
             text_width = metrics.horizontalAdvance(item.label)
-            needed = style.text_padding * 2 + style.row_inset * 2 + icon + text_width + arrow
+            needed = style.text_padding * 2 + style.row_inset * 2 + panel.icon_column + text_width + arrow
             width = max(width, needed)
         panel.content_height = top + style.padding
         panel.width = min(width, style.max_width)
@@ -443,6 +488,52 @@ class CPopupMenu(QWidget):
             child.rect = QRect(child_x, child_y, child.width, child_height)
             child.clamp_scroll()
             panel = child
+
+    def uses_backdrop(self) -> bool:
+        """当前配色是否需要模糊背景（底色带透明度即视为启用亚克力）。
+
+        ``menu_colors()`` 里的底色由 ``glass_surface()`` 决定：不支持亚克力或
+        关闭质感时返回**不透明**色，此时完全跳过截图与模糊，零额外开销。
+        """
+        return QColor(self._palette()["background"]).alpha() < 250
+
+    def backdrop(self) -> QPixmap | None:
+        """当前模糊背景（测试与调试用；``None`` 表示走不透明底色）。"""
+        return self._backdrop
+
+    def _capture_backdrop(self) -> None:
+        """抓一张桌面截图并做低成本模糊，作为面板的亚克力底。
+
+        抓整屏而不是菜单区域：子菜单展开时窗口会变大并左移，整屏图可以按
+        屏幕坐标随时裁切，不必在每次重排时重新截图（否则会把菜单自身也拍进去）。
+        """
+        self._backdrop = None
+        if not self.uses_backdrop():
+            return
+        # 先按锚点找屏幕：弹层未显示时 self.screen() 可能还是主屏，多屏会截错
+        screen = QGuiApplication.screenAt(self._anchor) or self.screen() or QGuiApplication.primaryScreen()
+        if screen is None:
+            return
+        shot = screen.grabWindow(0)
+        if shot.isNull():
+            return
+        shot.setDevicePixelRatio(1.0)
+        width = max(1, shot.width())
+        height = max(1, shot.height())
+        small = shot.scaled(
+            max(1, width // BACKDROP_DOWNSCALE),
+            max(1, height // BACKDROP_DOWNSCALE),
+            Qt.IgnoreAspectRatio,
+            Qt.SmoothTransformation,
+        )
+        soft = small.scaled(
+            max(1, width // BACKDROP_UPSCALE),
+            max(1, height // BACKDROP_UPSCALE),
+            Qt.IgnoreAspectRatio,
+            Qt.SmoothTransformation,
+        )
+        self._backdrop = soft
+        self._backdrop_rect = QRect(screen.geometry())
 
     def _apply_geometry(self) -> None:
         union = QRect()
@@ -557,6 +648,17 @@ class CPopupMenu(QWidget):
         style = self._style
         if style.shadow <= 0:
             return
+        # 面板可能是半透明（亚克力），阴影只能落在面板之外，
+        # 否则会透过底色把整块面板压暗
+        region = QRegion(self.rect())
+        for panel in self._chain():
+            shape = QPainterPath()
+            shape.addRoundedRect(self._panel_local_rect(panel), radius, radius)
+            region = region.subtracted(QRegion(shape.toFillPolygon().toPolygon()))
+        if region.isEmpty():
+            return
+        painter.save()
+        painter.setClipRegion(region)
         painter.setBrush(Qt.NoBrush)
         steps = style.shadow
         for step in range(steps, 0, -1):
@@ -566,6 +668,7 @@ class CPopupMenu(QWidget):
             for panel in self._chain():
                 rect = self._panel_local_rect(panel).adjusted(-step, -step + 5, step, step + 5)
                 painter.drawRoundedRect(rect, radius + step, radius + step)
+        painter.restore()
 
     def _paint_panel(
         self,
@@ -579,9 +682,25 @@ class CPopupMenu(QWidget):
         rect = self._panel_local_rect(panel)
         path = QPainterPath()
         path.addRoundedRect(rect, radius, radius)
+        if self._backdrop is not None:
+            # 亚克力：把整屏模糊图按屏幕坐标贴进来，再叠半透明底色
+            painter.save()
+            painter.setClipPath(path)
+            painter.drawPixmap(
+                QRectF(self._backdrop_rect).translated(-self._origin),
+                self._backdrop,
+                QRectF(self._backdrop.rect()),
+            )
+            painter.restore()
         background = QColor(palette["background"])
-        # 面板必须不透明：半透明底色会把下方阴影透出来，整块发灰
-        background.setAlpha(255)
+        if self._backdrop is None:
+            # 没有模糊层时必须不透明，否则半透明底色会把下方阴影透上来
+            background.setAlpha(255)
+        else:
+            # 有真实模糊底时再让出一部分透明度，亚克力才看得出来；
+            # 下限 90 保证亮色桌面下文字仍然可读
+            tint = max(0.0, min(1.0, self._style.backdrop_tint))
+            background.setAlpha(max(90, round(background.alpha() * (1.0 - tint))))
         painter.fillPath(path, background)
         painter.setBrush(Qt.NoBrush)
         painter.setPen(QPen(QColor(palette["border"]), 1))
@@ -613,11 +732,18 @@ class CPopupMenu(QWidget):
 
             color = QColor(palette["muted"] if row.item.disabled else palette["text"])
             x = row_rect.left() + style.text_padding
-            if row.item.icon is not None:
-                pixmap = render_icon(row.item.icon, color, style.icon_size, self.devicePixelRatioF())
-                if pixmap is not None:
-                    painter.drawPixmap(int(x), int(row_rect.center().y() - style.icon_size / 2), pixmap)
-                x += style.icon_size + style.icon_gap
+            if panel.icon_column:
+                column = QRectF(x, row_rect.top(), style.icon_size, row_rect.height())
+                if row.item.checked is not None:
+                    # 勾号独占图标列（与原生菜单一致，可勾选项不再画图标）
+                    if row.item.checked:
+                        check_color = QColor(palette["muted"] if row.item.disabled else palette["accent"])
+                        self._draw_check(painter, column, check_color)
+                elif row.item.icon is not None:
+                    pixmap = render_icon(row.item.icon, color, style.icon_size, self.devicePixelRatioF())
+                    if pixmap is not None:
+                        painter.drawPixmap(int(x), int(row_rect.center().y() - style.icon_size / 2), pixmap)
+                x += panel.icon_column
 
             reserved = style.arrow_space if row.item.items else 8
             available = max(0.0, row_rect.right() - x - reserved)
@@ -634,6 +760,23 @@ class CPopupMenu(QWidget):
 
         self._paint_scroll_hints(painter, panel, rect, palette)
         painter.restore()
+
+    @staticmethod
+    def _draw_check(painter: QPainter, column: QRectF, color: QColor) -> None:
+        """在图标列内画一个 10px 勾号（圆头圆角，1.6px 线宽）。"""
+        cx = column.center().x()
+        cy = column.center().y()
+        half = CHECK_SIZE / 2
+        path = QPainterPath()
+        path.moveTo(cx - half, cy + half * 0.04)
+        path.lineTo(cx - half * 0.16, cy + half * 0.72)
+        path.lineTo(cx + half, cy - half * 0.62)
+        pen = QPen(color, CHECK_WIDTH)
+        pen.setCapStyle(Qt.RoundCap)
+        pen.setJoinStyle(Qt.RoundJoin)
+        painter.setPen(pen)
+        painter.setBrush(Qt.NoBrush)
+        painter.drawPath(path)
 
     def _paint_scroll_hints(self, painter: QPainter, panel: _Panel, rect: QRectF, palette: dict[str, str]) -> None:
         if not panel.scrollable:
@@ -707,11 +850,7 @@ class CPopupMenu(QWidget):
         if row is None or not row.selectable:
             super().mouseReleaseEvent(event)
             return
-        if row.item.items:
-            self._open_submenu(panel, index)
-            event.accept()
-            return
-        self._emit_triggered(row.item)
+        self._activate_row(panel, index)
         event.accept()
 
     def wheelEvent(self, event):  # noqa: N802 - 覆写 Qt 命名
@@ -812,6 +951,7 @@ class CPopupMenu(QWidget):
         self._root.scroll = 0
         self._hover_panel = None
         self._hover_index = -1
+        self._backdrop = None
         super().hideEvent(event)
         if not self._closing:
             self._closing = True
