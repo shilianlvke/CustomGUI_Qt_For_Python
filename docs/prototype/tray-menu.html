@@ -1,0 +1,1572 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>SllkGUI · 托盘菜单协议原型</title>
+<style>
+  /* ==================================================================
+     设计令牌：与 src/sllkgui/_resources/sllkgui/themes/{default,bright}.yaml 对齐
+     菜单用「抬升层」表面 + 发丝线勾边 + 单一强调色（果绿）
+     ================================================================== */
+  :root {
+    --canvas: #121619;
+    --sunken: #0d1113;
+    --panel: #171c1f;
+    --card: #1c2225;
+    --raised: #242b2e;
+    --hover: #2a3236;
+    --pressed: #333c41;
+
+    --text-title: #f4f7f3;
+    --text: #dfe6df;
+    --muted: #98a59b;
+
+    --accent: #a3e57f;
+    --accent-hover: #b7ee99;
+    --accent-soft: rgba(163, 229, 127, 0.16);
+    --accent-wash: rgba(163, 229, 127, 0.08);
+
+    --info: #7cc7ff;
+    --warning: #f2c65a;
+    --danger: #ff8f87;
+
+    --hairline: rgba(223, 230, 223, 0.10);
+    --soft: rgba(223, 230, 223, 0.16);
+    --strong: rgba(223, 230, 223, 0.24);
+
+    --menu-bg: #242b2e;
+    --menu-shadow: 0 26px 60px -14px rgba(0, 0, 0, .78), 0 2px 8px rgba(0, 0, 0, .5);
+    --label-bg: rgba(13, 17, 19, 0.62);
+    --taskbar-bg: rgba(13, 17, 19, 0.72);
+
+    --radius-window: 12px;
+    --radius-menu: 10px;
+    --radius-row: 6px;
+
+    --font: "Segoe UI Variable Text", "Segoe UI", "Microsoft YaHei UI", "PingFang SC", system-ui, sans-serif;
+    --mono: "Cascadia Code", "JetBrains Mono", ui-monospace, Consolas, monospace;
+    --ease: cubic-bezier(.2, .7, .3, 1);
+  }
+
+  html[data-theme="bright"] {
+    --canvas: #e7ebe4;
+    --sunken: #e5eae3;
+    --panel: #fbfcfa;
+    --card: #ffffff;
+    --raised: #f4f7f2;
+    --hover: #e2e8de;
+    --pressed: #d4ddd0;
+
+    --text-title: #141a15;
+    --text: #2c3730;
+    --muted: #5c6a60;
+
+    --accent: #2c7a4b;
+    --accent-hover: #348c58;
+    --accent-soft: rgba(44, 122, 75, 0.12);
+    --accent-wash: rgba(44, 122, 75, 0.06);
+
+    --info: #1f6ea8;
+    --warning: #8a6200;
+    --danger: #b3312a;
+
+    --hairline: rgba(20, 26, 21, 0.10);
+    --soft: rgba(20, 26, 21, 0.16);
+    --strong: rgba(20, 26, 21, 0.22);
+
+    --menu-bg: #ffffff;
+    --menu-shadow: 0 24px 54px -18px rgba(20, 26, 21, .34), 0 1px 4px rgba(20, 26, 21, .12);
+    --label-bg: rgba(255, 255, 255, 0.78);
+    --taskbar-bg: rgba(251, 252, 250, 0.76);
+  }
+
+  * { box-sizing: border-box; }
+
+  html, body { height: 100%; }
+
+  body {
+    margin: 0;
+    background: var(--canvas);
+    color: var(--text);
+    font-family: var(--font);
+    font-size: 13px;
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+    overflow: hidden;
+  }
+
+  button { font-family: inherit; color: inherit; background: none; border: 0; padding: 0; cursor: pointer; }
+
+  /* ------------------------------ 舞台 ------------------------------ */
+  .stage {
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    padding: 16px 20px 18px;
+  }
+
+  .topbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    flex: none;
+  }
+  .brand {
+    display: flex;
+    align-items: center;
+    gap: 9px;
+    font-size: 12.5px;
+    color: var(--muted);
+  }
+  .brand strong { color: var(--text-title); font-weight: 600; letter-spacing: .01em; }
+  .brand .dot {
+    width: 7px; height: 7px; border-radius: 50%;
+    background: var(--accent);
+    box-shadow: 0 0 10px 1px var(--accent-soft);
+  }
+  .brand .slash { color: var(--strong); }
+  .brand-sub { letter-spacing: .02em; }
+
+  .tags { display: flex; gap: 6px; flex-wrap: wrap; justify-content: flex-end; }
+  .tag {
+    padding: 3px 8px;
+    border: 1px solid var(--hairline);
+    border-radius: 999px;
+    font-size: 10.5px;
+    color: var(--muted);
+    letter-spacing: .02em;
+    white-space: nowrap;
+  }
+  .tag.mono { font-family: var(--mono); font-size: 10px; }
+
+  .frame {
+    flex: 1;
+    min-height: 0;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 296px;
+    gap: 20px;
+  }
+
+  /* ------------------------------ 桌面 ------------------------------ */
+  .screen {
+    position: relative;
+    min-width: 0;
+    border-radius: 14px;
+    overflow: hidden;
+    border: 1px solid var(--soft);
+    box-shadow: 0 34px 90px -40px rgba(0, 0, 0, .9);
+    isolation: isolate;
+  }
+
+  .wallpaper {
+    position: absolute;
+    inset: 0;
+    z-index: 0;
+    background:
+      radial-gradient(52% 44% at 74% 18%, rgba(163, 229, 127, 0.11), transparent 66%),
+      radial-gradient(46% 40% at 12% 82%, rgba(124, 199, 255, 0.08), transparent 68%),
+      radial-gradient(72% 72% at 50% 52%, #171e21 0%, #0b0f11 76%);
+  }
+  html[data-theme="bright"] .wallpaper {
+    background:
+      radial-gradient(52% 44% at 74% 16%, rgba(44, 122, 75, 0.10), transparent 66%),
+      radial-gradient(46% 40% at 14% 84%, rgba(31, 110, 168, 0.07), transparent 68%),
+      radial-gradient(72% 72% at 50% 48%, #f6f8f4 0%, #e7ebe4 78%);
+  }
+  .wallpaper::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background-image:
+      linear-gradient(var(--hairline) 1px, transparent 1px),
+      linear-gradient(90deg, var(--hairline) 1px, transparent 1px);
+    background-size: 64px 64px;
+    opacity: .5;
+    mask-image: radial-gradient(72% 64% at 50% 42%, #000 12%, transparent 82%);
+  }
+
+  /* ------------------------------ 任务栏 ------------------------------ */
+  .taskbar {
+    position: absolute;
+    left: 0; right: 0; bottom: 0;
+    height: 54px;
+    z-index: 6;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 10px 0 12px;
+    background: var(--taskbar-bg);
+    backdrop-filter: blur(22px) saturate(150%);
+    -webkit-backdrop-filter: blur(22px) saturate(150%);
+    border-top: 1px solid var(--hairline);
+  }
+  .tb-start { display: flex; align-items: center; gap: 10px; min-width: 0; }
+  .tb-app {
+    width: 34px; height: 34px;
+    display: grid; place-items: center;
+    border-radius: 8px;
+    transition: background .15s var(--ease);
+  }
+  .tb-app img { width: 22px; height: 22px; display: block; }
+  .tb-app:hover { background: rgba(223, 230, 223, .10); }
+  html[data-theme="bright"] .tb-app:hover { background: rgba(20, 26, 21, .07); }
+  .tb-title {
+    font-size: 11.5px;
+    color: var(--muted);
+    letter-spacing: .03em;
+    white-space: nowrap;
+  }
+
+  .tb-tray { display: flex; align-items: center; gap: 6px; }
+  .tray-btn {
+    width: 34px; height: 34px;
+    display: grid; place-items: center;
+    border-radius: 8px;
+    position: relative;
+    transition: background .15s var(--ease);
+  }
+  .tray-btn img { width: 17px; height: 17px; display: block; opacity: .92; }
+  .tray-btn:hover { background: rgba(223, 230, 223, .10); }
+  html[data-theme="bright"] .tray-btn:hover { background: rgba(20, 26, 21, .07); }
+  .tray-btn.is-active::after {
+    content: "";
+    position: absolute;
+    left: 50%; bottom: 5px;
+    width: 12px; height: 2px;
+    border-radius: 2px;
+    background: var(--accent);
+    transform: translateX(-50%);
+    box-shadow: 0 0 8px var(--accent-soft);
+  }
+  .clock {
+    display: flex; flex-direction: column; align-items: flex-end;
+    line-height: 1.25;
+    padding-left: 8px;
+    font-variant-numeric: tabular-nums;
+  }
+  .clock span:first-child { font-size: 11.5px; color: var(--text); }
+  .clock span:last-child { font-size: 10px; color: var(--muted); }
+
+  /* ------------------------------ 左侧说明 ------------------------------ */
+  .notes {
+    position: absolute;
+    left: 18px;
+    top: 20px;
+    bottom: 72px;
+    z-index: 3;
+    width: 306px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    pointer-events: none;
+  }
+  .note {
+    padding: 11px 13px 12px;
+    border: 1px solid var(--hairline);
+    border-radius: 9px;
+    background: var(--label-bg);
+    backdrop-filter: blur(12px) saturate(130%);
+    -webkit-backdrop-filter: blur(12px) saturate(130%);
+  }
+  .note h4 {
+    margin: 0 0 8px;
+    font-size: 9.5px;
+    font-weight: 600;
+    letter-spacing: .1em;
+    text-transform: uppercase;
+    color: var(--muted);
+  }
+  .note pre {
+    margin: 0;
+    font-family: var(--mono);
+    font-size: 9.5px;
+    line-height: 1.8;
+    color: var(--text);
+    white-space: pre;
+    overflow: hidden;
+  }
+  .note pre .k { color: var(--info); }
+  .note pre .s { color: var(--accent); }
+  .note pre .c { color: var(--muted); }
+  .note ul { margin: 0; padding: 0; list-style: none; display: grid; gap: 5px; }
+  .note li {
+    position: relative;
+    padding-left: 11px;
+    font-size: 11px;
+    line-height: 1.6;
+    color: var(--text);
+    text-wrap: pretty;
+  }
+  .note li::before {
+    content: "";
+    position: absolute;
+    left: 0; top: 6px;
+    width: 5px; height: 5px;
+    border: 1px solid var(--strong);
+    border-radius: 1px;
+  }
+  .note li b { font-weight: 500; color: var(--text-title); }
+  .note .keys {
+    font-family: var(--mono);
+    font-size: 9.5px;
+    color: var(--muted);
+    line-height: 1.8;
+  }
+  .note--sort { margin-top: 0; }
+  .keys-foot {
+    margin-top: 2px;
+    padding: 8px 2px 0;
+    font-family: var(--mono);
+    font-size: 9.5px;
+    line-height: 1.8;
+    color: var(--muted);
+    letter-spacing: .01em;
+  }
+  .note--sort .line {
+    font-family: var(--mono);
+    font-size: 9.5px;
+    line-height: 1.9;
+    color: var(--muted);
+    white-space: nowrap;
+  }
+  .note--sort .line b { color: var(--accent); font-weight: 500; }
+
+  /* ------------------------------ 菜单 ------------------------------ */
+  .menu-layer {
+    position: absolute;
+    inset: 0;
+    z-index: 5;
+    pointer-events: none;
+  }
+
+  .menu {
+    position: absolute;
+    right: 16px;
+    bottom: 64px;
+    pointer-events: auto;
+    min-width: 236px;
+    max-width: 344px;
+    padding: 5px;
+    background: var(--menu-bg);
+    border: 1px solid var(--soft);
+    border-radius: var(--radius-menu);
+    box-shadow: var(--menu-shadow);
+    transform-origin: 100% 100%;
+    max-height: calc(100% - 86px);
+    overflow-y: auto;
+    overflow-x: hidden;
+    animation: menuIn .15s var(--ease) both;
+    scrollbar-width: thin;
+    scrollbar-color: var(--strong) transparent;
+  }
+  @keyframes menuIn {
+    from { opacity: 0; transform: translateY(8px) scale(.972); }
+    to { opacity: 1; transform: none; }
+  }
+
+  .menu.submenu {
+    right: auto;
+    bottom: auto;
+    min-width: 196px;
+    max-width: 300px;
+    animation: subIn .12s var(--ease) both;
+    transform-origin: 0 0;
+  }
+  @keyframes subIn {
+    from { opacity: 0; transform: translateX(6px) scale(.985); }
+    to { opacity: 1; transform: none; }
+  }
+
+  .row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    height: 32px;
+    padding: 0 10px 0 12px;
+    border-radius: var(--radius-row);
+    color: var(--text);
+    cursor: default;
+    user-select: none;
+    position: relative;
+    white-space: nowrap;
+  }
+  .row-text {
+    flex: 1;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    font-size: 13px;
+    letter-spacing: .005em;
+  }
+  .row:hover, .row.is-active { background: var(--accent-soft); color: var(--text-title); }
+  .row.is-disabled { color: var(--muted); }
+  .row.is-disabled:hover, .row.is-disabled.is-active { background: transparent; color: var(--muted); }
+
+  .row-meta {
+    font-family: var(--mono);
+    font-size: 9.5px;
+    color: var(--muted);
+    opacity: 0;
+    transition: opacity .15s var(--ease);
+    letter-spacing: .01em;
+    flex: none;
+  }
+  .row-meta .demoted { color: var(--warning); }
+  body.annot .row-meta { opacity: .62; }
+
+  .chev {
+    flex: none;
+    width: 12px; height: 12px;
+    opacity: .55;
+    display: block;
+  }
+
+  .sep {
+    height: 1px;
+    margin: 5px 8px;
+    background: var(--hairline);
+  }
+
+  .section-head {
+    padding: 7px 12px 4px;
+    font-size: 10px;
+    letter-spacing: .08em;
+    text-transform: uppercase;
+    color: var(--muted);
+    user-select: none;
+  }
+  .section-head:first-child { padding-top: 6px; }
+
+  /* ------------------------------ 标注 ------------------------------ */
+  .annotations {
+    position: absolute;
+    inset: 0;
+    z-index: 4;
+    pointer-events: none;
+    transition: opacity .18s var(--ease);
+  }
+  body.has-submenu .annotations { opacity: .1; }
+  body:not(.annot) .annotations { display: none; }
+
+  .brk {
+    position: absolute;
+    width: 9px;
+    border-left: 1px solid currentColor;
+    border-top: 1px solid currentColor;
+    border-bottom: 1px solid currentColor;
+    border-radius: 2px 0 0 2px;
+    opacity: .55;
+  }
+  .brk::after {
+    content: "";
+    position: absolute;
+    left: 100%; top: 50%;
+    width: 13px;
+    border-top: 1px dashed currentColor;
+    opacity: .45;
+  }
+  .brk-label {
+    position: absolute;
+    transform: translate(-100%, -50%);
+    padding: 3px 7px;
+    border-radius: 5px;
+    background: var(--label-bg);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    border: 1px solid var(--hairline);
+    font-family: var(--mono);
+    font-size: 10px;
+    line-height: 1.35;
+    letter-spacing: .015em;
+    white-space: nowrap;
+    color: var(--text);
+  }
+  .brk-label b { font-weight: 500; }
+
+  /* ------------------------------ Toast ------------------------------ */
+  .toast {
+    position: absolute;
+    left: 50%;
+    bottom: 76px;
+    z-index: 9;
+    transform: translate(-50%, 10px);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 13px;
+    border-radius: 8px;
+    border: 1px solid var(--soft);
+    background: var(--menu-bg);
+    box-shadow: var(--menu-shadow);
+    font-size: 12px;
+    color: var(--text);
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity .2s var(--ease), transform .2s var(--ease);
+    max-width: 76%;
+  }
+  .toast.is-on { opacity: 1; transform: translate(-50%, 0); }
+  .toast .path { font-family: var(--mono); font-size: 10.5px; color: var(--accent); }
+  .toast .txt { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+  /* ------------------------------ 右侧面板 ------------------------------ */
+  .panel {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    min-height: 0;
+    overflow-y: auto;
+    padding: 2px 2px 8px;
+    scrollbar-width: thin;
+    scrollbar-color: var(--soft) transparent;
+  }
+  .panel-head {
+    display: flex; align-items: baseline; justify-content: space-between;
+    padding-bottom: 2px;
+  }
+  .panel-head h2 {
+    margin: 0;
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: .14em;
+    text-transform: uppercase;
+    color: var(--text-title);
+  }
+  .link {
+    font-size: 10.5px;
+    color: var(--muted);
+    border-bottom: 1px solid transparent;
+    transition: color .15s var(--ease), border-color .15s var(--ease);
+  }
+  .link:hover { color: var(--accent); border-color: var(--accent); }
+
+  .panel-block { display: flex; flex-direction: column; gap: 7px; }
+  .panel-block h3 {
+    margin: 0;
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: .1em;
+    text-transform: uppercase;
+    color: var(--muted);
+  }
+  .panel-block p {
+    margin: 0;
+    font-size: 11.5px;
+    line-height: 1.72;
+    color: var(--text);
+    text-wrap: pretty;
+  }
+  .panel-block p .em { color: var(--accent); }
+  .panel-block p .dim { color: var(--muted); }
+
+  .seg {
+    display: flex;
+    gap: 2px;
+    padding: 2px;
+    background: var(--sunken);
+    border: 1px solid var(--hairline);
+    border-radius: 7px;
+  }
+  .seg button {
+    flex: 1;
+    min-width: 0;
+    padding: 5px 4px;
+    border-radius: 5px;
+    font-size: 11px;
+    color: var(--muted);
+    white-space: nowrap;
+    transition: background .15s var(--ease), color .15s var(--ease);
+  }
+  .seg button:hover { color: var(--text); }
+  .seg button[aria-pressed="true"] {
+    background: var(--raised);
+    color: var(--text-title);
+    box-shadow: 0 1px 0 rgba(255, 255, 255, .04) inset;
+  }
+  html[data-theme="bright"] .seg button[aria-pressed="true"] {
+    background: #fff;
+    box-shadow: 0 1px 2px rgba(20, 26, 21, .1);
+  }
+
+  .switch-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    padding: 5px 0;
+    font-size: 11.5px;
+    color: var(--text);
+    cursor: pointer;
+  }
+  .switch-row input { position: absolute; opacity: 0; pointer-events: none; }
+  .switch-row i {
+    flex: none;
+    width: 30px; height: 17px;
+    border-radius: 999px;
+    background: var(--pressed);
+    border: 1px solid var(--hairline);
+    position: relative;
+    transition: background .16s var(--ease), border-color .16s var(--ease);
+  }
+  .switch-row i::after {
+    content: "";
+    position: absolute;
+    top: 2px; left: 2px;
+    width: 11px; height: 11px;
+    border-radius: 50%;
+    background: var(--muted);
+    transition: transform .16s var(--ease), background .16s var(--ease);
+  }
+  .switch-row input:checked + i { background: var(--accent-soft); border-color: var(--accent); }
+  .switch-row input:checked + i::after { transform: translateX(13px); background: var(--accent); }
+  .switch-row input:focus-visible + i { outline: 1px solid var(--accent); outline-offset: 2px; }
+
+  .stats { display: grid; gap: 5px; margin: 0; }
+  .stats div {
+    display: flex; align-items: baseline; justify-content: space-between; gap: 10px;
+    font-size: 11px;
+  }
+  .stats dt { color: var(--muted); }
+  .stats dd { margin: 0; font-family: var(--mono); font-size: 10.5px; color: var(--text-title); }
+  .stats dd.warn { color: var(--warning); }
+
+  .facts { margin: 0; padding: 0; list-style: none; display: grid; gap: 7px; }
+  .facts li {
+    font-size: 11px;
+    line-height: 1.65;
+    color: var(--muted);
+    padding-left: 12px;
+    position: relative;
+    text-wrap: pretty;
+  }
+  .facts li::before {
+    content: "";
+    position: absolute;
+    left: 0; top: 7px;
+    width: 5px; height: 5px;
+    border: 1px solid var(--strong);
+    border-radius: 1px;
+  }
+  .facts b { color: var(--text); font-weight: 500; }
+
+  .panel-foot {
+    margin-top: auto;
+    padding-top: 10px;
+    border-top: 1px solid var(--hairline);
+    font-size: 10px;
+    line-height: 1.7;
+    color: var(--muted);
+    font-family: var(--mono);
+    letter-spacing: .01em;
+  }
+
+  @media (max-width: 1120px) {
+    body { overflow: auto; }
+    .stage { height: auto; min-height: 100%; }
+    .frame { grid-template-columns: minmax(0, 1fr); }
+    .screen { min-height: 620px; }
+    .panel { overflow: visible; }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    * { animation-duration: .001ms !important; transition-duration: .001ms !important; }
+  }
+</style>
+</head>
+<body class="annot">
+
+<div class="stage">
+  <header class="topbar">
+    <div class="brand">
+      <span class="dot"></span>
+      <strong>SllkGUI</strong>
+      <span class="slash">/</span>
+      <span class="brand-sub">托盘菜单分组协议</span>
+    </div>
+    <div class="tags">
+      <span class="tag">高保真原型</span>
+      <span class="tag">base-v2.4.0</span>
+      <span class="tag mono">docs/prototype/tray-menu.html</span>
+    </div>
+  </header>
+
+  <div class="frame">
+    <section class="screen" id="screen" aria-label="桌面与托盘菜单模拟">
+      <div class="wallpaper" aria-hidden="true"></div>
+      <div class="annotations" id="annotations" aria-hidden="true"></div>
+      <div class="menu-layer" id="menuLayer"></div>
+      <div class="toast" id="toast" role="status" aria-live="polite">
+        <span class="path" id="toastPath"></span>
+        <span class="txt" id="toastText"></span>
+      </div>
+
+      <div class="notes" aria-hidden="true">
+        <div class="note">
+          <h4>插件侧 · 只声明</h4>
+          <pre><span class="k">ctx</span>.tray.add_action(
+    <span class="s">"start"</span>, <span class="s">"开始专注"</span>, on_start,
+    group=<span class="s">"tools"</span>,   <span class="c"># quick / tools / status</span>
+    order=<span class="s">10</span>,        <span class="c"># 槽内次序</span>
+    submenu=<span class="s">None</span>,    <span class="c"># None = 自动裁决</span>
+)</pre>
+        </div>
+        <div class="note">
+          <h4>基座侧 · 裁决形态</h4>
+          <ul>
+            <li>槽内<b>只有一个插件</b>时全部内联，零层级。</li>
+            <li>槽内出现<b>第二个插件</b>时，各块收进同名子菜单。</li>
+            <li><b>quick</b> 恒内联、预算 5 条，超出降级到 tools。</li>
+            <li><b>status</b> 恒只读、预算 3 条，超出截断并告警。</li>
+            <li><b>tools</b> 预算 6 块，第 7 块起收进<b>「更多插件 ▸」</b>。</li>
+          </ul>
+        </div>
+        <div class="note note--sort">
+          <h4>排序键（逐层兜底）</h4>
+          <div class="line"><b>slot.order</b> → 槽的固定次序</div>
+          <div class="line"><b>block.min(order)</b> → 插件块</div>
+          <div class="line"><b>action.order</b> → 槽内动作</div>
+          <div class="line">text → full id → 确定性兜底</div>
+        </div>
+        <div class="keys-foot">点击右下角托盘图标开合菜单<br />↑↓ 移动 · → 展开 · Enter 触发 · Esc 关闭</div>
+      </div>
+
+      <div class="taskbar">
+        <div class="tb-start">
+          <button class="tb-app" id="appBtn" title="SllkGUI 主窗口">
+            <img src="asset-icon-256.png" alt="SllkGUI" />
+          </button>
+          <span class="tb-title">SllkGUI · 插件基座</span>
+        </div>
+        <div class="tb-tray">
+          <button class="tray-btn" id="trayBtn" aria-haspopup="menu" aria-expanded="false" title="SllkGUI 托盘菜单">
+            <img src="asset-icon-256.png" alt="" />
+          </button>
+          <div class="clock">
+            <span id="clockTime">--:--</span>
+            <span id="clockDate">--/--/--</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <aside class="panel" aria-label="原型参数">
+      <div class="panel-head">
+        <h2>Tweaks</h2>
+        <button class="link" id="resetBtn">重置</button>
+      </div>
+
+      <section class="panel-block">
+        <h3>结构方案</h3>
+        <div class="seg" data-key="variant">
+          <button data-value="A" aria-pressed="true">A 槽分组</button>
+          <button data-value="B" aria-pressed="false">B 分组标题</button>
+          <button data-value="C" aria-pressed="false">C 扁平</button>
+        </div>
+      </section>
+
+      <section class="panel-block">
+        <h3>主题</h3>
+        <div class="seg" data-key="theme">
+          <button data-value="dark" aria-pressed="true">深色</button>
+          <button data-value="bright" aria-pressed="false">明亮</button>
+        </div>
+      </section>
+
+      <section class="panel-block">
+        <h3>插件规模</h3>
+        <div class="seg" data-key="scale">
+          <button data-value="1" aria-pressed="false">1</button>
+          <button data-value="3" aria-pressed="false">3</button>
+          <button data-value="6" aria-pressed="true">6</button>
+          <button data-value="9" aria-pressed="false">9</button>
+        </div>
+      </section>
+
+      <section class="panel-block">
+        <h3>显示</h3>
+        <label class="switch-row"><span>协议标注</span>
+          <input type="checkbox" id="annotToggle" checked /><i></i>
+        </label>
+        <label class="switch-row"><span>状态槽</span>
+          <input type="checkbox" id="statusToggle" checked /><i></i>
+        </label>
+      </section>
+
+      <section class="panel-block">
+        <h3>结构</h3>
+        <dl class="stats" id="stats"></dl>
+      </section>
+
+      <section class="panel-block">
+        <h3>方案取舍</h3>
+        <p id="variantNote"></p>
+      </section>
+
+      <section class="panel-block">
+        <h3>协议要点</h3>
+        <ul class="facts">
+          <li><b>插件声明语义</b>：槽 + 次序 + 文案；<b>形态由基座裁决</b>。</li>
+          <li>槽固定三档：<b>quick</b> 内联直达、<b>tools</b> 默认、<b>status</b> 只读。</li>
+          <li>tools 内出现第二个插件时，各块自动收进同名子菜单。</li>
+          <li>基座项（显示主窗口 / 设置 / 退出）永远在最后，插件不可写入。</li>
+          <li>同 id 覆盖、同 order 按文案兜底、越界与超配额直接拒绝。</li>
+          <li>超出屏幕：<b>配额 → 收拢 → 截断</b>，最后才是原生滚动。</li>
+        </ul>
+      </section>
+
+      <div class="panel-foot">
+        slot · block · action · base<br />
+        see docs/TRAY.md §3–§6
+      </div>
+    </aside>
+  </div>
+</div>
+
+<script>
+(() => {
+  "use strict";
+
+  /* ================================================================
+     插件数据：模拟 9 个真实插件向托盘注册的动作
+     每条动作只声明「槽 + 次序 + 文案」，形态由渲染规则决定
+     ================================================================ */
+  const PLUGINS = [
+    {
+      id: "com.sllk.clipboard", name: "剪贴板", actions: [
+        { id: "panel", text: "打开剪贴板面板", slot: "quick", order: 10 },
+        { id: "clear", text: "清空历史", slot: "tools", order: 40 },
+      ],
+    },
+    {
+      id: "com.sllk.pomodoro", name: "番茄钟", actions: [
+        { id: "start", text: "开始专注", slot: "tools", order: 10 },
+        { id: "pause", text: "暂停", slot: "tools", order: 20 },
+        { id: "today", text: "今日统计", slot: "tools", order: 30 },
+        { id: "running", text: "专注中 · 剩 12:34", slot: "status", order: 10 },
+      ],
+    },
+    {
+      id: "com.sllk.netdiag", name: "网络诊断", actions: [
+        { id: "speed", text: "立即测速", slot: "quick", order: 20 },
+        { id: "ping", text: "Ping 测试", slot: "tools", order: 10 },
+        { id: "trace", text: "路由追踪", slot: "tools", order: 30 },
+        { id: "latency", text: "延迟 28 ms", slot: "status", order: 40 },
+      ],
+    },
+    {
+      id: "com.sllk.notes", name: "Markdown 笔记", actions: [
+        { id: "new", text: "新建笔记", slot: "quick", order: 30 },
+        { id: "library", text: "打开笔记库", slot: "tools", order: 10 },
+      ],
+    },
+    {
+      id: "com.sllk.wallpaper", name: "壁纸轮播", actions: [
+        { id: "next", text: "下一张", slot: "quick", order: 45 },
+        { id: "pause", text: "暂停轮播", slot: "tools", order: 20 },
+      ],
+    },
+    {
+      id: "com.sllk.downloader", name: "下载器", actions: [
+        { id: "folder", text: "打开下载目录", slot: "tools", order: 10 },
+        { id: "progress", text: "正在下载 2/5", slot: "status", order: 20 },
+      ],
+    },
+    {
+      id: "com.sllk.shot", name: "快速截图", actions: [
+        { id: "region", text: "区域截图", slot: "quick", order: 40 },
+        { id: "full", text: "全屏截图", slot: "tools", order: 10 },
+      ],
+    },
+    {
+      id: "com.sllk.translate", name: "翻译", actions: [
+        { id: "select", text: "划词翻译", slot: "tools", order: 10 },
+        { id: "panel", text: "打开翻译面板", slot: "tools", order: 20 },
+      ],
+    },
+    {
+      id: "com.sllk.timetrack", name: "时间追踪", actions: [
+        { id: "track", text: "开始计时段", slot: "quick", order: 50 },
+        { id: "report", text: "今日报告", slot: "tools", order: 10 },
+        { id: "total", text: "今日已记 6h 12m", slot: "status", order: 30 },
+      ],
+    },
+  ];
+
+  /* 主菜单预算：quick 5 + tools 6 块 + status 3 = 14 行，加基座 3 行，
+     在 768p 屏幕上仍能完整展开；超出按「降级 → 收拢 → 截断」处理 */
+  const BUDGET = { quickRows: 5, toolsBlocks: 6, statusRows: 3, pluginActions: 12 };
+
+  const SLOTS = {
+    quick:  { order: 10, label: "快捷", cap: 5, color: "var(--accent)",  mode: "inline" },
+    tools:  { order: 20, label: "工具", cap: 99, color: "var(--info)",   mode: "blocks" },
+    status: { order: 30, label: "状态", cap: 5, color: "var(--warning)", mode: "inline" },
+    more:   { order: 80, label: "兜底", cap: 99, color: "var(--strong)", mode: "flat" },
+    flat:   { order: 0,  label: "扁平", cap: 99, color: "var(--muted)",  mode: "flat" },
+    base:   { order: 90, label: "基座", cap: 9, color: "var(--muted)",   mode: "inline" },
+  };
+
+  const BASE_ROWS = [
+    { text: "显示主窗口" },
+    { text: "设置…" },
+    { text: "退出", last: true },
+  ];
+
+  const VARIANTS = {
+    A: {
+      note: `<span class="em">槽分区 + 自动子菜单</span>：单插件独占一个槽时全部内联；槽内出现第二个插件时，各块收进以插件名命名的子菜单。顶层行数 = 槽内动作 + 插件块 + 基座固定 3 项，随插件增加只增长「块」这一维。`,
+    },
+    B: {
+      note: `<span class="em">槽标题</span>：用禁用项充当分组标题，层级最直白，代价是每个槽多占一行、整体像设置面板；原生 <span class="dim">QMenu</span> 没有 header 语义，读屏器会把标题读成一项不可用动作。`,
+    },
+    C: {
+      note: `<span class="em">扁平 + 前缀</span>：不做任何分组，只靠「插件名 · 动作」标注归属。插件一多就长到需要滚动，文案宽度被前缀吃掉，而且插件之间仍然按 order 交错——这正是当前要修的问题。`,
+    },
+  };
+
+  const state = {
+    variant: "A",
+    theme: "dark",
+    scale: 6,
+    annotations: true,
+    status: true,
+    open: false,
+    submenu: null,
+    active: -1,
+  };
+
+  const els = {
+    screen: document.getElementById("screen"),
+    layer: document.getElementById("menuLayer"),
+    annotations: document.getElementById("annotations"),
+    trayBtn: document.getElementById("trayBtn"),
+    toast: document.getElementById("toast"),
+    toastPath: document.getElementById("toastPath"),
+    toastText: document.getElementById("toastText"),
+    stats: document.getElementById("stats"),
+    variantNote: document.getElementById("variantNote"),
+  };
+
+  /* ---------------- 排序：每层都有完整兜底键 ---------------- */
+  const cmpAction = (a, b) =>
+    a.order - b.order ||
+    a.plugin.name.localeCompare(b.plugin.name, "zh") ||
+    a.id.localeCompare(b.id);
+  const cmpBlock = (a, b) =>
+    a.minOrder - b.minOrder ||
+    a.plugin.name.localeCompare(b.plugin.name, "zh") ||
+    a.plugin.id.localeCompare(b.plugin.id);
+
+  /* ---------------- 生成菜单计划（纯函数，对应 Python plan_menu） ---------------- */
+  function buildPlan() {
+    const plugins = PLUGINS.slice(0, state.scale);
+    const pool = { quick: [], tools: [], status: [] };
+    plugins.forEach((p) =>
+      p.actions.forEach((a) => {
+        if (!state.status && a.slot === "status") return;
+        pool[a.slot].push({ ...a, plugin: p });
+      })
+    );
+
+    const sections = [];
+    let demoted = 0;
+
+    if (state.variant === "C") {
+      const all = [].concat(pool.quick, pool.tools, pool.status).sort(
+        (a, b) => SLOTS[a.slot].order - SLOTS[b.slot].order || cmpAction(a, b)
+      );
+      sections.push({
+        slot: "flat",
+        rows: all.map((a) => actionRow(a, "flat", { prefix: true })),
+        total: all.length,
+      });
+      return { sections, demoted: 0, blocks: 0, submenus: false };
+    }
+
+    /* quick：全局上限 5，超出按 (order, 插件名) 降级到 tools */
+    const quickAll = pool.quick.slice().sort(cmpAction);
+    const quick = quickAll.slice(0, BUDGET.quickRows);
+    const overflow = quickAll.slice(BUDGET.quickRows).map((a) => ({ ...a, demoted: true }));
+    demoted = overflow.length;
+
+    if (quick.length) {
+      sections.push({
+        slot: "quick",
+        rows: quick.map((a) => actionRow(a, "quick")),
+        total: quick.length,
+        overflow: demoted,
+      });
+    }
+
+    /* tools：按插件分块；块数 >= 2 时统一收进子菜单 */
+    const toolsPool = pool.tools.concat(overflow);
+    const byPlugin = new Map();
+    toolsPool.forEach((a) => {
+      if (!byPlugin.has(a.plugin.id)) byPlugin.set(a.plugin.id, { plugin: a.plugin, actions: [] });
+      byPlugin.get(a.plugin.id).actions.push(a);
+    });
+    const blocks = [...byPlugin.values()].map((b) => {
+      b.actions.sort(cmpAction);
+      b.minOrder = Math.min(...b.actions.map((a) => a.order));
+      return b;
+    }).sort(cmpBlock);
+
+    const useSubmenus = blocks.length >= 2;
+    const kept = useSubmenus ? blocks.slice(0, BUDGET.toolsBlocks) : blocks;
+    const overflowBlocks = useSubmenus ? blocks.slice(BUDGET.toolsBlocks) : [];
+    const toolsRows = [];
+    kept.forEach((b) => {
+      if (useSubmenus) {
+        toolsRows.push({
+          kind: "submenu",
+          text: b.plugin.name,
+          order: b.minOrder,
+          plugin: b.plugin,
+          slot: "tools",
+          children: b.actions.map((a) => actionRow(a, "tools", { disabled: a.demoted })),
+        });
+      } else {
+        b.actions.forEach((a) => toolsRows.push(actionRow(a, "tools", { disabled: a.demoted })));
+      }
+    });
+
+    /* 兜底桶：超出块预算的插件动作收进「更多插件」，平铺 + 前缀，深度不超过 2 */
+    let bucketed = 0;
+    if (overflowBlocks.length) {
+      const bucketRows = [];
+      overflowBlocks.forEach((b) =>
+        b.actions.forEach((a) => bucketRows.push(actionRow(a, "more", { prefix: true })))
+      );
+      bucketed = bucketRows.length;
+      toolsRows.push({
+        kind: "submenu",
+        text: "更多插件",
+        order: 999,
+        plugin: { name: "更多插件", id: "__more" },
+        slot: "tools",
+        overflow: true,
+        children: bucketRows,
+      });
+    }
+
+    if (toolsRows.length) {
+      sections.push({
+        slot: "tools",
+        rows: toolsRows,
+        blocks: blocks.length,
+        submenus: useSubmenus,
+        overflowBlocks: overflowBlocks.length,
+        bucketed,
+      });
+    }
+
+    /* status：只读，强制禁用；超出预算截断并告警 */
+    const statusAll = pool.status.slice().sort(cmpAction);
+    const statusKept = statusAll.slice(0, BUDGET.statusRows);
+    const statusRows = statusKept.map((a) => actionRow(a, "status", { disabled: true }));
+    const truncatedStatus = statusAll.length - statusKept.length;
+    if (statusRows.length) {
+      sections.push({
+        slot: "status",
+        rows: statusRows,
+        total: statusKept.length,
+        truncated: truncatedStatus,
+      });
+    }
+
+    return {
+      sections,
+      demoted,
+      blocks: blocks.length,
+      submenus: useSubmenus,
+      overflowBlocks: overflowBlocks.length,
+      bucketed,
+      truncatedStatus,
+    };
+  }
+
+  function actionRow(a, slot, opts) {
+    const opt = opts || {};
+    return {
+      kind: "action",
+      text: opt.prefix ? `${a.plugin.name} · ${a.text}` : a.text,
+      order: a.order,
+      plugin: a.plugin,
+      pluginName: a.plugin.name,
+      slot,
+      disabled: Boolean(opts && opts.disabled),
+      demoted: Boolean(a.demoted),
+      path: [a.plugin.name, a.text],
+    };
+  }
+
+  /* ---------------- 渲染 ---------------- */
+  function chevron() {
+    const ns = "http://www.w3.org/2000/svg";
+    const svg = document.createElementNS(ns, "svg");
+    svg.setAttribute("viewBox", "0 0 12 12");
+    svg.setAttribute("class", "chev");
+    const path = document.createElementNS(ns, "path");
+    path.setAttribute("d", "M4.6 2.6 8 6l-3.4 3.4");
+    path.setAttribute("fill", "none");
+    path.setAttribute("stroke", "currentColor");
+    path.setAttribute("stroke-width", "1.4");
+    path.setAttribute("stroke-linecap", "round");
+    path.setAttribute("stroke-linejoin", "round");
+    svg.appendChild(path);
+    return svg;
+  }
+
+  function makeRow(row) {
+    const el = document.createElement("div");
+    el.className = "row";
+    el.setAttribute("role", "menuitem");
+    el.dataset.slot = row.slot;
+    if (row.disabled) el.classList.add("is-disabled");
+    if (row.kind === "submenu") el.classList.add("has-sub");
+
+    const text = document.createElement("span");
+    text.className = "row-text";
+    text.textContent = row.text;
+    el.appendChild(text);
+
+    const chev = row.kind === "submenu" ? chevron() : null;
+
+    if (state.annotations && !row.overflow) {
+      const meta = document.createElement("span");
+      meta.className = "row-meta";
+      meta.textContent = String(row.order);
+      if (row.demoted) {
+        const mark = document.createElement("span");
+        mark.className = "demoted";
+        mark.textContent = " ⤵ 降级";
+        meta.appendChild(mark);
+      }
+      el.appendChild(meta);
+    }
+
+    if (chev) el.appendChild(chev);
+
+    if (row.kind === "submenu") {
+      el.addEventListener("pointerenter", () => scheduleSubmenu(el, row));
+      el.addEventListener("click", (ev) => {
+        ev.stopPropagation();
+        showSubmenu(el, row);
+      });
+    } else if (!row.disabled) {
+      el.addEventListener("pointerenter", () => {
+        closeSubmenu();
+        setActive(el);
+      });
+      el.addEventListener("click", (ev) => {
+        ev.stopPropagation();
+        activate(row);
+      });
+    }
+    return el;
+  }
+
+  function paint() {
+    if (!state.open) {
+      els.layer.innerHTML = "";
+      els.annotations.innerHTML = "";
+      els.trayBtn.classList.remove("is-active");
+      els.trayBtn.setAttribute("aria-expanded", "false");
+      document.body.classList.remove("has-submenu");
+      return;
+    }
+
+    const plan = buildPlan();
+    const menu = document.createElement("div");
+    menu.className = "menu";
+    menu.setAttribute("role", "menu");
+
+    const itemEls = [];
+    plan.sections.forEach((section, si) => {
+      if (si > 0) {
+        const sep = document.createElement("div");
+        sep.className = "sep";
+        sep.setAttribute("role", "separator");
+        menu.appendChild(sep);
+      }
+      if (state.variant === "B") {
+        const head = document.createElement("div");
+        head.className = "section-head";
+        head.textContent = SLOTS[section.slot].label;
+        menu.appendChild(head);
+      }
+      section.rows.forEach((row) => {
+        const el = makeRow(row);
+        el._row = row;
+        menu.appendChild(el);
+        itemEls.push(el);
+      });
+    });
+
+    const sep = document.createElement("div");
+    sep.className = "sep";
+    sep.setAttribute("role", "separator");
+    menu.appendChild(sep);
+
+    BASE_ROWS.forEach((row, i) => {
+      const el = document.createElement("div");
+      el.className = "row";
+      el.setAttribute("role", "menuitem");
+      el.dataset.slot = "base";
+      const text = document.createElement("span");
+      text.className = "row-text";
+      text.textContent = row.text;
+      el.appendChild(text);
+      el._row = { kind: "action", text: row.text, slot: "base", base: true, path: ["SllkGUI", row.text] };
+      el.addEventListener("pointerenter", () => {
+        closeSubmenu();
+        setActive(el);
+      });
+      el.addEventListener("click", (ev) => {
+        ev.stopPropagation();
+        activate(el._row);
+      });
+      menu.appendChild(el);
+      itemEls.push(el);
+    });
+
+    els.layer.innerHTML = "";
+    els.layer.appendChild(menu);
+    els.trayBtn.classList.add("is-active");
+    els.trayBtn.setAttribute("aria-expanded", "true");
+
+    state.itemEls = itemEls;
+    state.active = -1;
+
+    requestAnimationFrame(() => {
+      drawAnnotations(menu, plan);
+      updateStats(menu, plan);
+    });
+  }
+
+  /* ---------------- 标注：槽边界 ---------------- */
+  function drawAnnotations(menu, plan) {
+    els.annotations.innerHTML = "";
+    if (!state.annotations) return;
+
+    const layerRect = els.layer.getBoundingClientRect();
+    const menuRect = menu.getBoundingClientRect();
+    const menuLeft = menuRect.left - layerRect.left;
+    const rows = [...menu.querySelectorAll(".row")];
+
+    const groups = [];
+    rows.forEach((el) => {
+      const slot = el.dataset.slot;
+      const prev = el.previousElementSibling;
+      const head = prev && prev.classList.contains("section-head") ? prev : null;
+      const last = groups[groups.length - 1];
+      if (last && last.slot === slot) {
+        last.rows.push(el);
+        if (head) last.head = head;
+      } else {
+        groups.push({ slot, rows: [el], head });
+      }
+    });
+
+    groups.forEach((group) => {
+      if (!group.rows.length) return;
+      const first = group.rows[0].getBoundingClientRect();
+      const last = group.rows[group.rows.length - 1].getBoundingClientRect();
+      const headRect = group.head ? group.head.getBoundingClientRect() : null;
+      const top = (headRect ? headRect.top : first.top) - layerRect.top + 1;
+      const height = last.bottom - first.top - 2;
+      const color = SLOTS[group.slot].color;
+
+      const brk = document.createElement("div");
+      brk.className = "brk";
+      brk.style.cssText = `left:${menuLeft - 15}px;top:${top}px;height:${height}px;color:${color}`;
+      els.annotations.appendChild(brk);
+
+      const label = document.createElement("div");
+      label.className = "brk-label";
+      label.style.cssText = `left:${menuLeft - 36}px;top:${top + height / 2}px;color:${color}`;
+      label.innerHTML = labelText(group.slot, group.rows.length, plan);
+      els.annotations.appendChild(label);
+    });
+  }
+
+  function labelText(slot, count, plan) {
+    if (slot === "quick") {
+      const extra = plan.demoted ? ` · 降级 ${plan.demoted}` : "";
+      return `<b>槽 quick</b> · 内联 ${count} / 预算 ${BUDGET.quickRows}${extra}`;
+    }
+    if (slot === "tools") {
+      const overflow = plan.overflowBlocks ? ` · 兜底 ${plan.overflowBlocks} 块` : "";
+      return plan.submenus
+        ? `<b>槽 tools</b> · ${plan.blocks} 块 → 子菜单${overflow}`
+        : `<b>槽 tools</b> · 独占 · 内联 ${count}`;
+    }
+    if (slot === "status") {
+      const cut = plan.truncatedStatus ? ` · 截断 ${plan.truncatedStatus}` : "";
+      return `<b>槽 status</b> · 只读 ${count}${cut}`;
+    }
+    if (slot === "flat") return `<b>扁平列表</b> · ${count} 条混排 · 无槽边界`;
+    return `<b>基座区</b> · 仅基座可写 · 锁定`;
+  }
+
+  function updateStats(menu, plan) {
+    const rows = menu.querySelectorAll(".row").length;
+    const height = Math.round(menu.getBoundingClientRect().height);
+    const scroll = menu.scrollHeight > menu.clientHeight + 1;
+    const quickCount = PLUGINS.slice(0, state.scale).filter((p) => p.actions.some((a) => a.slot === "quick")).length;
+    const items = [
+      ["顶层行数", String(rows)],
+      ["插件块", plan.blocks ? `${plan.blocks}${plan.submenus ? " → 子菜单" : " · 独占内联"}` : "—"],
+      ["quick 预算", `${Math.min(quickCount, BUDGET.quickRows)}/${BUDGET.quickRows}` + (plan.demoted ? ` 降级 ${plan.demoted}` : "")],
+      ["tools 预算", plan.blocks ? `${Math.min(plan.blocks, BUDGET.toolsBlocks)}/${BUDGET.toolsBlocks}` + (plan.overflowBlocks ? ` 兜底 ${plan.overflowBlocks} 块` : "") : "—"],
+      ["status 预算", `${Math.min(plan.sections.find((x) => x.slot === "status")?.rows.length || 0, BUDGET.statusRows)}/${BUDGET.statusRows}` + (plan.truncatedStatus ? ` 截断 ${plan.truncatedStatus}` : "")],
+      ["菜单高度", `${height}px${scroll ? " · 需滚动" : ""}`],
+    ];
+    els.stats.innerHTML = items
+      .map(([k, v]) => `<div><dt>${k}</dt><dd class="${v.includes("滚动") ? "warn" : ""}">${v}</dd></div>`)
+      .join("");
+    els.variantNote.innerHTML = VARIANTS[state.variant].note;
+  }
+
+  /* ---------------- 子菜单 ---------------- */
+  let hoverTimer = 0;
+
+  function scheduleSubmenu(el, row) {
+    clearTimeout(hoverTimer);
+    hoverTimer = setTimeout(() => showSubmenu(el, row), 150);
+  }
+
+  function showSubmenu(el, row) {
+    clearTimeout(hoverTimer);
+    if (state.submenu && state.submenu.owner === el) return;
+    closeSubmenu();
+    setActive(el);
+
+    const sub = document.createElement("div");
+    sub.className = "menu submenu";
+    sub.setAttribute("role", "menu");
+    row.children.forEach((child) => {
+      const childEl = makeRow(child);
+      childEl._row = child;
+      sub.appendChild(childEl);
+    });
+
+    els.layer.appendChild(sub);
+
+    const layerRect = els.layer.getBoundingClientRect();
+    const rowRect = el.getBoundingClientRect();
+    const subRect = sub.getBoundingClientRect();
+    // 托盘在屏幕右缘：向左翻转，与原生菜单贴边行为一致
+    let left = rowRect.left - layerRect.left - subRect.width + 3;
+    let top = rowRect.top - layerRect.top - 5;
+    top = Math.max(8, Math.min(top, layerRect.height - subRect.height - 12));
+    left = Math.max(8, left);
+    sub.style.left = `${left}px`;
+    sub.style.top = `${top}px`;
+
+    state.submenu = { owner: el, el: sub, rows: [...sub.querySelectorAll(".row")], active: -1 };
+    document.body.classList.add("has-submenu");
+  }
+
+  function closeSubmenu() {
+    clearTimeout(hoverTimer);
+    if (state.submenu) {
+      state.submenu.el.remove();
+      state.submenu = null;
+    }
+    document.body.classList.remove("has-submenu");
+  }
+
+  /* ---------------- 键盘 / 激活 ---------------- */
+  function setActive(el) {
+    if (!state.itemEls) return;
+    state.itemEls.forEach((item) => item.classList.remove("is-active"));
+    if (el) {
+      el.classList.add("is-active");
+      state.active = state.itemEls.indexOf(el);
+    }
+  }
+
+  function moveActive(delta) {
+    if (!state.itemEls || !state.itemEls.length) return;
+    let index = state.active;
+    for (let step = 0; step < state.itemEls.length; step += 1) {
+      index = (index + delta + state.itemEls.length) % state.itemEls.length;
+      const el = state.itemEls[index];
+      if (!el.classList.contains("is-disabled")) break;
+    }
+    setActive(state.itemEls[index]);
+  }
+
+  function activate(row) {
+    if (!row || row.disabled) return;
+    if (row.kind === "submenu") return;
+    showToast(row.path[0], row.path[1]);
+    closeMenu();
+  }
+
+  let toastTimer = 0;
+  function showToast(owner, text) {
+    els.toastPath.textContent = owner;
+    els.toastText.textContent = `› ${text}`;
+    els.toast.classList.add("is-on");
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => els.toast.classList.remove("is-on"), 1900);
+  }
+
+  function openMenu(peek) {
+    state.open = true;
+    paint();
+    const first = state.itemEls && state.itemEls.find((el) => !el.classList.contains("is-disabled"));
+    if (first) setActive(first);
+    if (peek > 0) {
+      const parents = (state.itemEls || []).filter((el) => el._row && el._row.kind === "submenu");
+      if (parents[peek - 1]) showSubmenu(parents[peek - 1], parents[peek - 1]._row);
+    }
+  }
+
+  function closeMenu() {
+    state.open = false;
+    closeSubmenu();
+    paint();
+  }
+
+  els.trayBtn.addEventListener("click", (ev) => {
+    ev.stopPropagation();
+    if (state.open) closeMenu();
+    else openMenu();
+  });
+
+  document.addEventListener("click", () => {
+    if (state.open) closeMenu();
+  });
+
+  document.addEventListener("keydown", (ev) => {
+    if (ev.key === "Escape") {
+      if (state.submenu) {
+        const owner = state.submenu.owner;
+        closeSubmenu();
+        setActive(owner);
+      } else if (state.open) {
+        closeMenu();
+      }
+      return;
+    }
+    if (!state.open) {
+      if (ev.key === "ArrowUp" || ev.key === "ArrowDown" || ev.key === "Enter") {
+        ev.preventDefault();
+        openMenu();
+      }
+      return;
+    }
+    if (ev.key === "ArrowDown" || ev.key === "ArrowUp") {
+      ev.preventDefault();
+      const delta = ev.key === "ArrowDown" ? 1 : -1;
+      if (state.submenu) {
+        const rows = state.submenu.rows;
+        if (!rows.length) return;
+        let i = state.submenu.active;
+        for (let s = 0; s < rows.length; s += 1) {
+          i = (i + delta + rows.length) % rows.length;
+          if (!rows[i].classList.contains("is-disabled")) break;
+        }
+        rows.forEach((r) => r.classList.remove("is-active"));
+        rows[i].classList.add("is-active");
+        state.submenu.active = i;
+      } else {
+        moveActive(delta);
+      }
+      return;
+    }
+    if (ev.key === "ArrowRight" || ev.key === "Enter") {
+      if (state.submenu) {
+        const el = state.submenu.rows[state.submenu.active];
+        if (el && el._row) activate(el._row);
+        return;
+      }
+      const el = state.itemEls && state.itemEls[state.active];
+      if (!el) return;
+      ev.preventDefault();
+      if (el._row && el._row.kind === "submenu") showSubmenu(el, el._row);
+      else if (el._row) activate(el._row);
+      return;
+    }
+    if (ev.key === "ArrowLeft") {
+      if (state.submenu) {
+        const owner = state.submenu.owner;
+        closeSubmenu();
+        setActive(owner);
+      }
+    }
+  });
+
+  /* ---------------- 面板 ---------------- */
+  function syncControls() {
+    document.querySelectorAll(".seg").forEach((seg) => {
+      const key = seg.dataset.key;
+      seg.querySelectorAll("button").forEach((btn) => {
+        const on = String(state[key]) === btn.dataset.value;
+        btn.setAttribute("aria-pressed", on ? "true" : "false");
+      });
+    });
+    document.getElementById("annotToggle").checked = state.annotations;
+    document.getElementById("statusToggle").checked = state.status;
+    document.body.classList.toggle("annot", state.annotations);
+    document.documentElement.dataset.theme = state.theme;
+  }
+
+  document.querySelectorAll(".seg").forEach((seg) => {
+    seg.addEventListener("click", (ev) => {
+      const btn = ev.target.closest("button");
+      if (!btn) return;
+      const key = seg.dataset.key;
+      state[key] = key === "scale" ? Number(btn.dataset.value) : btn.dataset.value;
+      syncControls();
+      paint();
+    });
+  });
+
+  document.getElementById("annotToggle").addEventListener("change", (ev) => {
+    state.annotations = ev.target.checked;
+    syncControls();
+    paint();
+  });
+
+  document.getElementById("statusToggle").addEventListener("change", (ev) => {
+    state.status = ev.target.checked;
+    paint();
+  });
+
+  document.getElementById("resetBtn").addEventListener("click", () => {
+    Object.assign(state, { variant: "A", theme: "dark", scale: 6, annotations: true, status: true });
+    syncControls();
+    paint();
+  });
+
+  /* ---------------- 时钟 ---------------- */
+  function tick() {
+    const now = new Date();
+    const pad = (n) => String(n).padStart(2, "0");
+    document.getElementById("clockTime").textContent = `${pad(now.getHours())}:${pad(now.getMinutes())}`;
+    document.getElementById("clockDate").textContent =
+      `${now.getFullYear()}/${pad(now.getMonth() + 1)}/${pad(now.getDate())}`;
+  }
+  tick();
+  setInterval(tick, 20000);
+
+  /* ---------------- 启动：默认展开，方便直接看层级 ---------------- */
+  const params = new URLSearchParams(location.search);
+  if (["A", "B", "C"].includes(params.get("variant"))) state.variant = params.get("variant");
+  if (["dark", "bright"].includes(params.get("theme"))) state.theme = params.get("theme");
+  if (["1", "3", "6", "9"].includes(params.get("scale"))) state.scale = Number(params.get("scale"));
+  if (params.get("annot") === "0") state.annotations = false;
+  if (params.get("status") === "0") state.status = false;
+
+  syncControls();
+  openMenu(Number(params.get("peek") || 0));
+})();
+</script>
+</body>
+</html>

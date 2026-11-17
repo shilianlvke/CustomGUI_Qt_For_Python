@@ -118,11 +118,32 @@ PLUGIN = NotesPlugin()
 | `timing(name, payload=None)` | 上下文计时，自动记录 `duration_ms` |
 | `report_error(code, message, detail=None)` | 日志 + 遥测 + 非阻塞错误提示 |
 | `parent_window()` | Gallery 主窗口（对话框父级） |
-| `tray` | 基座常驻托盘的文本动作（图标/提示固定由基座持有，见 `docs/TRAY.md`） |
+| `tray` | 基座常驻托盘的分组动作：槽 + 次序 + 文案（形态由基座裁决，见 `docs/TRAY.md`） |
 | `shortcuts` | 基座快捷键表：注册/更新/注销、启停与冲突查询（见 `docs/SHORTCUTS.md`） |
 | `settings` | 统一设置：声明页面、读写本插件配置（见 `docs/SETTINGS.md`） |
 
-## 5. 设置
+## 5. 托盘动作
+
+插件只声明**语义**，菜单形态由基座按槽预算裁决（详见 `docs/TRAY.md`）：
+
+```python
+ctx.tray.add_action(
+    "start", "开始专注", self.toggle_focus,   # id 在插件内唯一，重名覆盖
+    group="tools",                            # quick | tools | status
+    order=10,                                 # 槽内次序，越小越靠前
+)
+ctx.tray.add_action("running", "专注中 · 剩 12:34", lambda: None, group="status")
+
+for entry in ctx.tray.entries():              # 实际落位：inline / submenu / bucket
+    ctx.log(f"{entry.action_id} -> {entry.rendered_as} {entry.path}")
+```
+
+- `quick`：内联直达，每插件至多 1 条、文案写成「动词 + 对象」；
+- `tools`：默认槽，独占时内联，槽内出现第二个插件时自动收进同名子菜单；
+- `status`：只读状态，恒为禁用态，不做点击回调；
+- 图标、悬停提示、基座固定项与菜单外壳没有插件 API，属于结构性禁止。
+
+## 6. 设置
 
 插件在 `on_load` 中声明一次设置页，基座设置窗口会自动出现「插件设置」条目：
 
@@ -167,7 +188,7 @@ class NotesPlugin(Plugin):
 可用控件：`Setting.switch` / `select` / `number` / `slider` / `text` / `path` /
 `theme`。完整说明见 `docs/SETTINGS.md`。
 
-## 6. 快捷键
+## 7. 快捷键
 
 快捷键与内置功能共用基座同一张注册表，按「作用域 → 优先级 → 冲突策略」裁决：
 
@@ -202,13 +223,13 @@ class NotesPlugin(Plugin):
 - 局部快捷键必须传 `host`（Surface 页面根控件），宿主销毁时自动注销。
 - 文本输入框聚焦时，不含 Ctrl/Alt/Meta 的绑定不会触发，不会抢走正常输入。
 
-## 7. 多语言
+## 8. 多语言
 
 `resource/lang/<locale>.yml` 支持嵌套字典；四个语言文件必须齐全且键集合一致。
 `ctx.text("home.title")` 读取当前语言；切换语言后 Loader 会调用
 `on_locale_changed`，页面可自行刷新文案。
 
-## 8. 本地开发
+## 9. 本地开发
 
 ```powershell
 # 直接加载本地插件目录，不写 registry
@@ -221,7 +242,7 @@ uv run sllkgui plugin lint ..\my-plugin
 uv run sllkgui run --plugin-dir examples\plugin-hello
 ```
 
-## 9. 发布
+## 10. 发布
 
 1. 打 SemVer tag（如 `v1.2.0`）。
 2. 在官方源提交 `plugins/<id>/entry.yaml`（见 `docs/SOURCE.md`）。
