@@ -67,6 +67,10 @@ SHADOW = 14
 SUBMENU_DELAY = 150
 #: 滚轮一格滚动的行数
 WHEEL_ROWS = 3
+#: 弹层与锚点（托盘图标）之间的间距
+POPUP_GAP = 6
+#: 面板距屏幕可用区边缘的最小留白（阴影可以出屏，面板本体不出屏）
+EDGE_MARGIN = 4
 #: 勾号尺寸与线宽（占图标列，与原生菜单一致）
 CHECK_SIZE = 10
 CHECK_WIDTH = 1.6
@@ -191,11 +195,12 @@ class CPopupMenu(QWidget):
 
         self._style = style or MenuStyle()
         self._root = _Panel(normalize_items(items), 0)
-        self._anchor = QPoint()
+        self._anchor = QRect()
         self._area = QRect()
         self._origin = QPoint()
         self._above = True
         self._align = "right"
+        self._gap = POPUP_GAP
         self._hover_panel: _Panel | None = None
         self._hover_index = -1
         self._closing = False
@@ -251,23 +256,34 @@ class CPopupMenu(QWidget):
     # ------------------------------------------------------------------
     # 显示 / 关闭
     # ------------------------------------------------------------------
-    def popup(self, anchor: QPoint, *, above: bool = True, align: str = "right") -> None:
+    def popup(
+        self,
+        anchor: QPoint | QRect,
+        *,
+        above: bool = True,
+        align: str = "right",
+        gap: int = POPUP_GAP,
+    ) -> None:
         """在全局坐标 ``anchor`` 处展开。
 
         Args:
-            anchor: 锚点（托盘图标处通常传 ``QCursor.pos()``）。
+            anchor: 锚点矩形（托盘图标建议传图标外接矩形）或单个坐标点。
+                传点时按 1x1 矩形处理，等价于「贴着鼠标」。
             above: ``True`` 向上生长（贴底边的托盘），``False`` 向下生长。
-            align: ``right`` 右对齐锚点、``left`` 左对齐、``center`` 居中。
+            align: ``right`` 右边缘对齐锚点、``left`` 左边缘对齐、``center`` 居中。
+            gap: 与锚点之间的间距（像素）。
         """
-        screen = QGuiApplication.screenAt(anchor) or QGuiApplication.primaryScreen()
+        rect = QRect(anchor) if isinstance(anchor, QRect) else QRect(anchor.x(), anchor.y(), 1, 1)
+        screen = QGuiApplication.screenAt(rect.center()) or QGuiApplication.primaryScreen()
         self._area = screen.availableGeometry() if screen is not None else QRect(0, 0, 1280, 800)
-        self._anchor = anchor
+        self._anchor = rect
         self._above = above
         self._align = align
+        self._gap = gap
         self._measure_all()
         self._root.scroll = 0
         self._close_all_submenus()
-        self._layout(anchor, above=above, align=align)
+        self._layout(rect, above=above, align=align, gap=gap)
         self._apply_geometry()
         self._capture_backdrop()
         self._root.hover = self._first_selectable(self._root)
@@ -300,6 +316,15 @@ class CPopupMenu(QWidget):
     def panel_rects(self) -> list[QRect]:
         """每个面板的全局矩形（由浅到深）。"""
         return [QRect(panel.rect) for panel in self._chain()]
+
+    def row_rect(self, index: int, depth: int = 0) -> QRect:
+        """某一行在屏幕上的矩形（诊断、测试与宿主自定义命中用）。"""
+        panel = self._panel_at_depth(depth)
+        row = self._row(panel, index)
+        if panel is None or row is None:
+            return QRect()
+        top = panel.rect.top() + self._style.padding + row.top - panel.scroll
+        return QRect(panel.rect.left(), top, panel.rect.width(), row.height)
 
     def active_label(self) -> str:
         panel = self._active_panel()
@@ -449,22 +474,28 @@ class CPopupMenu(QWidget):
     def _active_panel(self) -> _Panel:
         return self._chain()[-1]
 
-    def _layout(self, anchor: QPoint, *, above: bool, align: str) -> None:
-        style = self._style
-        margin = style.shadow
-        limit = self._area.adjusted(margin, margin, -margin, -margin)
+    def _layout(self, anchor: QRect, *, above: bool, align: str, gap: int = POPUP_GAP) -> None:
+        # 只保证面板本体不出可用区；阴影允许出屏（由系统裁掉），
+        # 否则贴边时会平白多出 14px 空隙
+        limit = self._area.adjusted(EDGE_MARGIN, EDGE_MARGIN, -EDGE_MARGIN, -EDGE_MARGIN)
 
         root = self._root
         height = min(root.content_height, limit.height())
         if align == "left":
-            x = anchor.x()
+            x = anchor.left()
         elif align == "center":
-            x = anchor.x() - root.width // 2
+            x = anchor.center().x() - root.width // 2
         else:
-            x = anchor.x() - root.width
+            x = anchor.right() + 1 - root.width
         x = max(limit.left(), min(x, limit.right() + 1 - root.width))
-        y = anchor.y() - height if above else anchor.y()
-        y = max(limit.top(), min(y, limit.bottom() + 1 - height))
+        if above:
+            # 先定底边再定顶边：锚点落在任务栏里时，底边被夹到可用区底部，
+            # 菜单不会压住任务栏（这正是之前「位置偏低」的原因）
+            bottom = min(anchor.top() - gap, limit.bottom() + 1)
+            y = max(limit.top(), bottom - height)
+        else:
+            top = max(limit.top(), anchor.bottom() + 1 + gap)
+            y = min(top, limit.bottom() + 1 - height)
         root.rect = QRect(x, y, root.width, height)
         root.clamp_scroll()
 
@@ -474,7 +505,7 @@ class CPopupMenu(QWidget):
             row = self._row(panel, panel.open_index)
             if row is None:
                 break
-            row_top = panel.rect.top() + style.padding + row.top - panel.scroll
+            row_top = panel.rect.top() + self._style.padding + row.top - panel.scroll
             child_height = min(child.content_height, limit.height())
             right = panel.rect.right() + 1 + PANEL_GAP
             left = panel.rect.left() - child.width - PANEL_GAP
@@ -511,7 +542,7 @@ class CPopupMenu(QWidget):
         if not self.uses_backdrop():
             return
         # 先按锚点找屏幕：弹层未显示时 self.screen() 可能还是主屏，多屏会截错
-        screen = QGuiApplication.screenAt(self._anchor) or self.screen() or QGuiApplication.primaryScreen()
+        screen = QGuiApplication.screenAt(self._anchor.center()) or self.screen() or QGuiApplication.primaryScreen()
         if screen is None:
             return
         shot = screen.grabWindow(0)
@@ -550,7 +581,7 @@ class CPopupMenu(QWidget):
 
     def _relayout(self) -> None:
         """子菜单开合后重排（沿用打开时的锚点与方向）。"""
-        self._layout(self._anchor, above=self._above, align=self._align)
+        self._layout(self._anchor, above=self._above, align=self._align, gap=self._gap)
         self._apply_geometry()
         self.update()
 
@@ -821,9 +852,15 @@ class CPopupMenu(QWidget):
             self._hover_timer.stop()
             super().mouseMoveEvent(event)
             return
-        # 回到祖先面板：先关掉它下面已展开的子菜单，避免“看着父级、点着子级”
         if panel is not self._active_panel():
-            self._close_child(panel)
+            if panel.child is not None and index == panel.open_index:
+                # 指针仍停在「已展开的父行」上：可能正从箭头移向子菜单，
+                # 此时必须保持子菜单与高亮不变，否则一移动就消失
+                self._hover_timer.stop()
+                super().mouseMoveEvent(event)
+                return
+            if panel.child is not None:
+                self._close_child(panel)
         self._apply_hover(panel, index)
         row = self._row(panel, index)
         if row is None:
@@ -833,7 +870,7 @@ class CPopupMenu(QWidget):
                 self._hover_timer.start(SUBMENU_DELAY)
         else:
             self._hover_timer.stop()
-            if panel.child is not None:
+            if panel.child is not None and index != panel.open_index:
                 self._close_child(panel)
         super().mouseMoveEvent(event)
 

@@ -299,3 +299,90 @@ def test_opaque_style_skips_backdrop(app):
         assert menu.backdrop() is None
     finally:
         menu.dismiss()
+
+
+# ----------------------------------------------------------------------
+# 回归：子菜单在指针移动中保持打开 / 锚点定位
+# ----------------------------------------------------------------------
+def _move(menu, pos):
+    from PySide6.QtCore import QEvent, QPointF, Qt
+    from PySide6.QtGui import QMouseEvent
+
+    event = QMouseEvent(
+        QEvent.Type.MouseMove,
+        QPointF(pos - menu.pos()),
+        QPointF(pos),
+        Qt.MouseButton.NoButton,
+        Qt.MouseButton.NoButton,
+        Qt.KeyboardModifier.NoModifier,
+    )
+    menu.mouseMoveEvent(event)
+
+
+def test_submenu_survives_pointer_travelling_to_child(app):
+    """从父行移向子菜单（含箭头、面板边缘）时不能收起子菜单。"""
+    from PySide6.QtCore import QPoint
+
+    menu = _open()
+    try:
+        menu.set_active_index(3)  # 番茄钟
+        assert menu.open_active_submenu() is True
+        parent_row = menu.row_rect(3)
+        parent, child = menu.panel_rects()
+        for x in (parent_row.right() - 30, parent_row.right() - 3, child.left() + 6):
+            _move(menu, QPoint(x, parent_row.center().y()))
+            assert menu.open_depth() == 1, f"移动到 x={x} 时子菜单被关闭"
+        _move(menu, menu.row_rect(1, depth=1).center())
+        assert menu.open_depth() == 1
+        assert menu.active_label() == "暂停"
+    finally:
+        menu.dismiss()
+
+
+def test_hovering_another_row_closes_submenu(app):
+
+    menu = _open()
+    try:
+        menu.set_active_index(3)
+        menu.open_active_submenu()
+        # 悬停到「网络诊断」行（无子菜单）
+        _move(menu, menu.row_rect(4).center())
+        assert menu.open_depth() == 0
+    finally:
+        menu.dismiss()
+
+
+def test_popup_rect_anchor_aligns_and_keeps_gap(app):
+    from PySide6.QtCore import QRect
+    from PySide6.QtGui import QGuiApplication
+
+    area = QGuiApplication.primaryScreen().availableGeometry()
+    # 图标矩形落在可用区之内，便于验证「右对齐 + 间距」的精确关系
+    icon = QRect(area.center().x(), area.center().y(), 24, 24)
+    menu = CPopupMenu(_items())
+    menu.popup(icon, above=True, align="right", gap=6)
+    try:
+        panel = menu.panel_rects()[0]
+        assert panel.right() == icon.right()
+        # QRect.bottom() 是闭区间，gap=6 即面板底边与图标顶部之间留 6px
+        assert panel.bottom() == icon.top() - 1 - 6
+    finally:
+        menu.dismiss()
+
+
+def test_popup_stays_above_taskbar_when_anchor_inside_it(app):
+    """右键点在任务栏上时，菜单底边应停在可用区底部，不压住任务栏。"""
+    from PySide6.QtCore import QPoint, QRect
+    from PySide6.QtGui import QGuiApplication
+
+    area = QGuiApplication.primaryScreen().availableGeometry()
+    point = QPoint(area.right() - 30, area.bottom() + 20)
+    icon = QRect(point.x() - 12, point.y() - 12, 24, 24)
+    menu = CPopupMenu(_items())
+    menu.popup(icon, above=True, align="right")
+    try:
+        panel = menu.panel_rects()[0]
+        assert panel.bottom() <= area.bottom(), (panel, area)
+        assert area.bottom() - panel.bottom() <= 6, "底边应贴近可用区底部"
+    finally:
+        menu.dismiss()

@@ -49,6 +49,9 @@ MAX_ORDER = 999
 
 #: 兜底桶节点的类型标记；文案在渲染期解析，便于四语言切换
 BUCKET_KIND = "more"
+#: 托盘图标在任务栏上的近似边长：右键时用它把光标点还原成图标外接矩形，
+#: 菜单才会贴在图标上方，而不是压住图标、偏进任务栏
+TRAY_ICON_SIZE = 24
 
 
 def _tray_text(key: str, default: str) -> str:
@@ -546,11 +549,20 @@ class TrayService:
         """在托盘图标处展开菜单（右键触发，或宿主主动调用）。"""
         if not self.ensure_visible():
             return False
+        from PySide6.QtCore import QRect
         from PySide6.QtGui import QCursor
 
         menu = self._ensure_menu()
         self._rebuild_menu()
-        menu.popup(anchor if anchor is not None else QCursor.pos(), above=True, align="right")
+        point = anchor if anchor is not None else QCursor.pos()
+        half = TRAY_ICON_SIZE // 2
+        # 以图标外接矩形为锚点：右键得到的是图标中心的坐标，直接当锚点会让
+        # 菜单压住半个图标、底边落进任务栏
+        menu.popup(
+            QRect(point.x() - half, point.y() - half, TRAY_ICON_SIZE, TRAY_ICON_SIZE),
+            above=True,
+            align="right",
+        )
         record_event("tray.menu_opened", category="gallery", payload={"actions": len(self._actions)})
         return True
 
