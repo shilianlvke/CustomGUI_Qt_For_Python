@@ -22,6 +22,8 @@ if TYPE_CHECKING:  # pragma: no cover - 仅类型检查
 
     from PySide6.QtWidgets import QWidget
 
+    from ..appcore.settings import SettingsPage
+
 
 class Permission(StrEnum):
     """声明式权限：安装前展示，用于知情同意，不是沙箱。"""
@@ -206,6 +208,42 @@ class GalleryShortcuts(ABC):
         """移除本插件的全部快捷键（卸载时由加载器调用）。"""
 
 
+class GallerySettings(ABC):
+    """插件设置能力：声明页面、读写配置、监听外部修改。
+
+    插件只需在 ``on_load`` 里调用 :meth:`define` 声明一次页面，设置窗口就会
+    自动出现对应条目；键统一带 ``plugin.<plugin_id>.`` 前缀，与基座和其它
+    插件互不冲突。
+
+    读写方法是**立即生效**的（插件运行时通常马上要用值）；设置窗口里的编辑
+    则走统一的「保存 / 放弃」语义，保存后同样通过 :meth:`on_changed` 通知。
+    """
+
+    @abstractmethod
+    def define(self, page: SettingsPage) -> None:
+        """声明（或重新声明）本插件的设置页；重复调用会整体替换。"""
+
+    @abstractmethod
+    def get(self, key: str, default: Any = None) -> Any:
+        """读取配置值；未声明的键返回 ``default``。"""
+
+    @abstractmethod
+    def set(self, key: str, value: Any) -> bool:
+        """校验并立即写入；失败返回 ``False``（不抛异常给业务代码）。"""
+
+    @abstractmethod
+    def reset(self, key: str) -> bool:
+        """恢复声明默认值并立即写入。"""
+
+    @abstractmethod
+    def values(self) -> dict[str, Any]:
+        """当前全部配置值的快照（短键 -> 值）。"""
+
+    @abstractmethod
+    def on_changed(self, callback: Callable[[str, Any], None]) -> Callable[[], None]:
+        """订阅配置变更；返回取消订阅函数。"""
+
+
 class GalleryContext(ABC):
     """插件运行上下文：所有基座能力都从这里进入。"""
 
@@ -275,6 +313,11 @@ class GalleryContext(ABC):
     def shortcuts(self) -> GalleryShortcuts:
         """基座快捷键表；需要在清单声明 ``shortcuts`` 权限（见 ``docs/SHORTCUTS.md``）。"""
 
+    @property
+    @abstractmethod
+    def settings(self) -> GallerySettings:
+        """统一设置能力：声明页面、读取 / 写入本插件配置。"""
+
 
 class Plugin(ABC):
     """插件基类。唯一合法入口是模块级 ``PLUGIN`` 实例。"""
@@ -296,6 +339,7 @@ class Plugin(ABC):
 
 __all__ = [
     "GalleryContext",
+    "GallerySettings",
     "GalleryShortcut",
     "GalleryShortcuts",
     "GalleryTray",

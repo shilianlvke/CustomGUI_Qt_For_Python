@@ -14,10 +14,11 @@ from typing import Any
 
 from sllkgui.appcore import Language, Logger, get_theme_manager, record_event, track_timing
 
-from .api import GalleryContext, GalleryShortcuts, GalleryTray, Permission
+from .api import GalleryContext, GallerySettings, GalleryShortcuts, GalleryTray, Permission
 from .defaults import MAX_EVENT_BYTES
 from .errors import PLUGIN_PERMISSION_DENIED, GalleryError
 from .manifest import PluginManifest, ensure_within
+from .settings import PluginSettings
 from .shortcuts import ShortcutBridge
 from .store import GalleryStore
 from .tray import TrayHandle, TrayService
@@ -89,6 +90,7 @@ class GalleryContextImpl(GalleryContext):
             if shortcuts is not None
             else None
         )
+        self._settings = PluginSettings(manifest.plugin_id)
         self._record = None
         self._prefix = f"[plugin:{manifest.plugin_id}@{manifest.version}]"
         self._logger_name = f"sllkgui.plugin.{manifest.plugin_id}"
@@ -166,6 +168,17 @@ class GalleryContextImpl(GalleryContext):
                 self._tray_handle.clear()
             except Exception as exc:  # noqa: BLE001 - 清理失败不影响卸载
                 Logger.debug(f"{self._prefix} 托盘清理失败: {exc}")
+
+    @property
+    def settings(self) -> GallerySettings:
+        return self._settings
+
+    def clear_settings(self) -> None:
+        """卸载时移除页面与变更订阅（磁盘配置保留）。"""
+        try:
+            self._settings.clear()
+        except Exception as exc:  # noqa: BLE001 - 清理失败不影响卸载
+            Logger.debug(f"{self._prefix} 设置清理失败: {exc}")
 
     @property
     def shortcuts(self) -> GalleryShortcuts:

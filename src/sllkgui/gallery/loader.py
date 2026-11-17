@@ -285,6 +285,7 @@ def load_plugin(
         _remove_sys_path(sys_path_added)
         context.clear_tray()
         context.clear_shortcuts()
+        context.clear_settings()
         registry._errors.append(
             {"plugin_id": manifest.plugin_id, "code": PLUGIN_LOAD_FAILED, "detail": str(exc)}
         )
@@ -301,6 +302,8 @@ def unload_plugin(record: PluginRecord) -> None:
         record.context.clear_tray()
         # 快捷键先于模块清理：回调对象随条目一起释放，避免留下悬空引用
         record.context.clear_shortcuts()
+        # 设置页与磁盘配置分离：只撤注册，用户改过的值保留
+        record.context.clear_settings()
     for name in {*(getattr(record, "_module_names", []) or []), *_modules_under(record.path)}:
         sys.modules.pop(name, None)
     _remove_sys_path(list(getattr(record, "_sys_path_added", []) or []))
