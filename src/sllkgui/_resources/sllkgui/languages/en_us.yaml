@@ -63,7 +63,7 @@ UI:
   ui_SettingsAppearanceHint: Use Settings in the title bar for appearance and software info
   # 统一设置窗口（基座 + 插件）
   ui_SettingsWindowTitle: "Settings"
-  ui_SettingsWindowSubtitle: "Base and plugin configuration, saved in one place"
+  ui_SettingsWindowSubtitle: "Appearance, interface, and plugins"
   ui_SettingsSearch: "Search settings…"
   ui_SettingsNavEmpty: "No matching settings page"
   ui_SettingsNavBase: "Base settings"
@@ -71,46 +71,46 @@ UI:
   ui_SettingsNoPlugins: "No plugins installed"
   ui_SettingsNoPluginsHint: "Plugin settings appear here after installation."
   ui_SettingsUndeclared: "Not declared"
-  ui_SettingsPluginNoSchema: "This plugin does not declare a settings page; it can still persist runtime state in its data directory."
+  ui_SettingsPluginNoSchema: "This plugin has no configurable options yet."
   ui_SettingsPluginEmpty: "This plugin has no configurable options"
-  ui_SettingsPluginEmptyHint: "The plugin can still persist runtime state in its data directory. To appear here, call ctx.settings.define() in on_load."
+  ui_SettingsPluginEmptyHint: "This plugin has no configurable options yet."
   ui_SettingsPageAppearance: "Appearance"
-  ui_SettingsPageAppearanceHint: "Themes, materials, and background preview live; saved changes are written to user.yaml."
+  ui_SettingsPageAppearanceHint: "Adjust theme, materials, and background."
   ui_SettingsPageInterface: "Interface"
-  ui_SettingsPageInterfaceHint: "Language and layout mode. Changing language rebuilds the UI; layout changes apply after saving."
+  ui_SettingsPageInterfaceHint: "Set interface language and layout."
   ui_SettingsPageWindow: "Startup & Window"
-  ui_SettingsPageWindowHint: "Startup size and window state memory. The window cannot be smaller than the configured minimum."
+  ui_SettingsPageWindowHint: "Set window size and startup behavior."
   ui_SettingsPageShortcuts: "Shortcuts"
-  ui_SettingsPageShortcutsHint: "Base and plugin shortcuts share one registry; plugin entries have lower priority and are rejected on conflict."
+  ui_SettingsPageShortcutsHint: "View the registered shortcuts."
   ui_SettingsPageAbout: "About"
-  ui_SettingsPageAboutHint: "Version, runtime, and data directories. This page is read-only."
+  ui_SettingsPageAboutHint: "Version, runtime, and data directories."
   ui_SettingsSectionBackground: "Background"
   ui_SettingsSectionLanguage: "Language & Region"
   ui_SettingsSectionLayout: "Layout Mode"
-  ui_SettingsSectionLayoutHint: "Static reserves layout space for drawers; overlay floats them above the page."
+  ui_SettingsSectionLayoutHint: "Choose how drawers expand."
   ui_SettingsSectionStartup: "Startup"
-  ui_SettingsSectionStartupHint: "Normal size is remembered on close; maximized, minimized, and fullscreen states are not saved."
+  ui_SettingsSectionStartupHint: "Control the window size on next launch."
   ui_SettingsSectionBaseShortcuts: "Base shortcuts"
   ui_SettingsSectionStorage: "Configuration Storage"
   ui_SettingsStorageBase: "Base"
   ui_SettingsStoragePlugin: "Plugin"
   ui_SettingsThemeScheme: "Color scheme"
-  ui_SettingsThemeSchemeHint: "Choose a built-in palette. Changes preview instantly and revert when discarded."
+  ui_SettingsThemeSchemeHint: "Choose an interface palette."
   ui_SettingsThemeDefault: "Default dark · Grove accent"
   ui_SettingsThemeBright: "Light · Daylight canvas"
   ui_SettingsThemeDracula: "Deep purple · High contrast"
   ui_SettingsThemeEye: "Low blue light · Warm gray"
   ui_SettingsBackgroundImage: "Background image"
-  ui_SettingsBackgroundImageHint: "Choose a local image; empty uses the theme's solid color."
-  ui_SettingsBackgroundFitHint: "Controls how the image fills the window."
+  ui_SettingsBackgroundImageHint: "Choose an image for the window background."
+  ui_SettingsBackgroundFitHint: "Choose how the image fills the window."
   ui_SettingsRecentImagesHint: "Click a thumbnail to switch the background."
   ui_SettingsRememberWindowSize: "Remember window size"
-  ui_SettingsRememberWindowSizeHint: "When off, the next launch uses the startup size from the configuration file."
+  ui_SettingsRememberWindowSizeHint: "When off, the next launch uses the default window size."
   ui_SettingsUnsaved: "{count} unsaved changes"
   ui_SettingsUnsavedBadge: "{count} unsaved"
   ui_SettingsSaving: "Saving…"
   ui_SettingsSaved: "Settings saved"
-  ui_SettingsSaveFailed: "Save failed. Check write access to the settings directory."
+  ui_SettingsSaveFailed: "Save failed. Please try again later."
   ui_SettingsDiscard: "Discard"
   ui_SettingsResetPage: "Restore page defaults"
   ui_SettingsResetItem: "Restore default"
@@ -120,7 +120,8 @@ UI:
   ui_SettingsCloseDiscard: "Discard and close"
   ui_SettingsLocked: "Locked"
   ui_SettingsShortcutsNone: "No binding"
-  ui_SettingsShortcutStatus: "Conflict check"
+  ui_SettingsShortcutStatus: "Shortcut conflicts"
+  ui_SettingsShortcutStatusHint: "Number of keys used more than once."
   ui_SettingsShortcutConflicts: "Conflicts"
   ui_SettingsNeedsRestart: "Rebuild UI after saving"
   ui_SettingsChooseFile: "Choose file…"
@@ -128,7 +129,7 @@ UI:
   ui_SettingsCurrentTheme: "Current theme"
   ui_SettingsPluginNamespace: "This page is registered by a plugin; keys are prefixed with {namespace}. and cannot collide with the base or other plugins."
   ui_SettingsSectionCurrentWindow: "Current window"
-  ui_SettingsCurrentWindowHint: "The actual size is controlled by the user; this section is read-only."
+  ui_SettingsCurrentWindowHint: "Current window size information."
   ui_SettingsCurrentWindowSize: "Current size"
   ui_SettingsMinimumWindowSize: "Minimum size"
   ui_SettingsStartupSize: "Startup size"
@@ -222,21 +223,21 @@ UI:
   ui_TabMaterial: Material
   ui_TabBackground: Background
   ui_TabInterface: Interface
-  ui_ThemeHint: Choose a built-in color scheme
+  ui_ThemeHint: "Choose an interface palette."
   ui_Material: Material & Transparency
-  ui_MaterialHint: Adjust window transparency and acrylic texture live
+  ui_MaterialHint: "Adjust window transparency and blur texture."
   ui_Transparency: Window Transparency
   ui_TransparencyHint: Higher values reveal more of the desktop behind the window
   ui_GlassStrength: Acrylic Strength
-  ui_GlassStrengthHint: Boosts the frosted material beyond the default look
+  ui_GlassStrengthHint: "Higher values make the blur texture more visible."
   ui_Language: Language
-  ui_LanguageHint: Choose the interface language
+  ui_LanguageHint: "Choose the interface language."
   ui_MenuMode: Menu Mode
   ui_MenuModeHint: Dock beside the content, or overlay the current page
   ui_DrawerMode: Drawer Mode
-  ui_DrawerModeHint: Dock all four drawers beside the content, or overlay them on the current page
+  ui_DrawerModeHint: "Choose how side drawers expand."
   ui_Background: Personalize your background
-  ui_BackgroundHint: Images apply to this window only.
+  ui_BackgroundHint: "Set the window background image and display mode."
   ui_BackgroundNone: None
   ui_BackgroundImage: Image
   ui_RecentImages: Recent images
@@ -244,7 +245,7 @@ UI:
   ui_ChoosePhoto: Choose a photo
   ui_BrowsePhoto: Browse photos
   ui_ClearBackground: Clear background
-  ui_BackgroundFit: Choose a fit for your desktop image
+  ui_BackgroundFit: "Fit mode"
   ui_FitFill: Fill
   ui_FitFit: Fit
   ui_FitStretch: Stretch

@@ -7,7 +7,7 @@
 from __future__ import annotations
 
 from PySide6.QtCore import QRectF, QSize, Qt, Signal
-from PySide6.QtGui import QImageReader, QPainter, QPainterPath, QPen, QPixmap
+from PySide6.QtGui import QColor, QImageReader, QPainter, QPainterPath, QPen, QPixmap
 from PySide6.QtWidgets import QWidget
 
 from sllkgui.appcore import get_design_tokens
@@ -77,7 +77,7 @@ class CThumbnail(QWidget):
         rect = QRectF(self.rect()).adjusted(0.5, 0.5, -0.5, -0.5)
         path = QPainterPath()
         path.addRoundedRect(rect, tokens.radius.control, tokens.radius.control)
-        painter.fillPath(path, colors.surface_interactive_pressed)
+        painter.fillPath(path, QColor(colors.surface_interactive_pressed))
         if not self._pixmap.isNull():
             painter.save()
             painter.setClipPath(path)
@@ -94,7 +94,7 @@ class CThumbnail(QWidget):
         if self._hover and not self._selected:
             border = colors.border_soft
         painter.setBrush(Qt.BrushStyle.NoBrush)
-        painter.setPen(QPen(border, 2 if self._selected else 1))
+        painter.setPen(QPen(QColor(border), 2 if self._selected else 1))
         painter.drawPath(path)
         painter.end()
 

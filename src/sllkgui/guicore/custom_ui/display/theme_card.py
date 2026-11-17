@@ -17,9 +17,10 @@ class CThemeCard(QWidget):
 
     clicked = Signal(str)
 
-    def __init__(self, theme_name: str, subtitle: str = "", parent=None):
+    def __init__(self, theme_name: str, subtitle: str = "", parent=None, *, title: str = ""):
         super().__init__(parent)
         self._name = str(theme_name)
+        self._title = str(title or theme_name.replace("_", " ").title())
         self._subtitle = str(subtitle)
         self._selected = False
         self._hover = False
@@ -93,7 +94,7 @@ class CThemeCard(QWidget):
         painter.drawText(
             QRectF(rect.left() + 11, rect.top() + 7, rect.width() - 34, 18),
             Qt.AlignLeft | Qt.AlignVCenter,
-            self._name.replace("_", " ").title(),
+            self._title,
         )
 
         if self._subtitle:

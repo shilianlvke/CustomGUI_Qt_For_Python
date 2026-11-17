@@ -30,6 +30,11 @@ minor 与 patch 保持向后兼容。
   `CEditActionBar` / `CThemeCard` / `CThumbnail`，基座与插件共用。
 - 新增高保真原型 `docs/prototype/settings-window.html`（Grove 深色主题 +
   亚克力），覆盖导航、分组、脏值 / 保存中 / 已保存 / 校验错误 / 插件空状态。
+- 设置体验修正：恢复默认按钮常驻显示、默认值/不可用时置灰，不再随悬停显隐；
+  页面头部固定高度与固定说明区，移除动态徽标，切换页面不产生布局跳动；
+  清理界面中的存储路径、注册表、重建过程等调试式文案。
+- 修复设置保存链路：背景图与菜单/抽屉模式的应用方法缺失导致预览或保存报错；
+  修复最近背景缩略图的绘制类型错误。
 - 新增测试 `tests/test_settings_framework.py`、`tests/test_settings_window.py`、
   `tests/test_plugin_settings.py`；`user.yaml` Schema 升至 v5（新增
   `remember_window_size`）。

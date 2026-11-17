@@ -64,7 +64,7 @@ UI:
   ui_SettingsAppearanceHint: 外観とソフトウェア情報はタイトルバーの「設定」から
   # 统一设置窗口（基座 + 插件）
   ui_SettingsWindowTitle: "設定"
-  ui_SettingsWindowSubtitle: "ベースとプラグインの設定を一元管理"
+  ui_SettingsWindowSubtitle: "外観・インターフェース・プラグイン設定"
   ui_SettingsSearch: "設定項目を検索…"
   ui_SettingsNavEmpty: "一致する設定ページがありません"
   ui_SettingsNavBase: "ベース設定"
@@ -72,46 +72,46 @@ UI:
   ui_SettingsNoPlugins: "インストール済みプラグインはありません"
   ui_SettingsNoPluginsHint: "プラグインをインストールすると、その設定ページがここに表示されます。"
   ui_SettingsUndeclared: "未宣言"
-  ui_SettingsPluginNoSchema: "このプラグインは設定ページを宣言していません。実行時状態はデータディレクトリに保存できます。"
+  ui_SettingsPluginNoSchema: "このプラグインには設定項目がありません。"
   ui_SettingsPluginEmpty: "このプラグインに設定項目はありません"
-  ui_SettingsPluginEmptyHint: "プラグインはデータディレクトリに実行時状態を保存できます。ここに表示するには on_load で ctx.settings.define() を呼び出してください。"
+  ui_SettingsPluginEmptyHint: "このプラグインには設定項目がありません。"
   ui_SettingsPageAppearance: "外観"
-  ui_SettingsPageAppearanceHint: "テーマ・素材・背景は即時プレビューされ、保存時に user.yaml へ書き込まれます。"
+  ui_SettingsPageAppearanceHint: "テーマ・素材・背景を調整します。"
   ui_SettingsPageInterface: "インターフェース"
-  ui_SettingsPageInterfaceHint: "言語とレイアウトモード。言語の変更は UI を再構築し、レイアウトは保存後に反映されます。"
+  ui_SettingsPageInterfaceHint: "インターフェースの言語とレイアウトを設定します。"
   ui_SettingsPageWindow: "起動とウィンドウ"
-  ui_SettingsPageWindowHint: "起動サイズとウィンドウ状態の記憶。構成された最小サイズより小さくはできません。"
+  ui_SettingsPageWindowHint: "ウィンドウサイズと起動時の動作を設定します。"
   ui_SettingsPageShortcuts: "ショートカット"
-  ui_SettingsPageShortcutsHint: "ベースとプラグインは同じレジストリを共有します。プラグインは優先度が低く、競合時は登録されません。"
+  ui_SettingsPageShortcutsHint: "登録済みのショートカットを表示します。"
   ui_SettingsPageAbout: "情報"
-  ui_SettingsPageAboutHint: "バージョン、実行環境、データディレクトリ。このページは読み取り専用です。"
+  ui_SettingsPageAboutHint: "バージョン、実行環境、データディレクトリ。"
   ui_SettingsSectionBackground: "背景"
   ui_SettingsSectionLanguage: "言語と地域"
   ui_SettingsSectionLayout: "レイアウトモード"
-  ui_SettingsSectionLayoutHint: "固定はドロワー用の領域を確保し、オーバーレイはページ上に重ねます。"
+  ui_SettingsSectionLayoutHint: "ドロワーの展開方法を選択します。"
   ui_SettingsSectionStartup: "起動"
-  ui_SettingsSectionStartupHint: "終了時に通常サイズを記憶します。最大化・最小化・全画面は保存しません。"
+  ui_SettingsSectionStartupHint: "次回起動時のウィンドウサイズを設定します。"
   ui_SettingsSectionBaseShortcuts: "ベースのショートカット"
   ui_SettingsSectionStorage: "設定の保存"
   ui_SettingsStorageBase: "ベース"
   ui_SettingsStoragePlugin: "プラグイン"
   ui_SettingsThemeScheme: "配色"
-  ui_SettingsThemeSchemeHint: "内蔵パレットを選択。変更は即時プレビューされ、破棄すると元に戻ります。"
+  ui_SettingsThemeSchemeHint: "インターフェースの配色を選択します。"
   ui_SettingsThemeDefault: "既定のダーク · グローブのアクセント"
   ui_SettingsThemeBright: "ライト · 日光のキャンバス"
   ui_SettingsThemeDracula: "ディープパープル · 高コントラスト"
   ui_SettingsThemeEye: "低ブルーライト · ウォームグレー"
   ui_SettingsBackgroundImage: "背景画像"
-  ui_SettingsBackgroundImageHint: "ローカル画像を選択。空の場合はテーマの単色を使用します。"
-  ui_SettingsBackgroundFitHint: "画像をウィンドウに合わせる方法を選択します。"
+  ui_SettingsBackgroundImageHint: "ウィンドウ背景にする画像を選択します。"
+  ui_SettingsBackgroundFitHint: "画像の表示方法を選択します。"
   ui_SettingsRecentImagesHint: "サムネイルをクリックして背景を切り替えます。"
   ui_SettingsRememberWindowSize: "ウィンドウサイズを記憶"
-  ui_SettingsRememberWindowSizeHint: "オフの場合、次回起動時は構成ファイルの起動サイズを使用します。"
+  ui_SettingsRememberWindowSizeHint: "オフの場合、次回起動時は既定のウィンドウサイズを使用します。"
   ui_SettingsUnsaved: "未保存の変更 {count} 件"
   ui_SettingsUnsavedBadge: "未保存 {count} 件"
   ui_SettingsSaving: "保存中…"
   ui_SettingsSaved: "設定を保存しました"
-  ui_SettingsSaveFailed: "保存に失敗しました。設定ディレクトリの書き込み権限を確認してください。"
+  ui_SettingsSaveFailed: "保存に失敗しました。しばらくしてから再試行してください。"
   ui_SettingsDiscard: "破棄"
   ui_SettingsResetPage: "このページを既定に戻す"
   ui_SettingsResetItem: "既定に戻す"
@@ -121,7 +121,8 @@ UI:
   ui_SettingsCloseDiscard: "破棄して閉じる"
   ui_SettingsLocked: "ロック"
   ui_SettingsShortcutsNone: "バインドなし"
-  ui_SettingsShortcutStatus: "競合チェック"
+  ui_SettingsShortcutStatus: "ショートカットの競合"
+  ui_SettingsShortcutStatusHint: "重複して使われているキーの数。"
   ui_SettingsShortcutConflicts: "競合"
   ui_SettingsNeedsRestart: "保存後に UI を再構築"
   ui_SettingsChooseFile: "ファイルを選択…"
@@ -129,7 +130,7 @@ UI:
   ui_SettingsCurrentTheme: "現在のテーマ"
   ui_SettingsPluginNamespace: "このページはプラグインが登録しています。設定キーには {namespace}. の接頭辞が付き、ベースや他のプラグインと競合しません。"
   ui_SettingsSectionCurrentWindow: "現在のウィンドウ"
-  ui_SettingsCurrentWindowHint: "実際のサイズはユーザーが変更します。ここは表示のみです。"
+  ui_SettingsCurrentWindowHint: "現在のウィンドウサイズ情報。"
   ui_SettingsCurrentWindowSize: "現在のサイズ"
   ui_SettingsMinimumWindowSize: "最小サイズ"
   ui_SettingsStartupSize: "起動サイズ"
@@ -223,21 +224,21 @@ UI:
   ui_TabMaterial: マテリアル
   ui_TabBackground: 背景
   ui_TabInterface: インターフェース
-  ui_ThemeHint: 内蔵の配色を選択
+  ui_ThemeHint: "インターフェースの配色を選択します。"
   ui_Material: マテリアルと透過度
-  ui_MaterialHint: ウィンドウの透明度とアクリル質感をリアルタイム調整
+  ui_MaterialHint: "ウィンドウの透過感とぼかしの質感を調整します。"
   ui_Transparency: ウィンドウ透明度
   ui_TransparencyHint: 値を大きくするとデスクトップがより透けて見えます
   ui_GlassStrength: アクリル質感の強さ
-  ui_GlassStrengthHint: 既定の見た目からぼかし素材の透け感を強めます
+  ui_GlassStrengthHint: "値を大きくすると、ぼかしの質感が強くなります。"
   ui_Language: 言語
-  ui_LanguageHint: 表示言語を選択
+  ui_LanguageHint: "インターフェースの表示言語を選択します。"
   ui_MenuMode: メニューモード
   ui_MenuModeHint: コンテンツ横に固定表示、または現在のページに重ねて表示
   ui_DrawerMode: ドロワーモード
-  ui_DrawerModeHint: 4 方向のドロワーを固定配置、または現在のページに重ねて表示
+  ui_DrawerModeHint: "サイドドロワーの展開方法を選択します。"
   ui_Background: 背景をカスタマイズ
-  ui_BackgroundHint: 画像はこのウィンドウにのみ適用されます。
+  ui_BackgroundHint: "ウィンドウの背景画像と表示方法を設定します。"
   ui_BackgroundNone: なし
   ui_BackgroundImage: 画像
   ui_RecentImages: 最近使用した画像
@@ -245,7 +246,7 @@ UI:
   ui_ChoosePhoto: 写真を選択
   ui_BrowsePhoto: 写真を参照
   ui_ClearBackground: 背景をクリア
-  ui_BackgroundFit: デスクトップ画像の適合方法を選択
+  ui_BackgroundFit: "表示方法"
   ui_FitFill: 画面に合わせる
   ui_FitFit: 全体を表示
   ui_FitStretch: 拡大

@@ -232,6 +232,27 @@ class SettingsController:
         fit = str(value) if key.endswith("background_fit") else str(session.value("core.appearance.background_fit"))
         self._apply_background(path, fit)
 
+    def _apply_background(self, path: str, fit: str) -> None:
+        widget = getattr(getattr(self._window, "ui", None), "window", None)
+        setter = getattr(widget, "set_background_image", None)
+        if callable(setter):
+            setter(path, fit)
+
+    def _apply_menu_mode(self, mode: str) -> None:
+        setter = getattr(MainFunctions, "set_menu_mode", None)
+        if callable(setter):
+            setter(self._window, mode)
+        save_user_settings(menu_mode=mode)
+
+    def _apply_drawer_mode(self, mode: str) -> None:
+        setter = getattr(MainFunctions, "set_drawer_mode", None)
+        if callable(setter):
+            setter(self._window, mode)
+        save_user_settings(drawer_mode=mode)
+        sync = getattr(self, "_sync_settings_button", None)
+        if callable(sync):
+            sync()
+
     def _apply_saved_settings(self, changes: dict) -> None:
         """保存成功后应用非预览类设置（语言 / 布局 / 窗口记忆）。"""
         if "core.appearance.theme" in changes:

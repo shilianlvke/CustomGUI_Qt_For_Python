@@ -61,7 +61,7 @@ class CSettingRow(QWidget):
         self._key = str(key)
         self._modified = False
         self._resettable = bool(resettable)
-        self._hover = False
+        self._reset_available = False
         self._badge_text = badge
         self.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Preferred)
 
@@ -124,7 +124,9 @@ class CSettingRow(QWidget):
         )
         self._reset.setToolTip(Language.resolve_key("language.UI.ui_SettingsResetItem", "恢复默认"))
         self._reset.clicked.connect(lambda: self.resetRequested.emit(self._key))
-        self._reset.hide()
+        # 恢复默认始终占位：可用时高亮，不可用时置灰，避免鼠标移动导致显隐/位移
+        self._reset.setVisible(self._resettable)
+        self._reset.setEnabled(False)
         controls_layout.addWidget(self._reset, 0, Qt.AlignVCenter)
 
         layout.addWidget(self._controls, 0, Qt.AlignRight | Qt.AlignVCenter)
@@ -165,7 +167,11 @@ class CSettingRow(QWidget):
             return
         self._modified = value
         self._dot.setVisible(value)
-        self._refresh_reset()
+
+    def set_reset_available(self, available: bool) -> None:
+        """控制恢复按钮是否可点；按钮本身始终显示（不可用时置灰）。"""
+        self._reset_available = bool(available)
+        self._reset.setEnabled(self._resettable and self._reset_available)
 
     def is_modified(self) -> bool:
         return self._modified
@@ -178,18 +184,6 @@ class CSettingRow(QWidget):
     def error(self) -> str:
         return self._error.text()
 
-    def _refresh_reset(self) -> None:
-        self._reset.setVisible(self._resettable and (self._modified or self._hover))
-
-    def enterEvent(self, event):  # noqa: N802 - 覆写 Qt 命名
-        self._hover = True
-        self._refresh_reset()
-        super().enterEvent(event)
-
-    def leaveEvent(self, event):  # noqa: N802 - 覆写 Qt 命名
-        self._hover = False
-        self._refresh_reset()
-        super().leaveEvent(event)
 
     # ------------------------------------------------------------------
     def update_style(self) -> None:

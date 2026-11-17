@@ -63,7 +63,7 @@ def build_core_pages() -> tuple[SettingsPage, ...]:
     appearance = SettingsPage(
         page_id=PAGE_APPEARANCE,
         title="外观",
-        hint="主题、材质与背景会立即预览；保存后写入当前用户覆盖层 user.yaml。",
+        hint="调整主题、材质与背景。",
         title_key="language.UI.ui_SettingsPageAppearance",
         hint_key="language.UI.ui_SettingsPageAppearanceHint",
         icon="icon_palette",
@@ -72,7 +72,7 @@ def build_core_pages() -> tuple[SettingsPage, ...]:
             SettingsSection(
                 section_id="theme",
                 title="主题",
-                hint="选择一套内置配色；切换后立即预览，放弃修改时恢复原主题。",
+                hint="选择界面配色。",
                 title_key="language.UI.ui_Theme",
                 hint_key="language.UI.ui_ThemeHint",
                 items=(
@@ -89,7 +89,7 @@ def build_core_pages() -> tuple[SettingsPage, ...]:
             SettingsSection(
                 section_id="material",
                 title="材质与通透度",
-                hint="仅在 Windows 11 原生亚克力可用时生效；其它平台自动回落为不透明主题底色。",
+                hint="调整窗口的通透感与模糊质感。",
                 title_key="language.UI.ui_Material",
                 hint_key="language.UI.ui_MaterialHint",
                 items=(
@@ -107,7 +107,7 @@ def build_core_pages() -> tuple[SettingsPage, ...]:
                         "glass_strength",
                         0,
                         "亚克力质感强度",
-                        hint="0 表示沿用配置文件强度；数值越大，模糊材质越明显。",
+                        hint="数值越大，模糊质感越明显。",
                         label_key="language.UI.ui_GlassStrength",
                         hint_key="language.UI.ui_GlassStrengthHint",
                         live_preview=True,
@@ -118,7 +118,7 @@ def build_core_pages() -> tuple[SettingsPage, ...]:
             SettingsSection(
                 section_id="background",
                 title="背景",
-                hint="图片背景仅作用于主窗口；最近使用的图像最多保留 5 张。",
+                hint="设置窗口背景图片与显示方式。",
                 title_key="language.UI.ui_SettingsSectionBackground",
                 hint_key="language.UI.ui_BackgroundHint",
                 items=(
@@ -126,7 +126,7 @@ def build_core_pages() -> tuple[SettingsPage, ...]:
                         "background_image",
                         "",
                         "背景图片",
-                        hint="选择本地图片；留空表示使用主题纯色。",
+                        hint="选择图片作为窗口背景。",
                         label_key="language.UI.ui_SettingsBackgroundImage",
                         hint_key="language.UI.ui_SettingsBackgroundImageHint",
                         live_preview=True,
@@ -143,7 +143,7 @@ def build_core_pages() -> tuple[SettingsPage, ...]:
                             SettingOption("tile", "平铺", "language.UI.ui_FitTile"),
                             SettingOption("center", "居中", "language.UI.ui_FitCenter"),
                         ],
-                        hint="决定图像如何铺满窗口。",
+                        hint="选择图片的填充方式。",
                         label_key="language.UI.ui_BackgroundFit",
                         hint_key="language.UI.ui_SettingsBackgroundFitHint",
                         live_preview=True,
@@ -157,7 +157,7 @@ def build_core_pages() -> tuple[SettingsPage, ...]:
     interface = SettingsPage(
         page_id=PAGE_INTERFACE,
         title="界面",
-        hint="语言与布局模式。语言切换会重建界面，布局模式在保存后立即生效。",
+        hint="设置界面语言与布局方式。",
         title_key="language.UI.ui_SettingsPageInterface",
         hint_key="language.UI.ui_SettingsPageInterfaceHint",
         icon="icon_config",
@@ -166,7 +166,7 @@ def build_core_pages() -> tuple[SettingsPage, ...]:
             SettingsSection(
                 section_id="language",
                 title="语言与区域",
-                hint="语言切换会重建界面控件；插件通过资源键读取同一份语言表。",
+                hint="选择界面显示语言。",
                 title_key="language.UI.ui_SettingsSectionLanguage",
                 hint_key="language.UI.ui_LanguageHint",
                 items=(
@@ -180,9 +180,9 @@ def build_core_pages() -> tuple[SettingsPage, ...]:
                             ("en_us", "English"),
                             ("ja_jp", "日本語"),
                         ],
-                        hint="选择界面显示语言。",
+                        hint="",
                         label_key="language.UI.ui_Language",
-                        hint_key="language.UI.ui_LanguageHint",
+                        hint_key="",
                         storage_key=STORAGE_LANGUAGE,
                     ),
                 ),
@@ -190,7 +190,7 @@ def build_core_pages() -> tuple[SettingsPage, ...]:
             SettingsSection(
                 section_id="layout",
                 title="布局模式",
-                hint="固定模式为抽屉保留布局空间，浮层模式让抽屉覆盖在页面之上。",
+                hint="选择抽屉的展开方式。",
                 title_key="language.UI.ui_SettingsSectionLayout",
                 hint_key="language.UI.ui_SettingsSectionLayoutHint",
                 items=(
@@ -216,7 +216,7 @@ def build_core_pages() -> tuple[SettingsPage, ...]:
                             SettingOption("static", "固定", "language.UI.ui_ModeStatic"),
                             SettingOption("overlay", "浮层", "language.UI.ui_ModeOverlay"),
                         ],
-                        hint="左、上、下三个抽屉统一使用同一种布局策略。",
+                        hint="选择侧边抽屉的展开方式。",
                         label_key="language.UI.ui_DrawerMode",
                         hint_key="language.UI.ui_DrawerModeHint",
                         control=SettingControl.SEGMENTED,
@@ -230,7 +230,7 @@ def build_core_pages() -> tuple[SettingsPage, ...]:
     window = SettingsPage(
         page_id=PAGE_WINDOW,
         title="启动与窗口",
-        hint="启动尺寸与窗口状态记忆。窗口尺寸不得小于基座配置的最小窗口。",
+        hint="设置窗口尺寸与启动行为。",
         title_key="language.UI.ui_SettingsPageWindow",
         hint_key="language.UI.ui_SettingsPageWindowHint",
         icon="icon_widget",
@@ -239,7 +239,7 @@ def build_core_pages() -> tuple[SettingsPage, ...]:
             SettingsSection(
                 section_id="startup",
                 title="启动",
-                hint="关闭主窗口时记录正常尺寸；最大化、最小化与全屏状态不会写入。",
+                hint="控制下次启动时的窗口尺寸。",
                 title_key="language.UI.ui_SettingsSectionStartup",
                 hint_key="language.UI.ui_SettingsSectionStartupHint",
                 items=(
@@ -247,7 +247,7 @@ def build_core_pages() -> tuple[SettingsPage, ...]:
                         "remember_size",
                         True,
                         "记住窗口尺寸",
-                        hint="关闭后，下次启动回落到配置文件中的启动尺寸。",
+                        hint="关闭后，下次启动使用默认窗口尺寸。",
                         label_key="language.UI.ui_SettingsRememberWindowSize",
                         hint_key="language.UI.ui_SettingsRememberWindowSizeHint",
                         storage_key=STORAGE_REMEMBER_SIZE,

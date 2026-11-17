@@ -81,6 +81,8 @@ def prepared(qapp, tmp_path):
     window.show()
     QApplication.processEvents()
     yield window, session, core, store
+    # 失败路径先丢弃草稿，避免关闭时弹出模态确认框卡住测试
+    session.discard()
     window.close()
     window.deleteLater()
 
@@ -106,13 +108,31 @@ def test_dirty_state_and_save_persist(prepared):
     window.notify_modified()
 
     assert window.action_bar.isVisible()
-    assert window.unsaved_badge.isVisible()
     assert "1" in window.action_bar.status_text()
 
     assert window.save()
     assert core.data["remember_window_size"] is False
     assert not session.is_dirty()
-    assert not window.unsaved_badge.isVisible()
+    assert window.save(), "no pending changes should save as a no-op"
+
+
+def test_reset_buttons_stay_visible_and_disable_at_default(prepared):
+    window, session, _core, _store = prepared
+    window.show_page("appearance")
+    view = window._entries["appearance"]["view"]
+    for key, row in view._rows.items():
+        if not row._resettable:
+            continue
+        assert not row._reset.isHidden(), key
+        assert row._reset.isEnabled() == (not session.is_default(key)), key
+
+    key = "core.appearance.transparency"
+    view._commit(key, 90)
+    assert session.value(key) == 90
+    assert view._rows[key]._reset.isEnabled()
+    view._rows[key]._reset.click()
+    assert session.value(key) == 60
+    assert not view._rows[key]._reset.isEnabled()
 
 
 def test_discard_restores_baseline(prepared):

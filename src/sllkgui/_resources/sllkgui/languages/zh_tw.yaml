@@ -64,7 +64,7 @@ UI:
   ui_SettingsAppearanceHint: 外觀與軟體資訊請使用標題列「設定」
   # 统一设置窗口（基座 + 插件）
   ui_SettingsWindowTitle: "設定"
-  ui_SettingsWindowSubtitle: "基座與外掛程式設定，統一儲存"
+  ui_SettingsWindowSubtitle: "外觀、介面與外掛程式設定"
   ui_SettingsSearch: "搜尋設定項…"
   ui_SettingsNavEmpty: "沒有符合的設定頁"
   ui_SettingsNavBase: "基座設定"
@@ -72,46 +72,46 @@ UI:
   ui_SettingsNoPlugins: "尚無已安裝外掛程式"
   ui_SettingsNoPluginsHint: "安裝外掛程式後，其設定頁會自動出現在這裡。"
   ui_SettingsUndeclared: "未宣告"
-  ui_SettingsPluginNoSchema: "此外掛程式沒有宣告設定頁；仍可透過資料目錄儲存執行時狀態。"
+  ui_SettingsPluginNoSchema: "此外掛程式暫未提供可設定項目。"
   ui_SettingsPluginEmpty: "此外掛程式沒有可設定項目"
-  ui_SettingsPluginEmptyHint: "外掛程式仍可透過資料目錄儲存執行時狀態；如需出現在這裡，可在 on_load 中呼叫 ctx.settings.define() 宣告設定頁。"
+  ui_SettingsPluginEmptyHint: "此外掛程式暫未提供可設定項目。"
   ui_SettingsPageAppearance: "外觀"
-  ui_SettingsPageAppearanceHint: "主題、材質與背景會立即預覽；儲存後寫入目前使用者覆蓋層 user.yaml。"
+  ui_SettingsPageAppearanceHint: "調整主題、材質與背景。"
   ui_SettingsPageInterface: "介面"
-  ui_SettingsPageInterfaceHint: "語言與版面模式。語言切換會重建介面，版面模式在儲存後立即生效。"
+  ui_SettingsPageInterfaceHint: "設定介面語言與版面方式。"
   ui_SettingsPageWindow: "啟動與視窗"
-  ui_SettingsPageWindowHint: "啟動尺寸與視窗狀態記憶。視窗尺寸不得小於基座設定的最小視窗。"
+  ui_SettingsPageWindowHint: "設定視窗尺寸與啟動行為。"
   ui_SettingsPageShortcuts: "快速鍵"
-  ui_SettingsPageShortcutsHint: "基座與外掛程式共用同一張快速鍵表；外掛程式項目預設優先級較低，衝突時拒絕註冊。"
+  ui_SettingsPageShortcutsHint: "查看目前已註冊的快速鍵。"
   ui_SettingsPageAbout: "關於"
-  ui_SettingsPageAboutHint: "版本、執行環境與資料目錄；這裡的資訊為唯讀。"
+  ui_SettingsPageAboutHint: "版本、執行環境與資料目錄。"
   ui_SettingsSectionBackground: "背景"
   ui_SettingsSectionLanguage: "語言與區域"
   ui_SettingsSectionLayout: "版面模式"
-  ui_SettingsSectionLayoutHint: "固定模式為抽屜保留版面空間，浮層模式讓抽屜覆蓋在頁面之上。"
+  ui_SettingsSectionLayoutHint: "選擇抽屜的展開方式。"
   ui_SettingsSectionStartup: "啟動"
-  ui_SettingsSectionStartupHint: "關閉主視窗時記錄正常尺寸；最大化、最小化與全螢幕狀態不會寫入。"
+  ui_SettingsSectionStartupHint: "控制下次啟動時的視窗尺寸。"
   ui_SettingsSectionBaseShortcuts: "基座快速鍵"
   ui_SettingsSectionStorage: "設定儲存"
   ui_SettingsStorageBase: "基座"
   ui_SettingsStoragePlugin: "外掛程式"
   ui_SettingsThemeScheme: "配色方案"
-  ui_SettingsThemeSchemeHint: "選擇一套內建配色；切換後立即預覽，放棄修改時恢復原主題。"
+  ui_SettingsThemeSchemeHint: "選擇介面配色。"
   ui_SettingsThemeDefault: "預設深色 · 果綠強調"
   ui_SettingsThemeBright: "淺色 · 日光畫布"
   ui_SettingsThemeDracula: "深紫 · 高對比"
   ui_SettingsThemeEye: "低藍光 · 暖灰"
   ui_SettingsBackgroundImage: "背景圖片"
-  ui_SettingsBackgroundImageHint: "選擇本機圖片；留空表示使用主題純色。"
-  ui_SettingsBackgroundFitHint: "決定影像如何填滿視窗。"
+  ui_SettingsBackgroundImageHint: "選擇圖片作為視窗背景。"
+  ui_SettingsBackgroundFitHint: "選擇圖片的填滿方式。"
   ui_SettingsRecentImagesHint: "點擊縮圖即可切換背景。"
   ui_SettingsRememberWindowSize: "記住視窗尺寸"
-  ui_SettingsRememberWindowSizeHint: "關閉後，下次啟動回落到設定檔中的啟動尺寸。"
+  ui_SettingsRememberWindowSizeHint: "關閉後，下次啟動使用預設視窗尺寸。"
   ui_SettingsUnsaved: "{count} 項未儲存的變更"
   ui_SettingsUnsavedBadge: "{count} 項未儲存"
   ui_SettingsSaving: "正在儲存…"
   ui_SettingsSaved: "設定已儲存"
-  ui_SettingsSaveFailed: "儲存失敗，請檢查設定目錄的寫入權限。"
+  ui_SettingsSaveFailed: "儲存失敗，請稍後再試。"
   ui_SettingsDiscard: "放棄"
   ui_SettingsResetPage: "恢復本頁預設"
   ui_SettingsResetItem: "恢復預設"
@@ -121,7 +121,8 @@ UI:
   ui_SettingsCloseDiscard: "放棄並關閉"
   ui_SettingsLocked: "鎖定"
   ui_SettingsShortcutsNone: "無綁定"
-  ui_SettingsShortcutStatus: "衝突偵測"
+  ui_SettingsShortcutStatus: "快速鍵衝突"
+  ui_SettingsShortcutStatusHint: "重複占用的按鍵數量。"
   ui_SettingsShortcutConflicts: "衝突"
   ui_SettingsNeedsRestart: "儲存後重建介面"
   ui_SettingsChooseFile: "選擇檔案…"
@@ -129,7 +130,7 @@ UI:
   ui_SettingsCurrentTheme: "目前主題"
   ui_SettingsPluginNamespace: "此頁由外掛程式註冊；設定鍵統一加 {namespace}. 前綴，與基座和其它外掛程式互不衝突。"
   ui_SettingsSectionCurrentWindow: "目前視窗"
-  ui_SettingsCurrentWindowHint: "視窗實際尺寸由使用者拖曳決定；這裡只顯示，不參與儲存。"
+  ui_SettingsCurrentWindowHint: "目前視窗的尺寸資訊。"
   ui_SettingsCurrentWindowSize: "目前尺寸"
   ui_SettingsMinimumWindowSize: "最小尺寸"
   ui_SettingsStartupSize: "啟動尺寸"
@@ -223,21 +224,21 @@ UI:
   ui_TabMaterial: 材質
   ui_TabBackground: 背景
   ui_TabInterface: 介面
-  ui_ThemeHint: 選擇一套內建配色
+  ui_ThemeHint: "選擇介面配色。"
   ui_Material: 材質與通透度
-  ui_MaterialHint: 即時調整視窗透明度與亞克力質感
+  ui_MaterialHint: "調整視窗的通透感與模糊質感。"
   ui_Transparency: 視窗透明度
   ui_TransparencyHint: 數值越大，桌面內容透出越明顯
   ui_GlassStrength: 亞克力質感強度
-  ui_GlassStrengthHint: 在預設觀感基礎上增強模糊材質的透出程度
+  ui_GlassStrengthHint: "數值越大，模糊質感越明顯。"
   ui_Language: 語言
-  ui_LanguageHint: 選擇介面顯示語言
+  ui_LanguageHint: "選擇介面顯示語言。"
   ui_MenuMode: 選單模式
   ui_MenuModeHint: 固定顯示於內容區旁，浮層覆蓋於目前頁面之上
   ui_DrawerMode: 抽屜模式
-  ui_DrawerModeHint: 四個方向的抽屜統一固定佔位，或浮層覆蓋於目前頁面之上
+  ui_DrawerModeHint: "選擇側邊抽屜的展開方式。"
   ui_Background: 個人化設定背景
-  ui_BackgroundHint: 圖片背景僅作用於目前視窗。
+  ui_BackgroundHint: "設定視窗背景圖片與顯示方式。"
   ui_BackgroundNone: 無
   ui_BackgroundImage: 圖片
   ui_RecentImages: 最近使用的影像
@@ -245,7 +246,7 @@ UI:
   ui_ChoosePhoto: 選擇一張照片
   ui_BrowsePhoto: 瀏覽照片
   ui_ClearBackground: 清除背景
-  ui_BackgroundFit: 為桌面影像選擇符合模式
+  ui_BackgroundFit: "填滿方式"
   ui_FitFill: 填滿
   ui_FitFit: 符合
   ui_FitStretch: 延展

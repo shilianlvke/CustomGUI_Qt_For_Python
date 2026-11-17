@@ -44,7 +44,7 @@ from ...custom_ui.overlay.confirm import CConfirmDialog
 from ...custom_ui.panels.settings import CEditActionBar
 from ...custom_ui.panels.side_nav import CSideNav, CSideNavGroup, CSideNavItem
 from ...custom_ui.scroll.scroll_area import CScrollArea
-from ...styles import overlay_surface_color, qss_color
+from ...styles import overlay_surface_color
 from .pages import AboutPage, SchemaPage, ShortcutsPage, build_plugin_empty_page
 
 _PAGE_ABOUT = "__about__"
@@ -249,25 +249,26 @@ class CSettingsWindow(QDialog):
         body_layout.addWidget(content, 1)
 
         header = QWidget(content)
+        # 固定高度与固定字块高度：切换页面 / 脏值变化都不会让头部伸缩或位移。
+        header.setFixedHeight(76)
         header_layout = QHBoxLayout(header)
-        header_layout.setContentsMargins(26, 22, 26, 14)
+        header_layout.setContentsMargins(26, 18, 26, 8)
         header_layout.setSpacing(16)
         title_col = QVBoxLayout()
         title_col.setContentsMargins(0, 0, 0, 0)
-        title_col.setSpacing(5)
+        title_col.setSpacing(4)
         self.page_title = QLabel("", header)
+        self.page_title.setFixedHeight(28)
+        self.page_title.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed)
         self.page_hint = QLabel("", header)
         self.page_hint.setWordWrap(True)
+        self.page_hint.setFixedHeight(18)
+        self.page_hint.setAlignment(Qt.AlignLeft | Qt.AlignTop)
         self.page_hint.setMaximumWidth(620)
-        self.page_hint.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Preferred)
+        self.page_hint.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed)
         title_col.addWidget(self.page_title)
         title_col.addWidget(self.page_hint)
         header_layout.addLayout(title_col, 1)
-
-        self.unsaved_badge = QLabel("", header)
-        self.unsaved_badge.setVisible(False)
-        self.unsaved_badge.setSizePolicy(QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Fixed)
-        header_layout.addWidget(self.unsaved_badge, 0, Qt.AlignTop)
         content_layout.addWidget(header)
 
         self.stack = QStackedWidget(content)
@@ -503,8 +504,9 @@ class CSettingsWindow(QDialog):
         self.stack.setCurrentWidget(entry["widget"])
         self.nav.set_current(item_id)
         self.page_title.setText(entry["title"])
-        self.page_hint.setText(entry["hint"])
-        self.page_hint.setVisible(bool(entry["hint"]))
+        hint = entry["hint"] or ""
+        self.page_hint.setText(hint)
+        self.page_hint.setToolTip(hint)
         self.action_bar.set_reset_visible(entry["schema_page"] is not None)
         scroll = entry["widget"]
         if isinstance(scroll, CScrollArea):
@@ -537,10 +539,6 @@ class CSettingsWindow(QDialog):
 
     def _refresh_dirty(self) -> None:
         count = self._session.dirty_count()
-        self.unsaved_badge.setVisible(count > 0)
-        self.unsaved_badge.setText(
-            Language.resolve_key("language.UI.ui_SettingsUnsavedBadge", "{count} 项未保存").format(count=count)
-        )
         if count > 0:
             self.action_bar.setVisible(True)
             self.action_bar.set_dirty_count(count)
@@ -588,7 +586,6 @@ class CSettingsWindow(QDialog):
         self._refresh_all_pages()
         self.action_bar.setVisible(True)
         self.action_bar.show_saved()
-        self.unsaved_badge.setVisible(False)
         self.settingsSaved.emit(pending)
         if self._saved_timer is None:
             self._saved_timer = QTimer(self)
@@ -657,13 +654,6 @@ class CSettingsWindow(QDialog):
         self.page_hint.setFont(hint_font)
         self.page_hint.setStyleSheet(f"color: {colors.text_muted}; background: transparent;")
 
-        badge_bg = QColor(colors.state_warning)
-        badge_bg.setAlpha(26)
-        self.unsaved_badge.setStyleSheet(
-            f"color: {colors.state_warning}; background: {qss_color(badge_bg)};"
-            f" border: 1px solid {qss_color(QColor(colors.state_warning))};"
-            f" border-radius: 9px; padding: 3px 8px; font-size: 10px;"
-        )
         footer_font = QFont(AppSettings.family)
         footer_font.setPixelSize(10)
         self.version_label.setFont(footer_font)

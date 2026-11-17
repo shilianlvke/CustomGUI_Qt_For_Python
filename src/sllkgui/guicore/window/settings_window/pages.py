@@ -125,6 +125,7 @@ class SchemaPage(QWidget):
         self._syncers: list = []
         self._groups: list[CSettingGroup] = []
         self._dark_switch: CToggleSwitch | None = None
+        self._dark_row: CSettingRow | None = None
         self._theme_key = ""
         self._theme_cards: list[CThemeCard] = []
         self._thumbs: list[CThumbnail] = []
@@ -137,9 +138,6 @@ class SchemaPage(QWidget):
         outer.setContentsMargins(0, 0, 0, 0)
         outer.setSpacing(14)
         outer.setAlignment(Qt.AlignTop)
-
-        if page.namespace.startswith("plugin."):
-            outer.addWidget(self._namespace_note(page))
 
         for section in page.sections:
             group = CSettingGroup(section.display_title(), section.display_hint(), self)
@@ -167,33 +165,6 @@ class SchemaPage(QWidget):
         outer.addStretch(1)
         self.sync_from_session()
 
-    def _namespace_note(self, page) -> QLabel:
-        """插件页顶部提示：明确配置键的命名空间，避免与基座 / 其它插件混淆。"""
-        label = QLabel(
-            Language.resolve_key(
-                "language.UI.ui_SettingsPluginNamespace",
-                "该页由插件注册；配置键统一加 {namespace}. 前缀，与基座和其它插件互不冲突。",
-            ).format(namespace=page.namespace),
-            self,
-        )
-        label.setWordWrap(True)
-        font = QFont(AppSettings.family)
-        font.setPixelSize(11)
-        label.setFont(font)
-        self._notes.append(label)
-        self._style_note(label)
-        return label
-
-    @staticmethod
-    def _style_note(label: QLabel) -> None:
-        tokens = get_design_tokens()
-        label.setStyleSheet(
-            f"color: {tokens.colors.text_muted};"
-            f" background: {tokens.colors.accent_wash};"
-            f" border: 1px solid {tokens.colors.border_soft};"
-            f" border-radius: {tokens.radius.control}px; padding: 8px 10px;"
-        )
-
     # ------------------------------------------------------------------
     def page(self):
         return self._page
@@ -215,9 +186,7 @@ class SchemaPage(QWidget):
     def _build_window_info(self) -> CSettingGroup:
         group = CSettingGroup(
             Language.resolve_key("language.UI.ui_SettingsSectionCurrentWindow", "当前窗口"),
-            Language.resolve_key(
-                "language.UI.ui_SettingsCurrentWindowHint", "窗口实际尺寸由用户拖拽决定；这里只显示，不参与保存。"
-            ),
+            Language.resolve_key("language.UI.ui_SettingsCurrentWindowHint", "当前窗口的尺寸信息。"),
             self,
         )
         host = self._host
@@ -239,7 +208,6 @@ class SchemaPage(QWidget):
         group.add_row(CInfoRow(Language.resolve_key("language.UI.ui_SettingsCurrentWindowSize", "当前尺寸"), current, mono=True, parent=self))
         group.add_row(CInfoRow(Language.resolve_key("language.UI.ui_SettingsMinimumWindowSize", "最小尺寸"), f"{minimum[0]} × {minimum[1]}", mono=True, parent=self))
         group.add_row(CInfoRow(Language.resolve_key("language.UI.ui_SettingsStartupSize", "启动尺寸"), f"{startup[0]} × {startup[1]}", mono=True, parent=self))
-        group.add_row(CInfoRow(Language.resolve_key("language.UI.ui_SettingsConfigSource", "配置来源"), "settings/user.yaml", mono=True, parent=self))
         return group
 
     # ------------------------------------------------------------------
@@ -248,10 +216,10 @@ class SchemaPage(QWidget):
         control, syncer = self._build_control(spec, full_key)
         if control is None:
             return None
-        badge = Language.resolve_key("language.UI.ui_SettingsNeedsRestart", "保存后重建界面") if spec.requires_restart else ""
-        row = CSettingRow(full_key, spec.display_label(), spec.display_hint(), control, badge=badge, parent=self)
+        row = CSettingRow(full_key, spec.display_label(), spec.display_hint(), control, parent=self)
         row.resetRequested.connect(self._on_reset)
         self._rows[full_key] = row
+        row.set_reset_available(not self._session.is_default(full_key))
         self._syncers.append(syncer)
         return row
 
@@ -413,7 +381,12 @@ class SchemaPage(QWidget):
             names.remove("default")
             names.insert(0, "default")
         for index, name in enumerate(names):
-            card = CThemeCard(name, _theme_subtitle(name), box)
+            card = CThemeCard(
+                name,
+                _theme_subtitle(name),
+                box,
+                title="Grove" if name == "default" else "",
+            )
             card.clicked.connect(lambda theme: self._select_theme(theme))
             self._theme_cards.append(card)
             grid.addWidget(card, index // 2, index % 2)
@@ -422,15 +395,16 @@ class SchemaPage(QWidget):
     def _build_dark_row(self) -> CSettingRow:
         self._dark_switch = CToggleSwitch("", checked=self._is_dark(), parent=self)
         self._dark_switch.toggled.connect(self._on_dark_toggled)
-        row = CSettingRow(
+        self._dark_row = CSettingRow(
             "__dark_mode__",
             Language.resolve_key("language.UI.ui_DarkMode", "深色模式"),
             Language.resolve_key("language.UI.ui_DarkModeHint", "开启后使用暗色主题；会同步切换配色。"),
             self._dark_switch,
             parent=self,
         )
-        row.resetRequested.connect(lambda _key: self._select_theme(self._session.baseline(self._theme_key)))
-        return row
+        self._dark_row.resetRequested.connect(lambda _key: self._select_theme(self._session.baseline(self._theme_key)))
+        self._dark_row.set_reset_available(False)
+        return self._dark_row
 
     def _is_dark(self) -> bool:
         name = self._session.value(self._theme_key) if self._theme_key else get_theme_manager().current()
@@ -457,6 +431,11 @@ class SchemaPage(QWidget):
             card.set_selected(card.name() == current)
         if self._dark_switch is not None:
             self._set_switch(self._dark_switch, self._is_dark())
+        if self._dark_row is not None:
+            self._dark_row.set_reset_available(
+                bool(self._theme_key)
+                and self._session.value(self._theme_key) != self._session.baseline(self._theme_key)
+            )
 
     # ------------------------------------------------------------------
     def _build_recent_row(self) -> CSettingRow:
@@ -472,6 +451,7 @@ class SchemaPage(QWidget):
             Language.resolve_key("language.UI.ui_RecentImages", "最近使用的图像"),
             Language.resolve_key("language.UI.ui_SettingsRecentImagesHint", "点击缩略图即可切换背景。"),
             wrapper,
+            resettable=False,
             parent=self,
         )
         self._recent_empty = QLabel(
@@ -540,6 +520,7 @@ class SchemaPage(QWidget):
         if row is not None:
             row.set_error(None)
             row.set_modified(self._session.is_modified(full_key))
+            row.set_reset_available(not self._session.is_default(full_key))
         if changed and self._theme_key and full_key == self._theme_key:
             self.sync_theme_state()
         self._host.clear_error()
@@ -580,6 +561,7 @@ class SchemaPage(QWidget):
                 syncer()
             for full_key, row in self._rows.items():
                 row.set_modified(self._session.is_modified(full_key))
+                row.set_reset_available(not self._session.is_default(full_key))
                 row.set_error(None)
             self.sync_theme_state()
             if self._recent_box is not None:
@@ -632,34 +614,12 @@ class AboutPage(QWidget):
             self,
         )
         software.add_row(self._info("language.UI.ui_SettingsVersion", "版本", __version__, mono=True))
-        try:
-            from sllkgui.gallery.registry import current_registry
-
-            pages = current_registry().surface_count() if current_registry() is not None else 0
-        except Exception:  # noqa: BLE001 - 状态展示失败不影响设置
-            pages = 0
-        software.add_row(
-            self._info(
-                "language.UI.ui_SettingsStatus",
-                "状态",
-                f"{get_theme_manager().current()} · {Language.current()} · {pages}",
-                mono=True,
-            )
-        )
-        software.add_row(
-            self._info(
-                "language.UI.ui_SettingsPages",
-                "页面",
-                str(pages),
-                mono=True,
-            )
-        )
         layout.addWidget(software)
         self._groups.append(software)
 
         environment = CSettingGroup(
             Language.resolve_key("language.UI.ui_SettingsEnvironment", "运行环境"),
-            "用于问题排查；路径可点击打开所在目录。",
+            "当前软件运行所需的环境信息。",
             self,
         )
         environment.add_row(CInfoRow("Python", platform.python_version(), parent=self))
@@ -671,16 +631,6 @@ class AboutPage(QWidget):
         layout.addWidget(environment)
         self._groups.append(environment)
 
-        storage = CSettingGroup(
-            Language.resolve_key("language.UI.ui_SettingsStorage", "配置存储"),
-            "基座与插件分文件保存；写入采用临时文件 + 原子替换。",
-            self,
-        )
-        storage.add_row(CInfoRow(Language.resolve_key("language.UI.ui_SettingsStorageBase", "基座"), _display_path(user_settings_path()), parent=self))
-        plugin_dir = user_settings_path().parent / "plugins"
-        storage.add_row(CInfoRow(Language.resolve_key("language.UI.ui_SettingsStoragePlugin", "插件"), _display_path(plugin_dir / "<plugin_id>.yaml"), parent=self))
-        layout.addWidget(storage)
-        self._groups.append(storage)
         layout.addStretch(1)
 
     def _info(self, key: str, fallback: str, value: str, *, mono: bool) -> CInfoRow:
@@ -728,13 +678,13 @@ class ShortcutsPage(QWidget):
                 continue
             grouped.setdefault(item.owner, []).append(item)
 
-        layout.addWidget(self._build_group("language.UI.ui_SettingsSectionBaseShortcuts", "基座快捷键", base, "内置条目锁定，优先级高于插件。"))
+        layout.addWidget(self._build_group("language.UI.ui_SettingsSectionBaseShortcuts", "基座快捷键", base, "常用操作的系统快捷键。"))
         for owner, items in sorted(grouped.items()):
-            layout.addWidget(self._build_group("", owner, items, "插件快捷键与基座共用同一张注册表。"))
+            layout.addWidget(self._build_group("", owner, items, "插件提供的快捷键。"))
 
         summary = CSettingGroup(
-            Language.resolve_key("language.UI.ui_SettingsShortcutStatus", "冲突检测"),
-            "同一序列存在多条绑定时按优先级裁决，并在插件管理页提示。",
+            Language.resolve_key("language.UI.ui_SettingsShortcutStatus", "快捷键冲突"),
+            Language.resolve_key("language.UI.ui_SettingsShortcutStatusHint", "重复占用的按键数量。"),
             self,
         )
         summary.add_row(
@@ -753,7 +703,14 @@ class ShortcutsPage(QWidget):
         title = str(Language.resolve_key(key, fallback)) if key else fallback
         group = CSettingGroup(title, hint, self)
         if not items:
-            group.add_row(CInfoRow("—", Language.resolve_key("language.UI.ui_SettingsShortcutsNone", "无绑定"), mono=False, parent=self))
+            group.add_row(
+                CInfoRow(
+                    Language.resolve_key("language.UI.ui_SettingsShortcutsNone", "无绑定"),
+                    "",
+                    mono=False,
+                    parent=self,
+                )
+            )
         for item in items:
             row = CSettingRow(
                 item.shortcut_id,
@@ -820,7 +777,7 @@ def build_plugin_empty_page(plugin_name: str, parent=None) -> QWidget:
     hint = _label(
         Language.resolve_key(
             "language.UI.ui_SettingsPluginEmptyHint",
-            "插件仍可通过数据目录保存运行时状态；如需出现在这里，可在 on_load 中调用 ctx.settings.define() 声明设置页。",
+            "该插件暂未提供可配置项。",
         ),
         "",
         body,

@@ -326,11 +326,12 @@
   }
   .content-head {
     flex: 0 0 auto;
+    height: 76px;
     display: flex;
     align-items: flex-start;
     justify-content: space-between;
     gap: 18px;
-    padding: 26px 34px 18px;
+    padding: 18px 34px 8px;
   }
   .content-head h1 {
     margin: 0;
@@ -341,29 +342,15 @@
     letter-spacing: -0.01em;
   }
   .content-head p {
-    margin: 6px 0 0;
-    max-width: 600px;
+    margin: 4px 0 0;
+    max-width: 620px;
+    height: 18px;
     color: var(--muted);
     font-size: 12px;
-    line-height: 1.65;
-    text-wrap: pretty;
-  }
-  .head-meta { display: flex; align-items: center; gap: 8px; padding-top: 3px; }
-  .unsaved-badge {
-    display: none;
-    align-items: center; gap: 6px;
-    padding: 4px 9px;
-    border-radius: 999px;
-    border: 1px solid rgba(242, 198, 90, 0.32);
-    background: rgba(242, 198, 90, 0.09);
-    color: var(--warning);
-    font-size: 10.5px;
-    font-weight: 600;
+    line-height: 18px;
     white-space: nowrap;
-  }
-  .unsaved-badge.show { display: inline-flex; }
-  .unsaved-badge i {
-    width: 5px; height: 5px; border-radius: 50%; background: var(--warning);
+    overflow: hidden;
+    text-overflow: ellipsis;
   }
 
   .content-scroll {
@@ -466,13 +453,13 @@
     display: grid; place-items: center;
     border: 0; border-radius: 5px;
     background: transparent; color: var(--muted);
-    cursor: pointer; opacity: 0;
-    transition: opacity 130ms var(--ease), background 130ms var(--ease), color 130ms var(--ease);
+    cursor: pointer; opacity: 1;
+    transition: background 130ms var(--ease), color 130ms var(--ease), opacity 130ms var(--ease);
   }
-  .row:hover .reset-btn { opacity: 1; }
-  .reset-btn:hover { background: var(--hover); color: var(--text); }
-  .row.modified .reset-btn { opacity: 1; color: var(--warning); }
-  .row.modified .reset-btn:hover { background: rgba(242, 198, 90, 0.12); color: var(--warning); }
+  .reset-btn:disabled { opacity: .35; cursor: default; }
+  .reset-btn:not(:disabled):hover { background: var(--hover); color: var(--text); }
+  .row.modified .reset-btn:not(:disabled) { color: var(--warning); }
+  .row.modified .reset-btn:not(:disabled):hover { background: rgba(242, 198, 90, 0.12); color: var(--warning); }
 
   /* 开关 */
   .switch {
@@ -991,23 +978,23 @@
         <div class="nav-scroll" id="navScroll">
           <div class="nav-group" data-group="core">
             <div class="nav-label">基座设置</div>
-            <button class="nav-item active" data-page="appearance" data-title="外观" data-desc="主题、材质与背景会立即预览；保存后写入当前用户覆盖层 user.yaml。">
+            <button class="nav-item active" data-page="appearance" data-title="外观" data-desc="调整主题、材质与背景。">
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 3a9 9 0 1 0 0 18c1.2 0 2-.9 2-2 0-.6-.2-1-.6-1.4-.4-.4-.6-.8-.6-1.3 0-1.1.9-2 2-2h1.7A4.5 4.5 0 0 0 21 9.8C21 6 17 3 12 3Z"/><circle cx="7.5" cy="11" r="1"/><circle cx="10" cy="7.5" r="1"/><circle cx="14.5" cy="7.5" r="1"/><circle cx="17" cy="11" r="1"/></svg>
               <span>外观</span>
             </button>
-            <button class="nav-item" data-page="interface" data-title="界面" data-desc="语言与布局模式。语言切换会重建界面，布局模式在保存后立即生效。">
+            <button class="nav-item" data-page="interface" data-title="界面" data-desc="设置界面语言与布局方式。">
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 6h16M4 12h10M4 18h7"/><circle cx="18" cy="15" r="3"/><path d="M18 15h3"/></svg>
               <span>界面</span>
             </button>
-            <button class="nav-item" data-page="window" data-title="启动与窗口" data-desc="启动尺寸与窗口状态记忆。尺寸不得小于基座配置的最小窗口。">
+            <button class="nav-item" data-page="window" data-title="启动与窗口" data-desc="设置窗口尺寸与启动行为。">
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 9h18M7 7h.01M10 7h.01"/></svg>
               <span>启动与窗口</span>
             </button>
-            <button class="nav-item" data-page="shortcuts" data-title="快捷键" data-desc="基座与插件共用同一张快捷键表；插件条目默认优先级更低，冲突时拒绝注册。">
+            <button class="nav-item" data-page="shortcuts" data-title="快捷键" data-desc="查看当前已注册的快捷键。">
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="2" y="6" width="20" height="12" rx="2"/><path d="M6 10h.01M10 10h.01M14 10h.01M18 10h.01M7 14h10"/></svg>
               <span>快捷键</span>
             </button>
-            <button class="nav-item" data-page="about" data-title="关于" data-desc="版本、运行环境与数据目录。这里的信息只读，不参与保存。">
+            <button class="nav-item" data-page="about" data-title="关于" data-desc="版本、运行环境与数据目录。">
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="9"/><path d="M12 11v6M12 7.5h.01"/></svg>
               <span>关于</span>
             </button>
@@ -1015,12 +1002,12 @@
 
           <div class="nav-group" data-group="plugins">
             <div class="nav-label">插件设置</div>
-            <button class="nav-item" data-page="plugin-hello" data-title="Hello 示例插件" data-desc="由插件在 on_load 中注册；命名空间 plugin.plugin-hello 与基座配置隔离。">
+            <button class="nav-item" data-page="plugin-hello" data-title="Hello 示例插件" data-desc="插件提供的配置项。">
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M9 3v4M15 3v4"/><path d="M7 7h10v6a5 5 0 0 1-10 0V7Z"/><path d="M12 18v3"/></svg>
               <span>Hello 示例插件</span>
               <em class="badge">示例</em>
             </button>
-            <button class="nav-item" data-page="plugin-empty" data-title="文件同步" data-desc="该插件没有声明设置页。插件仍可继续使用数据目录保存自己的运行时状态。">
+            <button class="nav-item" data-page="plugin-empty" data-title="文件同步" data-desc="该插件暂未提供可配置项。">
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 7a2 2 0 0 1 2-2h4l2 2h6a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V7Z"/></svg>
               <span>文件同步</span>
               <em class="badge" style="color:var(--muted); background:transparent; border-color:var(--hairline);">未声明</em>
@@ -1040,10 +1027,7 @@
         <div class="content-head">
           <div>
             <h1 id="pageTitle">外观</h1>
-            <p id="pageDesc">主题、材质与背景会立即预览；保存后写入当前用户覆盖层 user.yaml。</p>
-          </div>
-          <div class="head-meta">
-            <span class="unsaved-badge" id="unsavedBadge"><i></i><span id="unsavedBadgeText">3 项未保存</span></span>
+            <p id="pageDesc">调整主题、材质与背景。</p>
           </div>
         </div>
 
@@ -1053,7 +1037,7 @@
             <div class="group">
               <div class="group-head">
                 <h2>主题</h2>
-                <p>选择一套内置配色。外观改动会立刻作用到当前窗口，放弃修改时恢复原主题。</p>
+                <p>选择界面配色。</p>
               </div>
               <div class="theme-grid" id="themeGrid">
                 <button class="theme-card selected" data-theme="Grove">
@@ -1089,10 +1073,13 @@
                 <div class="row" data-row="dark-mode">
                   <div class="row-main">
                     <div class="row-title"><i class="modified"></i>深色模式</div>
-                    <div class="row-hint">关闭后切换到当前可用的浅色主题；不会改变已选主题本身。</div>
+                    <div class="row-hint">使用深色或浅色主题。</div>
                   </div>
                   <div class="row-control">
                     <button class="switch" role="switch" aria-checked="true" data-key="dark" data-default="true"></button>
+                    <button class="reset-btn" data-reset="theme" title="恢复默认" disabled>
+                      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12a9 9 0 1 0 3-6.7"/><path d="M3 4v5h5"/></svg>
+                    </button>
                   </div>
                 </div>
               </div>
@@ -1101,7 +1088,7 @@
             <div class="group">
               <div class="group-head">
                 <h2>材质与通透度</h2>
-                <p>仅在 Windows 11 原生亚克力可用时生效；其它平台自动回落为不透明主题底色。</p>
+                <p>调整窗口的通透感与模糊质感。</p>
               </div>
               <div class="group-body">
                 <div class="row" data-row="transparency">
@@ -1113,7 +1100,7 @@
                     <div class="slider-wrap">
                       <input class="slider" type="range" min="0" max="100" value="60" data-key="transparency" data-default="60" />
                       <span class="row-value" data-value-for="transparency">60%</span>
-                      <button class="reset-btn" data-reset="transparency" title="恢复默认">
+                      <button class="reset-btn" data-reset="transparency" title="恢复默认" disabled>
                         <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12a9 9 0 1 0 3-6.7"/><path d="M3 4v5h5"/></svg>
                       </button>
                     </div>
@@ -1122,13 +1109,13 @@
                 <div class="row" data-row="glass">
                   <div class="row-main">
                     <div class="row-title"><i class="modified"></i>亚克力质感强度</div>
-                    <div class="row-hint">数值越大，界面上的模糊材质越明显。</div>
+                    <div class="row-hint">数值越大，模糊质感越明显。</div>
                   </div>
                   <div class="row-control wide">
                     <div class="slider-wrap">
                       <input class="slider" type="range" min="0" max="100" value="34" data-key="glass" data-default="34" />
                       <span class="row-value" data-value-for="glass">34%</span>
-                      <button class="reset-btn" data-reset="glass" title="恢复默认">
+                      <button class="reset-btn" data-reset="glass" title="恢复默认" disabled>
                         <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12a9 9 0 1 0 3-6.7"/><path d="M3 4v5h5"/></svg>
                       </button>
                     </div>
@@ -1140,7 +1127,7 @@
             <div class="group">
               <div class="group-head">
                 <h2>背景</h2>
-                <p>图片背景仅作用于主窗口。最近使用的图像最多保留 5 张。</p>
+                <p>设置窗口背景图片与显示方式。</p>
               </div>
               <div class="group-body">
                 <div class="row">
@@ -1173,7 +1160,7 @@
                 <div class="row">
                   <div class="row-main">
                     <div class="row-title">适应模式</div>
-                    <div class="row-hint">决定图像如何铺满窗口。</div>
+                    <div class="row-hint">选择图片的填充方式。</div>
                   </div>
                   <div class="row-control">
                     <label class="select">
@@ -1197,13 +1184,13 @@
             <div class="group">
               <div class="group-head">
                 <h2>语言与区域</h2>
-                <p>语言切换会重建界面控件；插件通过资源键读取同一份语言表。</p>
+                <p>选择界面显示语言。</p>
               </div>
               <div class="group-body">
                 <div class="row">
                   <div class="row-main">
                     <div class="row-title">界面语言</div>
-                    <div class="row-hint">当前：简体中文（zh_cn）。切换后立即重建页面。</div>
+                    <div class="row-hint">选择界面显示语言。</div>
                   </div>
                   <div class="row-control">
                     <label class="select">
@@ -1223,7 +1210,7 @@
             <div class="group">
               <div class="group-head">
                 <h2>布局模式</h2>
-                <p>固定模式为抽屉保留布局空间，浮层模式让抽屉覆盖在页面之上。</p>
+                <p>选择抽屉的展开方式。</p>
               </div>
               <div class="group-body">
                 <div class="row">
@@ -1275,7 +1262,7 @@
             <div class="group">
               <div class="group-head">
                 <h2>启动</h2>
-                <p>关闭主窗口时记录正常尺寸；最大化、最小化与全屏状态不会写入。</p>
+                <p>控制下次启动时的窗口尺寸。</p>
               </div>
               <div class="group-body">
                 <div class="row" data-row="remember">
@@ -1326,7 +1313,7 @@
             <div class="group">
               <div class="group-head">
                 <h2>当前窗口</h2>
-                <p>窗口实际尺寸由用户拖拽决定；这里只显示，不参与保存。</p>
+                <p>当前窗口的尺寸信息。</p>
               </div>
               <div class="group-body">
                 <div class="info-row">
@@ -1337,10 +1324,6 @@
                   <span class="info-key">最小尺寸</span>
                   <span class="info-value plain">1440 × 900</span>
                 </div>
-                <div class="info-row">
-                  <span class="info-key">配置来源</span>
-                  <span class="info-value">settings/user.yaml</span>
-                </div>
               </div>
             </div>
           </section>
@@ -1350,7 +1333,7 @@
             <div class="group">
               <div class="group-head">
                 <h2>基座快捷键</h2>
-                <p>内置条目锁定，优先级高于插件；插件即使声明 replace 也无法覆盖。</p>
+                <p>常用操作的系统快捷键。</p>
               </div>
               <div class="group-body">
                 <div class="row">
@@ -1379,7 +1362,7 @@
             <div class="group">
               <div class="group-head">
                 <h2>插件快捷键</h2>
-                <p>与基座共用同一张注册表，按 owner 分组展示。</p>
+                <p>插件提供的快捷键。</p>
               </div>
               <div class="group-body">
                 <div class="row">
@@ -1392,7 +1375,7 @@
                 <div class="row">
                   <div class="row-main">
                     <div class="row-title">冲突检测</div>
-                    <div class="row-hint">同一序列存在多条绑定时，按优先级裁决并在插件管理页提示。</div>
+                    <div class="row-hint">重复占用的按键数量。</div>
                   </div>
                   <div class="row-control"><span class="chip" style="color:var(--accent);border-color:rgba(163,229,127,.24);">0 个冲突</span></div>
                 </div>
@@ -1408,20 +1391,14 @@
                 <p>SllkGUI · PySide6 桌面 UI 基座</p>
               </div>
               <div class="group-body">
-                <div class="info-row"><span class="info-key">版本</span><span class="info-value">2.2.3</span></div>
-                <div class="info-row"><span class="info-key">状态</span><span class="info-value plain">Grove · zh_cn · 12 个页面</span></div>
-                <div class="info-row">
-                  <span class="info-key">更新日志</span>
-                  <span class="info-value plain" style="color:var(--muted)">查看 2.x 的完整变更记录</span>
-                  <span class="info-actions"><button class="btn ghost">打开 CHANGELOG</button></span>
-                </div>
+                <div class="info-row"><span class="info-key">版本</span><span class="info-value">2.3.0</span></div>
               </div>
             </div>
 
             <div class="group">
               <div class="group-head">
                 <h2>运行环境</h2>
-                <p>用于问题排查；路径可点击打开所在目录。</p>
+                <p>当前软件运行所需的环境信息。</p>
               </div>
               <div class="group-body">
                 <div class="info-row"><span class="info-key">Python</span><span class="info-value">3.12.8</span></div>
@@ -1440,29 +1417,14 @@
               </div>
             </div>
 
-            <div class="group">
-              <div class="group-head">
-                <h2>配置存储</h2>
-                <p>基座配置与插件配置分文件保存，互不覆盖；写入采用临时文件 + 原子替换。</p>
-              </div>
-              <div class="group-body">
-                <div class="info-row"><span class="info-key">基座</span><span class="info-value">settings/user.yaml</span></div>
-                <div class="info-row"><span class="info-key">插件</span><span class="info-value">settings/plugins/&lt;plugin_id&gt;.yaml</span></div>
-              </div>
-            </div>
           </section>
 
           <!-- ============================ 插件：Hello ============================ -->
           <section class="page" data-page="plugin-hello">
-            <div class="namespace-note">
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 11v6M12 7.5h.01"/></svg>
-              <div>该页由插件通过 <code>ctx.settings.define(page)</code> 注册，配置键统一加 <code>plugin.plugin-hello.</code> 前缀；与基座配置、其它插件互不冲突。</div>
-            </div>
-
             <div class="group">
               <div class="group-head">
                 <h2>行为</h2>
-                <p>保存后写入 <span style="font-family:var(--mono);font-size:10.5px;">settings/plugins/plugin-hello.yaml</span>。</p>
+                <p>该页由插件提供。</p>
               </div>
               <div class="group-body">
                 <div class="row" data-row="greeting-switch">
@@ -1520,7 +1482,7 @@
                     <div class="slider-wrap">
                       <input class="slider" type="range" min="0" max="600" value="200" step="20" data-key="helloAnim" data-default="200" />
                       <span class="row-value" data-value-for="helloAnim">200ms</span>
-                      <button class="reset-btn" data-reset="helloAnim" title="恢复默认">
+                      <button class="reset-btn" data-reset="helloAnim" title="恢复默认" disabled>
                         <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12a9 9 0 1 0 3-6.7"/><path d="M3 4v5h5"/></svg>
                       </button>
                     </div>
@@ -1552,7 +1514,7 @@
                   <div class="row-control">
                     <span class="chip">未选择</span>
                     <button class="btn secondary">选择文件…</button>
-                    <button class="reset-btn" data-reset="helloAvatar" title="清除">
+                    <button class="reset-btn" data-reset="helloAvatar" title="清除" disabled>
                       <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 6l12 12M18 6 6 18"/></svg>
                     </button>
                   </div>
@@ -1577,8 +1539,7 @@
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M4 7a2 2 0 0 1 2-2h4l2 2h6a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V7Z"/></svg>
               </div>
               <h3>这个插件没有可配置项</h3>
-              <p>插件仍可通过 <code>ctx.data_dir</code> 保存运行时数据。若希望出现在这里，插件作者可在 <code>on_load</code> 中调用 <code>ctx.settings.define()</code> 声明设置页。</p>
-              <button class="btn secondary">查看插件设置文档</button>
+              <p>该插件暂未提供可配置项。</p>
             </div>
           </section>
         </div>
@@ -1587,7 +1548,7 @@
         <footer class="savebar" id="savebar">
           <div class="savebar-status" id="saveStatus">
             <span class="pulse"></span>
-            <span><strong id="dirtyCount">2</strong> 项未保存的更改 · 保存后立即生效</span>
+            <span><strong id="dirtyCount">2</strong> 项未保存的更改</span>
           </div>
           <div class="savebar-actions">
             <button class="btn ghost" id="discardBtn">放弃</button>
@@ -1664,20 +1625,19 @@
   }
 
   function markRow(row, isDirty) {
-    if (row) row.classList.toggle("modified", !!isDirty);
+    if (!row) return;
+    row.classList.toggle("modified", !!isDirty);
+    const reset = row.querySelector(".reset-btn");
+    if (reset) reset.disabled = !isDirty;
   }
 
   function renderDirty() {
     const count = state.dirty.size;
-    const badge = qs("#unsavedBadge");
-    const badgeText = qs("#unsavedBadgeText");
-    badge.classList.toggle("show", count > 0 && !state.saving);
-    badgeText.textContent = count + " 项未保存";
     dirtyCountEl.textContent = count;
     savebar.classList.toggle("show", count > 0 || state.saving);
     if (!state.saving) {
       statusEl.classList.remove("error");
-      statusEl.innerHTML = '<span class="pulse"></span><span><strong id="dirtyCount">' + count + "</strong> 项未保存的更改 · 保存后立即生效</span>";
+      statusEl.innerHTML = '<span class="pulse"></span><span><strong id="dirtyCount">' + count + "</strong> 项未保存的更改</span>";
     }
     saveBtn.disabled = state.saving || count === 0;
     discardBtn.disabled = state.saving || count === 0;
@@ -1693,9 +1653,8 @@
     discardBtn.disabled = on;
     if (on) {
       savebar.classList.add("show");
-      qs("#unsavedBadge").classList.remove("show");
       statusEl.classList.remove("error");
-      statusEl.innerHTML = '<span class="spinner" style="border-color:rgba(223,230,223,.2);border-top-color:var(--accent);width:12px;height:12px;"></span><span>正在写入配置…</span>';
+      statusEl.innerHTML = '<span class="spinner" style="border-color:rgba(223,230,223,.2);border-top-color:var(--accent);width:12px;height:12px;"></span><span>正在保存…</span>';
       saveBtn.innerHTML = '<span class="spinner"></span>保存中';
     } else {
       saveBtn.textContent = "保存";
@@ -1713,6 +1672,7 @@
     startupWidth.classList.remove("invalid");
     qs("#startupWidthBox").classList.remove("invalid");
     helloWidth.classList.remove("invalid");
+    qsa(".reset-btn").forEach((btn) => (btn.disabled = true));
     renderDirty();
   }
 
@@ -1749,7 +1709,6 @@
       err.classList.add("show");
     });
     if (problems.length) {
-      qs("#unsavedBadge").classList.add("show");
       statusEl.classList.add("error");
       statusEl.innerHTML = '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 8v5M12 16h.01"/></svg><span>' + problems[0].message + "</span>";
       if (focus) {
@@ -1804,6 +1763,7 @@
       const dark = qs('[data-key="dark"]');
       const isDark = card.dataset.theme !== "Bright";
       dark.setAttribute("aria-checked", String(isDark));
+      markRow(dark.closest(".row"), card.dataset.theme !== "Grove");
     });
   });
 
@@ -1893,6 +1853,15 @@
   qsa("[data-reset]").forEach((btn) => {
     btn.addEventListener("click", () => {
       const key = btn.dataset.reset;
+      if (key === "theme") {
+        qsa(".theme-card").forEach((c) => c.classList.toggle("selected", c.dataset.theme === "Grove"));
+        updateThemeChip("Grove");
+        const dark = qs('[data-key="dark"]');
+        dark.setAttribute("aria-checked", "true");
+        markRow(dark.closest(".row"), false);
+        markDirty("theme", false);
+        return;
+      }
       const el = qs(`[data-key="${key}"]`);
       if (!el) return;
       if (el.dataset.default !== undefined) {
@@ -1902,6 +1871,7 @@
       if (el.classList.contains("slider")) paintSlider(el);
       markDirty(key, false);
       markRow(btn.closest(".row"), false);
+      btn.disabled = true;
     });
   });
 
@@ -1964,16 +1934,17 @@
       state.mode = demo;
       if (demo === "default") {
         resetDirty();
-        goTo("appearance", "外观", "主题、材质与背景会立即预览；保存后写入当前用户覆盖层 user.yaml。");
+        goTo("appearance", "外观", "调整主题、材质与背景。");
         applyValidation([], false);
         return;
       }
       if (demo === "dirty") {
         resetDirty();
-        goTo("appearance", "外观", "主题、材质与背景会立即预览；保存后写入当前用户覆盖层 user.yaml。");
+        goTo("appearance", "外观", "调整主题、材质与背景。");
         // 模拟三处改动：主题、透明度、亚克力强度
         qsa(".theme-card").forEach((c) => c.classList.toggle("selected", c.dataset.theme === "Eye"));
         updateThemeChip("Eye");
+        markRow(qs('[data-key="dark"]').closest(".row"), true);
         const transparency = qs('[data-key="transparency"]');
         transparency.value = 78;
         paintSlider(transparency);
@@ -2001,13 +1972,13 @@
       }
       if (demo === "saved") {
         resetDirty();
-        goTo("appearance", "外观", "主题、材质与背景会立即预览；保存后写入当前用户覆盖层 user.yaml。");
+        goTo("appearance", "外观", "调整主题、材质与背景。");
         showToast("设置已保存");
         return;
       }
       if (demo === "error") {
         resetDirty();
-        goTo("window", "启动与窗口", "启动尺寸与窗口状态记忆。尺寸不得小于基座配置的最小窗口。");
+        goTo("window", "启动与窗口", "设置窗口尺寸与启动行为。");
         const w = qs("#startupWidth");
         w.value = 1200;
         w.classList.add("invalid");
@@ -2019,7 +1990,7 @@
       }
       if (demo === "empty") {
         resetDirty();
-        goTo("plugin-empty", "文件同步", "该插件没有声明设置页。插件仍可继续使用数据目录保存自己的运行时状态。");
+        goTo("plugin-empty", "文件同步", "该插件暂未提供可配置项。");
         return;
       }
     });
