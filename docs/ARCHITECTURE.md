@@ -28,7 +28,7 @@
 | 层 | 职责 | 依赖 |
 | --- | --- | --- |
 | `sllkgui.appcore` | 配置、主题、语言、日志、遥测、错误边界 | 标准库 |
-| `sllkgui.guicore` | 组件库、设计令牌、窗口部件 | PySide6 |
+| `sllkgui.guicore` | 组件库、设计令牌、窗口部件、快捷键表 | PySide6 |
 | `sllkgui.gallery` | 插件协议、源、存储、安装、加载、外壳 | appcore + guicore |
 | `sllkgui.showcase` | 内置组件预览插件 | plugin API + guicore |
 | `sllkgui.guis.pages` | 基座原生页面（插件管理） | guicore + gallery 查询 |
@@ -43,6 +43,8 @@
 - 右侧抽屉的「设置」合并软件信息、外观与界面，取代原左下角软件信息入口。
 - 旧 App 协议（`AppPlugin` / `AppPage` / `apps/` / `plugins.yml`）已删除，不保留兼容层。
 - 插件代码在宿主进程内执行；权限声明用于知情同意，不是沙箱。
+- 输入类能力（托盘、快捷键）由基座持有唯一实例，插件只注册条目：托盘走
+  `ctx.tray`，快捷键走 `ctx.shortcuts`，两者都在卸载时由加载器统一清理。
 
 ## 相关文档
 
@@ -50,3 +52,5 @@
 - [PLUGIN_STANDARD.md](./PLUGIN_STANDARD.md)：开发规范
 - [SOURCE.md](./SOURCE.md)：源仓库协议
 - [GALLERY.md](./GALLERY.md)：命令与存储
+- [TRAY.md](./TRAY.md)：托盘所有权与插件动作
+- [SHORTCUTS.md](./SHORTCUTS.md)：快捷键作用域、优先级与插件协议

@@ -19,7 +19,14 @@
 
 from __future__ import annotations
 
-from .gallery.api import GalleryContext, Permission, Plugin
+from .gallery.api import (
+    GalleryContext,
+    GalleryShortcut,
+    GalleryShortcuts,
+    Permission,
+    Plugin,
+    ShortcutBinding,
+)
 from .gallery.registry import GalleryRegistry
 from .gallery.window import GalleryWindow, load_gallery, load_run
 from .guis import (
@@ -45,9 +52,12 @@ __all__ = [
     # Gallery
     "GalleryContext",
     "GalleryRegistry",
+    "GalleryShortcut",
+    "GalleryShortcuts",
     "GalleryWindow",
     "Permission",
     "Plugin",
+    "ShortcutBinding",
     "load_gallery",
     "load_run",
     # 语言

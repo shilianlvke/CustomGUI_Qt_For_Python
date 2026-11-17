@@ -3,7 +3,46 @@
 项目遵循[语义化版本](https://semver.org/lang/zh-CN/)：major 版本允许破坏性变更并显式列出；
 minor 与 patch 保持向后兼容。
 
-当前版本：`2.2.3`（见 `src/sllkgui/_version.py`），对应 tag `base-v2.2.3`。
+当前版本：`2.3.0`（见 `src/sllkgui/_version.py`），对应 tag `base-v2.3.0`。
+
+---
+
+## 2.3.0（2026-11-17）
+
+系统级快捷键适配（新增协议，详见 `docs/SHORTCUTS.md`）：
+
+- 新增 `guicore.shortcuts.ShortcutRegistry`：在 `QApplication` 上装唯一事件过滤器
+  统一派发，不再依赖 `QShortcut`（无法表达优先级与作用域）。命中即消费，未命中
+  完全放行，既有键盘行为不变。
+- 作用域：`global` 全应用 / `local` 仅宿主控件子树；局部条目随宿主销毁自动注销。
+- 平台修饰键：`primary`（macOS ⌘、其余 Ctrl）、`ctrl`（物理键）、`meta`
+  （Win 键 / ⌘）、`alt`、`shift`；折算 Qt 在 macOS 上的 Ctrl/Meta 互换，同一份
+  `primary+shift+p` 文本在三个平台语义一致。
+- 优先级（`PRIORITY_BASE` > `PRIORITY_NORMAL` > `PRIORITY_LOW`）与冲突检测：
+  `error` 拒绝 / `shadow` 共存按优先级裁决 / `replace` 顶掉非锁定项；冲突写入
+  遥测，`conflicts()` 可随时查询生效者。
+- 启用/禁用（单条 + 全局总开关）与卸载清理（`unregister` / `unregister_owner` /
+  `shutdown`）；文本输入框内纯字符绑定不抢键，模态对话框内默认静默。
+
+插件快捷键协议：
+
+- 新增 `Permission.SHORTCUTS` 与 `GalleryContext.shortcuts`；`sllkgui.plugin`
+  门面导出 `GalleryShortcut` / `GalleryShortcuts` / `ShortcutBinding` /
+  `ShortcutConflict`。
+- 插件条目自动加 `plugin_id:` 前缀，默认优先级低于内置项、冲突策略为拒绝，因此
+  既插不进去也顶不掉内置行为；错误码 `PLUGIN_SHORTCUT_CONFLICT` /
+  `PLUGIN_SHORTCUT_LOCKED` / `PLUGIN_SHORTCUT_INVALID`。
+- 加载器在 `on_unload` 后调用 `ctx.clear_shortcuts()`，条目与回调一起释放；
+  `plugin lint` 新增 `SHORTCUTS` 检查（用 `ctx.shortcuts` 需声明 `shortcuts`）。
+
+内置快捷键：
+
+- `primary+k` 打开标题栏页面搜索，`primary+,` 打开/收起设置抽屉；`owner` 为
+  `sllkgui.base`、优先级 `PRIORITY_BASE`、`locked=True`，插件不可覆盖。
+- 窗口重建时先注销旧条目再注册，不堆叠；窗口真正关闭时随运行时一起摘除。
+
+文档：新增 `docs/SHORTCUTS.md`，同步 `docs/PLUGIN.md`、`docs/GALLERY.md`、
+`docs/API.md`、`docs/PLUGIN_STANDARD.md`、`README.md`。
 
 ---
 

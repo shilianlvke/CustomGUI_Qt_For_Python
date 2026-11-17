@@ -99,6 +99,17 @@ sllkgui scaffold <dir> [--id ID] [--name NAME] [--source]
   （4K 背景约省 30MB），重新显示时按需重建。
 - 完整协议与一致性校验点见 [TRAY.md](TRAY.md)。
 
+### 快捷键
+
+- 基座在 `QApplication` 上装唯一事件过滤器统一派发，插件与内置功能注册到同一张
+  表；插件通过 `ctx.shortcuts` 注册（需 `shortcuts` 权限），不能绕过优先级裁决。
+- 支持 `global` / `local` 两种作用域、`primary` 平台修饰键、优先级与三种冲突
+  策略；基座内置项（`primary+k`、`primary+,`）锁定且优先级最高，插件撞上会收到
+  `PLUGIN_SHORTCUT_CONFLICT`。
+- 卸载时加载器调用 `ctx.clear_shortcuts()`，条目与回调一起释放；宿主控件销毁
+  时局部条目自动注销。
+- 完整协议与一致性校验点见 [SHORTCUTS.md](SHORTCUTS.md)。
+
 ## 5. 安全
 
 - Git 仅允许 `https://` / `ssh://` / `git@host:path`；`file://` 需 `--allow-local`。
@@ -120,6 +131,7 @@ sllkgui scaffold <dir> [--id ID] [--name NAME] [--source]
 | `gallery/loader.py` | 导入、生命周期、失败隔离 |
 | `gallery/dependencies.py` | 第三方 Python 依赖检测、uv/Git 工具检查与安装 |
 | `gallery/tray.py` | 基座唯一托盘、插件动作与通知（见 `docs/TRAY.md`） |
+| `gallery/shortcuts.py` | 插件快捷键门面：权限、命名空间与冲突错误码（见 `docs/SHORTCUTS.md`） |
 | `gallery/registry.py` | Surface 路由与默认页 |
 | `gallery/context.py` | 插件上下文 |
 | `gallery/lint.py` | 开发规范检查 |

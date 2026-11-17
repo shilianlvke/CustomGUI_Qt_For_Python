@@ -14,10 +14,11 @@ from typing import Any
 
 from sllkgui.appcore import Language, Logger, get_theme_manager, record_event, track_timing
 
-from .api import GalleryContext, GalleryTray, Permission
+from .api import GalleryContext, GalleryShortcuts, GalleryTray, Permission
 from .defaults import MAX_EVENT_BYTES
 from .errors import PLUGIN_PERMISSION_DENIED, GalleryError
 from .manifest import PluginManifest, ensure_within
+from .shortcuts import ShortcutBridge
 from .store import GalleryStore
 from .tray import TrayHandle, TrayService
 
@@ -71,6 +72,7 @@ class GalleryContextImpl(GalleryContext):
         parent_window: Callable[[], Any] | None = None,
         error_reporter: Callable[[str, str, str], None] | None = None,
         tray: TrayService | None = None,
+        shortcuts: Any | None = None,
     ) -> None:
         self._manifest = manifest
         self._store = store
@@ -80,6 +82,12 @@ class GalleryContextImpl(GalleryContext):
         self._error_reporter = error_reporter
         self._tray_handle = (
             TrayHandle(tray, manifest.plugin_id, tuple(manifest.permissions)) if tray is not None else None
+        )
+        # 快捷键表由基座注入（guicore.ShortcutRegistry）；缺省时能力整体降级
+        self._shortcut_bridge = (
+            ShortcutBridge(shortcuts, manifest.plugin_id, tuple(manifest.permissions))
+            if shortcuts is not None
+            else None
         )
         self._record = None
         self._prefix = f"[plugin:{manifest.plugin_id}@{manifest.version}]"
@@ -158,6 +166,26 @@ class GalleryContextImpl(GalleryContext):
                 self._tray_handle.clear()
             except Exception as exc:  # noqa: BLE001 - 清理失败不影响卸载
                 Logger.debug(f"{self._prefix} 托盘清理失败: {exc}")
+
+    @property
+    def shortcuts(self) -> GalleryShortcuts:
+        if self._shortcut_bridge is None:
+            raise GalleryError(PLUGIN_PERMISSION_DENIED, "当前环境不提供快捷键能力")
+        if Permission.SHORTCUTS not in self._manifest.permissions:
+            raise GalleryError(
+                PLUGIN_PERMISSION_DENIED,
+                "插件未声明 shortcuts 权限，无法使用快捷键",
+                "在 sllkgui-plugin.yml 的 permissions 中添加 shortcuts",
+            )
+        return self._shortcut_bridge
+
+    def clear_shortcuts(self) -> None:
+        """卸载时清理本插件注册的快捷键（条目与回调一起释放）。"""
+        if self._shortcut_bridge is not None:
+            try:
+                self._shortcut_bridge.clear()
+            except Exception as exc:  # noqa: BLE001 - 清理失败不影响卸载
+                Logger.debug(f"{self._prefix} 快捷键清理失败: {exc}")
 
     # ------------------------------------------------------------------
     # 语言

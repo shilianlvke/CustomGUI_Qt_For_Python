@@ -80,6 +80,7 @@ class GalleryRuntime:
         self.records: list[PluginRecord] = []
         self.last_error: dict[str, str] | None = None
         self.tools: Any = None
+        self._shortcuts: Any = None
         self._navigate: Callable[[str], bool] | None = None
         self._parent_window: Callable[[], Any] | None = None
 
@@ -88,6 +89,15 @@ class GalleryRuntime:
         from sllkgui.appcore.sysx.config.paths import data_root
 
         return data_root()
+
+    @property
+    def shortcuts(self) -> Any:
+        """基座快捷键表（惰性创建：非 GUI 路径不加载 Qt）。"""
+        if self._shortcuts is None:
+            from sllkgui.guicore.shortcuts import shortcut_registry
+
+            self._shortcuts = shortcut_registry()
+        return self._shortcuts
 
     # ------------------------------------------------------------------
     # 装配
@@ -135,12 +145,15 @@ class GalleryRuntime:
                     parent_window=self._parent_window_provider,
                     error_reporter=self._report_error,
                     tray=self.tray,
+                    shortcuts=self.shortcuts,
                 )
                 if record is not None:
                     self.records.append(record)
         refresh_language_namespace()
         # 基座托盘常驻：先于插件动作创建，插件只往菜单里加条目
         self.tray.ensure_visible()
+        # 快捷键表由基座常驻装配，插件是否注册都不影响内置快捷键
+        self.shortcuts.install()
         Logger.info(
             f"Gallery 启动: mode={self.mode} 插件 {len(self.records)} 个 / "
             f"Surface {self.registry.surface_count()} 个"
@@ -225,6 +238,10 @@ class GalleryRuntime:
         self.records.clear()
         if dispose_tray:
             self.tray.dispose()
+        # 重载时保留快捷键表（与托盘同理），只在真正退出时摘过滤器并清空
+        if clear_registry and self._shortcuts is not None:
+            self._shortcuts.shutdown()
+            self._shortcuts = None
         if clear_registry:
             self.registry.clear()
             set_current_registry(None)

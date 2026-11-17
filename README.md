@@ -31,7 +31,8 @@ SllkGUI 既是一个可以直接运行的桌面应用外壳，也是一套给 Py
 - 左侧菜单、右侧设置抽屉、顶部/底部抽屉、页面切换动画。
 - 主题与语言切换，用户偏好自动保存。
 - 插件发现、安装、更新、回滚、启停、卸载，以及插件依赖检查。
-- 常驻系统托盘、日志、本地遥测事件。
+- 常驻系统托盘、统一的快捷键表（全局/局部作用域、平台修饰键、优先级与冲突检测）、
+  日志与本地遥测事件。
 - Windows 启动器：自动准备 uv、Python、Git，拉取基座源码，创建环境并启动。
 
 ### 1.1 整体结构
@@ -321,7 +322,7 @@ SllkGui/
 ├─ src/sllkgui/
 │  ├─ appcore/              # 配置、主题、语言、日志、遥测、用户设置
 │  ├─ guicore/              # 组件库、设计令牌、窗口部件、亚克力材质
-│  ├─ gallery/              # 插件协议、源、安装、加载、运行时、托盘
+│  ├─ gallery/              # 插件协议、源、安装、加载、运行时、托盘、快捷键
 │  ├─ guis/                 # 基座窗口装配与原生页面（插件管理）
 │  ├─ showcase/             # 内置组件预览（gallery 模式）
 │  ├─ _resources/           # 默认主题、语言、图标、settings YAML
@@ -332,7 +333,7 @@ SllkGui/
 ├─ examples/
 │  ├─ plugin-hello/         # 最小合规插件
 │  └─ source-template/      # 最小插件源仓库模板
-├─ docs/                    # 架构、插件、组件、API、托盘等文档
+├─ docs/                    # 架构、插件、组件、API、托盘、快捷键等文档
 ├─ scripts/                 # 打包、发布、校验脚本
 ├─ tests/                   # pytest 测试
 ├─ settings/                # 运行时生成的用户配置（gitignore）
@@ -400,7 +401,16 @@ SllkGui/
 
 详见 [docs/TRAY.md](docs/TRAY.md)。
 
-### 7.5 日志与遥测
+### 7.5 快捷键
+
+- 基座在 `QApplication` 上装唯一事件过滤器，内置功能与插件注册到同一张表。
+- 支持 `global` / `local` 作用域、`primary` 平台修饰键、优先级与冲突策略。
+- 内置：`primary+k` 打开页面搜索，`primary+,` 打开设置抽屉（锁定，插件不可覆盖）。
+- 插件通过 `ctx.shortcuts` 注册（需 `shortcuts` 权限），卸载时由加载器统一清理。
+
+详见 [docs/SHORTCUTS.md](docs/SHORTCUTS.md)。
+
+### 7.6 日志与遥测
 
 - 运行日志：`<data_root>/logs/sllkgui.log`，1 MB × 5 滚动。
 - 遥测事件：`<data_root>/logs/diagnostics/events.jsonl`。
@@ -826,6 +836,7 @@ uv run sllkgui doctor --json
 | [docs/GALLERY.md](docs/GALLERY.md) | Gallery 命令、存储、加载流程 |
 | [docs/SOURCE.md](docs/SOURCE.md) | 源仓库协议 |
 | [docs/TRAY.md](docs/TRAY.md) | 托盘所有权与插件动作 |
+| [docs/SHORTCUTS.md](docs/SHORTCUTS.md) | 快捷键作用域、优先级与插件协议 |
 | [docs/contributing.md](docs/contributing.md) | 贡献指南 |
 
 ---

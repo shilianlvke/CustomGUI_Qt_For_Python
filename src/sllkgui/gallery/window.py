@@ -14,6 +14,10 @@ from sllkgui.appcore import AppSettings, Language, Logger, PathFactory, record_e
 from sllkgui.gallery.registry import SurfaceRecord
 from sllkgui.gallery.runtime import GalleryRuntime
 from sllkgui.guicore import CPageTransition
+from sllkgui.guis.windows.main_window.builtin_shortcuts import (
+    install_builtin_shortcuts,
+    uninstall_builtin_shortcuts,
+)
 from sllkgui.guis.windows.main_window.controller import MainWindowController
 from sllkgui.guis.windows.main_window.functions import MainFunctions
 from sllkgui.guis.windows.main_window.native_pages import NATIVE_PAGES, NativePage
@@ -92,6 +96,8 @@ class GalleryWindow(QMainWindow):
             Logger.debug(f"托盘语言订阅失败: {exc}")
         SetupMainWindow.setup_gui(self)
         self.controller = MainWindowController(self)
+        # 内置快捷键与插件共用同一张表：此处注册后，插件条目只要不撞序列即可共存
+        self._builtin_shortcuts = install_builtin_shortcuts(self, self.controller)
         title = "SllkGUI Gallery" if runtime.mode == "gallery" else "SllkGUI"
         self.setWindowTitle(title)
         self.ui.title_bar.set_title(title)
@@ -287,6 +293,8 @@ class GalleryWindow(QMainWindow):
             self.controller.settings_controller.detach()
         except Exception as exc:  # noqa: BLE001 - 退订失败不应阻塞退出
             Logger.debug(f"Gallery 主题订阅清理失败: {exc}")
+        # 内置快捷键绑定在本窗口上：先显式注销，再让运行时整体收尾
+        uninstall_builtin_shortcuts()
         try:
             self.runtime.shutdown()
         except Exception as exc:  # noqa: BLE001 - 关闭失败不应阻塞退出

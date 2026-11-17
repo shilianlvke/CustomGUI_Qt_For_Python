@@ -10,6 +10,7 @@ from __future__ import annotations
 from abc import ABC, abstractmethod
 from collections.abc import Callable, Mapping
 from contextlib import AbstractContextManager
+from dataclasses import dataclass
 from enum import StrEnum
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
@@ -32,6 +33,7 @@ class Permission(StrEnum):
     CLIPBOARD = "clipboard"
     NOTIFICATIONS = "notifications"
     TRAY = "tray"
+    SHORTCUTS = "shortcuts"
     AUTOSTART = "autostart"
     SYSTEM_INFO = "system.info"
 
@@ -81,6 +83,127 @@ class GalleryTray(ABC):
     @abstractmethod
     def clear(self) -> None:
         """移除本插件的全部动作与图标设置（卸载时由加载器调用）。"""
+
+
+@dataclass(frozen=True)
+class ShortcutBinding:
+    """``ctx.shortcuts.bindings()`` 的只读条目（不含回调，可安全展示）。"""
+
+    shortcut_id: str
+    sequence: str
+    display: str
+    scope: str
+    priority: int
+    enabled: bool
+    plugin_id: str = ""
+    description: str = ""
+    locked: bool = False
+
+
+@dataclass(frozen=True)
+class ShortcutConflict:
+    """同一序列上的多条绑定；``winner`` 是派发时实际生效的一条。"""
+
+    sequence: str
+    shortcut_ids: tuple[str, ...] = ()
+    owners: tuple[str, ...] = ()
+    winner: str = ""
+
+
+class GalleryShortcut(ABC):
+    """单条快捷键句柄：启用/禁用、改序列、注销。"""
+
+    @property
+    @abstractmethod
+    def shortcut_id(self) -> str: ...
+
+    @property
+    @abstractmethod
+    def sequence(self) -> str: ...
+
+    @property
+    @abstractmethod
+    def display(self) -> str:
+        """面向用户的文本（macOS 为 ⌘K 这类符号，其余平台为 Ctrl+K）。"""
+
+    @property
+    @abstractmethod
+    def enabled(self) -> bool: ...
+
+    @abstractmethod
+    def set_enabled(self, enabled: bool) -> None: ...
+
+    @abstractmethod
+    def update(
+        self,
+        *,
+        sequence: str | None = None,
+        description: str | None = None,
+        priority: int | None = None,
+        enabled: bool | None = None,
+    ) -> bool: ...
+
+    @abstractmethod
+    def unregister(self) -> None: ...
+
+
+class GalleryShortcuts(ABC):
+    """插件快捷键能力：注册、更新、注销、查询与冲突观测。
+
+    所有条目共用基座同一张注册表，与内置快捷键走同一条派发路径；插件条目
+    默认优先级低于内置项，冲突策略为「拒绝」，因此不会覆盖或干扰内置行为。
+    """
+
+    @abstractmethod
+    def available(self) -> bool:
+        """当前环境是否可注册快捷键（无 Qt 应用时为 ``False``）。"""
+
+    @abstractmethod
+    def register(
+        self,
+        shortcut_id: str,
+        sequence: str,
+        callback: Callable[[], None],
+        *,
+        scope: str = "global",
+        priority: int | None = None,
+        description: str = "",
+        allow_in_modal: bool = False,
+        conflict: str = "error",
+    ) -> GalleryShortcut:
+        """注册快捷键。
+
+        ``scope``：``global`` 全应用，``local`` 仅本插件 Surface 所在窗口；
+        ``conflict``：``error`` 拒绝（默认）/ ``shadow`` 共存按优先级裁决 /
+        ``replace`` 顶掉非锁定项。
+        """
+
+    @abstractmethod
+    def update(
+        self,
+        shortcut_id: str,
+        *,
+        sequence: str | None = None,
+        description: str | None = None,
+        priority: int | None = None,
+        enabled: bool | None = None,
+    ) -> bool: ...
+
+    @abstractmethod
+    def set_enabled(self, shortcut_id: str, enabled: bool) -> bool: ...
+
+    @abstractmethod
+    def unregister(self, shortcut_id: str) -> bool: ...
+
+    @abstractmethod
+    def bindings(self) -> tuple[ShortcutBinding, ...]: ...
+
+    @abstractmethod
+    def conflicts(self) -> tuple[ShortcutConflict, ...]: ...
+
+    @abstractmethod
+    def clear(self) -> None:
+        """移除本插件的全部快捷键（卸载时由加载器调用）。"""
 
 
 class GalleryContext(ABC):
@@ -147,6 +270,11 @@ class GalleryContext(ABC):
     def tray(self) -> GalleryTray:
         """基座托盘；需要在清单声明 ``tray`` 权限。"""
 
+    @property
+    @abstractmethod
+    def shortcuts(self) -> GalleryShortcuts:
+        """基座快捷键表；需要在清单声明 ``shortcuts`` 权限（见 ``docs/SHORTCUTS.md``）。"""
+
 
 class Plugin(ABC):
     """插件基类。唯一合法入口是模块级 ``PLUGIN`` 实例。"""
@@ -166,4 +294,14 @@ class Plugin(ABC):
         """Gallery 重载/退出前调用；必须幂等。"""
 
 
-__all__ = ["GalleryContext", "GalleryTray", "PLUGIN_API_VERSION", "Permission", "Plugin"]
+__all__ = [
+    "GalleryContext",
+    "GalleryShortcut",
+    "GalleryShortcuts",
+    "GalleryTray",
+    "PLUGIN_API_VERSION",
+    "Permission",
+    "Plugin",
+    "ShortcutBinding",
+    "ShortcutConflict",
+]

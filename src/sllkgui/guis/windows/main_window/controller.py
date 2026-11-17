@@ -528,6 +528,26 @@ class MainWindowController:
         page_name, title = route
         self.page_router.switch_page(btn_name, page_name, title)
 
+    def open_search_palette(self) -> bool:
+        """内置快捷键入口：把搜索弹层贴到标题栏按钮上。
+
+        没有搜索按钮的旧宿主/测试桩返回 ``False``，让调用方知道这条快捷键
+        没有落点（注册阶段会直接跳过，而不是留一条空绑定）。
+        """
+        title_bar = getattr(getattr(self._window, "ui", None), "title_bar", None)
+        anchor = title_bar.findChild(QPushButton, "btn_search") if title_bar is not None else None
+        if anchor is None:
+            return False
+        self._handle_search_button(anchor)
+        return True
+
+    def toggle_settings_drawer(self) -> bool:
+        """内置快捷键入口：打开/收起右侧设置抽屉。"""
+        toggle = getattr(self.settings_controller, "toggle_settings_drawer", None)
+        if not callable(toggle):
+            return False
+        return bool(toggle())
+
     def _handle_settings_button(self):
         """标题栏设置按钮：打开/收起右侧设置抽屉。
 

@@ -190,6 +190,7 @@ def load_plugin(
     parent_window: Callable[[], Any] | None = None,
     error_reporter: Callable[[str, str, str], None] | None = None,
     tray: TrayService | None = None,
+    shortcuts: Any | None = None,
 ) -> PluginRecord | None:
     """加载单个插件；失败只记录，不影响调用方。"""
     root = Path(path).resolve()
@@ -246,6 +247,7 @@ def load_plugin(
         parent_window=parent_window,
         error_reporter=error_reporter,
         tray=tray,
+        shortcuts=shortcuts,
     )
     record = PluginRecord(
         manifest=manifest,
@@ -282,6 +284,7 @@ def load_plugin(
             sys.modules.pop(name, None)
         _remove_sys_path(sys_path_added)
         context.clear_tray()
+        context.clear_shortcuts()
         registry._errors.append(
             {"plugin_id": manifest.plugin_id, "code": PLUGIN_LOAD_FAILED, "detail": str(exc)}
         )
@@ -296,6 +299,8 @@ def unload_plugin(record: PluginRecord) -> None:
         Logger.warning(f"插件卸载钩子失败: {record.plugin_id}: {exc}")
     if record.context is not None:
         record.context.clear_tray()
+        # 快捷键先于模块清理：回调对象随条目一起释放，避免留下悬空引用
+        record.context.clear_shortcuts()
     for name in {*(getattr(record, "_module_names", []) or []), *_modules_under(record.path)}:
         sys.modules.pop(name, None)
     _remove_sys_path(list(getattr(record, "_sys_path_added", []) or []))

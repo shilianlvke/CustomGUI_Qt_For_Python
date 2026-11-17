@@ -45,6 +45,7 @@ _PATTERNS: tuple[tuple[str, re.Pattern[str], str], ...] = (
     ("QMAINWINDOW", re.compile(r"\bQMainWindow\s*\("), "禁止创建 QMainWindow"),
     ("SUBPROCESS", re.compile(r"\b(subprocess|os\.system|os\.popen)\b"), "使用子进程需要声明 subprocess 权限"),
     ("REQUESTS", re.compile(r"\b(requests|httpx|urllib\.request|urlopen)\b"), "网络访问需要声明 network 权限"),
+    ("SHORTCUTS", re.compile(r"\bctx\.shortcuts\b"), "使用快捷键需要声明 shortcuts 权限"),
 )
 
 #: 允许出现在注释/字符串里的误报噪声：lint 只做静态扫描，不追求 100% 精确
@@ -111,6 +112,8 @@ def _scan_file(path: Path, root: Path, permission_values: set[str], report: Lint
             if code == "SUBPROCESS" and "subprocess" in permission_values:
                 continue
             if code == "REQUESTS" and "network" in permission_values:
+                continue
+            if code == "SHORTCUTS" and "shortcuts" in permission_values:
                 continue
             report.warnings.append(LintIssue("warning", code, message, relative, number))
 

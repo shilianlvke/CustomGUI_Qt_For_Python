@@ -46,11 +46,13 @@
 - 禁止修改全局样式表、字体、语言；禁止 monkey-patch 基座模块。
 - 托盘图标、悬停提示与菜单外壳由基座固定持有；插件只能注册文本动作与通知，
   不得自建托盘或替换图标（见 `docs/TRAY.md`）。
+- 快捷键统一注册到基座（见 `docs/SHORTCUTS.md`）：禁止直接 `QShortcut` 抢键，
+  序列一律用 `primary` 书写，内置序列（`primary+k` / `primary+,`）不可占用。
 
 ## 7. 安全与权限
 
-- 清单 `permissions` 必须覆盖实际能力使用（含托盘 `tray` 与通知
-  `notifications`）。
+- 清单 `permissions` 必须覆盖实际能力使用（含托盘 `tray`、通知
+  `notifications` 与快捷键 `shortcuts`）。
 - 禁止 `eval` / `exec` 远程内容、运行时下载代码、修改 `sys.path`、未声明子进程。
 - 文件路径限制在 `data_dir` / `resource` 内。
 - 网络请求必须设置超时与错误处理，禁止在 UI 线程同步网络。

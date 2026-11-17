@@ -17,7 +17,7 @@
 | `sllkgui` | `configure()` / `current_config()` / `reset_config()` / `__version__` / `package_root()` / `resource_root()` |
 | `sllkgui.appcore` | 配置视图、主题、语言、令牌、插件协议、错误边界、遥测、存储工具 |
 | `sllkgui.window` | 窗口骨架、应用装载、语言服务 |
-| `sllkgui.guicore` | 组件、窗口部件、页面基类 `CPreviewPage`、样式、字体、后台任务、回调守卫 |
+| `sllkgui.guicore` | 组件、窗口部件、页面基类 `CPreviewPage`、样式、字体、后台任务、回调守卫、快捷键表 |
 
 ## 2. 配置
 
@@ -242,7 +242,33 @@ ui_callback(owner, fn)         # 绑定 owner 生命周期
 single_shot(owner, 200, fn)    # 宿主销毁后不再触发
 ```
 
-## 10. 窗口门面
+## 10. 快捷键
+
+```python
+from sllkgui.guicore import (
+    PRIORITY_BASE, PRIORITY_LOW, PRIORITY_NORMAL,
+    KeyBinding, Scope, shortcut_registry,
+)
+
+registry = shortcut_registry()
+binding = KeyBinding.parse("primary+shift+p")   # 平台无关的可移植文本
+binding.display                                 # "Ctrl+Shift+P" / "⇧⌘P"
+handle = registry.register(
+    "demo.palette", "primary+shift+p", on_palette,
+    owner="demo", scope=Scope.GLOBAL, priority=PRIORITY_NORMAL,
+)
+handle.set_enabled(False)       # 单条启停
+handle.update(sequence="primary+p")
+handle.unregister()             # 或 registry.unregister_owner("demo")
+registry.set_active(False)      # 全局总开关
+registry.conflicts()            # 冲突观测（序列 / 归属 / 生效者）
+```
+
+- 注册表在 `QApplication` 上装唯一事件过滤器：命中即消费，未命中放行。
+- 插件请走 `ctx.shortcuts`：权限校验、`plugin_id:` 前缀与稳定错误码由基座统一处理
+  （见 [SHORTCUTS.md](SHORTCUTS.md)）。
+
+## 11. 窗口门面
 
 ```python
 from sllkgui.window import (
@@ -312,7 +338,7 @@ PAGE = MyPage
 （`tests/test_preview_apps.py` 会校验）。钩子都是 `classmethod`，因此 `PAGE` 写成类或实例
 都能被加载器正确调用。
 
-## 11. 样式与字体
+## 12. 样式与字体
 
 ```python
 from sllkgui.guicore import Styles, install_fonts, install_system_fonts
@@ -322,7 +348,7 @@ install_fonts(["assets/font.ttf"])   # 返回成功加载的数量
 install_system_fonts()               # 注册系统字体，缓解 offscreen / 远程会话豆腐块
 ```
 
-## 12. 版本与兼容
+## 13. 版本与兼容
 
 - 版本单一来源：`src/sllkgui/_version.py`。`sllkgui.__version__` **先读该文件**，
   只有文件缺失时才回落到已安装元数据——反过来会让源码树显示 site-packages 里旧 wheel 的版本号。

@@ -49,7 +49,7 @@ permissions:
 - `version`：SemVer。
 - `surfaces`：至少一个；`default: true` 最多一个；`order` 越小越靠前。
 - `permissions`：`network`、`filesystem.read`、`filesystem.write`、`subprocess`、
-  `clipboard`、`notifications`、`tray`、`autostart`、`system.info`。
+  `clipboard`、`notifications`、`tray`、`shortcuts`、`autostart`、`system.info`。
 - `python_dependencies`（可选）：第三方 Python 包声明（PEP 508 格式，如
   `psutil>=6`）。基座在导入插件**之前**检查；缺失时弹窗让用户选择自动安装
   （`uv pip install` 到当前解释器）或手动安装，安装失败则隔离该插件并记录
@@ -119,14 +119,50 @@ PLUGIN = NotesPlugin()
 | `report_error(code, message, detail=None)` | 日志 + 遥测 + 非阻塞错误提示 |
 | `parent_window()` | Gallery 主窗口（对话框父级） |
 | `tray` | 基座常驻托盘的文本动作（图标/提示固定由基座持有，见 `docs/TRAY.md`） |
+| `shortcuts` | 基座快捷键表：注册/更新/注销、启停与冲突查询（见 `docs/SHORTCUTS.md`） |
 
-## 5. 多语言
+## 5. 快捷键
+
+快捷键与内置功能共用基座同一张注册表，按「作用域 → 优先级 → 冲突策略」裁决：
+
+```python
+class NotesPlugin(Plugin):
+    def on_load(self, ctx: GalleryContext) -> None:
+        self.ctx = ctx
+        self.handle = ctx.shortcuts.register(
+            "new-note",              # 插件内唯一，基座自动加 plugin_id 前缀
+            "primary+alt+n",         # macOS 自动变 ⌘⌥N，Windows 为 Ctrl+Alt+N
+            self._new_note,
+            scope="global",          # global 全应用；local 仅本插件页面
+            description="新建便签",   # 供设置页/诊断展示
+            conflict="error",        # error 拒绝 / shadow 共存 / replace 覆盖
+        )
+
+    def _new_note(self) -> None:
+        self.ctx.open_surface("notes")
+
+    def on_locale_changed(self, locale: str) -> None:
+        self.handle.update(description=self.ctx.text("shortcuts.new_note", "新建便签"))
+
+    def on_unload(self) -> None:
+        self.handle.unregister()     # 可选：加载器也会统一清理
+```
+
+要点：
+
+- 序列用 `primary` 而不是写死 `ctrl` / `cmd`，跨平台语义一致。
+- 内置项（`primary+k` 搜索、`primary+,` 设置）已锁定且优先级最高，插件撞上会
+  直接收到 `PLUGIN_SHORTCUT_CONFLICT`，请换序列。
+- 局部快捷键必须传 `host`（Surface 页面根控件），宿主销毁时自动注销。
+- 文本输入框聚焦时，不含 Ctrl/Alt/Meta 的绑定不会触发，不会抢走正常输入。
+
+## 6. 多语言
 
 `resource/lang/<locale>.yml` 支持嵌套字典；四个语言文件必须齐全且键集合一致。
 `ctx.text("home.title")` 读取当前语言；切换语言后 Loader 会调用
 `on_locale_changed`，页面可自行刷新文案。
 
-## 6. 本地开发
+## 7. 本地开发
 
 ```powershell
 # 直接加载本地插件目录，不写 registry
@@ -139,7 +175,7 @@ uv run sllkgui plugin lint ..\my-plugin
 uv run sllkgui run --plugin-dir examples\plugin-hello
 ```
 
-## 7. 发布
+## 8. 发布
 
 1. 打 SemVer tag（如 `v1.2.0`）。
 2. 在官方源提交 `plugins/<id>/entry.yaml`（见 `docs/SOURCE.md`）。
