@@ -117,6 +117,22 @@ from .custom_ui import (
 )
 from .fonts import install_fonts as install_fonts
 from .fonts import install_system_fonts as install_system_fonts
+from .shortcuts import (
+    PRIORITY_BASE,
+    PRIORITY_LOW,
+    PRIORITY_NORMAL,
+    ConflictPolicy,
+    KeyBinding,
+    Scope,
+    ShortcutConflict,
+    ShortcutEntry,
+    ShortcutError,
+    ShortcutHandle,
+    ShortcutInfo,
+    ShortcutRegistry,
+    reset_shortcut_registry,
+    shortcut_registry,
+)
 from .styles import Styles
 from .task import ProgressUpdate as ProgressUpdate
 from .task import TaskWorker as TaskWorker
@@ -248,6 +264,20 @@ __all__ = [
     "CConfirmPopup",
     "COverlayPanel",
     "Styles",
+    "PRIORITY_LOW",
+    "PRIORITY_NORMAL",
+    "PRIORITY_BASE",
+    "ConflictPolicy",
+    "KeyBinding",
+    "Scope",
+    "ShortcutConflict",
+    "ShortcutEntry",
+    "ShortcutError",
+    "ShortcutHandle",
+    "ShortcutInfo",
+    "ShortcutRegistry",
+    "reset_shortcut_registry",
+    "shortcut_registry",
     "apply_acrylic",
     "remove_acrylic",
     "acrylic_active",
