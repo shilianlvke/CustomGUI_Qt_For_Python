@@ -57,7 +57,6 @@ from ...acrylic import acrylic_transparency, glass_strength
 from ...custom_ui.button.button import CButton
 from ...custom_ui.close_button import CCloseButton
 from ...custom_ui.icon_utils import render_icon
-from ...custom_ui.line_edit.choice import CToggleSwitch
 from ...custom_ui.line_edit.select import CSelect
 from ...custom_ui.line_edit.slider import CSlider
 from ...custom_ui.line_edit.toggle_button import CSelectButton
@@ -601,22 +600,6 @@ class _SettingsSectionsMixin:
             self._theme_cards.append(card)
             grid.addWidget(card, index // 2, index % 2)
         layout.addLayout(grid)
-
-        row = QWidget()
-        row_layout = QHBoxLayout(row)
-        row_layout.setContentsMargins(0, 4, 0, 0)
-        row_layout.setSpacing(12)
-        text_column = QVBoxLayout()
-        text_column.setContentsMargins(0, 0, 0, 0)
-        text_column.setSpacing(3)
-        text_column.addWidget(self._register_text("language.UI.ui_DarkMode", "深色模式", "title"))
-        text_column.addWidget(self._register_text("language.UI.ui_DarkModeHint", "开启后使用暗色主题", "hint"))
-        row_layout.addLayout(text_column, 1)
-
-        self.dark_switch = CToggleSwitch("")
-        self.dark_switch.toggled.connect(self._on_dark_toggled)
-        row_layout.addWidget(self.dark_switch, 0, Qt.AlignRight | Qt.AlignVCenter)
-        layout.addWidget(row)
 
     def _build_material_section(self, target: QVBoxLayout) -> None:
         """材质与通透度：透明度 / 亚克力质感强度两枚实时滑块。"""

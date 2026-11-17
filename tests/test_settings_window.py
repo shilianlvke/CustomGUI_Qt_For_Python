@@ -116,6 +116,32 @@ def test_dirty_state_and_save_persist(prepared):
     assert window.save(), "no pending changes should save as a no-op"
 
 
+def test_appearance_has_theme_cards_without_dark_mode_toggle(prepared):
+    window, _session, _core, _store = prepared
+    assert window.show_page("appearance")
+    view = window._entries["appearance"]["view"]
+    assert {card.name() for card in view._theme_cards} == set(AppThemes)
+    assert "__dark_mode__" not in view._rows
+    assert all("深色模式" not in row._title.text() for row in view._rows.values())
+
+
+def test_refresh_language_keeps_current_page_and_window(prepared):
+    from sllkgui.guis.language_service import apply_language
+
+    window, _session, _core, _store = prepared
+    assert window.show_page("interface")
+    assert window.page_title.text() == "界面"
+    try:
+        apply_language("en_us")
+        window.refresh_language()
+        assert window.isVisible()
+        assert window.current_page_id() == "interface"
+        assert window.page_title.text() == "Interface"
+    finally:
+        apply_language("zh_cn")
+        window.refresh_language()
+
+
 def test_reset_buttons_stay_visible_and_disable_at_default(prepared):
     window, session, _core, _store = prepared
     window.show_page("appearance")

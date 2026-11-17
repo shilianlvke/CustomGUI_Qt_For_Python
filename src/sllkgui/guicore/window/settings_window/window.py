@@ -29,7 +29,6 @@ from PySide6.QtWidgets import (
 from sllkgui import __version__
 from sllkgui.appcore import (
     AppSettings,
-    AppThemes,
     Language,
     SettingsSession,
     ensure_core_pages,
@@ -517,6 +516,43 @@ class CSettingsWindow(QDialog):
     def current_page_id(self) -> str:
         return self._current_entry
 
+    def refresh_language(self) -> None:
+        """语言切换后原地重建设置页，保持窗口打开并回到原页面。
+
+        ``apply_language`` 会重建主窗口页面；设置窗口不能跟着关闭，也不能跳回
+        第一页，否则用户保存语言后还要重新找到刚才的配置项。这里只重建设置
+        窗口自己的页面树，会话（草稿 / 基线）与窗口位置保持不变。
+        """
+        current = self._current_entry
+        query = self.search.text()
+        scroll = 0
+        entry = self._entries.get(current)
+        if entry is not None and isinstance(entry["widget"], CScrollArea):
+            scroll = int(entry["widget"].verticalScrollBar().value())
+
+        while self.stack.count():
+            widget = self.stack.widget(0)
+            self.stack.removeWidget(widget)
+            widget.setParent(None)
+            widget.deleteLater()
+        self._entries.clear()
+        self._schema_pages.clear()
+
+        self._populate_pages()
+        if current:
+            self.show_page(current)
+        self.search.setText(query)
+        self._filter_nav(query)
+        restored = self._entries.get(current)
+        if restored is not None and isinstance(restored["widget"], CScrollArea):
+            restored["widget"].verticalScrollBar().setValue(scroll)
+
+        self.setWindowTitle(Language.resolve_key("language.UI.ui_SettingsWindowTitle", "设置"))
+        self.search.setPlaceholderText(Language.resolve_key("language.UI.ui_SettingsSearch", "搜索设置项…"))
+        self.action_bar.reset_texts()
+        self._title_bar.update_style()
+        self.update_style()
+
     def host_window_size(self) -> tuple[int, int] | None:
         """宿主主窗口的当前尺寸（关于页 / 当前窗口信息展示用）。"""
         host = self._host
@@ -679,15 +715,9 @@ class CSettingsWindow(QDialog):
     def update_theme_label(self) -> None:
         name = get_theme_manager().current()
         label = _THEME_NAMES.get(name, name.replace("_", " ").title())
-        try:
-            dark = QColor(AppThemes[name].data.custom_bg_one).lightness() < 128
-        except (KeyError, AttributeError):
-            dark = True
-        mode = Language.resolve_key(
-            "language.UI.ui_ThemeDark" if dark else "language.UI.ui_ThemeLight",
-            "深色主题" if dark else "浅色主题",
+        self.theme_label.setText(
+            f"{label} · {Language.resolve_key('language.UI.ui_SettingsCurrentTheme', '当前主题')}"
         )
-        self.theme_label.setText(f"{label} · {mode}")
 
     def paintEvent(self, event):  # noqa: N802 - 覆写 Qt 命名
         """绘制窗口自身表面；不再有内层卡片或描边。"""

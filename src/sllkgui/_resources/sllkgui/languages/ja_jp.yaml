@@ -163,8 +163,6 @@ UI:
   ui_ZoomOut: 縮小
   ui_ResetZoom: ズームをリセット
   ui_FullScreen: 全画面表示
-  ui_ThemeLight: ライトテーマ
-  ui_ThemeDark: ダークテーマ
   ui_LayoutReset: レイアウトをリセット
 
   # ウィンドウ管理
@@ -254,8 +252,6 @@ UI:
   ui_FitCenter: 中央に表示
   ui_BackgroundExpand: 背景設定を展開
   ui_BackgroundCollapse: 背景設定を折りたたむ
-  ui_DarkMode: ダークモード
-  ui_DarkModeHint: 暗色テーマを使用
   ui_ModeStatic: 固定
   ui_ModeOverlay: オーバーレイ
   ui_SoftwareInfo: ソフトウェア情報

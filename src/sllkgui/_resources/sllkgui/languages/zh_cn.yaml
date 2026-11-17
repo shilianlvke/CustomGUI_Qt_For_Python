@@ -162,8 +162,6 @@ UI:
   ui_ZoomOut: 缩小
   ui_ResetZoom: 重置缩放
   ui_FullScreen: 全屏
-  ui_ThemeLight: 浅色主题
-  ui_ThemeDark: 深色主题
   ui_LayoutReset: 重置布局
 
   # 窗口管理
@@ -253,8 +251,6 @@ UI:
   ui_FitCenter: 居中
   ui_BackgroundExpand: 展开背景设置
   ui_BackgroundCollapse: 收起背景设置
-  ui_DarkMode: 深色模式
-  ui_DarkModeHint: 开启后使用暗色主题
   ui_ModeStatic: 固定
   ui_ModeOverlay: 浮层
   ui_SoftwareInfo: 软件信息

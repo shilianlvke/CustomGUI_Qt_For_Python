@@ -1018,7 +1018,7 @@
 
         <div class="nav-footer">
           <span class="ver">v2.2.3</span>
-          <span class="theme-chip"><i></i>Grove · 深色</span>
+          <span class="theme-chip"><i></i>Grove</span>
         </div>
       </aside>
 
@@ -1068,20 +1068,6 @@
                     <i style="background:#1d211f"></i><i style="background:#252b28"></i><i style="background:#c8d6a5"></i><i style="background:#e8ece4"></i>
                   </span>
                 </button>
-              </div>
-              <div class="group-body">
-                <div class="row" data-row="dark-mode">
-                  <div class="row-main">
-                    <div class="row-title"><i class="modified"></i>深色模式</div>
-                    <div class="row-hint">使用深色或浅色主题。</div>
-                  </div>
-                  <div class="row-control">
-                    <button class="switch" role="switch" aria-checked="true" data-key="dark" data-default="true"></button>
-                    <button class="reset-btn" data-reset="theme" title="恢复默认" disabled>
-                      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12a9 9 0 1 0 3-6.7"/><path d="M3 4v5h5"/></svg>
-                    </button>
-                  </div>
-                </div>
               </div>
             </div>
 
@@ -1751,7 +1737,7 @@
   function updateThemeChip(name) {
     const chip = qs(".theme-chip");
     if (!chip) return;
-    chip.innerHTML = "<i></i>" + name + " · " + (name === "Bright" ? "浅色" : "深色");
+    chip.innerHTML = "<i></i>" + name;
   }
   qsa(".theme-card").forEach((card) => {
     card.addEventListener("click", () => {
@@ -1759,11 +1745,6 @@
       card.classList.add("selected");
       markDirty("theme", card.dataset.theme !== "Grove");
       updateThemeChip(card.dataset.theme);
-      // 主题切换会联动深色开关（Bright 为浅色，其余为深色）
-      const dark = qs('[data-key="dark"]');
-      const isDark = card.dataset.theme !== "Bright";
-      dark.setAttribute("aria-checked", String(isDark));
-      markRow(dark.closest(".row"), card.dataset.theme !== "Grove");
     });
   });
 
@@ -1853,15 +1834,6 @@
   qsa("[data-reset]").forEach((btn) => {
     btn.addEventListener("click", () => {
       const key = btn.dataset.reset;
-      if (key === "theme") {
-        qsa(".theme-card").forEach((c) => c.classList.toggle("selected", c.dataset.theme === "Grove"));
-        updateThemeChip("Grove");
-        const dark = qs('[data-key="dark"]');
-        dark.setAttribute("aria-checked", "true");
-        markRow(dark.closest(".row"), false);
-        markDirty("theme", false);
-        return;
-      }
       const el = qs(`[data-key="${key}"]`);
       if (!el) return;
       if (el.dataset.default !== undefined) {
@@ -1944,7 +1916,6 @@
         // 模拟三处改动：主题、透明度、亚克力强度
         qsa(".theme-card").forEach((c) => c.classList.toggle("selected", c.dataset.theme === "Eye"));
         updateThemeChip("Eye");
-        markRow(qs('[data-key="dark"]').closest(".row"), true);
         const transparency = qs('[data-key="transparency"]');
         transparency.value = 78;
         paintSlider(transparency);

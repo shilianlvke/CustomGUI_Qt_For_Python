@@ -35,6 +35,10 @@ minor 与 patch 保持向后兼容。
   清理界面中的存储路径、注册表、重建过程等调试式文案。
 - 修复设置保存链路：背景图与菜单/抽屉模式的应用方法缺失导致预览或保存报错；
   修复最近背景缩略图的绘制类型错误。
+- 移除「深色模式」配置项：删除设置页开关、旧抽屉开关与 `darkModeChanged` 信号、
+  主题明暗推导与四语语言键；主题选择仍由主题卡片独立承担，不再有隐式的模式状态。
+- 修复保存语言后设置窗口被自动关闭：保存成功后窗口保持打开、停留在当前页，
+  语言文案原地刷新；只有用户主动关闭才关闭窗口。
 - 新增测试 `tests/test_settings_framework.py`、`tests/test_settings_window.py`、
   `tests/test_plugin_settings.py`；`user.yaml` Schema 升至 v5（新增
   `remember_window_size`）。

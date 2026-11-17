@@ -79,3 +79,39 @@ def test_settings_controller_cycles_expected_theme_sequence():
 
     assert style_calls == ["demo-style", "demo-style", "demo-style"]
     assert manager.current() == "default"  # default -> eye -> bright -> default
+
+
+def test_save_language_keeps_settings_window_open(monkeypatch):
+    from sllkgui.appcore import ThemeManager
+    from sllkgui.guis import language_service
+
+    class _FakeSettingsWindow:
+        def __init__(self):
+            self.refreshed = 0
+            self.closed = False
+
+        def refresh_language(self):
+            self.refreshed += 1
+
+        def isVisible(self):
+            return not self.closed
+
+        def close(self):
+            self.closed = True
+
+    window = SimpleNamespace(
+        ui=SimpleNamespace(
+            window=SimpleNamespace(setStyleSheet=lambda _style: None),
+            title_bar=SimpleNamespace(findChild=lambda *_args: None),
+        )
+    )
+    controller = SettingsController(window=window, theme_manager=ThemeManager())
+    fake = _FakeSettingsWindow()
+    controller._settings_window = fake
+    monkeypatch.setattr(language_service, "apply_language", lambda language, window=None: language)
+
+    controller._apply_saved_settings({"core.interface.language": "en_us"})
+
+    assert controller._settings_window is fake
+    assert fake.refreshed == 1
+    assert fake.isVisible()

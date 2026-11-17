@@ -162,8 +162,6 @@ UI:
   ui_ZoomOut: Zoom Out
   ui_ResetZoom: Reset Zoom
   ui_FullScreen: Full Screen
-  ui_ThemeLight: Light Theme
-  ui_ThemeDark: Dark Theme
   ui_LayoutReset: Reset Layout
 
   # Window Management
@@ -253,8 +251,6 @@ UI:
   ui_FitCenter: Center
   ui_BackgroundExpand: Expand background settings
   ui_BackgroundCollapse: Collapse background settings
-  ui_DarkMode: Dark Mode
-  ui_DarkModeHint: Use a dark theme
   ui_ModeStatic: Docked
   ui_ModeOverlay: Overlay
   ui_SoftwareInfo: Software Info

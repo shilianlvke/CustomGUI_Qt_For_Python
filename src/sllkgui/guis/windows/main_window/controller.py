@@ -290,9 +290,19 @@ class SettingsController:
         if "core.interface.language" in changes:
             from sllkgui.guis.language_service import apply_language
 
-            apply_language(str(changes["core.interface.language"]), self._window)
-            # 语言重建后关闭窗口，避免旧文案与新界面并存
-            self.close_settings_window()
+            try:
+                apply_language(str(changes["core.interface.language"]), self._window)
+            except Exception as exc:  # noqa: BLE001 - 语言应用失败不应关闭设置窗口
+                self._logger.warning(f"应用语言失败: {exc}")
+            # 语言切换会重建主窗口页面；设置窗口保持打开，并在原位刷新文案，
+            # 避免用户保存后还要重新打开、重新定位到刚才的配置页。
+            window = self._settings_window
+            if window is not None:
+                try:
+                    window.refresh_language()
+                except Exception as exc:  # noqa: BLE001 - 刷新失败保留旧文案，不关闭窗口
+                    self._logger.warning(f"刷新设置窗口文案失败: {exc}")
+            self._sync_settings_button(window is not None)
             return
         self._sync_settings_button(self._settings_window is not None)
 

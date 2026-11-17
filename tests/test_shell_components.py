@@ -137,27 +137,16 @@ def test_recent_background_thumb_decodes_at_thumbnail_size(qapp, tmp_path):
         thumb.deleteLater()
 
 
-def test_configurator_menu_mode_and_dark_mode(host):
+def test_configurator_menu_mode(host):
     panel = CSettingsDrawer(host)
     modes = []
-    dark = []
     panel.menuModeChanged.connect(modes.append)
-    panel.darkModeChanged.connect(dark.append)
 
     panel.set_menu_mode("overlay")
     assert panel.menu_mode() == "overlay"
     assert modes == ["overlay"]
     panel.set_menu_mode("static")
     assert modes == ["overlay", "static"]
-
-    panel.open()
-    _wait_animation()
-    before = panel.dark_switch.isChecked()
-    panel.dark_switch.setChecked(not before)
-    assert dark[-1] is (not before)
-    panel.dark_switch.setChecked(before)
-    assert dark[-1] is before
-    panel.close()
 
 
 def test_configurator_language_selection_and_retranslate(host):

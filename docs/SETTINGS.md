@@ -34,6 +34,9 @@ sllkgui/
 窗口是非模态的，打开期间主窗口仍可交互；主题 / 材质 / 背景改动会实时预览，
 点「保存」才落盘，点「放弃」（或关闭时确认放弃）会还原。
 
+保存成功后窗口保持打开，并停留在当前设置页；语言切换会原地重建页面文案，
+不会关闭窗口或跳回第一页。只有用户主动点关闭（或按 Esc）时才允许关闭。
+
 窗口宽高固定为主界面宽高的 80%，居中打开，并跟随主窗口尺寸变化重新适配；
 窗口本身就是唯一表面，不再套内层卡片，因此没有额外的边框、背景、阴影或
 外边距；标题栏右上角只保留关闭按钮。
@@ -64,7 +67,7 @@ sllkgui/
 
 | 页面 | 内容 | 存储键 |
 | --- | --- | --- |
-| 外观 | 主题卡片、深色模式、窗口透明度、亚克力质感、背景图 / 适应模式 | `theme_name` `acrylic_transparency` `glass_strength` `background_image` `background_fit` |
+| 外观 | 主题卡片、窗口透明度、亚克力质感、背景图 / 适应模式 | `theme_name` `acrylic_transparency` `glass_strength` `background_image` `background_fit` |
 | 界面 | 语言、左菜单模式、抽屉模式 | `language` `menu_mode` `drawer_mode` |
 | 启动与窗口 | 记住窗口尺寸 + 当前 / 最小 / 启动尺寸只读信息 | `remember_window_size` |
 | 快捷键 | 基座与插件绑定按 owner 分组展示、冲突计数 | 只读（快捷键表） |

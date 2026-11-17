@@ -4,7 +4,7 @@
 
 - 每个 ``SettingsSection`` → 一张 ``CSettingGroup``；
 - 每个 ``SettingSpec`` → 一行 ``CSettingRow``，控件按 ``control`` 选择；
-- 主题页额外提供「深色模式」快捷开关与主题卡片网格；
+- 主题页额外提供主题卡片网格；
 - 快捷键 / 关于 / 插件空状态是基座自定义页，和声明页共用同一套组件。
 
 所有取值变化先写入会话（内存草稿），保存 / 放弃由窗口统一的底部操作栏负责。
@@ -18,7 +18,7 @@ from pathlib import Path
 
 import PySide6
 from PySide6.QtCore import QSignalBlocker, QStandardPaths, Qt, QUrl
-from PySide6.QtGui import QColor, QDesktopServices, QFont
+from PySide6.QtGui import QDesktopServices, QFont
 from PySide6.QtWidgets import (
     QFileDialog,
     QGridLayout,
@@ -37,7 +37,6 @@ from sllkgui.appcore import (
     SettingsSession,
     SettingsValidationError,
     get_design_tokens,
-    get_theme_manager,
     load_user_settings,
     save_user_settings,
     user_settings_path,
@@ -86,32 +85,6 @@ def _theme_subtitle(name: str) -> str:
     return str(Language.resolve_key(key, fallback)) if key else ""
 
 
-def _first_dark_theme() -> str:
-    for preferred in ("default", "dracula"):
-        if preferred in AppThemes:
-            return preferred
-    for name in sorted(AppThemes.keys()):
-        try:
-            if QColor(AppThemes[name].data.custom_bg_one).lightness() < 128:
-                return name
-        except AttributeError:
-            continue
-    return next(iter(AppThemes), "default")
-
-
-def _light_theme() -> str:
-    for preferred in ("bright", "eye"):
-        if preferred in AppThemes:
-            return preferred
-    for name in sorted(AppThemes.keys()):
-        try:
-            if QColor(AppThemes[name].data.custom_bg_one).lightness() >= 128:
-                return name
-        except AttributeError:
-            continue
-    return "bright" if "bright" in AppThemes else next(iter(AppThemes), "default")
-
-
 class SchemaPage(QWidget):
     """由 :class:`SettingsPage` 声明生成的一页。"""
 
@@ -124,8 +97,6 @@ class SchemaPage(QWidget):
         self._syncing = False
         self._syncers: list = []
         self._groups: list[CSettingGroup] = []
-        self._dark_switch: CToggleSwitch | None = None
-        self._dark_row: CSettingRow | None = None
         self._theme_key = ""
         self._theme_cards: list[CThemeCard] = []
         self._thumbs: list[CThumbnail] = []
@@ -146,7 +117,6 @@ class SchemaPage(QWidget):
                 if spec.resolved_control().value == "theme_gallery":
                     self._theme_key = page.full_key(spec.key)
                     group.add_widget(self._build_theme_gallery(spec), divider=False)
-                    group.add_row(self._build_dark_row())
                 else:
                     row = self._build_row(spec)
                     if row is not None:
@@ -392,33 +362,6 @@ class SchemaPage(QWidget):
             grid.addWidget(card, index // 2, index % 2)
         return box
 
-    def _build_dark_row(self) -> CSettingRow:
-        self._dark_switch = CToggleSwitch("", checked=self._is_dark(), parent=self)
-        self._dark_switch.toggled.connect(self._on_dark_toggled)
-        self._dark_row = CSettingRow(
-            "__dark_mode__",
-            Language.resolve_key("language.UI.ui_DarkMode", "深色模式"),
-            Language.resolve_key("language.UI.ui_DarkModeHint", "开启后使用暗色主题；会同步切换配色。"),
-            self._dark_switch,
-            parent=self,
-        )
-        self._dark_row.resetRequested.connect(lambda _key: self._select_theme(self._session.baseline(self._theme_key)))
-        self._dark_row.set_reset_available(False)
-        return self._dark_row
-
-    def _is_dark(self) -> bool:
-        name = self._session.value(self._theme_key) if self._theme_key else get_theme_manager().current()
-        try:
-            return QColor(AppThemes[name].data.custom_bg_one).lightness() < 128
-        except (KeyError, AttributeError):
-            return True
-
-    def _on_dark_toggled(self, checked: bool) -> None:
-        if self._syncing or not self._theme_key:
-            return
-        target = _first_dark_theme() if checked else _light_theme()
-        self._select_theme(target)
-
     def _select_theme(self, theme: str) -> None:
         if not self._theme_key or theme not in AppThemes:
             return
@@ -429,13 +372,6 @@ class SchemaPage(QWidget):
         current = self._session.value(self._theme_key) if self._theme_key else ""
         for card in self._theme_cards:
             card.set_selected(card.name() == current)
-        if self._dark_switch is not None:
-            self._set_switch(self._dark_switch, self._is_dark())
-        if self._dark_row is not None:
-            self._dark_row.set_reset_available(
-                bool(self._theme_key)
-                and self._session.value(self._theme_key) != self._session.baseline(self._theme_key)
-            )
 
     # ------------------------------------------------------------------
     def _build_recent_row(self) -> CSettingRow:
@@ -530,7 +466,7 @@ class SchemaPage(QWidget):
             self._host.request_preview(full_key, self._session.value(full_key))
 
     def _on_reset(self, full_key: str) -> None:
-        if not full_key.startswith(f"{self._page.namespace}.") or full_key == "__dark_mode__":
+        if not full_key.startswith(f"{self._page.namespace}."):
             return
         if self._session.registry.spec(full_key) is None:
             return

@@ -17,7 +17,6 @@ from PySide6.QtWidgets import QFrame, QLabel, QSizePolicy
 from sllkgui.appcore import (
     AppSettings,
     AppThemes,
-    ColorPalette,
     Language,
     get_design_tokens,
     get_theme_manager,
@@ -51,7 +50,6 @@ class CSettingsDrawer(_SettingsSectionsMixin, QFrame):
     menuModeChanged = Signal(str)
     #: 四向抽屉统一布局模式：static（固定占位）/ overlay（浮层覆盖）
     drawerModeChanged = Signal(str)
-    darkModeChanged = Signal(bool)
     #: 实时预览：透明度（0-100）与亚克力质感强度（0-100）变化
     transparencyChanged = Signal(int)
     glassStrengthChanged = Signal(int)
@@ -80,7 +78,6 @@ class CSettingsDrawer(_SettingsSectionsMixin, QFrame):
         self._animation: QPropertyAnimation | None = None
         self._menu_mode = "static"
         self._drawer_mode = "static"
-        self._suppress_dark_sync = False
         self._theme_cards: list[_ThemeCard] = []
         #: 需要随语言刷新的标签：资源键 -> (标签, 默认文案)
         self._texts: dict[str, tuple[QLabel, str]] = {}
@@ -126,72 +123,6 @@ class CSettingsDrawer(_SettingsSectionsMixin, QFrame):
         current = get_theme_manager().current()
         for card in self._theme_cards:
             card.set_selected(card.name() == current)
-        if not self._suppress_dark_sync:
-            dark = QColor(ColorPalette.custom_bg_one).lightness() < 128
-            # 不屏蔽信号：CToggleSwitch 只有在信号驱动下才会把滑块动画到正确
-            # 位置；期间用 _suppress_dark_sync 拦掉本面板的 toggled 回写，
-            # 避免「同步开关」再次触发主题切换。
-            self._suppress_dark_sync = True
-            try:
-                self.dark_switch.setChecked(dark)
-            finally:
-                self._suppress_dark_sync = False
-
-    @staticmethod
-    def _first_dark_theme() -> str | None:
-        names = sorted(AppThemes.keys())
-        for preferred in ("dracula", "default"):
-            if preferred in names:
-                return preferred
-        for name in names:
-            try:
-                if QColor(AppThemes[name].data.custom_bg_one).lightness() < 128:
-                    return name
-            except AttributeError:
-                continue
-        return None
-
-    @staticmethod
-    def _light_theme() -> str | None:
-        """关闭深色模式时回退的浅色主题。
-
-        不能直接回 ``AppSettings.theme_name``：默认主题本身是暗色，关掉开关后
-        画面仍是暗色，开关状态与主题就会对不上。这里优先沿用配置里**已经是
-        浅色**的主题，否则按 bright / eye 的顺序挑一套浅色。
-        """
-        names = sorted(AppThemes.keys())
-        try:
-            configured = AppSettings.theme_name
-        except Exception:
-            configured = None
-        if configured in names:
-            try:
-                if QColor(AppThemes[configured].data.custom_bg_one).lightness() >= 128:
-                    return configured
-            except AttributeError:
-                pass
-        for preferred in ("bright", "eye"):
-            if preferred in names:
-                return preferred
-        for name in names:
-            try:
-                if QColor(AppThemes[name].data.custom_bg_one).lightness() >= 128:
-                    return name
-            except AttributeError:
-                continue
-        return "default" if "default" in names else (names[0] if names else None)
-
-    def _on_dark_toggled(self, checked: bool) -> None:
-        if self._suppress_dark_sync:
-            return
-        target = self._first_dark_theme() if checked else self._light_theme()
-        self._suppress_dark_sync = True
-        try:
-            if target is not None:
-                self.set_theme(target)
-        finally:
-            self._suppress_dark_sync = False
-        self.darkModeChanged.emit(bool(checked))
 
     # ------------------------------------------------------------------
     # 材质与通透度
@@ -479,7 +410,6 @@ class CSettingsDrawer(_SettingsSectionsMixin, QFrame):
         self.language_select.update()
         self.menu_mode_select.update()
         self.drawer_mode_select.update()
-        self.dark_switch.update()
         self.transparency_slider.update()
         self.glass_strength_slider.update()
         self.background_type_select.update()
