@@ -4,30 +4,49 @@
 
 - 一个应用只有一个托盘图标，由基座持有并常驻；插件不得自建托盘；
 - 图标与悬停提示固定使用基座品牌，插件没有任何修改入口；
-- 菜单外壳固定包含「显示主窗口」「退出」，插件动作按 ``order`` 插入其前；
+- 插件只声明「槽 + 次序 + 文案」，菜单形态（内联 / 子菜单 / 兜底桶）
+  由 :func:`plan_menu` 按槽预算裁决；
+- 预算保证插件再多也不溢出屏幕：顶层最多 18 行 ≈ 610px，768p 可完整展开；
 - 插件动作以 ``plugin_id:action_id`` 命名隔离，卸载/重载时由基座清理；
 - 系统托盘不可用时全部降级为空操作，只告警一次。
 """
 
 from __future__ import annotations
 
-from collections.abc import Callable
-from dataclasses import dataclass
+import re
+from collections.abc import Callable, Iterable
+from dataclasses import dataclass, field
 from typing import Any
 
 from sllkgui.appcore import AppSettings, Language, Logger, PathFactory, record_event
 
-from .api import GalleryTray, Permission
-from .errors import PLUGIN_PERMISSION_DENIED, GalleryError
+from .api import GalleryTray, Permission, TrayEntry, TrayGroup
+from .errors import (
+    PLUGIN_PERMISSION_DENIED,
+    PLUGIN_TRAY_ACTION_INVALID,
+    PLUGIN_TRAY_GROUP_FORBIDDEN,
+    PLUGIN_TRAY_GROUP_INVALID,
+    PLUGIN_TRAY_QUOTA_EXCEEDED,
+    GalleryError,
+)
 
+#: 动作短 id：字母/数字开头，允许点、下划线、连字符
+_ACTION_ID_RE = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._-]{0,39}$")
 
-@dataclass
-class TrayAction:
-    action_id: str
-    text: str
-    callback: Callable[[], None]
-    order: int = 100
-    plugin_id: str = ""
+#: 主菜单预算。插件只增不减，预算保证「插件再多，顶层行数也有上界」：
+#: quick 5 + tools 7（含兜底桶）+ status 3 + 基座 3 = 18 行。
+MAX_QUICK_ROWS = 5
+MAX_TOOLS_ROWS = 7
+MAX_STATUS_ROWS = 3
+#: 单插件动作上限；超出直接拒绝，而不是让某个插件撑爆菜单
+MAX_PLUGIN_ACTIONS = 12
+#: 允许内联的插件块最大动作数（再多就必须收进子菜单）
+MAX_INLINE_ACTIONS = 3
+MAX_TEXT_CHARS = 40
+MAX_ORDER = 999
+
+#: 兜底桶节点的类型标记；文案在渲染期解析，便于四语言切换
+BUCKET_KIND = "more"
 
 
 def _tray_text(key: str, default: str) -> str:
@@ -37,23 +56,243 @@ def _tray_text(key: str, default: str) -> str:
         return default
 
 
+@dataclass
+class TrayAction:
+    """一条已注册的插件动作（``action_id`` 已带 ``plugin_id:`` 前缀）。"""
+
+    action_id: str
+    text: str
+    callback: Callable[[], None]
+    order: int = 100
+    plugin_id: str = ""
+    plugin_name: str = ""
+    group: str = TrayGroup.TOOLS
+    submenu: bool | None = None
+    enabled: bool = True
+
+
+@dataclass(frozen=True)
+class TrayPlanItem:
+    """菜单计划节点；``kind`` 取 ``action`` / ``submenu`` / ``more`` / ``separator``。"""
+
+    kind: str
+    text: str = ""
+    action_id: str = ""
+    enabled: bool = True
+    children: tuple[TrayPlanItem, ...] = ()
+
+    @property
+    def is_separator(self) -> bool:
+        return self.kind == "separator"
+
+
+@dataclass(frozen=True)
+class TrayPlan:
+    """渲染计划 + 压缩统计（供日志、``entries()`` 与测试断言）。"""
+
+    items: tuple[TrayPlanItem, ...] = ()
+    quick_rows: int = 0
+    demoted: int = 0
+    tools_blocks: int = 0
+    submenu_blocks: int = 0
+    inline_blocks: int = 0
+    overflow_blocks: int = 0
+    bucketed: int = 0
+    status_rows: int = 0
+    truncated_status: int = 0
+
+
+@dataclass
+class _Block:
+    """同一插件在同一槽内的动作集合。"""
+
+    plugin_id: str
+    name: str
+    actions: list[TrayAction] = field(default_factory=list)
+
+    @property
+    def min_order(self) -> int:
+        return min((item.order for item in self.actions), default=MAX_ORDER)
+
+
+_SEPARATOR = TrayPlanItem(kind="separator")
+
+
+def _action_key(action: TrayAction) -> tuple[int, str, str]:
+    """槽内动作排序：次序 → 文案 → 完整 id（逐层兜底，永远确定）。"""
+    return (action.order, action.text.casefold(), action.action_id)
+
+
+def _block_key(block: _Block) -> tuple[int, str, str]:
+    """插件块排序：块内最靠前的次序 → 插件名 → 插件 id。"""
+    return (block.min_order, block.name.casefold(), block.plugin_id)
+
+
+def _group_blocks(actions: Iterable[TrayAction]) -> list[_Block]:
+    blocks: dict[str, _Block] = {}
+    for action in actions:
+        block = blocks.get(action.plugin_id)
+        if block is None:
+            block = _Block(action.plugin_id, action.plugin_name or action.plugin_id)
+            blocks[action.plugin_id] = block
+        block.actions.append(action)
+    ordered = sorted(blocks.values(), key=_block_key)
+    for block in ordered:
+        block.actions.sort(key=_action_key)
+    return ordered
+
+
+def _action_item(action: TrayAction, *, disabled: bool = False, text: str = "") -> TrayPlanItem:
+    enabled = bool(action.enabled) and not disabled and action.group != TrayGroup.STATUS
+    return TrayPlanItem(
+        kind="action",
+        text=text or action.text,
+        action_id=action.action_id,
+        enabled=enabled,
+    )
+
+
+def _uses_submenu(block: _Block, total_blocks: int) -> bool:
+    """块形态裁决：显式偏好 > 块数规则 > 内联动作数护栏。
+
+    - 任意动作声明 ``submenu=True`` → 子菜单；
+    - 槽内多块时默认统一子菜单，只有全部声明 ``False`` 才允许内联；
+    - 内联块最多 :data:`MAX_INLINE_ACTIONS` 条，防止单个插件把槽撑爆；
+    - 独占槽且无偏好 → 内联（单插件时零层级）。
+    """
+    prefs = {action.submenu for action in block.actions}
+    too_many = len(block.actions) > MAX_INLINE_ACTIONS
+    if True in prefs:
+        return True
+    if total_blocks < 2:
+        return False
+    if prefs == {False} and not too_many:
+        return False
+    return True
+
+
+def _block_rows(block: _Block, total_blocks: int) -> int:
+    return 1 if _uses_submenu(block, total_blocks) else len(block.actions)
+
+
+def plan_menu(actions: Iterable[TrayAction]) -> TrayPlan:
+    """把注册表编译成确定性的菜单计划（纯函数，不碰 Qt）。
+
+    规则与次序见 ``docs/TRAY.md`` §4：
+
+    1. 槽次序固定 quick → tools → status，空槽不产生分隔线；
+    2. quick 逐条内联，超出 :data:`MAX_QUICK_ROWS` 的动作降级到 tools；
+    3. tools 按插件分块，行数受 :data:`MAX_TOOLS_ROWS` 约束，放不下的块
+       收进兜底桶（桶内平铺 + 插件名前缀，层级不超过 2）；
+    4. status 恒为禁用态，超出 :data:`MAX_STATUS_ROWS` 截断并计数；
+    5. 末尾留一条分隔线给基座固定项。
+    """
+    pools: dict[str, list[TrayAction]] = {group.value: [] for group in TrayGroup}
+    for action in actions:
+        pools.setdefault(str(action.group), []).append(action)
+
+    quick = sorted(pools[TrayGroup.QUICK], key=_action_key)
+    quick_rows = quick[:MAX_QUICK_ROWS]
+    demoted = quick[MAX_QUICK_ROWS:]
+
+    blocks = _group_blocks([*pools[TrayGroup.TOOLS], *demoted])
+    total = len(blocks)
+    kept: list[_Block] = []
+    overflow: list[_Block] = []
+    budget = MAX_TOOLS_ROWS
+    for index, block in enumerate(blocks):
+        rows = _block_rows(block, total)
+        reserve = 1 if index < total - 1 else 0  # 后面还有块时，给兜底桶留一行
+        if rows <= budget - reserve:
+            kept.append(block)
+            budget -= rows
+        else:
+            overflow = blocks[index:]
+            break
+
+    status = sorted(pools[TrayGroup.STATUS], key=_action_key)
+    status_rows = status[:MAX_STATUS_ROWS]
+
+    sections: list[list[TrayPlanItem]] = []
+    if quick_rows:
+        sections.append([_action_item(action) for action in quick_rows])
+
+    tools_items: list[TrayPlanItem] = []
+    inline_blocks = 0
+    for block in kept:
+        if _uses_submenu(block, total):
+            tools_items.append(
+                TrayPlanItem(
+                    kind="submenu",
+                    text=block.name,
+                    children=tuple(_action_item(action) for action in block.actions),
+                )
+            )
+        else:
+            inline_blocks += 1
+            tools_items.extend(_action_item(action) for action in block.actions)
+    bucketed = 0
+    if overflow:
+        bucket_children: list[TrayPlanItem] = []
+        for block in overflow:
+            for action in block.actions:
+                bucket_children.append(_action_item(action, text=f"{block.name} · {action.text}"))
+        bucketed = len(bucket_children)
+        tools_items.append(TrayPlanItem(kind=BUCKET_KIND, children=tuple(bucket_children)))
+    if tools_items:
+        sections.append(tools_items)
+
+    if status_rows:
+        sections.append([_action_item(action, disabled=True) for action in status_rows])
+
+    items: list[TrayPlanItem] = []
+    for index, section in enumerate(sections):
+        if index:
+            items.append(_SEPARATOR)
+        items.extend(section)
+    if items:
+        items.append(_SEPARATOR)
+
+    return TrayPlan(
+        items=tuple(items),
+        quick_rows=len(quick_rows),
+        demoted=len(demoted),
+        tools_blocks=total,
+        submenu_blocks=len(kept) - inline_blocks,
+        inline_blocks=inline_blocks,
+        overflow_blocks=len(overflow),
+        bucketed=bucketed,
+        status_rows=len(status_rows),
+        truncated_status=len(status) - len(status_rows),
+    )
+
+
 class TrayService:
     """基座级托盘：常驻图标、动作注册、菜单重建与通知。"""
 
     def __init__(self) -> None:
         self._actions: dict[str, TrayAction] = {}
+        self._submenus: list[Any] = []
         self._icon: Any = None
         self._menu: Any = None
         self._show_window: Callable[[], None] | None = None
         self._quit_app: Callable[[], None] | None = None
+        self._open_settings_cb: Callable[[], None] | None = None
         self._warned_unavailable = False
 
     # ------------------------------------------------------------------
     # 窗口回调
     # ------------------------------------------------------------------
-    def attach_window(self, show_window: Callable[[], None], quit_app: Callable[[], None]) -> None:
+    def attach_window(
+        self,
+        show_window: Callable[[], None],
+        quit_app: Callable[[], None],
+        open_settings: Callable[[], None] | None = None,
+    ) -> None:
         self._show_window = show_window
         self._quit_app = quit_app
+        self._open_settings_cb = open_settings
+        self._rebuild_menu()
 
     # ------------------------------------------------------------------
     # 可用性 / 生命周期
@@ -123,6 +362,11 @@ class TrayService:
         if self._show_window is not None:
             self._show_window()
 
+    def open_settings(self) -> None:
+        record_event("tray.settings", category="gallery")
+        if self._open_settings_cb is not None:
+            self._open_settings_cb()
+
     def quit_app(self) -> None:
         record_event("tray.quit", category="gallery")
         if self._quit_app is not None:
@@ -135,6 +379,7 @@ class TrayService:
             self._icon = None
         self._menu = None
         self._actions.clear()
+        self._submenus.clear()
         self._warned_unavailable = False
 
     # ------------------------------------------------------------------
@@ -148,16 +393,37 @@ class TrayService:
         *,
         order: int = 100,
         plugin_id: str = "",
+        plugin_name: str = "",
+        group: str = TrayGroup.TOOLS,
+        submenu: bool | None = None,
+        enabled: bool = True,
     ) -> None:
-        self._actions[action_id] = TrayAction(action_id, text, callback, order, plugin_id)
+        self._actions[action_id] = TrayAction(
+            action_id=action_id,
+            text=text,
+            callback=callback,
+            order=order,
+            plugin_id=plugin_id,
+            plugin_name=plugin_name,
+            group=group,
+            submenu=submenu,
+            enabled=enabled,
+        )
         self._rebuild_menu()
         self.ensure_visible()
 
     def set_action_text(self, action_id: str, text: str) -> None:
         action = self._actions.get(action_id)
-        if action is None:
+        if action is None or action.text == text:
             return
         action.text = text
+        self._rebuild_menu()
+
+    def set_action_enabled(self, action_id: str, enabled: bool) -> None:
+        action = self._actions.get(action_id)
+        if action is None or action.enabled == bool(enabled):
+            return
+        action.enabled = bool(enabled)
         self._rebuild_menu()
 
     def remove_action(self, action_id: str, *, plugin_id: str = "") -> None:
@@ -174,10 +440,55 @@ class TrayService:
             self._actions.pop(action_id, None)
         self._rebuild_menu()
 
-    def action_count(self, plugin_id: str = "") -> int:
-        if not plugin_id:
-            return len(self._actions)
-        return sum(1 for action in self._actions.values() if action.plugin_id == plugin_id)
+    def action_count(self, plugin_id: str = "", *, group: str | None = None) -> int:
+        items = list(self._actions.values())
+        if plugin_id:
+            items = [item for item in items if item.plugin_id == plugin_id]
+        if group is not None:
+            items = [item for item in items if str(item.group) == str(group)]
+        return len(items)
+
+    def plan(self) -> TrayPlan:
+        """当前渲染计划（只读，供诊断与测试）。"""
+        return plan_menu(self._actions.values())
+
+    def entries(self, plugin_id: str = "") -> tuple[TrayEntry, ...]:
+        """按计划还原每条动作的实际落位：内联 / 子菜单 / 兜底桶。"""
+        bucket_label = _tray_text("UI.ui_TrayMorePlugins", "更多插件")
+        result: list[TrayEntry] = []
+        for item in self.plan().items:
+            if item.kind == "action":
+                entry = self._make_entry(item, "inline", (item.text,))
+                if entry is not None:
+                    result.append(entry)
+            elif item.kind == "submenu":
+                for child in item.children:
+                    entry = self._make_entry(child, "submenu", (item.text, child.text))
+                    if entry is not None:
+                        result.append(entry)
+            elif item.kind == BUCKET_KIND:
+                for child in item.children:
+                    entry = self._make_entry(child, "bucket", (bucket_label, child.text))
+                    if entry is not None:
+                        result.append(entry)
+        if plugin_id:
+            result = [entry for entry in result if entry.plugin_id == plugin_id]
+        return tuple(result)
+
+    def _make_entry(self, item: TrayPlanItem, rendered_as: str, path: tuple[str, ...]) -> TrayEntry | None:
+        action = self._actions.get(item.action_id)
+        if action is None:
+            return None
+        return TrayEntry(
+            action_id=action.action_id,
+            text=action.text,
+            group=str(action.group),
+            order=action.order,
+            enabled=item.enabled,
+            plugin_id=action.plugin_id,
+            rendered_as=rendered_as,
+            path=path,
+        )
 
     # ------------------------------------------------------------------
     # 提示 / 通知
@@ -193,7 +504,9 @@ class TrayService:
             "critical": QSystemTrayIcon.MessageIcon.Critical,
             "info": QSystemTrayIcon.MessageIcon.Information,
         }
-        self._icon.showMessage(title, message, icons.get(str(level).lower(), QSystemTrayIcon.MessageIcon.Information), timeout_ms)
+        self._icon.showMessage(
+            title, message, icons.get(str(level).lower(), QSystemTrayIcon.MessageIcon.Information), timeout_ms
+        )
         return True
 
     def refresh_texts(self) -> None:
@@ -212,34 +525,87 @@ class TrayService:
         except Exception as exc:  # noqa: BLE001 - 插件回调错误不得影响基座
             Logger.exception(f"托盘动作失败 {action.plugin_id}:{action.action_id}: {exc}")
 
-    def _rebuild_menu(self) -> None:
+    def _clear_items(self) -> None:
+        """清空菜单项：子菜单是菜单的 QObject 子节点，随 ``clear()`` 一起释放。
+
+        这里只丢掉 Python 引用，不能再手动 ``deleteLater()`` —— ``QMenu.clear()``
+        已经销毁了子菜单，二次删除会命中已析构的 C++ 对象。
+        """
         if self._menu is None:
             return
         self._menu.clear()
-        ordered = sorted(self._actions.values(), key=lambda item: (item.order, item.action_id))
-        for action in ordered:
-            item = self._menu.addAction(action.text)
-            item.triggered.connect(lambda _checked=False, entry=action: self._invoke(entry))
-        if ordered:
-            self._menu.addSeparator()
+        self._submenus.clear()
+
+    def _bind(self, menu: Any, item: TrayPlanItem) -> None:
+        qaction = menu.addAction(item.text)
+        qaction.setEnabled(item.enabled)
+        action = self._actions.get(item.action_id)
+        if action is not None:
+            qaction.triggered.connect(lambda _checked=False, entry=action: self._invoke(entry))
+
+    def _rebuild_menu(self) -> None:
+        if self._menu is None:
+            return
+        plan = plan_menu(self._actions.values())
+        self._clear_items()
+        for item in plan.items:
+            if item.kind == "separator":
+                self._menu.addSeparator()
+            elif item.kind == "submenu":
+                submenu = self._menu.addMenu(item.text)
+                self._submenus.append(submenu)
+                for child in item.children:
+                    self._bind(submenu, child)
+            elif item.kind == BUCKET_KIND:
+                # 兜底桶：桶内平铺 + 插件名前缀，避免层级超过 2
+                submenu = self._menu.addMenu(_tray_text("UI.ui_TrayMorePlugins", "更多插件"))
+                self._submenus.append(submenu)
+                for child in item.children:
+                    self._bind(submenu, child)
+            else:
+                self._bind(self._menu, item)
+        self._add_base_items()
+        if plan.demoted or plan.overflow_blocks or plan.truncated_status:
+            Logger.debug(
+                "托盘菜单已压缩: "
+                f"降级 {plan.demoted} / 兜底 {plan.overflow_blocks} 块 "
+                f"（{plan.bucketed} 条）/ 截断状态 {plan.truncated_status}"
+            )
+
+    def _add_base_items(self) -> None:
+        """基座固定项：永远在最后，插件无法插入到这条分隔线之后。"""
         show = self._menu.addAction(_tray_text("UI.ui_TrayShowWindow", "显示主窗口"))
         show.triggered.connect(lambda _checked=False: self.show_window())
+        if self._open_settings_cb is not None:
+            settings = self._menu.addAction(_tray_text("UI.ui_TraySettings", "设置…"))
+            settings.triggered.connect(lambda _checked=False: self.open_settings())
         quit_item = self._menu.addAction(_tray_text("UI.ui_TrayQuit", "退出"))
         quit_item.triggered.connect(lambda _checked=False: self.quit_app())
 
 
 class TrayHandle(GalleryTray):
-    """单个插件的托盘句柄：权限校验 + 卸载清理。
+    """单个插件的托盘句柄：权限校验 + 字段校验 + 命名空间 + 卸载清理。
 
-    图标与悬停提示由基座固定持有，句柄只暴露动作与通知。
+    图标与悬停提示由基座固定持有，句柄只暴露动作与通知；注册字段的非法值在
+    这里拒绝，而不是等到渲染期才发现。
     """
 
-    def __init__(self, service: TrayService, plugin_id: str, permissions: tuple[Permission, ...]) -> None:
+    def __init__(
+        self,
+        service: TrayService,
+        plugin_id: str,
+        permissions: tuple[Permission, ...],
+        plugin_name: str = "",
+    ) -> None:
         self._service = service
         self._plugin_id = plugin_id
         self._permissions = permissions
+        self._plugin_name = (plugin_name or plugin_id).strip() or plugin_id
         self._action_ids: set[str] = set()
 
+    # ------------------------------------------------------------------
+    # 校验
+    # ------------------------------------------------------------------
     def _require(self, permission: Permission, action: str) -> None:
         if permission not in self._permissions:
             raise GalleryError(
@@ -248,22 +614,126 @@ class TrayHandle(GalleryTray):
                 "在 sllkgui-plugin.yml 的 permissions 中添加对应权限",
             )
 
+    @staticmethod
+    def _check_text(text: str) -> str:
+        label = str(text or "").strip()
+        if not label:
+            raise GalleryError(PLUGIN_TRAY_ACTION_INVALID, "托盘动作文案不能为空")
+        if len(label) > MAX_TEXT_CHARS:
+            raise GalleryError(
+                PLUGIN_TRAY_ACTION_INVALID,
+                f"托盘动作文案超过 {MAX_TEXT_CHARS} 字：{label[:12]}…",
+                "把细节放进 Surface 页面，菜单里只留短标签",
+            )
+        return label
+
+    @staticmethod
+    def _check_order(order: Any) -> int:
+        if isinstance(order, bool) or not isinstance(order, int) or not 0 <= order <= MAX_ORDER:
+            raise GalleryError(
+                PLUGIN_TRAY_ACTION_INVALID,
+                f"托盘动作 order 必须是 0–{MAX_ORDER} 的整数: {order!r}",
+            )
+        return order
+
+    @staticmethod
+    def _check_group(group: Any) -> str:
+        value = str(getattr(group, "value", group) or "").strip().lower()
+        if value == "base":
+            raise GalleryError(
+                PLUGIN_TRAY_GROUP_FORBIDDEN,
+                "插件不能写入基座区",
+                "基座固定项（显示主窗口 / 设置 / 退出）由基座独占，插件只能用 quick / tools / status",
+            )
+        allowed = {item.value for item in TrayGroup}
+        if value not in allowed:
+            raise GalleryError(
+                PLUGIN_TRAY_GROUP_INVALID,
+                f"未知托盘槽: {value!r}",
+                f"可用槽：{' / '.join(sorted(allowed))}",
+            )
+        return value
+
+    @staticmethod
+    def _check_submenu(submenu: bool | None) -> bool | None:
+        if submenu is not None and not isinstance(submenu, bool):
+            raise GalleryError(PLUGIN_TRAY_ACTION_INVALID, f"submenu 只能是 True / False / None: {submenu!r}")
+        return submenu
+
+    # ------------------------------------------------------------------
+    # 动作
+    # ------------------------------------------------------------------
     def available(self) -> bool:
         return self._service.available()
 
-    def add_action(self, action_id: str, text: str, callback: Callable[[], None], *, order: int = 100) -> None:
+    def add_action(
+        self,
+        action_id: str,
+        text: str,
+        callback: Callable[[], None],
+        *,
+        order: int = 100,
+        group: str | TrayGroup = TrayGroup.TOOLS,
+        submenu: bool | None = None,
+        enabled: bool = True,
+    ) -> None:
         self._require(Permission.TRAY, "注册托盘动作")
-        action_id = f"{self._plugin_id}:{action_id}"
-        self._service.add_action(action_id, text, callback, order=order, plugin_id=self._plugin_id)
-        self._action_ids.add(action_id)
+        short_id = str(action_id or "").strip()
+        if not _ACTION_ID_RE.match(short_id):
+            raise GalleryError(
+                PLUGIN_TRAY_ACTION_INVALID,
+                f"非法托盘动作 id: {short_id!r}",
+                "允许字母、数字、点、下划线、连字符，长度 1–40，且不以符号开头",
+            )
+        label = self._check_text(text)
+        order = self._check_order(order)
+        group_id = self._check_group(group)
+        submenu = self._check_submenu(submenu)
+        full = f"{self._plugin_id}:{short_id}"
+        if full not in self._action_ids and len(self._action_ids) >= MAX_PLUGIN_ACTIONS:
+            raise GalleryError(
+                PLUGIN_TRAY_QUOTA_EXCEEDED,
+                f"单个插件最多注册 {MAX_PLUGIN_ACTIONS} 条托盘动作",
+                "把低频动作放进 Surface 页面，菜单只保留高频入口",
+            )
+        self._service.add_action(
+            full,
+            label,
+            callback,
+            order=order,
+            plugin_id=self._plugin_id,
+            plugin_name=self._plugin_name,
+            group=group_id,
+            submenu=submenu,
+            enabled=bool(enabled),
+        )
+        self._action_ids.add(full)
 
     def set_action_text(self, action_id: str, text: str) -> None:
-        self._service.set_action_text(f"{self._plugin_id}:{action_id}", text)
+        self._service.set_action_text(f"{self._plugin_id}:{action_id}", self._check_text(text))
+
+    def set_action_enabled(self, action_id: str, enabled: bool) -> None:
+        self._service.set_action_enabled(f"{self._plugin_id}:{action_id}", bool(enabled))
 
     def remove_action(self, action_id: str) -> None:
         full = f"{self._plugin_id}:{action_id}"
         self._action_ids.discard(full)
         self._service.remove_action(full, plugin_id=self._plugin_id)
+
+    def entries(self) -> tuple[TrayEntry, ...]:
+        return tuple(
+            TrayEntry(
+                action_id=entry.action_id.split(":", 1)[-1],
+                text=entry.text,
+                group=entry.group,
+                order=entry.order,
+                enabled=entry.enabled,
+                plugin_id=entry.plugin_id,
+                rendered_as=entry.rendered_as,
+                path=entry.path,
+            )
+            for entry in self._service.entries(self._plugin_id)
+        )
 
     def show_message(self, title: str, message: str, *, level: str = "info", timeout_ms: int = 4000) -> bool:
         self._require(Permission.NOTIFICATIONS, "发送托盘通知")
@@ -276,4 +746,17 @@ class TrayHandle(GalleryTray):
         self._service.remove_plugin(self._plugin_id)
 
 
-__all__ = ["TrayAction", "TrayHandle", "TrayService"]
+__all__ = [
+    "BUCKET_KIND",
+    "MAX_INLINE_ACTIONS",
+    "MAX_PLUGIN_ACTIONS",
+    "MAX_QUICK_ROWS",
+    "MAX_STATUS_ROWS",
+    "MAX_TOOLS_ROWS",
+    "TrayAction",
+    "TrayHandle",
+    "TrayPlan",
+    "TrayPlanItem",
+    "TrayService",
+    "plan_menu",
+]

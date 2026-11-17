@@ -1,4 +1,4 @@
-"""基座托盘：动作注册、权限校验与关闭到托盘。"""
+"""基座托盘：分组计划、字段校验、注册表与关闭到托盘。"""
 
 from __future__ import annotations
 
@@ -6,12 +6,21 @@ from pathlib import Path
 
 import pytest
 
-from sllkgui.gallery.api import Permission
+from sllkgui.gallery.api import Permission, TrayGroup
 from sllkgui.gallery.context import GalleryContextImpl
 from sllkgui.gallery.errors import GalleryError
 from sllkgui.gallery.manifest import PluginManifest
 from sllkgui.gallery.store import GalleryStore
-from sllkgui.gallery.tray import TrayHandle, TrayService
+from sllkgui.gallery.tray import (
+    MAX_PLUGIN_ACTIONS,
+    MAX_QUICK_ROWS,
+    MAX_STATUS_ROWS,
+    MAX_TOOLS_ROWS,
+    TrayAction,
+    TrayHandle,
+    TrayService,
+    plan_menu,
+)
 
 
 @pytest.fixture(scope="module")
@@ -179,3 +188,179 @@ def test_close_to_tray_releases_ui_caches(tmp_path: Path, prepared):
 
     window._force_close = True
     window.close()
+
+
+# ----------------------------------------------------------------------
+# 分组计划：槽预算、块形态与兜底桶
+# ----------------------------------------------------------------------
+def _action(plugin_id, action_id, text, *, group="tools", order=100, submenu=None, enabled=True, name=""):
+    return TrayAction(
+        action_id=f"{plugin_id}:{action_id}",
+        text=text,
+        callback=lambda: None,
+        order=order,
+        plugin_id=plugin_id,
+        plugin_name=name or plugin_id,
+        group=str(group),
+        submenu=submenu,
+        enabled=enabled,
+    )
+
+
+def test_plan_empty_registry_has_no_items():
+    assert plan_menu([]).items == ()
+
+
+def test_plan_single_plugin_keeps_slot_flat():
+    """独占槽的插件不产生子菜单：单插件时零层级。"""
+    plan = plan_menu([_action("a", "one", "清空历史"), _action("a", "two", "打开目录", order=20)])
+    assert [item.kind for item in plan.items] == ["action", "action", "separator"]
+    assert plan.submenu_blocks == 0
+
+
+def test_plan_two_plugins_collapse_into_submenus():
+    plan = plan_menu(
+        [
+            _action("a", "one", "A1", name="甲", order=10),
+            _action("b", "one", "B1", name="乙", order=20),
+        ]
+    )
+    assert [item.kind for item in plan.items] == ["submenu", "submenu", "separator"]
+    assert [item.text for item in plan.items if item.kind == "submenu"] == ["甲", "乙"]
+
+
+def test_plan_submenu_false_keeps_small_block_inline():
+    """显式 submenu=False 且块内动作不多时，允许在槽内保留内联块。"""
+    plan = plan_menu(
+        [
+            _action("a", "one", "A1", name="甲", order=10, submenu=False),
+            _action("b", "one", "B1", name="乙", order=20),
+            _action("b", "two", "B2", name="乙", order=30),
+        ]
+    )
+    kinds = [item.kind for item in plan.items]
+    assert kinds == ["action", "submenu", "separator"]
+
+
+def test_plan_quick_over_budget_demotes_to_tools():
+    actions = [_action("a", f"q{i}", f"Q{i}", group="quick", order=i) for i in range(MAX_QUICK_ROWS + 2)]
+    plan = plan_menu(actions)
+    assert plan.quick_rows == MAX_QUICK_ROWS
+    assert plan.demoted == 2
+    # 降级不等于丢弃：7 条动作全部还在菜单里
+    assert len([item for item in plan.items if item.kind == "action"]) == MAX_QUICK_ROWS + 2
+
+
+def test_plan_tools_over_budget_uses_bucket():
+    actions = []
+    for index in range(9):
+        actions.append(_action(f"p{index}", "one", f"P{index}-1", name=f"插件{index}", order=10))
+        actions.append(_action(f"p{index}", "two", f"P{index}-2", name=f"插件{index}", order=20))
+    plan = plan_menu(actions)
+    assert plan.tools_blocks == 9
+    submenus = [item for item in plan.items if item.kind == "submenu"]
+    bucket = [item for item in plan.items if item.kind == "more"]
+    # 顶层 tools 段（子菜单 + 兜底桶）= 预算行数，插件再多也不外溢
+    assert len(submenus) + len(bucket) == MAX_TOOLS_ROWS
+    assert plan.overflow_blocks == 3
+    assert plan.bucketed == 6
+    assert bucket[0].children[0].text.startswith("插件6 · ")
+    # 桶内平铺，不再嵌套第三层
+    assert all(child.kind == "action" for child in bucket[0].children)
+
+
+def test_plan_status_is_read_only_and_truncated():
+    actions = [_action("a", f"s{i}", f"S{i}", group="status", order=i) for i in range(MAX_STATUS_ROWS + 2)]
+    plan = plan_menu(actions)
+    assert plan.status_rows == MAX_STATUS_ROWS
+    assert plan.truncated_status == 2
+    assert all(not item.enabled for item in plan.items if item.kind == "action")
+    assert [item.kind for item in plan.items] == ["action"] * MAX_STATUS_ROWS + ["separator"]
+
+
+# ----------------------------------------------------------------------
+# 句柄：字段校验、配额与实际落位
+# ----------------------------------------------------------------------
+def test_tray_handle_validates_fields():
+    service = TrayService()
+    handle = TrayHandle(service, "com.example.tray", (Permission.TRAY,), "示例")
+    cases = [
+        ({"action_id": "bad id", "text": "x"}, "PLUGIN_TRAY_ACTION_INVALID"),
+        ({"action_id": "ok", "text": "   "}, "PLUGIN_TRAY_ACTION_INVALID"),
+        ({"action_id": "ok", "text": "x" * 41}, "PLUGIN_TRAY_ACTION_INVALID"),
+        ({"action_id": "ok", "text": "x", "order": -1}, "PLUGIN_TRAY_ACTION_INVALID"),
+        ({"action_id": "ok", "text": "x", "order": True}, "PLUGIN_TRAY_ACTION_INVALID"),
+        ({"action_id": "ok", "text": "x", "group": "nope"}, "PLUGIN_TRAY_GROUP_INVALID"),
+        ({"action_id": "ok", "text": "x", "group": "base"}, "PLUGIN_TRAY_GROUP_FORBIDDEN"),
+        ({"action_id": "ok", "text": "x", "submenu": "yes"}, "PLUGIN_TRAY_ACTION_INVALID"),
+    ]
+    for kwargs, code in cases:
+        with pytest.raises(GalleryError) as exc:
+            handle.add_action(callback=lambda: None, **kwargs)
+        assert exc.value.code == code, kwargs
+    assert service.action_count() == 0
+
+
+def test_tray_handle_rejects_quota():
+    service = TrayService()
+    handle = TrayHandle(service, "com.example.tray", (Permission.TRAY,), "示例")
+    for index in range(MAX_PLUGIN_ACTIONS):
+        handle.add_action(f"a{index}", f"A{index}", lambda: None)
+    with pytest.raises(GalleryError) as exc:
+        handle.add_action("overflow", "Overflow", lambda: None)
+    assert exc.value.code == "PLUGIN_TRAY_QUOTA_EXCEEDED"
+
+
+def test_tray_handle_accepts_group_enum():
+    service = TrayService()
+    handle = TrayHandle(service, "com.example.tray", (Permission.TRAY,), "示例")
+    handle.add_action("speed", "立即测速", lambda: None, group=TrayGroup.QUICK)
+    assert service.action_count(group=TrayGroup.QUICK) == 1
+
+
+def test_tray_entries_report_rendered_location():
+    service = TrayService()
+    first = TrayHandle(service, "com.example.first", (Permission.TRAY,), "甲")
+    first.add_action("start", "开始专注", lambda: None, order=10)
+    first.add_action("pause", "暂停", lambda: None, order=20)
+    assert [entry.rendered_as for entry in first.entries()] == ["inline", "inline"]
+
+    second = TrayHandle(service, "com.example.second", (Permission.TRAY,), "乙")
+    second.add_action("go", "前往", lambda: None)
+    after = first.entries()
+    assert [entry.rendered_as for entry in after] == ["submenu", "submenu"]
+    assert after[0].action_id == "start"
+    assert after[0].path == ("甲", "开始专注")
+
+
+def test_tray_menu_renders_groups_and_base_items(app):
+    """真实 QMenu 结构：插件块 → 分隔线 → 基座固定项。"""
+    from PySide6.QtWidgets import QMenu
+
+    service = TrayService()
+    service._menu = QMenu()
+    service.attach_window(lambda: None, lambda: None, lambda: None)
+
+    first = TrayHandle(service, "a", (Permission.TRAY,), "甲")
+    first.add_action("x", "X", lambda: None, order=10)
+    first.add_action("y", "Y", lambda: None, order=20)
+    second = TrayHandle(service, "b", (Permission.TRAY,), "乙")
+    second.add_action("z", "Z", lambda: None)
+
+    labels = [action.text() for action in service._menu.actions()]
+    assert labels[:2] == ["甲", "乙"]
+    assert labels[-3:] == ["显示主窗口", "设置…", "退出"]
+    submenu_action = service._menu.actions()[0]
+    submenu = submenu_action.menu()
+    assert [child.text() for child in submenu.actions()] == ["X", "Y"]
+
+    # 卸载后该槽只剩一个插件块，自动回到内联形态
+    second.clear()
+    assert [action.text() for action in service._menu.actions()] == [
+        "X",
+        "Y",
+        "",
+        "显示主窗口",
+        "设置…",
+        "退出",
+    ]

@@ -3,9 +3,37 @@
 项目遵循[语义化版本](https://semver.org/lang/zh-CN/)：major 版本允许破坏性变更并显式列出；
 minor 与 patch 保持向后兼容。
 
-当前版本：`2.3.0`（见 `src/sllkgui/_version.py`），对应 tag `base-v2.3.0`。
+当前版本：`2.4.0`（见 `src/sllkgui/_version.py`），对应 tag `base-v2.4.0`。
 
 ---
+
+## 2.4.0（2026-11-17）
+
+托盘菜单分组协议（详见 `docs/TRAY.md`）：
+
+- 三层模型：**槽 → 插件块 → 动作**。插件只声明「动作属于哪个槽、排多前」，
+  菜单形态（内联 / 子菜单 / 兜底桶）由基座裁决，插件无法改变展示结构。
+- 三个槽固定次序：`quick`（内联直达，每插件 ≤1 条）、`tools`（默认，按插件分块）、
+  `status`（只读，恒禁用）；基座区（显示主窗口 / 设置… / 退出）独占最后一段。
+- 形态裁决：槽内只有 1 个插件块时全部内联（零层级）；≥2 块时每块一个以插件名
+  命名的子菜单；块内任一动作 `submenu=True` 强制子菜单，全部为 `False` 且 ≤3 条
+  时允许保留内联；>3 条强制子菜单。
+- 溢出兜底三级降级：① 配额 — quick 5 / tools 7 行 / status 3 / 单插件 12 条动作，
+  顶层最多 18 行（≈610px，768p 可完整展开）；② 收拢 — quick 溢出降级到 tools，
+  tools 放不下的块收进「更多插件 ▸」并平铺 `插件名 · 动作`（层级 ≤2），status
+  溢出截断；③ 原生 `QMenu` 滚动。
+- 排序逐层兜底：`slot.order → block.min(order) → action.order → text → full_id`，
+  任何一层撞车都有确定结果，不产生随机顺序。
+- 注册期校验与稳定错误码：`PLUGIN_TRAY_ACTION_INVALID`（id / 文案 / order）、
+  `PLUGIN_TRAY_GROUP_INVALID`（未知槽）、`PLUGIN_TRAY_GROUP_FORBIDDEN`（写基座区）、
+  `PLUGIN_TRAY_QUOTA_EXCEEDED`（超配额）；拒绝发生在加载期而不是渲染期。
+- 新增 `ctx.tray.set_action_enabled()` 与 `ctx.tray.entries()`：后者返回每条动作的
+  实际落位（`inline` / `submenu` / `bucket` + 完整路径），供插件自检与测试断言。
+- 基座托盘新增「设置…」项；宿主没有 `open_settings_window` 时自动省略。
+- 新增高保真原型 `docs/prototype/tray-menu.html`：可切换 A/B/C 三套结构、1/3/6/9
+  个插件、深色/明亮主题与协议标注，包含「更多插件」兜底桶与预算统计的实时演示。
+- 四语言新增 `ui_TraySettings` / `ui_TrayMorePlugins`；菜单重建改为持有子菜单引用，
+  避免 `QMenu.addMenu()` 的 Python 所有权问题导致子菜单被回收。
 
 ## 2.3.0（2026-11-17）
 

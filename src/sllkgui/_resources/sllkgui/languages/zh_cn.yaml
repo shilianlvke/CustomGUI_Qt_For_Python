@@ -256,7 +256,10 @@ UI:
   ui_SoftwareInfo: 软件信息
   # 托盘
   ui_TrayShowWindow: 显示主窗口
+  ui_TraySettings: 设置…
   ui_TrayQuit: 退出
+  # 插件动作超出 tools 预算时的兜底桶
+  ui_TrayMorePlugins: 更多插件
 
 TEXT:
   home_page_welcome: 你好！我是 SllkGUI ~

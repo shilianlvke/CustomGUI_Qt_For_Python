@@ -40,12 +40,46 @@ class Permission(StrEnum):
     SYSTEM_INFO = "system.info"
 
 
+class TrayGroup(StrEnum):
+    """托盘槽：基座声明次序、预算与展示形态，插件只能引用其中一个。
+
+    - ``QUICK``：内联直达区，每插件至多 1 条，整体预算 5 条；
+    - ``TOOLS``：默认槽，按插件分块；槽内出现第二个插件时各块收进子菜单；
+    - ``STATUS``：只读状态区，恒为禁用态，预算 3 条。
+
+    槽目录是封闭且只增不改的：不认识的槽直接报错，不做静默回落，避免插件
+    以为注册成功却出现在别处。
+    """
+
+    QUICK = "quick"
+    TOOLS = "tools"
+    STATUS = "status"
+
+
+@dataclass(frozen=True)
+class TrayEntry:
+    """``ctx.tray.entries()`` 的只读条目：声明了什么 + 实际渲染在哪里。"""
+
+    action_id: str
+    text: str
+    group: str
+    order: int
+    enabled: bool
+    plugin_id: str
+    rendered_as: str
+    """``inline`` 内联 / ``submenu`` 插件块子菜单 / ``bucket`` 兜底桶。"""
+
+    path: tuple[str, ...] = ()
+    """从菜单顶层到该动作的完整文案路径，便于测试与诊断。"""
+
+
 class GalleryTray(ABC):
     """基座托盘能力：全进程唯一图标，插件只注册动作与通知。
 
-    托盘图标、悬停提示、菜单外壳（显示主窗口/退出）与生命周期全部由基座
+    托盘图标、悬停提示、菜单外壳（显示主窗口/设置/退出）与生命周期全部由基座
     持有并常驻；插件**不得**修改图标或提示，也不得自建 ``QSystemTrayIcon``。
-    插件只能在菜单里插入文本动作与发送系统通知，动作回调在 Qt 主线程执行。
+    插件只声明``动作属于哪个槽、排多前``，菜单里长什么样（内联 / 子菜单 /
+    兜底桶）由基座按槽预算裁决，见 ``docs/TRAY.md``。
     """
 
     @abstractmethod
@@ -60,16 +94,31 @@ class GalleryTray(ABC):
         callback: Callable[[], None],
         *,
         order: int = 100,
+        group: str | TrayGroup = TrayGroup.TOOLS,
+        submenu: bool | None = None,
+        enabled: bool = True,
     ) -> None:
-        """注册菜单动作；``action_id`` 在插件内唯一，重名覆盖。"""
+        """注册菜单动作；``action_id`` 在插件内唯一，重名覆盖。
+
+        ``submenu`` 只表达偏好：``None`` 由基座按槽内块数裁决，``True`` 强制
+        子菜单，``False`` 仅在独占该槽时生效（否则被忽略以保持形态统一）。
+        """
 
     @abstractmethod
     def set_action_text(self, action_id: str, text: str) -> None:
         """更新动作文案（语言切换时调用）。"""
 
     @abstractmethod
+    def set_action_enabled(self, action_id: str, enabled: bool) -> None:
+        """更新动作可用态；``STATUS`` 槽恒为禁用。"""
+
+    @abstractmethod
     def remove_action(self, action_id: str) -> None:
         """移除动作。"""
+
+    @abstractmethod
+    def entries(self) -> tuple[TrayEntry, ...]:
+        """本插件动作在菜单中的实际落位（声明槽 + 渲染形态 + 路径）。"""
 
     @abstractmethod
     def show_message(
@@ -84,7 +133,7 @@ class GalleryTray(ABC):
 
     @abstractmethod
     def clear(self) -> None:
-        """移除本插件的全部动作与图标设置（卸载时由加载器调用）。"""
+        """移除本插件的全部动作（卸载时由加载器调用）。"""
 
 
 @dataclass(frozen=True)

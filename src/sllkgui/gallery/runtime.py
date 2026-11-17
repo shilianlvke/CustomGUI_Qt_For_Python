@@ -58,9 +58,7 @@ class GalleryRuntime:
     ) -> None:
         self.mode = mode
         self.data_dir = Path(data_dir).resolve() if data_dir else self._default_data_dir()
-        self.gallery_dir = (
-            Path(gallery_dir).resolve() if gallery_dir else self.data_dir / GALLERY_DIRNAME
-        )
+        self.gallery_dir = Path(gallery_dir).resolve() if gallery_dir else self.data_dir / GALLERY_DIRNAME
         self.plugin_dirs = [Path(item).resolve() for item in (plugin_dirs or [])]
         self.safe_mode = bool(safe_mode)
         self.allow_local = bool(allow_local)
@@ -115,9 +113,7 @@ class GalleryRuntime:
             )
         if self.mode == "run":
             self.store.ensure_layout()
-            self.registry_state = load_registry(
-                self.store.registry_file, base_version=sllkgui.__version__
-            )
+            self.registry_state = load_registry(self.store.registry_file, base_version=sllkgui.__version__)
             self.sources_state = load_sources(self.store.sources_file)
             self.sources = SourceManager(self.store, self.sources_state, allow_local=self.allow_local)
             self.sources.ensure_official()
@@ -155,8 +151,7 @@ class GalleryRuntime:
         # 快捷键表由基座常驻装配，插件是否注册都不影响内置快捷键
         self.shortcuts.install()
         Logger.info(
-            f"Gallery 启动: mode={self.mode} 插件 {len(self.records)} 个 / "
-            f"Surface {self.registry.surface_count()} 个"
+            f"Gallery 启动: mode={self.mode} 插件 {len(self.records)} 个 / Surface {self.registry.surface_count()} 个"
         )
         record_event(
             "gallery.bootstrapped",
@@ -202,8 +197,17 @@ class GalleryRuntime:
         self._parent_window = parent_window
 
     def attach_window(self, window: Any) -> None:
-        """把宿主窗口接入托盘：显示主窗口 / 退出。"""
-        self.tray.attach_window(window.show_and_raise, window.quit_application)
+        """把宿主窗口接入托盘：显示主窗口 / 设置 / 退出。
+
+        「设置…」是基座级菜单项，宿主没有 ``open_settings_window`` 时自动省略，
+        插件无法注入到这一段（见 ``docs/TRAY.md`` §2）。
+        """
+        settings = getattr(getattr(window, "controller", None), "open_settings_window", None)
+        self.tray.attach_window(
+            window.show_and_raise,
+            window.quit_application,
+            settings if callable(settings) else None,
+        )
 
     # ------------------------------------------------------------------
     # 查询

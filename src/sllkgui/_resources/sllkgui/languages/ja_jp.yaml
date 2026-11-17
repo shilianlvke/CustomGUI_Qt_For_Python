@@ -257,7 +257,9 @@ UI:
   ui_SoftwareInfo: ソフトウェア情報
   # トレイ
   ui_TrayShowWindow: メインウィンドウを表示
+  ui_TraySettings: 設定…
   ui_TrayQuit: 終了
+  ui_TrayMorePlugins: その他のプラグイン
 
 TEXT:
   home_page_welcome: こんにちは！SllkGUI です ~

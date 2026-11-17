@@ -49,6 +49,8 @@ from .gallery.api import (
     Plugin,
     ShortcutBinding,
     ShortcutConflict,
+    TrayEntry,
+    TrayGroup,
 )
 from .gallery.errors import GalleryError as PluginError
 
@@ -68,4 +70,6 @@ __all__ = [
     "SettingsSection",
     "ShortcutBinding",
     "ShortcutConflict",
+    "TrayEntry",
+    "TrayGroup",
 ]

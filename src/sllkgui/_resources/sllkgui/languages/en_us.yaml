@@ -256,7 +256,10 @@ UI:
   ui_SoftwareInfo: Software Info
   # Tray
   ui_TrayShowWindow: Show Main Window
+  ui_TraySettings: Settings…
   ui_TrayQuit: Quit
+  # Bucket for plugin actions beyond the tools budget
+  ui_TrayMorePlugins: More plugins
 
 TEXT:
   home_page_welcome: Hello! I am SllkGUI ~

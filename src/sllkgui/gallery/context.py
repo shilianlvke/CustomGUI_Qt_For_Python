@@ -82,7 +82,9 @@ class GalleryContextImpl(GalleryContext):
         self._parent_window_cb = parent_window
         self._error_reporter = error_reporter
         self._tray_handle = (
-            TrayHandle(tray, manifest.plugin_id, tuple(manifest.permissions)) if tray is not None else None
+            TrayHandle(tray, manifest.plugin_id, tuple(manifest.permissions), manifest.name)
+            if tray is not None
+            else None
         )
         # 快捷键表由基座注入（guicore.ShortcutRegistry）；缺省时能力整体降级
         self._shortcut_bridge = (
