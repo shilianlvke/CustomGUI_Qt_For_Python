@@ -28,7 +28,7 @@ from .base import KEY_REMEMBER_SIZE as KEY_REMEMBER_SIZE
 from .base import KEY_THEME as KEY_THEME
 from .base import KEY_TRANSPARENCY as KEY_TRANSPARENCY
 from .base import build_core_pages
-from .events import SettingsChangeBus, settings_change_bus
+from .events import SettingsChangeBus, SettingsPageBus, settings_change_bus, settings_page_bus
 from .registry import SettingsRegistry, set_settings_registry, settings_registry
 from .schema import (
     Section,
@@ -36,8 +36,10 @@ from .schema import (
     SettingControl,
     SettingKind,
     SettingOption,
+    SettingsAction,
     SettingsConflictError,
     SettingsError,
+    SettingsInfo,
     SettingsPage,
     SettingSpec,
     SettingsSection,
@@ -93,10 +95,13 @@ __all__ = [
     "SettingKind",
     "SettingOption",
     "SettingSpec",
+    "SettingsAction",
     "SettingsChangeBus",
     "SettingsConflictError",
     "SettingsError",
+    "SettingsInfo",
     "SettingsPage",
+    "SettingsPageBus",
     "SettingsRegistry",
     "SettingsSection",
     "SettingsSession",
@@ -112,5 +117,6 @@ __all__ = [
     "reset_core_settings_install",
     "set_settings_registry",
     "settings_change_bus",
+    "settings_page_bus",
     "settings_registry",
 ]

@@ -5,7 +5,7 @@
     from sllkgui.plugin import (
         GalleryContext, GallerySettings, GalleryShortcut, GalleryShortcuts,
         GalleryTray, Permission, Plugin, PluginError, Setting, SettingOption,
-        SettingsPage, SettingsSection, ShortcutBinding,
+        SettingsAction, SettingsInfo, SettingsPage, SettingsSection, ShortcutBinding,
     )
 
 设置声明示例（在 ``on_load`` 中）::
@@ -35,6 +35,8 @@ from __future__ import annotations
 from .appcore.settings.schema import (
     Setting,
     SettingOption,
+    SettingsAction,
+    SettingsInfo,
     SettingsPage,
     SettingsSection,
 )
@@ -66,6 +68,8 @@ __all__ = [
     "PluginError",
     "Setting",
     "SettingOption",
+    "SettingsAction",
+    "SettingsInfo",
     "SettingsPage",
     "SettingsSection",
     "ShortcutBinding",

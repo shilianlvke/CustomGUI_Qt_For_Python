@@ -25,9 +25,13 @@ from sllkgui.appcore import (
     SettingsStore,
     ensure_core_pages,
     get_app_context,
+    settings_page_bus,
 )
 from sllkgui.gallery.settings import PluginSettings
+from sllkgui.guicore import CActionRow
 from sllkgui.guicore.window.settings_window import CSettingsWindow
+
+_ACTION_CALLS: list[int] = []
 
 
 class _MemoryCore:
@@ -61,6 +65,7 @@ def prepared(qapp, tmp_path):
     ensure_core_pages(registry)
     store = SettingsStore(settings_dir=tmp_path, core=core)
     bridge = PluginSettings("com.example.window", registry=registry, store=store)
+    _ACTION_CALLS.clear()
     bridge.define(
         SettingsPage(
             page_id="desktop",
@@ -71,6 +76,15 @@ def prepared(qapp, tmp_path):
                     (
                         Setting.switch("auto_refresh", True, "自动刷新"),
                         Setting.number("columns", 4, "列数", minimum=1, maximum=12),
+                    ),
+                    info=(Setting.info("stats", "执行次数", lambda: f"{len(_ACTION_CALLS)} 次"),),
+                    actions=(
+                        Setting.action(
+                            "ping",
+                            "刷新统计",
+                            lambda: _ACTION_CALLS.append(1),
+                            button="执行",
+                        ),
                     ),
                 ),
             ),
@@ -83,6 +97,7 @@ def prepared(qapp, tmp_path):
     yield window, session, core, store
     # 失败路径先丢弃草稿，避免关闭时弹出模态确认框卡住测试
     session.discard()
+    window._detach_page_bus()
     window.close()
     window.deleteLater()
 
@@ -225,3 +240,38 @@ def test_search_filters_navigation(prepared):
     assert window.nav.visible_count() == 0
     window.search.setText("")
     assert window.nav.visible_count() >= 5
+
+
+def test_action_row_runs_command_and_info_refreshes(prepared):
+    window, _session, _core, _store = prepared
+    item_id = "plugin::com.example.window::desktop"
+    assert window.show_page(item_id)
+    view = window._entries[item_id]["view"]
+
+    info_row, _info = view._info_rows[0]
+    assert info_row.value() == "0 次"
+    action_row = next(row for row in view._groups[0].rows() if isinstance(row, CActionRow))
+    action_row.button().click()
+    assert _ACTION_CALLS == [1]
+
+    view.refresh_info()
+    assert info_row.value() == "1 次"
+
+
+def test_plugin_refresh_rebuilds_page_and_keeps_draft(prepared):
+    window, session, _core, _store = prepared
+    item_id = "plugin::com.example.window::desktop"
+    assert window.show_page(item_id)
+    key = "plugin.com.example.window.columns"
+    session.set(key, 8)
+    window.notify_modified()
+
+    _ACTION_CALLS.append(1)
+    settings_page_bus().notify("plugin.com.example.window")
+    QTest.qWait(20)
+    QApplication.processEvents()
+
+    assert window.current_page_id() == item_id
+    assert session.value(key) == 8, "重建页面不能丢弃未保存草稿"
+    view = window._entries[item_id]["view"]
+    assert view._info_rows[0][0].value() == "1 次"

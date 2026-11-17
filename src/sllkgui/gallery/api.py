@@ -292,6 +292,15 @@ class GallerySettings(ABC):
     def on_changed(self, callback: Callable[[str, Any], None]) -> Callable[[], None]:
         """订阅配置变更；返回取消订阅函数。"""
 
+    @abstractmethod
+    def refresh(self) -> None:
+        """请求设置窗口重建本插件页（动作行 / 信息行内容变化后调用）。
+
+        与 :meth:`on_changed` 不同，这里不携带值变化：插件在动作或后台任务
+        结束后调用一次，让只读信息与动作状态保持最新。没有打开的设置窗口时
+        调用是安全的空操作。
+        """
+
 
 class GalleryContext(ABC):
     """插件运行上下文：所有基座能力都从这里进入。"""

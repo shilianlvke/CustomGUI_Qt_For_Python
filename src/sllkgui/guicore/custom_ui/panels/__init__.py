@@ -6,6 +6,7 @@ from .form import CFormGrid as CFormGrid
 from .navigation import CBreadcrumb as CBreadcrumb
 from .navigation import CSteps as CSteps
 from .panel import CPanel as CPanel
+from .settings import CActionRow as CActionRow
 from .settings import CEditActionBar as CEditActionBar
 from .settings import CInfoRow as CInfoRow
 from .settings import CSettingGroup as CSettingGroup
@@ -38,4 +39,5 @@ __all__ = [
     "CSettingRow",
     "CInfoRow",
     "CEditActionBar",
+    "CActionRow",
 ]

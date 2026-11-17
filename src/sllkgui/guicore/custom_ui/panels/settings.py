@@ -308,9 +308,7 @@ class CSettingGroup(QWidget):
         for divider in self._dividers:
             divider.setStyleSheet(f"background: {qss_color(line_color)}; border: none;")
         for row in self._rows:
-            if isinstance(row, CSettingRow):
-                row.update_style()
-            elif isinstance(row, CInfoRow):
+            if isinstance(row, (CSettingRow, CInfoRow, CActionRow)):
                 row.update_style()
         self.update()
 
@@ -328,9 +326,83 @@ class CSettingGroup(QWidget):
         painter.end()
 
 
+class CActionRow(QWidget):
+    """动作行：标题 + 说明 + 右侧执行按钮（测试 / 导入 / 同步等）。
+
+    组件只负责外观与点击信号，命令执行与异常隔离由设置页承担；这样同一行
+    既能执行界面操作，也能交给插件做后台任务。
+    """
+
+    clicked = Signal()
+
+    def __init__(
+        self,
+        title: str,
+        hint: str = "",
+        button_text: str = "",
+        *,
+        parent=None,
+    ):
+        super().__init__(parent)
+        self.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Preferred)
+        layout = QHBoxLayout(self)
+        layout.setContentsMargins(2, 10, 2, 10)
+        layout.setSpacing(20)
+
+        text_box = QVBoxLayout()
+        text_box.setContentsMargins(0, 0, 0, 0)
+        text_box.setSpacing(3)
+        self._title = QLabel(title, self)
+        self._title.setObjectName("CActionRow_Title")
+        self._hint = QLabel(hint, self)
+        self._hint.setObjectName("CActionRow_Hint")
+        self._hint.setWordWrap(True)
+        self._hint.setVisible(bool(hint))
+        text_box.addWidget(self._title)
+        text_box.addWidget(self._hint)
+        layout.addLayout(text_box, 1)
+
+        self._button = CButton(
+            button_text,
+            severity="secondary",
+            variant="outlined",
+            size="sm",
+            parent=self,
+        )
+        self._button.clicked.connect(lambda *_args: self.clicked.emit())
+        layout.addWidget(self._button, 0, Qt.AlignVCenter)
+        self.update_style()
+
+    # ------------------------------------------------------------------
+    def set_title(self, text: str) -> None:
+        self._title.setText(str(text))
+
+    def set_hint(self, text: str) -> None:
+        self._hint.setText(str(text))
+        self._hint.setVisible(bool(text))
+
+    def set_button_text(self, text: str) -> None:
+        self._button.setText(str(text))
+
+    def button(self) -> CButton:
+        return self._button
+
+    def update_style(self) -> None:
+        colors = get_design_tokens().colors
+        title_font = QFont(AppSettings.family)
+        title_font.setPixelSize(13)
+        self._title.setFont(title_font)
+        self._title.setStyleSheet(f"color: {colors.text_primary}; background: transparent;")
+
+        hint_font = QFont(AppSettings.family)
+        hint_font.setPixelSize(11)
+        self._hint.setFont(hint_font)
+        self._hint.setStyleSheet(f"color: {colors.text_muted}; background: transparent;")
+        self._button.update()
+
+
 class CInfoRow(QWidget):
     """只读信息行：键 + 值 + 可选操作按钮（关于页 / 当前窗口信息）。"""
-
     def __init__(self, key: str, value: str = "", *, mono: bool = True, parent=None):
         super().__init__(parent)
         self._mono = mono
@@ -355,6 +427,9 @@ class CInfoRow(QWidget):
     def set_value(self, text: str) -> None:
         self._value.setText(str(text))
         self._value.setToolTip(str(text))
+
+    def value(self) -> str:
+        return self._value.text()
 
     def set_key(self, text: str) -> None:
         self._key.setText(str(text))
@@ -502,4 +577,4 @@ class CEditActionBar(QWidget):
         painter.end()
 
 
-__all__ = ["CEditActionBar", "CInfoRow", "CSettingGroup", "CSettingRow"]
+__all__ = ["CActionRow", "CEditActionBar", "CInfoRow", "CSettingGroup", "CSettingRow"]

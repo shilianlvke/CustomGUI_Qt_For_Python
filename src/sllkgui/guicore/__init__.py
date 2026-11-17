@@ -21,6 +21,7 @@ from .callbacks import ui_callback as ui_callback
 from .custom_ui import (
     CAccordion,
     CAccordionPanel,
+    CActionRow,
     CAutoComplete,
     CAvatar,
     CAvatarGroup,
@@ -239,6 +240,7 @@ __all__ = [
     "CSteps",
     "CEditActionBar",
     "CInfoRow",
+    "CActionRow",
     "CSettingGroup",
     "CSettingRow",
     "CSideNav",

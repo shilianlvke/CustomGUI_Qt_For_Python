@@ -25,6 +25,7 @@ from sllkgui.appcore import (
     normalize_value,
     plugin_namespace,
     settings_change_bus,
+    settings_page_bus,
     settings_registry,
     settings_store,
 )
@@ -120,6 +121,10 @@ class PluginSettings(GallerySettings):
                 return
 
         return unsubscribe
+
+    def refresh(self) -> None:
+        """请求设置窗口重建本插件页（窗口未打开时为空操作）。"""
+        settings_page_bus().notify(self._namespace)
 
     # ------------------------------------------------------------------
     def clear(self) -> None:

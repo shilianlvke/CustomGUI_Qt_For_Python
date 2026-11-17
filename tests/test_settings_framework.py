@@ -11,6 +11,7 @@ from sllkgui.appcore import (
     KEY_THEME,
     Setting,
     SettingsConflictError,
+    SettingsError,
     SettingsPage,
     SettingsRegistry,
     SettingsSection,
@@ -183,3 +184,62 @@ def test_plugin_namespace_requires_valid_id():
     assert plugin_namespace("com.example.ok") == "plugin.com.example.ok"
     with pytest.raises(ValueError):
         plugin_namespace("Bad/Id")
+
+
+def test_action_and_info_rows_are_declarations_only():
+    page = SettingsPage(
+        page_id="plugin-demo",
+        title="Demo",
+        sections=(
+            SettingsSection(
+                "g",
+                (Setting.switch("enabled", True, "启用"),),
+                info=(Setting.info("stats", "统计", lambda: "3 首"),),
+                actions=(Setting.action("open", "打开", lambda: None, button="执行"),),
+            ),
+        ),
+    )
+    assert [spec.key for spec in page.specs()] == ["enabled"]
+    assert [info.key for info in page.infos()] == ["stats"]
+    assert [action.key for action in page.actions()] == ["open"]
+    assert page.infos()[0].value() == "3 首"
+    assert page.actions()[0].display_button() == "执行"
+
+
+def test_duplicate_action_or_info_key_is_rejected():
+    with pytest.raises(SettingsConflictError):
+        SettingsPage(
+            page_id="dup-action",
+            title="Dup",
+            sections=(
+                SettingsSection(
+                    "g",
+                    (Setting.switch("same", True, "Same"),),
+                    actions=(Setting.action("same", "Same"),),
+                ),
+            ),
+        )
+    with pytest.raises(SettingsConflictError):
+        SettingsPage(
+            page_id="dup-info",
+            title="Dup",
+            sections=(
+                SettingsSection(
+                    "g",
+                    info=(Setting.info("info", "Info"),),
+                    actions=(Setting.action("info", "Info"),),
+                ),
+            ),
+        )
+
+
+def test_invalid_action_key_is_rejected():
+    with pytest.raises(SettingsError):
+        Setting.action("Bad-Key", "x")
+
+
+def test_info_provider_failure_is_isolated():
+    def boom():
+        raise RuntimeError("boom")
+
+    assert Setting.info("stats", "统计", boom).value() == "—"

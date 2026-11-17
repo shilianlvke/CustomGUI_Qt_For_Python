@@ -34,6 +34,7 @@ from sllkgui.appcore import (
     AppSettings,
     AppThemes,
     Language,
+    Logger,
     SettingsSession,
     SettingsValidationError,
     get_design_tokens,
@@ -50,7 +51,7 @@ from ...custom_ui.line_edit.input_text import CInputText
 from ...custom_ui.line_edit.select import CSelect
 from ...custom_ui.line_edit.slider import CSlider
 from ...custom_ui.line_edit.toggle_button import CSelectButton
-from ...custom_ui.panels.settings import CInfoRow, CSettingGroup, CSettingRow
+from ...custom_ui.panels.settings import CActionRow, CInfoRow, CSettingGroup, CSettingRow
 from ...custom_ui.picture.thumbnail import CThumbnail
 from ...shortcuts import shortcut_registry
 
@@ -104,6 +105,7 @@ class SchemaPage(QWidget):
         self._recent_empty: QLabel | None = None
         self._recent: list[str] = []
         self._notes: list[QLabel] = []
+        self._info_rows: list[tuple[CInfoRow, object]] = []
 
         outer = QVBoxLayout(self)
         outer.setContentsMargins(0, 0, 0, 0)
@@ -113,6 +115,8 @@ class SchemaPage(QWidget):
         for section in page.sections:
             group = CSettingGroup(section.display_title(), section.display_hint(), self)
             self._groups.append(group)
+            for info in section.info:
+                self._add_info_row(group, info)
             for spec in section.items:
                 if spec.resolved_control().value == "theme_gallery":
                     self._theme_key = page.full_key(spec.key)
@@ -127,6 +131,8 @@ class SchemaPage(QWidget):
                         and spec.key == "background_image"
                     ):
                         group.add_row(self._build_recent_row())
+            for action in section.actions:
+                self._add_action_row(group, action)
             outer.addWidget(group)
         if page.namespace == "core" and page.page_id == "window":
             self._window_info = self._build_window_info()
@@ -192,6 +198,37 @@ class SchemaPage(QWidget):
         row.set_reset_available(not self._session.is_default(full_key))
         self._syncers.append(syncer)
         return row
+
+    def _add_info_row(self, group: CSettingGroup, info) -> None:
+        row = CInfoRow(info.display_label(), info.value(), mono=info.mono, parent=self)
+        hint = info.display_hint()
+        if hint:
+            row.setToolTip(hint)
+        group.add_row(row)
+        self._info_rows.append((row, info))
+
+    def _add_action_row(self, group: CSettingGroup, action) -> None:
+        row = CActionRow(
+            action.display_label(),
+            action.display_hint(),
+            action.display_button(),
+            parent=self,
+        )
+        row.clicked.connect(lambda action=action: self._run_action(action))
+        group.add_row(row)
+
+    def _run_action(self, action) -> None:
+        if action.command is None:
+            return
+        try:
+            action.command()
+        except Exception as exc:  # noqa: BLE001 - 单个动作失败不打断设置窗口
+            Logger.warning(f"设置动作执行失败: {self._page.namespace}.{action.key}: {exc}")
+
+    def refresh_info(self) -> None:
+        """重新求值全部只读信息行（统计 / 连接摘要等）。"""
+        for row, info in self._info_rows:
+            row.set_value(info.value())
 
     def _build_control(self, spec, full_key: str):
         control = spec.resolved_control().value
@@ -502,6 +539,7 @@ class SchemaPage(QWidget):
             self.sync_theme_state()
             if self._recent_box is not None:
                 self._refresh_recent()
+            self.refresh_info()
         finally:
             self._syncing = False
 

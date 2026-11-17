@@ -185,8 +185,22 @@ class NotesPlugin(Plugin):
 - 没有声明设置页的插件仍会出现在设置窗口，显示「未声明」空状态；
 - 卸载时加载器调用 `ctx.clear_settings()`，只撤页面与订阅。
 
+工具类操作可以直接声明为动作行，统计类信息声明为信息行：
+
+```python
+SettingsSection(
+    "数据",
+    (),
+    info=(Setting.info("stats", "数据统计", lambda: f"{db.count()} 首"),),
+    actions=(Setting.action("export", "导出备份", self._export, button="导出"),),
+)
+```
+
+动作或后台状态变化后调用 `ctx.settings.refresh()`，设置窗口会重建本插件页
+并保留未保存草稿；窗口未打开时为空操作。详见 `docs/SETTINGS.md`。
+
 可用控件：`Setting.switch` / `select` / `number` / `slider` / `text` / `path` /
-`theme`。完整说明见 `docs/SETTINGS.md`。
+`theme`，以及非值的 `Setting.action` / `Setting.info`。
 
 ## 7. 快捷键
 

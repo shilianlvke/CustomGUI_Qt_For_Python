@@ -34,6 +34,7 @@ from sllkgui.appcore import (
     ensure_core_pages,
     get_design_tokens,
     get_theme_manager,
+    settings_page_bus,
 )
 
 from ...acrylic import apply_acrylic
@@ -170,6 +171,7 @@ class CSettingsWindow(QDialog):
         self._error_active = False
         self._saved_timer: QTimer | None = None
         self._current_entry = ""
+        self._page_unsubscribe = None
 
         self._build_ui()
         self._populate_pages()
@@ -288,6 +290,8 @@ class CSettingsWindow(QDialog):
         self.action_bar.discardRequested.connect(self.discard)
         self.action_bar.resetRequested.connect(self.reset_current_page)
         get_theme_manager().subscribe(self._on_theme_applied)
+        self._page_unsubscribe = settings_page_bus().subscribe_all(self._on_plugin_page_changed)
+        self.destroyed.connect(self._detach_page_bus)
 
     # ------------------------------------------------------------------
     # 页面
@@ -461,6 +465,17 @@ class CSettingsWindow(QDialog):
             chunks.extend([section.display_title(), section.display_hint()])
             for spec in section.items:
                 chunks.extend([spec.display_label(), spec.display_hint(), spec.key])
+            for info in section.info:
+                chunks.extend([info.display_label(), info.display_hint(), info.key])
+            for action in section.actions:
+                chunks.extend(
+                    [
+                        action.display_label(),
+                        action.display_hint(),
+                        action.display_button(),
+                        action.key,
+                    ]
+                )
         return " ".join(chunk for chunk in chunks if chunk)
 
     def _plugin_pages(self):
@@ -491,6 +506,62 @@ class CSettingsWindow(QDialog):
             return {record.plugin_id: record for record in registry.plugins()}
         except Exception:  # noqa: BLE001 - 预览/测试环境可能没有插件注册表
             return {}
+
+    # ------------------------------------------------------------------
+    # 插件页刷新
+    # ------------------------------------------------------------------
+    def _on_plugin_page_changed(self, namespace: str) -> None:
+        """插件请求重建页面；延到下一轮事件循环，避免在动作回调里销毁自身。"""
+        if not self.isVisible():
+            return
+        QTimer.singleShot(0, lambda ns=namespace: self._rebuild_plugin_page(ns))
+
+    def _rebuild_plugin_page(self, namespace: str) -> None:
+        """重建某命名空间下的设置页，保留未保存草稿、当前页与滚动位置。"""
+        if not self.isVisible():
+            return
+        for item_id, entry in list(self._entries.items()):
+            page = entry.get("schema_page")
+            if page is None or page.namespace != namespace:
+                continue
+            old_widget = entry["widget"]
+            index = self.stack.indexOf(old_widget)
+            scroll_value = 0
+            if isinstance(old_widget, CScrollArea):
+                scroll_value = int(old_widget.verticalScrollBar().value())
+
+            view = SchemaPage(page, self._session, self, parent=self)
+            self._schema_pages[page.full_key("__page__")] = view
+            new_widget = self._scroll_page(view)
+            if index >= 0:
+                self.stack.insertWidget(index, new_widget)
+            else:
+                self.stack.addWidget(new_widget)
+            self.stack.removeWidget(old_widget)
+            old_widget.setParent(None)
+            old_widget.deleteLater()
+
+            entry["widget"] = new_widget
+            entry["view"] = view
+            entry["title"] = page.display_title()
+            entry["hint"] = page.display_hint()
+            if item_id == self._current_entry:
+                self.stack.setCurrentWidget(new_widget)
+                self.page_title.setText(entry["title"])
+                hint = entry["hint"] or ""
+                self.page_hint.setText(hint)
+                self.page_hint.setToolTip(hint)
+                if isinstance(new_widget, CScrollArea):
+                    new_widget.verticalScrollBar().setValue(scroll_value)
+
+    def _detach_page_bus(self, *_args) -> None:
+        unsubscribe = self._page_unsubscribe
+        self._page_unsubscribe = None
+        if unsubscribe is not None:
+            try:
+                unsubscribe()
+            except Exception:  # noqa: BLE001 - 退出清理失败不影响关闭
+                pass
 
     # ------------------------------------------------------------------
     # 页面切换

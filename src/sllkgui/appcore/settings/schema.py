@@ -19,7 +19,7 @@
 from __future__ import annotations
 
 import re
-from collections.abc import Sequence
+from collections.abc import Callable, Sequence
 from dataclasses import dataclass, replace
 from enum import StrEnum
 from typing import Any
@@ -117,6 +117,101 @@ class SettingOption:
 
             return str(Language.resolve_key(self.label_key, self.label or self.value))
         return self.label or self.value
+
+
+@dataclass(frozen=True)
+class SettingsAction:
+    """设置页动作行：标题 + 说明 + 一个执行按钮。
+
+    动作不参与保存 / 恢复默认，也不进入存储；``command`` 在设置窗口里由
+    用户点击触发。参数与异常隔离由渲染层负责。
+    """
+
+    key: str
+    label: str = ""
+    command: Callable[[], Any] | None = None
+    hint: str = ""
+    label_key: str = ""
+    hint_key: str = ""
+    #: 按钮文案；留空时回落到 ``label``
+    button: str = ""
+    button_key: str = ""
+
+    def __post_init__(self) -> None:
+        if not _KEY_RE.match(self.key):
+            raise SettingsError(f"非法动作键: {self.key!r}（小写字母开头，仅含 a-z0-9_）")
+        if self.command is not None and not callable(self.command):
+            raise SettingsError(f"{self.key}: command 必须可调用")
+
+    def display_label(self) -> str:
+        if self.label_key:
+            from ..sysx.modules.language_module import Language
+
+            return str(Language.resolve_key(self.label_key, self.label or self.key))
+        return self.label or self.key
+
+    def display_hint(self) -> str:
+        if self.hint_key:
+            from ..sysx.modules.language_module import Language
+
+            return str(Language.resolve_key(self.hint_key, self.hint))
+        return self.hint
+
+    def display_button(self) -> str:
+        if self.button_key:
+            from ..sysx.modules.language_module import Language
+
+            return str(Language.resolve_key(self.button_key, self.button or self.display_label()))
+        return self.button or self.display_label()
+
+
+@dataclass(frozen=True)
+class SettingsInfo:
+    """设置页只读信息行：标签 + 每次渲染时由插件运行时求值的文本。
+
+    值来自插件当前状态（统计、连接摘要等），因此不进入设置存储，也不参与
+    「恢复本页默认」；求值失败时显示占位符，不影响整页渲染。
+    """
+
+    key: str
+    label: str = ""
+    value_provider: Callable[[], Any] | None = None
+    hint: str = ""
+    label_key: str = ""
+    hint_key: str = ""
+    mono: bool = True
+
+    def __post_init__(self) -> None:
+        if not _KEY_RE.match(self.key):
+            raise SettingsError(f"非法信息键: {self.key!r}（小写字母开头，仅含 a-z0-9_）")
+        if self.value_provider is not None and not callable(self.value_provider):
+            raise SettingsError(f"{self.key}: value_provider 必须可调用")
+
+    def display_label(self) -> str:
+        if self.label_key:
+            from ..sysx.modules.language_module import Language
+
+            return str(Language.resolve_key(self.label_key, self.label or self.key))
+        return self.label or self.key
+
+    def display_hint(self) -> str:
+        if self.hint_key:
+            from ..sysx.modules.language_module import Language
+
+            return str(Language.resolve_key(self.hint_key, self.hint))
+        return self.hint
+
+    def value(self) -> str:
+        if self.value_provider is None:
+            return ""
+        try:
+            raw = self.value_provider()
+        except Exception as exc:  # noqa: BLE001 - 单个信息行失败不影响整页
+            from ..sysx.modules.logger_module import Logger
+
+            Logger.warning(f"设置信息读取失败: {self.key}: {exc}")
+            return "—"
+        return "" if raw is None else str(raw)
 
 
 @dataclass(frozen=True)
@@ -380,6 +475,54 @@ class SettingSpec:
     # ------------------------------------------------------------------
     # 展示
     # ------------------------------------------------------------------
+    @classmethod
+    def action(
+        cls,
+        key: str,
+        label: str,
+        command: Callable[[], Any] | None = None,
+        *,
+        button: str = "",
+        hint: str = "",
+        label_key: str = "",
+        hint_key: str = "",
+        button_key: str = "",
+    ) -> SettingsAction:
+        """声明一个动作行（按钮不参与保存语义）。"""
+        return SettingsAction(
+            key=key,
+            label=label,
+            command=command,
+            hint=hint,
+            label_key=label_key,
+            hint_key=hint_key,
+            button=button,
+            button_key=button_key,
+        )
+
+    @classmethod
+    def info(
+        cls,
+        key: str,
+        label: str,
+        value_provider: Callable[[], Any] | None = None,
+        *,
+        hint: str = "",
+        label_key: str = "",
+        hint_key: str = "",
+        mono: bool = True,
+    ) -> SettingsInfo:
+        """声明一个只读信息行（值在渲染时求值）。"""
+        return SettingsInfo(
+            key=key,
+            label=label,
+            value_provider=value_provider,
+            hint=hint,
+            label_key=label_key,
+            hint_key=hint_key,
+            mono=mono,
+        )
+
     def resolved_control(self) -> SettingControl:
         return self.control or _DEFAULT_CONTROL[self.kind]
 
@@ -417,9 +560,15 @@ class SettingsSection:
     hint: str = ""
     title_key: str = ""
     hint_key: str = ""
+    #: 只读信息行（统计、连接摘要等），显示在值行之前
+    info: tuple[SettingsInfo, ...] = ()
+    #: 动作行（测试 / 导入 / 同步等），显示在值行之后
+    actions: tuple[SettingsAction, ...] = ()
 
     def __post_init__(self) -> None:
         object.__setattr__(self, "items", tuple(self.items))
+        object.__setattr__(self, "info", tuple(self.info))
+        object.__setattr__(self, "actions", tuple(self.actions))
 
     def display_title(self) -> str:
         if self.title_key:
@@ -460,10 +609,11 @@ class SettingsPage:
             raise SettingsError(f"非法设置页 ID: {self.page_id!r}")
         object.__setattr__(self, "sections", tuple(self.sections))
         object.__setattr__(self, "namespace", normalize_namespace(self.namespace))
-        # 同一页内键重复属于声明错误，越早失败越好
+        # 同一页内键重复属于声明错误，越早失败越好；值项、信息行、动作行
+        # 共用一个键空间，避免「同名动作覆盖配置」这类难以排查的写法。
         seen: set[str] = set()
         for section in self.sections:
-            for item in section.items:
+            for item in (*section.info, *section.items, *section.actions):
                 if item.key in seen:
                     raise SettingsConflictError(f"{self.namespace}.{self.page_id}: 设置键重复 {item.key!r}")
                 seen.add(item.key)
@@ -491,6 +641,12 @@ class SettingsPage:
 
     def specs(self) -> tuple[SettingSpec, ...]:
         return tuple(item for section in self.sections for item in section.items)
+
+    def infos(self) -> tuple[SettingsInfo, ...]:
+        return tuple(item for section in self.sections for item in section.info)
+
+    def actions(self) -> tuple[SettingsAction, ...]:
+        return tuple(item for section in self.sections for item in section.actions)
 
     def spec(self, key: str) -> SettingSpec | None:
         for item in self.specs():
@@ -597,8 +753,10 @@ __all__ = [
     "SettingKind",
     "SettingOption",
     "SettingSpec",
+    "SettingsAction",
     "SettingsConflictError",
     "SettingsError",
+    "SettingsInfo",
     "SettingsPage",
     "SettingsSection",
     "SettingsValidationError",

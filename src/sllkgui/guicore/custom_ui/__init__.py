@@ -167,6 +167,7 @@ from .panels import (
 from .panels import (
     CAccordionPanel as CAccordionPanel,
 )
+from .panels import CActionRow as CActionRow
 from .panels import (
     CBreadcrumb as CBreadcrumb,
 )
@@ -309,6 +310,7 @@ __all__ = [
     "CSettingGroup",
     "CSettingRow",
     "CInfoRow",
+    "CActionRow",
     "CEditActionBar",
     "CImage",
     "CCarousel",

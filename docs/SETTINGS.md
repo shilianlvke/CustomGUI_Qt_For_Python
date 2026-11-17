@@ -1,6 +1,6 @@
 # 统一设置系统
 
-> 适用版本：2.3.0+
+> 适用版本：2.7.0+
 >
 > 原型：[docs/prototype/settings-window.html](prototype/settings-window.html)
 
@@ -128,6 +128,37 @@ class NotesPlugin(Plugin):
 | `reset(key)` | 恢复声明默认值 |
 | `values()` | 当前配置快照 |
 | `on_changed(cb)` | 订阅变更，返回取消订阅函数 |
+| `refresh()` | 请求设置窗口重建本插件页（动作 / 信息行变化时调用） |
+
+### 动作行与信息行
+
+工具类操作可以直接放进设置页，不必再单独做插件内页面：
+
+```python
+SettingsSection(
+    "数据与备份",
+    (),
+    info=(
+        Setting.info("stats", "数据统计", lambda: f"{database.count()} 首"),
+    ),
+    actions=(
+        Setting.action(
+            "export",
+            "导出备份",
+            lambda: export_backup(dialog_parent()),
+            button="导出",
+            hint="把配置、歌曲与歌单打包为 JSON。",
+        ),
+    ),
+)
+```
+
+- 信息行的值由 `value_provider` 在页面构建与 `sync_from_session()` 时求值，
+  只读、不落盘、不参与「恢复本页默认」；求值异常显示 `—`；
+- 动作行的按钮只执行 `command`，不改变草稿；异常由设置页隔离并记日志；
+- 动作或后台状态变化后调用 `ctx.settings.refresh()`：设置窗口按命名空间重建
+  插件页，保留当前页、滚动位置与未保存草稿；窗口未打开时为空操作；
+- 动作使用的是**已保存**配置，未保存草稿不会作用到 WebDAV / 导入导出等操作。
 
 - 设置窗口里的编辑走统一的「保存 / 放弃」语义，保存后经变更总线通知插件；
 - 插件卸载时加载器调用 `ctx.clear_settings()`，只撤页面与订阅，配置文件保留；
@@ -140,7 +171,8 @@ class NotesPlugin(Plugin):
 | `CSideNav` / `CSideNavGroup` / `CSideNavItem` | 分组侧边导航，支持图标、徽标、禁用态与关键词过滤 |
 | `CSettingGroup` | 设置分组卡片（标题 + 说明 + 发丝线分隔） |
 | `CSettingRow` | 设置行：标题 / 说明 / 控件 / 已修改点 / 恢复默认 / 行内错误 |
-| `CInfoRow` | 只读信息行（关于页、当前窗口信息） |
+| `CActionRow` | 动作行：标题 / 说明 / 右侧执行按钮 |
+| `CInfoRow` | 只读信息行（关于页、当前窗口信息、插件统计） |
 | `CEditActionBar` | 脏值操作栏：计数、错误、保存中、已保存 + 恢复默认 / 放弃 / 保存 |
 | `CThemeCard` | 主题预览卡片（名称、副标题、四个调色块、选中角标） |
 | `CThumbnail` | 圆角缩略图按钮（解码期缩放、选中描边） |
@@ -162,4 +194,4 @@ uv run pytest tests/test_settings_framework.py tests/test_settings_window.py tes
 ```
 
 覆盖：命名空间冲突、会话保存 / 放弃 / 恢复默认、插件文件隔离、变更通知、
-窗口导航 / 脏值 / 搜索、插件页面保存与卸载清理。
+窗口导航 / 脏值 / 搜索、插件页面保存与卸载清理、动作行 / 信息行与插件页刷新。

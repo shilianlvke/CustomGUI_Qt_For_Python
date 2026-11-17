@@ -17,6 +17,7 @@ from sllkgui.appcore import (
     SettingsStore,
     ensure_core_pages,
     plugin_namespace,
+    settings_page_bus,
 )
 from sllkgui.gallery.context import GalleryContextImpl
 from sllkgui.gallery.manifest import load_manifest
@@ -106,6 +107,23 @@ def test_external_save_notifies_plugin(context):
     assert session.set("plugin.com.example.settings.sort_mode", "time")
     assert session.save()
     assert received == [("sort_mode", "time")]
+
+
+def test_refresh_notifies_page_bus(context):
+    ctx, _registry, _store = context
+    ctx.settings.define(_page())
+    bus = settings_page_bus()
+    scoped: list[int] = []
+    global_calls: list[str] = []
+    unsubscribe_scoped = bus.subscribe(ctx.settings.namespace, lambda: scoped.append(1))
+    unsubscribe_global = bus.subscribe_all(global_calls.append)
+    try:
+        ctx.settings.refresh()
+        assert scoped == [1]
+        assert global_calls == [ctx.settings.namespace]
+    finally:
+        unsubscribe_scoped()
+        unsubscribe_global()
 
 
 def test_clear_removes_page_but_keeps_file(context):
