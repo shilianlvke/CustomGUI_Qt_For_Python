@@ -317,6 +317,7 @@ class TrayService:
         from PySide6.QtWidgets import QMenu, QSystemTrayIcon
 
         if self._icon is None:
+            # 保持原生 QMenu：托盘菜单跟随系统明暗与无障碍设置，且自带子菜单箭头
             self._menu = QMenu()
             # 图标固定取基座品牌，插件没有任何替换入口
             self._icon = QSystemTrayIcon(self._base_icon())
