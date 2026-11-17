@@ -364,3 +364,33 @@ def test_tray_menu_renders_groups_and_base_items(app):
         "设置…",
         "退出",
     ]
+
+
+# ----------------------------------------------------------------------
+# 基座固定项与外观
+# ----------------------------------------------------------------------
+def test_base_section_includes_settings_when_available(app):
+    from PySide6.QtWidgets import QMenu
+
+    service = TrayService()
+    service._menu = QMenu()
+    calls: list[str] = []
+    service.attach_window(lambda: None, lambda: None, lambda: calls.append("settings"))
+    labels = [action.text() for action in service._menu.actions()]
+    assert labels == ["显示主窗口", "设置…", "退出"]
+
+    settings_action = service._menu.actions()[1]
+    settings_action.trigger()
+    assert calls == ["settings"]
+
+
+def test_window_wires_settings_opener_into_tray(tmp_path: Path, prepared):
+    """宿主必须在 controller 就绪后接入托盘，否则「设置…」会缺失。"""
+    from sllkgui.window import load_gallery
+
+    window = load_gallery(data_dir=tmp_path / "gallery-settings")
+    try:
+        assert callable(window.runtime.tray._open_settings_cb)
+    finally:
+        window._force_close = True
+        window.close()

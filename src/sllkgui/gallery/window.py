@@ -88,7 +88,6 @@ class GalleryWindow(QMainWindow):
         self.ui = UiMainWindow()
         self.ui.setup_ui(self)
         runtime.set_navigation(self.open_route, lambda: self)
-        runtime.attach_window(self)
         self._force_close = False
         try:
             Language.subscribe(self._refresh_tray_texts)
@@ -96,6 +95,9 @@ class GalleryWindow(QMainWindow):
             Logger.debug(f"托盘语言订阅失败: {exc}")
         SetupMainWindow.setup_gui(self)
         self.controller = MainWindowController(self)
+        # 必须在 controller 之后接入托盘：托盘的「设置…」项取自
+        # MainWindowController.open_settings_window（见 docs/TRAY.md §2）
+        runtime.attach_window(self)
         # 内置快捷键与插件共用同一张表：此处注册后，插件条目只要不撞序列即可共存
         self._builtin_shortcuts = install_builtin_shortcuts(self, self.controller)
         title = "SllkGUI Gallery" if runtime.mode == "gallery" else "SllkGUI"
