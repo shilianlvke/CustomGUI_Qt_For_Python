@@ -12,7 +12,7 @@
 | 按钮 | `CButton` `CPushButton` `CButtonGroup` `CSplitButton` `CStatusButton` `CMenuButton` `CToggleButton` |
 | 输入 | `CInputText` `CLineEdit` `CTextarea` `CInputNumber` `CInputGroup` `CInputGroupAddon` `CFloatLabel` `CSelect` `CComboBox` `CListbox` `CMultiSelect` `CTreeSelect` `CAutoComplete` `CDatePicker` `CCalendarPanel` `CColorPicker` `CSlider` `CKnob` `CRating` `CIconField` `CInputIcon` |
 | 选择 | `CCheckbox` `CRadioButton` `CSelectButton` `CToggleSwitch` |
-| 菜单 | `CMenu` `MenuItem` `CMenubar` `CTieredMenu` `CMegaMenu` `CPanelMenu` `CContextMenu` `CTabMenu` `CStepper` |
+| 菜单 | `CMenu` `MenuItem` `CMenubar` `CTieredMenu` `CMegaMenu` `CPanelMenu` `CContextMenu` `CTabMenu` `CStepper` `CPopupMenu` |
 | 展示 | `CCard` `CShowCard` `CPanel` `CBadge` `CChip` `CTag` `CAvatar` `CAvatarGroup` `CPixmap` `CImage` `CCarousel` `CGalleria` `CProgressBar` `CSkeleton` `CDivider` `CHDiv` `CVDiv` `CBreadcrumb` `CSteps` `CPageTransition` |
 | 浮层 | `COverlayPanel` `CToolTip` `CDialog` `CConfirmDialog` `CConfirmPopup` |
 | 反馈 | `CMessage` `CToast` |
@@ -118,6 +118,14 @@ items = [
 CMenubar(items)                   # 水平菜单栏
 CTieredMenu(items)                # 多级下拉
 CMegaMenu(items) / CPanelMenu(items) / CContextMenu(items) / CTabMenu(items)
+
+# 不继承 QMenu 的弹出菜单：单窗口多面板、自绘箭头、贴边翻转、可滚动
+from sllkgui.guicore.custom_ui.menu import CPopupMenu, MenuStyle
+
+popup = CPopupMenu(items, style=MenuStyle(row_height=34))
+popup.triggered.connect(lambda item: print(item.key))
+popup.popup(QCursor.pos(), above=True, align="right")
+# move_active / open_active_submenu / close_submenu / activate_active 也可由宿主调用
 
 CStepper(steps=["填写", "确认", "完成"], current=0)
 # 另有 add_step(title, content) / set_current(index)

@@ -1,8 +1,8 @@
 """菜单族与步骤容器。
 
 包含下拉菜单（``CMenu``）、共享菜单项模型（``MenuItem``）、自绘菜单列表
-（``CMenuList``）以及菜单栏、分层菜单、MegaMenu、面板菜单、右键菜单、
-标签菜单与步骤容器。
+（``CMenuList``）、不继承 ``QMenu`` 的弹出菜单（``CPopupMenu``）以及菜单栏、
+分层菜单、MegaMenu、面板菜单、右键菜单、标签菜单与步骤容器。
 """
 
 from .context_menu import CContextMenu as CContextMenu
@@ -15,6 +15,8 @@ from .menu_list import CMenuList as CMenuList
 from .menu_list import CMenuListPopup as CMenuListPopup
 from .menubar import CMenubar as CMenubar
 from .panel_menu import CPanelMenu as CPanelMenu
+from .popup_menu import CPopupMenu as CPopupMenu
+from .popup_menu import MenuStyle as MenuStyle
 from .stepper import CStepper as CStepper
 from .tab_menu import CTabMenu as CTabMenu
 from .tiered_menu import CTieredMenu as CTieredMenu
@@ -28,6 +30,8 @@ __all__ = [
     "CTieredMenu",
     "CMegaMenu",
     "CPanelMenu",
+    "CPopupMenu",
+    "MenuStyle",
     "CContextMenu",
     "CTabMenu",
     "CStepper",
