@@ -3,7 +3,33 @@
 项目遵循[语义化版本](https://semver.org/lang/zh-CN/)：major 版本允许破坏性变更并显式列出；
 minor 与 patch 保持向后兼容。
 
-当前版本：`2.4.0`（见 `src/sllkgui/_version.py`），对应 tag `base-v2.4.0`。
+当前版本：`2.5.0`（见 `src/sllkgui/_version.py`），对应 tag `base-v2.5.0`。
+
+---
+
+## 2.5.0（2026-11-17）
+
+自绘弹出菜单（新增，详见 `docs/POPUP_MENU.md`）：
+
+- 新增 `CPopupMenu`：不继承 `QMenu`，用**一个** `Qt.Popup` 窗口承载全部面板，
+  圆角、描边、悬停底色、分隔线、子菜单箭头全部由 `QPainter` 按主题令牌绘制；
+  主题切换后重绘即生效，不再依赖 `#CMenu_Menu` 样式表。
+- 交互覆盖：悬停高亮与 150ms 延时展开、点击父项立即展开、`↑↓` 移动（跳过
+  禁用/分隔线并首尾循环）、`→/←` 展开收起、`Enter/Space` 执行、`Home/End`
+  跳首尾、`Esc` 逐级关闭、`Tab` 关闭、滚轮按面板滚动（一次 3 行）。
+- 边界处理：子菜单贴近屏幕右缘自动**向左翻转**，两侧都放不下时压回屏内；
+  面板高于可用区时夹紧并启用滚动（带上下箭头提示），键盘移动自动滚入视野；
+  多显示器按锚点所在屏的可用区计算。
+- 信号与接口：`triggered(MenuItem)` / `aboutToShow` / `aboutToHide` / `closed`；
+  `popup(anchor, above, align)` 取代 `QMenu.exec`，`set_items` 取代 `clear`，
+  `MenuStyle` 支持逐项覆盖配色与密度。
+- 托盘改用 `CPopupMenu`：不再 `setContextMenu`，右键由 `activated(Context)`
+  拉起菜单；`TrayService.menu_items()` 把「槽 → 插件块 → 兜底桶」计划编译成
+  `MenuItem` 树，与渲染解耦，便于测试与后续「托盘管理器」。
+- 菜单项树仍是同一套 `MenuItem` 模型（label / icon / items / disabled /
+  separator / key），与 `CMenu` / `CMenubar` 共用，迁移成本低。
+- 已知限制：只设置 `accessibleName`，没有完整 `QAccessible` 角色；未实现
+  勾选态与毛玻璃面板。
 
 ---
 

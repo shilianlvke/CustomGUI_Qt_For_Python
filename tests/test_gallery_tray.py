@@ -333,30 +333,24 @@ def test_tray_entries_report_rendered_location():
     assert after[0].path == ("甲", "开始专注")
 
 
-def test_tray_menu_renders_groups_and_base_items(app):
-    """真实 QMenu 结构：插件块 → 分隔线 → 基座固定项。"""
-    from PySide6.QtWidgets import QMenu
-
+def test_menu_items_group_plugins_and_append_base(app):
+    """菜单项树：插件块 → 分隔线 → 基座固定项；卸载回到内联形态。"""
     service = TrayService()
-    service._menu = QMenu()
-    service.attach_window(lambda: None, lambda: None, lambda: None)
-
     first = TrayHandle(service, "a", (Permission.TRAY,), "甲")
     first.add_action("x", "X", lambda: None, order=10)
     first.add_action("y", "Y", lambda: None, order=20)
     second = TrayHandle(service, "b", (Permission.TRAY,), "乙")
     second.add_action("z", "Z", lambda: None)
 
-    labels = [action.text() for action in service._menu.actions()]
+    service.attach_window(lambda: None, lambda: None, lambda: None)
+    items = service.menu_items()
+    labels = [item.label for item in items]
     assert labels[:2] == ["甲", "乙"]
     assert labels[-3:] == ["显示主窗口", "设置…", "退出"]
-    submenu_action = service._menu.actions()[0]
-    submenu = submenu_action.menu()
-    assert [child.text() for child in submenu.actions()] == ["X", "Y"]
+    assert [child.label for child in items[0].items] == ["X", "Y"]
 
-    # 卸载后该槽只剩一个插件块，自动回到内联形态
     second.clear()
-    assert [action.text() for action in service._menu.actions()] == [
+    assert [item.label for item in service.menu_items()] == [
         "X",
         "Y",
         "",
@@ -366,21 +360,25 @@ def test_tray_menu_renders_groups_and_base_items(app):
     ]
 
 
-# ----------------------------------------------------------------------
-# 基座固定项与外观
-# ----------------------------------------------------------------------
-def test_base_section_includes_settings_when_available(app):
-    from PySide6.QtWidgets import QMenu
-
+def test_menu_trigger_dispatches_plugin_action(app):
     service = TrayService()
-    service._menu = QMenu()
+    called: list[str] = []
+    handle = TrayHandle(service, "a", (Permission.TRAY,), "甲")
+    handle.add_action("x", "X", lambda: called.append("x"))
+
+    menu = service.menu()
+    item = next(entry for entry in service.menu_items() if entry.key == "a:x")
+    menu.triggered.emit(item)
+    assert called == ["x"]
+
+
+def test_base_section_includes_settings_when_available(app):
+    service = TrayService()
     calls: list[str] = []
     service.attach_window(lambda: None, lambda: None, lambda: calls.append("settings"))
-    labels = [action.text() for action in service._menu.actions()]
-    assert labels == ["显示主窗口", "设置…", "退出"]
-
-    settings_action = service._menu.actions()[1]
-    settings_action.trigger()
+    items = service.menu_items()
+    assert [item.label for item in items] == ["显示主窗口", "设置…", "退出"]
+    items[1].command()
     assert calls == ["settings"]
 
 
@@ -394,3 +392,23 @@ def test_window_wires_settings_opener_into_tray(tmp_path: Path, prepared):
     finally:
         window._force_close = True
         window.close()
+
+
+def test_menu_activation_runs_action_once(app):
+    """插件动作只走 triggered 派发：command 与信号不能各执行一次。"""
+    service = TrayService()
+    called: list[str] = []
+    handle = TrayHandle(service, "a", (Permission.TRAY,), "甲")
+    handle.add_action("x", "X", lambda: called.append("x"))
+
+    from PySide6.QtCore import QPoint
+
+    menu = service.menu()
+    menu.set_items(service.menu_items())
+    menu.popup(QPoint(80, 80))
+    try:
+        menu.set_active_index(0)
+        assert menu.activate_active() is True
+    finally:
+        menu.dismiss()
+    assert called == ["x"]

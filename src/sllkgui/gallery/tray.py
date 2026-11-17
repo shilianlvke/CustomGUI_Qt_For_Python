@@ -6,6 +6,8 @@
 - 图标与悬停提示固定使用基座品牌，插件没有任何修改入口；
 - 插件只声明「槽 + 次序 + 文案」，菜单形态（内联 / 子菜单 / 兜底桶）
   由 :func:`plan_menu` 按槽预算裁决；
+- 菜单由 :class:`~sllkgui.guicore.custom_ui.menu.CPopupMenu` 自绘（不继承
+  ``QMenu``），因此可以按主题着色、画出子菜单箭头并整条链路统一关闭；
 - 预算保证插件再多也不溢出屏幕：顶层最多 18 行 ≈ 610px，768p 可完整展开；
 - 插件动作以 ``plugin_id:action_id`` 命名隔离，卸载/重载时由基座清理；
 - 系统托盘不可用时全部降级为空操作，只告警一次。
@@ -272,7 +274,6 @@ class TrayService:
 
     def __init__(self) -> None:
         self._actions: dict[str, TrayAction] = {}
-        self._submenus: list[Any] = []
         self._icon: Any = None
         self._menu: Any = None
         self._show_window: Callable[[], None] | None = None
@@ -314,17 +315,15 @@ class TrayService:
                 self._warned_unavailable = True
                 Logger.warning("系统托盘不可用：托盘动作与通知已禁用")
             return False
-        from PySide6.QtWidgets import QMenu, QSystemTrayIcon
+        from PySide6.QtWidgets import QSystemTrayIcon
 
         if self._icon is None:
-            # 保持原生 QMenu：托盘菜单跟随系统明暗与无障碍设置，且自带子菜单箭头
-            self._menu = QMenu()
             # 图标固定取基座品牌，插件没有任何替换入口
             self._icon = QSystemTrayIcon(self._base_icon())
             self._icon.setToolTip(self._tooltip_text())
-            self._icon.setContextMenu(self._menu)
+            # 不用 setContextMenu：右键由 activated(Context) 拉起自绘菜单
             self._icon.activated.connect(self._on_activated)
-            self._rebuild_menu()
+            self._ensure_menu()
             record_event("tray.shown", category="gallery", payload={"actions": len(self._actions)})
         if not self._icon.isVisible():
             self._icon.show()
@@ -358,6 +357,8 @@ class TrayService:
 
         if reason in (QSystemTrayIcon.ActivationReason.Trigger, QSystemTrayIcon.ActivationReason.DoubleClick):
             self.show_window()
+        elif reason == QSystemTrayIcon.ActivationReason.Context:
+            self.show_menu()
 
     def show_window(self) -> None:
         if self._show_window is not None:
@@ -374,13 +375,19 @@ class TrayService:
             self._quit_app()
 
     def dispose(self) -> None:
+        if self._menu is not None:
+            try:
+                self._menu.dismiss()
+                self._menu.deleteLater()
+            except Exception as exc:  # noqa: BLE001 - 退出路径不因菜单报错中断
+                Logger.debug(f"托盘菜单释放失败: {exc}")
+            self._menu = None
         if self._icon is not None:
             self._icon.hide()
             self._icon.deleteLater()
             self._icon = None
         self._menu = None
         self._actions.clear()
-        self._submenus.clear()
         self._warned_unavailable = False
 
     # ------------------------------------------------------------------
@@ -526,62 +533,91 @@ class TrayService:
         except Exception as exc:  # noqa: BLE001 - 插件回调错误不得影响基座
             Logger.exception(f"托盘动作失败 {action.plugin_id}:{action.action_id}: {exc}")
 
-    def _clear_items(self) -> None:
-        """清空菜单项：子菜单是菜单的 QObject 子节点，随 ``clear()`` 一起释放。
-
-        这里只丢掉 Python 引用，不能再手动 ``deleteLater()`` —— ``QMenu.clear()``
-        已经销毁了子菜单，二次删除会命中已析构的 C++ 对象。
-        """
+    def _ensure_menu(self) -> Any:
+        """惰性创建自绘菜单（``tray`` 模块导入期不加载 Qt 与组件库）。"""
         if self._menu is None:
-            return
-        self._menu.clear()
-        self._submenus.clear()
+            from sllkgui.guicore.custom_ui.menu import CPopupMenu
 
-    def _bind(self, menu: Any, item: TrayPlanItem) -> None:
-        qaction = menu.addAction(item.text)
-        qaction.setEnabled(item.enabled)
-        action = self._actions.get(item.action_id)
+            self._menu = CPopupMenu(self.menu_items())
+            self._menu.triggered.connect(self._on_menu_triggered)
+        return self._menu
+
+    def show_menu(self, anchor: Any = None) -> bool:
+        """在托盘图标处展开菜单（右键触发，或宿主主动调用）。"""
+        if not self.ensure_visible():
+            return False
+        from PySide6.QtGui import QCursor
+
+        menu = self._ensure_menu()
+        self._rebuild_menu()
+        menu.popup(anchor if anchor is not None else QCursor.pos(), above=True, align="right")
+        record_event("tray.menu_opened", category="gallery", payload={"actions": len(self._actions)})
+        return True
+
+    def menu(self) -> Any:
+        """当前菜单实例（诊断与测试用；按需创建）。"""
+        return self._ensure_menu()
+
+    def menu_items(self) -> list[Any]:
+        """把当前注册表编译成菜单项树（不依赖 Qt 控件，但需要 ``MenuItem``）。"""
+        return self._items_from_plan(plan_menu(self._actions.values()))
+
+    def _items_from_plan(self, plan: TrayPlan) -> list[Any]:
+        from sllkgui.guicore.custom_ui.menu import MenuItem
+
+        items: list[Any] = [self._to_menu_item(node, MenuItem) for node in plan.items]
+        items.extend(self._base_items(MenuItem))
+        return items
+
+    def _to_menu_item(self, node: TrayPlanItem, item_cls: Any) -> Any:
+        if node.kind == "separator":
+            return item_cls(separator=True)
+        if node.kind in ("submenu", BUCKET_KIND):
+            label = _tray_text("UI.ui_TrayMorePlugins", "更多插件") if node.kind == BUCKET_KIND else node.text
+            return item_cls(
+                label=label,
+                items=[self._to_menu_item(child, item_cls) for child in node.children],
+            )
+        # 插件动作只挂 key：触发由 ``triggered`` 统一派发，避免 command 再执行一次
+        return item_cls(
+            label=node.text,
+            key=node.action_id,
+            disabled=not node.enabled,
+        )
+
+    def _base_items(self, item_cls: Any) -> list[Any]:
+        """基座固定项：永远在最后，插件无法插入到这条分隔线之后。"""
+        items = [
+            item_cls(
+                label=_tray_text("UI.ui_TrayShowWindow", "显示主窗口"),
+                command=self.show_window,
+            )
+        ]
+        if self._open_settings_cb is not None:
+            items.append(item_cls(label=_tray_text("UI.ui_TraySettings", "设置…"), command=self.open_settings))
+        items.append(item_cls(label=_tray_text("UI.ui_TrayQuit", "退出"), command=self.quit_app))
+        return items
+
+    def _on_menu_triggered(self, item: Any) -> None:
+        """菜单点击：插件动作按 key 派发，基座项由 ``MenuItem.command`` 自行处理。"""
+        action_id = getattr(item, "key", None)
+        if not action_id:
+            return
+        action = self._actions.get(action_id)
         if action is not None:
-            qaction.triggered.connect(lambda _checked=False, entry=action: self._invoke(entry))
+            self._invoke(action)
 
     def _rebuild_menu(self) -> None:
         if self._menu is None:
             return
         plan = plan_menu(self._actions.values())
-        self._clear_items()
-        for item in plan.items:
-            if item.kind == "separator":
-                self._menu.addSeparator()
-            elif item.kind == "submenu":
-                submenu = self._menu.addMenu(item.text)
-                self._submenus.append(submenu)
-                for child in item.children:
-                    self._bind(submenu, child)
-            elif item.kind == BUCKET_KIND:
-                # 兜底桶：桶内平铺 + 插件名前缀，避免层级超过 2
-                submenu = self._menu.addMenu(_tray_text("UI.ui_TrayMorePlugins", "更多插件"))
-                self._submenus.append(submenu)
-                for child in item.children:
-                    self._bind(submenu, child)
-            else:
-                self._bind(self._menu, item)
-        self._add_base_items()
+        self._menu.set_items(self._items_from_plan(plan))
         if plan.demoted or plan.overflow_blocks or plan.truncated_status:
             Logger.debug(
                 "托盘菜单已压缩: "
                 f"降级 {plan.demoted} / 兜底 {plan.overflow_blocks} 块 "
                 f"（{plan.bucketed} 条）/ 截断状态 {plan.truncated_status}"
             )
-
-    def _add_base_items(self) -> None:
-        """基座固定项：永远在最后，插件无法插入到这条分隔线之后。"""
-        show = self._menu.addAction(_tray_text("UI.ui_TrayShowWindow", "显示主窗口"))
-        show.triggered.connect(lambda _checked=False: self.show_window())
-        if self._open_settings_cb is not None:
-            settings = self._menu.addAction(_tray_text("UI.ui_TraySettings", "设置…"))
-            settings.triggered.connect(lambda _checked=False: self.open_settings())
-        quit_item = self._menu.addAction(_tray_text("UI.ui_TrayQuit", "退出"))
-        quit_item.triggered.connect(lambda _checked=False: self.quit_app())
 
 
 class TrayHandle(GalleryTray):

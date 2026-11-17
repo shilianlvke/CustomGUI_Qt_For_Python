@@ -3,7 +3,7 @@
 基于 **PySide6** 的桌面 UI 基座：窗口骨架、设计令牌、组件库、主题与多语言、
 插件运行时，以及一个「双击即用」的 Windows 启动器。
 
-> 当前版本：**2.4.0**（tag `base-v2.4.0`）
+> 当前版本：**2.5.0**（tag `base-v2.5.0`）
 >
 > 2.0 起采用新的插件协议：**一个 Git 仓库 = 一个插件，插件可贡献多个 Surface**。
 > 旧的 App 协议（`apps/`、`config.yml`、`plugins.yml`）已删除，不提供兼容层。
@@ -417,9 +417,12 @@ SllkGui/
 - 溢出兜底：quick 5 条、tools 7 行、status 3 条、单插件 12 条动作；超出的
   动作降级到 tools、收进「更多插件 ▸」或截断，顶层最多 18 行。
 - 基座固定项（显示主窗口 / 设置… / 退出）永远在最后，插件无法写入。
+- 菜单由基座自绘（`CPopupMenu`，不继承 `QMenu`）：单窗口多面板、按主题着色、
+  自己画子菜单箭头、贴边自动向左翻转、超屏可滚动。
 - 系统托盘不可用时自动降级：关闭主窗口直接退出。
 
-详见 [docs/TRAY.md](docs/TRAY.md)，交互原型见 `docs/prototype/tray-menu.html`。
+详见 [docs/TRAY.md](docs/TRAY.md)、组件文档 [docs/POPUP_MENU.md](docs/POPUP_MENU.md)，
+交互原型见 `docs/prototype/tray-menu.html`。
 
 ### 7.5 快捷键
 
@@ -856,6 +859,7 @@ uv run sllkgui doctor --json
 | [docs/GALLERY.md](docs/GALLERY.md) | Gallery 命令、存储、加载流程 |
 | [docs/SOURCE.md](docs/SOURCE.md) | 源仓库协议 |
 | [docs/TRAY.md](docs/TRAY.md) | 托盘所有权与插件动作 |
+| [docs/POPUP_MENU.md](docs/POPUP_MENU.md) | 自绘弹出菜单：接口、交互、边界与 QMenu 迁移 |
 | [docs/SHORTCUTS.md](docs/SHORTCUTS.md) | 快捷键作用域、优先级与插件协议 |
 | [docs/contributing.md](docs/contributing.md) | 贡献指南 |
 
