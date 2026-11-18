@@ -188,6 +188,19 @@ class SettingsController:
         self._record_event("ui.settings_window_open", category="ui", payload={})
         return True
 
+    def open_settings_page(self, plugin_id: str, page_id: str = "") -> bool:
+        """打开设置窗口并定位到插件的指定设置页。"""
+        if not self.open_settings_window():
+            return False
+        window = self._settings_window
+        if window is None:
+            return False
+        target = str(page_id or plugin_id).strip()
+        if not target:
+            return True
+        window.show_page(f"plugin::{plugin_id}::{target}")
+        return True
+
     def close_settings_window(self) -> None:
         window = self._settings_window
         if window is not None:
@@ -727,6 +740,13 @@ class MainWindowController:
             toggle = getattr(self.settings_controller, "toggle_settings_drawer", None)
             return bool(toggle()) if callable(toggle) else False
         return bool(opener())
+
+    def open_settings_page(self, plugin_id: str, page_id: str = "") -> bool:
+        """内置入口：打开独立设置窗口并定位到插件的指定设置页。"""
+        opener = getattr(self.settings_controller, "open_settings_page", None)
+        if not callable(opener):
+            return False
+        return bool(opener(plugin_id, page_id))
 
     def _handle_top_settings_button(self, btn):
         """顶栏设置按钮开合右列时，按抽屉的实际状态同步设置按钮。"""

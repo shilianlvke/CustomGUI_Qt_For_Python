@@ -126,7 +126,7 @@ class GalleryWindow(QMainWindow):
 
     def mousePressEvent(self, event) -> None:  # noqa: N802 - 覆写 Qt 命名
         self.dragPos = event.globalPosition().toPoint()
-        self.focusNextChild()
+        super().mousePressEvent(event)
 
     # ------------------------------------------------------------------
     # 导航

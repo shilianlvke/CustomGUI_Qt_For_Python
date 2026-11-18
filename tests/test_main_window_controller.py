@@ -1,6 +1,10 @@
 from types import SimpleNamespace
 
-from sllkgui.guis.windows.main_window.controller import PageRouterController, SettingsController
+from sllkgui.guis.windows.main_window.controller import (
+    MainWindowController,
+    PageRouterController,
+    SettingsController,
+)
 
 
 class _StubMainFunctions:
@@ -79,6 +83,37 @@ def test_settings_controller_cycles_expected_theme_sequence():
 
     assert style_calls == ["demo-style", "demo-style", "demo-style"]
     assert manager.current() == "default"  # default -> eye -> bright -> default
+
+
+def test_open_settings_page_delegates_to_settings_controller():
+    controller = object.__new__(MainWindowController)
+    calls: list[tuple[str, str]] = []
+    controller.settings_controller = SimpleNamespace(
+        open_settings_page=lambda plugin_id, page_id="": calls.append((plugin_id, page_id)) or True
+    )
+
+    assert controller.open_settings_page("com.example.plugin", "com.example.plugin")
+    assert calls == [("com.example.plugin", "com.example.plugin")]
+
+
+def test_settings_controller_builds_plugin_page_item_id():
+    controller = object.__new__(SettingsController)
+    controller._settings_window = None
+    opened: list[str] = []
+
+    class _FakeSettingsWindow:
+        def show_page(self, item_id):
+            opened.append(item_id)
+            return True
+
+    def fake_open_settings_window():
+        controller._settings_window = _FakeSettingsWindow()
+        return True
+
+    controller.open_settings_window = fake_open_settings_window
+
+    assert controller.open_settings_page("com.example.plugin", "com.example.plugin")
+    assert opened == ["plugin::com.example.plugin::com.example.plugin"]
 
 
 def test_save_language_keeps_settings_window_open(monkeypatch):
