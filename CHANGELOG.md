@@ -3,7 +3,71 @@
 项目遵循[语义化版本](https://semver.org/lang/zh-CN/)：major 版本允许破坏性变更并显式列出；
 minor 与 patch 保持向后兼容。
 
-当前版本：`2.7.0`（见 `src/sllkgui/_version.py`），对应 tag `base-v2.7.0`。
+当前版本：`3.0.0`（见 `src/sllkgui/_version.py`），对应 tag `base-v3.0.0`。
+
+---
+
+## 3.0.0（2026-11-19）
+
+基座自身的架构、逻辑与代码质量重构。本版**只面向基座作者**，插件作者无需改动既有
+插件即可继续运行（唯一需要注意的是清单里的 `requires.sllkgui` 版本区间）。
+
+### 破坏性变更
+
+| 变更 | 说明 | 迁移方式 |
+| --- | --- | --- |
+| 插件清单 `requires.sllkgui` 区间改为 `>=3.0.0,<4.0.0` | 基座升到 3.0，旧约束会被拒绝 | 把清单里的区间改成新值 |
+| 删除 `CSettingsDrawer` | 右侧设置抽屉整块删除（`guicore/window/settings/`，约 1535 行） | 设置入口统一走独立设置窗口；展厅「打开设置」按钮已改为调用 `open_settings_window` |
+| 删除 `CSettingsPanel` | 左栏设置面板（`guicore/window/left_column/settings_panel.py`）删除 | 无替代品，本来就无生产入口 |
+| 删除 `toggle_settings_drawer` | `MainWindowController` / `SettingsController` 上的抽屉开合 API | 改用 `open_settings_window` |
+| 删除 `CPushButton` / `CLineEdit` | 旧版兼容壳 | 改用 `CButton` / `CInputText` |
+| 删除 `CShowCard` / `CPixmap` | 零引用的死组件 | `CShowCard` → `CCard`；`CPixmap` → `CThumbnail` |
+| 删除 `PicFixFactory` | 原挂在 `appcore` 的圆角位图工具 | 改用 `sllkgui.guicore.custom_ui.paint_utils.rounded_pixmap` |
+| 删除 `register_builtin_menus` / `PAGE_REGISTRY` | 空函数与空列表 | 内置菜单由 `get_menu_items` 直接拼装 |
+| `get_page_routes` / `get_default_page_object` / `get_menu_items` 改为显式接收 `window` | 不再回落到进程级 `current_registry()` 单例 | 调用时传入持有 `gallery_registry` 的窗口对象 |
+| `CSettingsWindow` 改为注入 `plugin_titles` | `guicore` 不再 import `gallery` | 构造时传 `plugin_titles=lambda: {plugin_id: name}` |
+| `SurfaceSpec` 新增 `impl` 字段（可选） | 用于启动期校验页面实现是否存在 | 建议声明；不声明时 lint 会给出 `SURFACE_IMPL_UNSPECIFIED` 警告 |
+
+### 修复
+
+- **设置窗口透明度默认值反向**：`transparency` 越大越透明，而 `AppSettings.acrylic.opacity`
+  越大越不透明。此前把后者直接当作前者，导致「打开设置窗口什么都不改直接保存」观感变化。
+  现在默认值为 `100 - acrylic.opacity`。
+- **设置页面语言下拉写死 4 种**：改为按 `LANGUAGE_OPTIONS` 动态发现，应用追加语言后
+  即可在设置页看到。
+- **插件页图标渲染崩溃**：`CMenuButton` / `CStatusButton` 在传入字符串图标时调用了
+  `PathFactory.create_rounded_pixmap`，而该方法实际定义在 `PicFixFactory` 上，会抛
+  `AttributeError`。现改为调用正确的方法。
+- **`data` Surface 缺失**：内置预览插件的清单声明了 10 个 Surface，但 `data` 目录不存在，
+  点击才报错。现在补齐页面实现，并在加载期做存在性预检。
+- **脚手架生成的插件无法导入**：模板里写的是 `{{...}}` 双花括号，生成后 `plugin.py`
+  一导入就抛 `TypeError: unhashable type: 'dict'`，而 lint 只做文本扫描所以一直是绿的。
+- **CI 门禁路径错误**：ruff 检查路径包含不存在的 `apps` 目录，命令会直接失败。
+
+### 架构
+
+- **断开 `guis → gallery` 反向依赖**：路由函数改为显式接收 `window`，删除了进程级
+  注册表单例。`guicore` 与插件商店页也不再 import `gallery`。
+- **架构守卫改为 5×5 白名单矩阵**：出现未登记的包间依赖即失败，并直接指出文件与行号。
+- **`appcore` 恢复为纯标准库**：绘制能力（圆角位图）下沉到 `guicore`，`appcore` 顶层
+  import 不再拉起 PySide6。插件规范校验（`sllkgui plugin lint` / `scripts/validate_plugin.py`）
+  现在真的可以在无 GUI 依赖的环境运行。
+- **设置写入路径收敛**：菜单 / 抽屉模式改为只应用不落盘，持久化统一由
+  `SettingsSession.save()` 负责。
+
+### 组件库
+
+- 新增 `CElidedLabel`（收编仓内 3 份各写一遍的省略实现）、`CIconTile`（图标缓存改为
+  `lru_cache(64)`）、`CMetricCard`、`CSurfacePanel`。
+- `CChip` 增加 `height` / `font_pixel_size` / `tone`；`CSideNav` 增加 `item_height`；
+  `CText` 增加 `with_role` 语义档位与 `pixel_size` 覆盖。
+- 等宽字体族集中到 `guicore.fonts.mono_font`。
+
+### 内部重构
+
+- 插件管理页由 1577 行单文件拆为 8 个模块的包（`guis/pages/plugin_store/`），只允许
+  向下依赖：`page ← panels ← dialogs ← entries ← widgets ← theme ← context`；
+  随后自绘件全部换用组件库，页面净减约 260 行。行为与文案零变化。
 
 ---
 

@@ -27,7 +27,7 @@
 
 | 层 | 职责 | 依赖 |
 | --- | --- | --- |
-| `sllkgui.appcore` | 配置、主题、语言、日志、遥测、错误边界 | 标准库 |
+| `sllkgui.appcore` | 配置、主题、语言、日志、遥测、错误边界 | 仅标准库（不 import PySide6，有守卫测试锁定） |
 | `sllkgui.guicore` | 组件库、设计令牌、窗口部件、快捷键表 | PySide6 |
 | `sllkgui.gallery` | 插件协议、源、存储、安装、加载、外壳 | appcore + guicore |
 | `sllkgui.showcase` | 内置组件预览插件 | plugin API + guicore |

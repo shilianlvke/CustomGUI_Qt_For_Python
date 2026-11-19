@@ -76,13 +76,13 @@
 | EXT-03 | S2 | `_ContextView` 全量读写锁与 `ConfigContext` 快照发布的并发压测 | `appcore/sysx/config/registry.py` | 引入多线程配置写入 | 计划中 |
 | EXT-04 | S2 | 主题 `apply` / `_notify` 全链路 `RLock` 并发测试 | `appcore/sysx/modules/theme_module.py` | 后台线程触发主题切换 | 计划中 |
 | EXT-05 | S3 | 移除协议 v1（`PAGE` / `build_page` / `register_plugins`）兼容壳 | `guis/app_loader.py` `docs/PLUGIN.md` `ARCHITECTURE.md:222-224` | 下一个 major 版本 | 计划中 |
-| EXT-06 | S3 | 清理 `CLineEdit` / `CPushButton` 兼容壳与旧 `resource/` 布局 | `guicore/` `ARCHITECTURE.md:222-224` | 下一个 major 版本 | 计划中 |
+| EXT-06 | S3 | 清理 `CLineEdit` / `CPushButton` 兼容壳与旧 `resource/` 布局 | `guicore/` `ARCHITECTURE.md:222-224` | 下一个 major 版本 | 已修复（3.0.0 删除 `CLineEdit` / `CPushButton` / `CShowCard` / `CPixmap`） |
 | EXT-07 | S3 | 清理遗留文档引用与 `appcore/tool/Net.py` 历史命名 | `docs/contributing.md:63` `81-82` | 下一次文档整理 | 计划中 |
 | EXT-08 | S4 | 统一 `v*` / `base-v*` tag 体系并清理历史 tag（需远端管理员、不可逆） | `.workflow/ReleasePipeline.yml` `CHANGELOG.md` | 发布流程重构 | 计划中 |
 | EXT-09 | S4 | MANUAL_QA 语言切换状态保留与排序选中项产品确认 | `docs/MANUAL_QA.md:452-453` | 产品确认结论 | 计划中 |
 | EXT-10 | S4 | MANUAL_QA 遗留视觉缺陷与 `paintEvent` 性能优化 | `docs/MANUAL_QA.md` `guicore/` | 视觉基线复核 | 计划中 |
 | EXT-11 | S4 | Win32 亚克力开关、Win10/RDP 回退、多显示器、高 DPI 人工验收矩阵 | `docs/MANUAL_QA.md:468-475` | Windows 真机发布前 | 计划中 |
-| EXT-12 | S4 | `appcore` 去 Qt 依赖 / 轻量 doctor、PyInstaller 冻结形态端到端验证、PyPI 发布路径 | `appcore/sysx/common/static_func.py` `src/sllkgui/window.py` `scripts/build_package.py` | 跨平台与正式发布 | 计划中 |
+| EXT-12 | S4 | `appcore` 去 Qt 依赖 / 轻量 doctor、PyInstaller 冻结形态端到端验证、PyPI 发布路径 | `appcore/sysx/common/static_func.py` `src/sllkgui/window.py` `scripts/build_package.py` | 跨平台与正式发布 | 部分修复（3.0.0：`appcore` 已不 import PySide6，圆角位图下沉到 `guicore`，并加守卫测试；冻结形态与发布路径仍未做） |
 
 ## 5. 优先级与顺序
 

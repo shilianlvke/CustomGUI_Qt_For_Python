@@ -30,7 +30,7 @@ description: 通用便签
 license: MIT
 entry: plugin.py
 requires:
-  sllkgui: ">=2.0.0,<3.0.0"
+  sllkgui: ">=3.0.0,<4.0.0"
   python: ">=3.12"
 python_dependencies:
   - psutil>=6
@@ -39,6 +39,7 @@ surfaces:
   - id: notes
     title: {zh_cn: 便签, zh_tw: 便籤, en_us: Notes, ja_jp: ノート}
     icon: resource/icon/notes.svg
+    impl: pages/notes.py
     default: true
     order: 10
 permissions:
@@ -48,6 +49,9 @@ permissions:
 - `id`：`^[a-z0-9][a-z0-9._-]{0,63}$`，全局唯一。
 - `version`：SemVer。
 - `surfaces`：至少一个；`default: true` 最多一个；`order` 越小越靠前。
+- `impl`（3.0 起可选但建议声明）：该 Surface 的页面实现文件路径，相对插件根目录。
+  基座在加载期校验它是否存在，缺失时跳过整个插件并记
+  `PLUGIN_SURFACE_IMPL_MISSING`，而不是等到用户点击时才崩。
 - `permissions`：`network`、`filesystem.read`、`filesystem.write`、`subprocess`、
   `clipboard`、`notifications`、`tray`、`shortcuts`、`autostart`、`system.info`。
 - `python_dependencies`（可选）：第三方 Python 包声明（PEP 508 格式，如

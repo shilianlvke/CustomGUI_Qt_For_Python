@@ -9,11 +9,11 @@
 | 分类 | 组件 |
 | --- | --- |
 | 数据 | `CDataTable` `CTableColumn` `CTableModel` `CPaginator` `CDataView` `CPickList` `COrderList` `CTree` `CTreeTable` `CTimeline` |
-| 按钮 | `CButton` `CPushButton` `CButtonGroup` `CSplitButton` `CStatusButton` `CMenuButton` `CToggleButton` |
-| 输入 | `CInputText` `CLineEdit` `CTextarea` `CInputNumber` `CInputGroup` `CInputGroupAddon` `CFloatLabel` `CSelect` `CComboBox` `CListbox` `CMultiSelect` `CTreeSelect` `CAutoComplete` `CDatePicker` `CCalendarPanel` `CColorPicker` `CSlider` `CKnob` `CRating` `CIconField` `CInputIcon` |
+| 按钮 | `CButton` `CButtonGroup` `CSplitButton` `CStatusButton` `CMenuButton` `CToggleButton` |
+| 输入 | `CInputText` `CTextarea` `CInputNumber` `CInputGroup` `CInputGroupAddon` `CFloatLabel` `CSelect` `CComboBox` `CListbox` `CMultiSelect` `CTreeSelect` `CAutoComplete` `CDatePicker` `CCalendarPanel` `CColorPicker` `CSlider` `CKnob` `CRating` `CIconField` `CInputIcon` |
 | 选择 | `CCheckbox` `CRadioButton` `CSelectButton` `CToggleSwitch` |
 | 菜单 | `CMenu` `MenuItem` `CMenubar` `CTieredMenu` `CMegaMenu` `CPanelMenu` `CContextMenu` `CTabMenu` `CStepper` `CPopupMenu` |
-| 展示 | `CCard` `CShowCard` `CPanel` `CBadge` `CChip` `CTag` `CAvatar` `CAvatarGroup` `CPixmap` `CImage` `CCarousel` `CGalleria` `CProgressBar` `CSkeleton` `CDivider` `CHDiv` `CVDiv` `CBreadcrumb` `CSteps` `CPageTransition` |
+| 展示 | `CCard` `CSurfacePanel` `CMetricCard` `CPanel` `CBadge` `CChip` `CTag` `CAvatar` `CAvatarGroup` `CIconTile` `CElidedLabel` `CText` `CImage` `CCarousel` `CGalleria` `CProgressBar` `CSkeleton` `CDivider` `CHDiv` `CVDiv` `CBreadcrumb` `CSteps` `CPageTransition` |
 | 浮层 | `COverlayPanel` `CToolTip` `CDialog` `CConfirmDialog` `CConfirmPopup` |
 | 反馈 | `CMessage` `CToast` |
 | 文件/图表 | `CFileUpload` `CChart` |
@@ -67,7 +67,7 @@ CSlider(value=0, minimum=0, maximum=100)
 CRating(value=0, maximum=5)
 ```
 
-`CLineEdit` 是 `CInputText` 的兼容壳（固定 32px 高度），新代码用 `CInputText`。
+3.0 起 `CLineEdit` / `CPushButton` 兼容壳已删除，新代码统一用 `CInputText` / `CButton`。
 
 ### 数据
 
@@ -297,7 +297,7 @@ get_theme_manager().apply("eye")
 | `feedback_preview` | `CMessage` `CToast` `CTag` `CBadge` `CChip` `CAvatar` `CSkeleton` `CProgressBar` `CDivider` |
 | `overlay_preview` | `CDialog` `CConfirmDialog` `COverlayPanel` + 四向栏目抽屉 |
 | `panel_preview` | `CTabs` `CAccordion` `CPanel` `CFieldset` `CToolbar` `CSplitter` `CFormGrid` |
-| `media_preview` | `CImage` `CCarousel` `CGalleria` `CPixmap` `CChart` `CFileUpload` |
+| `media_preview` | `CImage` `CCarousel` `CGalleria` `CChart` `CFileUpload` |
 | `shell_preview` | `CAppTopbar` `CAppMenu`（「打开设置」按钮指向独立设置窗口） |
 
 ## 7. 设置项速查（`_resources/sllkgui/settings/window.yaml`）

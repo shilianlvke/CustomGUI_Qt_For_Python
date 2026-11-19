@@ -393,7 +393,7 @@ SllkGui/
 
 | 分类 | 组件示例 |
 | --- | --- |
-| 按钮 | `CButton` `CPushButton` `CButtonGroup` `CSplitButton` `CStatusButton` `CMenuButton` `CToggleButton` |
+| 按钮 | `CButton` `CButtonGroup` `CSplitButton` `CStatusButton` `CMenuButton` `CToggleButton` |
 | 输入与选择 | `CInputText` `CTextarea` `CInputNumber` `CSelect` `CComboBox` `CMultiSelect` `CDatePicker` `CColorPicker` `CSlider` `CKnob` `CCheckbox` `CRadioButton` `CToggleSwitch` |
 | 数据 | `CDataTable` `CPaginator` `CDataView` `CTree` `CTreeTable` `CTimeline` |
 | 菜单 | `CMenu` `CMenubar` `CTieredMenu` `CPanelMenu` `CContextMenu` `CTabMenu` `CStepper` |
@@ -640,7 +640,7 @@ description: 通用便签
 license: MIT
 entry: plugin.py
 requires:
-  sllkgui: ">=2.0.0,<3.0.0"
+  sllkgui: ">=3.0.0,<4.0.0"
   python: ">=3.12"
 surfaces:
   - id: notes
