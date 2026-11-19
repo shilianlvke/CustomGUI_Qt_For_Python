@@ -103,35 +103,6 @@ class _ComponentStyles:
                 height: {self.tokens.size.icon}px;
             }}
         """
-        self.style += f"""
-            #CPushButton_PushButton {{
-                border-style: solid;
-                border-color: {self._control_stroke_secondary};
-                background-color: {self._fill_rest};
-                color: {self.tokens.colors.text_primary};
-            }}
-            #CPushButton_PushButton:hover {{
-                background-color: {self._fill_hover};
-                border-color: {self._stroke_strong};
-            }}
-            #CPushButton_PushButton:pressed {{
-                background-color: {self._fill_pressed};
-                border-color: {self._stroke_strong};
-            }}
-            #CPushButton_PushButton:focus {{
-                border-style: solid;
-                border-color: {self._accent_border};
-                background-color: {self._fill_hover};
-            }}
-            #CPushButton_PushButton:disabled {{
-                background-color: {self._fill_rest};
-                border-color: {self._stroke};
-                color: {self.tokens.colors.text_muted};
-            }}
-            #CPushButton_PushButton:flat {{
-                border: 1px solid {self.tokens.colors.text_primary};
-            }}
-        """
 
     def update_lineedit_style(self):
         """输入框族：颜色与状态（高度/圆角/内边距/字号由组件本地覆盖）。
@@ -168,25 +139,6 @@ class _ComponentStyles:
             #CInputText_LineEdit:disabled, #CTextarea_PlainTextEdit:disabled {{
                 background-color: {self._fill_rest};
                 border-color: {self._stroke};
-                color: {self.tokens.colors.text_muted};
-            }}
-            #CLineEdit_LineEdit {{
-                background-color: {self._control_bg};
-                border-radius: {self.tokens.radius.control}px;
-                border: 1px solid {self._control_stroke};
-                padding-left: {self.tokens.spacing.padding_sm}px;
-                padding-right: {self.tokens.spacing.padding_sm}px;
-                selection-color: {self.tokens.colors.text_active};
-                selection-background-color: {self._accent_soft};
-                color: {self.tokens.colors.text_primary};
-            }}
-            #CLineEdit_LineEdit:hover {{
-                border-color: {hover_border};
-            }}
-            #CLineEdit_LineEdit:focus {{
-                border-color: {self._accent_border};
-            }}
-            #CLineEdit_LineEdit:disabled {{
                 color: {self.tokens.colors.text_muted};
             }}
         """

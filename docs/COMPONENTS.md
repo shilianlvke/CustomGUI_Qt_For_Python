@@ -1,7 +1,8 @@
 # 组件速查
 
-`sllkgui.guicore` 共导出 126 个公开名：`custom_ui` 94 个（91 个组件 + `MenuItem` / `Severity` / `Variant`）、
-`window` 12 个窗口部件、`acrylic` 7 个材质工具，以及 `Styles`、字体、任务与回调工具。
+`sllkgui.guicore` 顶层导出 159 个公开名，其中 `custom_ui` 命名空间 105 个；
+另有窗口部件、材质工具、`Styles`、字体、任务与回调工具。
+两个数字由 `tests/test_public_api_consistency.py` 与 `__all__` 实时校验，新增导出时请同步更新本行。
 全部组件由设计令牌驱动，主题切换后重绘即生效。
 
 ## 1. 分类总览
