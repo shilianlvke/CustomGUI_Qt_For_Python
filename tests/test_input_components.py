@@ -21,7 +21,6 @@ from sllkgui.guicore import (
     CInputNumber,
     CInputText,
     CKnob,
-    CLineEdit,
     CListbox,
     CMultiSelect,
     CRadioButton,
@@ -120,12 +119,6 @@ def test_float_label_floats_when_filled(host):
     widget.setText("Alice")
     assert widget._progress == pytest.approx(1.0)
     assert widget.text() == "Alice"
-
-
-def test_cline_edit_keeps_compact_height(host):
-    field = CLineEdit(text="legacy", place_holder_text="hint", parent=host)
-    assert field.height() == 32
-    assert field.text() == "legacy"
 
 
 # ----------------------------------------------------------------------

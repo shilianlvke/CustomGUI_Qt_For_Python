@@ -5,13 +5,13 @@ import os
 os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
 
 import pytest
-from PySide6.QtCore import QSize, Qt
+from PySide6.QtCore import Qt
 from PySide6.QtGui import QColor
 from PySide6.QtTest import QTest
 from PySide6.QtWidgets import QApplication, QVBoxLayout, QWidget
 
 from sllkgui.appcore import ColorPalette, get_theme_manager
-from sllkgui.guicore import CButton, CButtonGroup, CPushButton, CSplitButton
+from sllkgui.guicore import CButton, CButtonGroup, CSplitButton
 from sllkgui.guicore.custom_ui.button.severity import Severity, Variant, colors_for, is_dark_theme
 
 
@@ -108,12 +108,6 @@ def test_colors_follow_theme_switch(qapp):
 
     assert is_dark_theme() != dark_before
     assert before.background != after.background
-
-
-def test_push_button_compatibility_shell(qapp):
-    button = CPushButton(size=QSize(80, 32), text="Legacy")
-    assert button.size() == QSize(80, 32)
-    assert button.text() == "Legacy"
 
 
 def test_focus_ring_only_on_keyboard_focus(qapp):

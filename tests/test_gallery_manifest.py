@@ -135,9 +135,8 @@ def test_manifest_requires_current_base_version():
 
 def test_example_plugin_manifest_is_satisfied():
     """仓库内的示例插件必须能被当前基座的版本约束接受。"""
-    from sllkgui.gallery.manifest import load_manifest
-
     from sllkgui._version import __version__ as base_version
+    from sllkgui.gallery.manifest import load_manifest
 
     manifest = load_manifest(Path(__file__).resolve().parents[1] / "examples" / "plugin-hello")
     major = base_version.split(".")[0]

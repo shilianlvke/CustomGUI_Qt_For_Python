@@ -12,7 +12,6 @@ from .input_group import CInputGroupAddon as CInputGroupAddon
 from .input_number import CInputNumber as CInputNumber
 from .input_text import CInputText as CInputText
 from .knob import CKnob as CKnob
-from .line_edit import CLineEdit as CLineEdit
 from .rating import CRating as CRating
 from .select import CAutoComplete as CAutoComplete
 from .select import CListbox as CListbox
@@ -33,7 +32,6 @@ __all__ = [
     "CInputGroup",
     "CInputGroupAddon",
     "CFloatLabel",
-    "CLineEdit",
     "CCheckbox",
     "CRadioButton",
     "CToggleSwitch",

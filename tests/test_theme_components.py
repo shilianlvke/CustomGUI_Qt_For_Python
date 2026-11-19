@@ -1,6 +1,6 @@
 """CustomUI 组件主题实时性回归测试。
 
-样式统一后的契约（与 ``CPushButton`` 一致）：
+样式统一后的契约：
 
 - 组件实例只声明 ``objectName``，颜色/状态/字体一律定义在 ``sllkgui.guicore/styles.py``；
 - **几何量不进中央样式表**：圆角、边框宽度、内边距、固定宽高、偏移一律由组件
@@ -22,11 +22,9 @@ from PySide6.QtWidgets import QApplication, QWidget
 
 from sllkgui.appcore import ColorPalette, get_design_tokens, get_theme_manager
 from sllkgui.guicore import (
-    CLineEdit,
     CMenu,
     CMenuButton,
     CScrollArea,
-    CShowCard,
     CStatusButton,
     CToolTip,
     Styles,
@@ -68,26 +66,6 @@ def _assert_geometry_only(sheet, selector):
     lowered = sheet.lower()
     for keyword in _COLOR_KEYWORDS:
         assert keyword not in lowered, f"实例样式表不应含 {keyword!r}：{sheet}"
-
-
-def test_show_card_style_lives_in_central_stylesheet(qapp):
-    """CShowCard 颜色集中在中央样式表；实例样式表只留几何量且与主题无关。"""
-    manager = get_theme_manager()
-    manager.apply("default")
-
-    card = CShowCard(bottom_text="demo")
-    own = card.styleSheet()
-    _assert_geometry_only(own, "#CShowCard")
-
-    default_central = Styles().style
-    assert "#CShowCard #topArea" in default_central
-
-    manager.apply("eye")
-    assert card.styleSheet() == own  # 组件不再自带构造时主题快照
-    assert Styles().style != default_central  # 颜色随主题重建于中央样式表
-
-    manager.apply("default")
-    assert Styles().style == default_central
 
 
 def test_menu_style_lives_in_central_stylesheet(qapp):
@@ -264,7 +242,6 @@ def test_apply_style_reuses_cache_until_source_changes(qapp, monkeypatch):
         ("#CMenu_Menu::item {", "padding-top"),
         ("#CLeftColumnTitle_Label", "padding-bottom"),
         ("#CLeftColumnTitle_Label", "font:"),
-        ("#CLineEdit_LineEdit {", "height:"),
         ("#label_tooltip {", "border-radius"),
         ("#label_tooltip {", "padding-left"),
     ],
@@ -362,18 +339,6 @@ def test_menu_geometry_follows_token(qapp):
     custom = CMenu(radius=3, border_size=1)
     assert "border-radius: 3px" in custom.styleSheet()
     assert "border-width: 1px" in custom.styleSheet()
-
-
-def test_show_card_geometry_follows_token(qapp):
-    """CShowCard 的圆角与透明边框宽度取设计令牌，显式传参可覆盖。"""
-    tokens = get_design_tokens()
-    sheet = CShowCard(bottom_text="demo").styleSheet()
-    assert f"border-radius: {tokens.radius.window}px" in sheet
-    assert f"border: {tokens.size.card_inset}px solid transparent" in sheet
-
-    custom = CShowCard(bottom_text="demo", radius=3, border_size=1)
-    assert "border-radius: 3px" in custom.styleSheet()
-    assert "border: 1px solid transparent" in custom.styleSheet()
 
 
 def test_status_button_geometry_follows_token(qapp):
@@ -477,12 +442,6 @@ def test_qss_color_serializes_qcolor_with_alpha(qapp):
 
     assert qss_color(QColor(255, 255, 255, 87)) == "rgba(255, 255, 255, 87)"
     assert qss_color("#202020") == "rgba(32, 32, 32, 255)"
-
-
-def test_line_edit_height_follows_token(qapp):
-    """CLineEdit 的固定高度取设计令牌。"""
-    tokens = get_design_tokens()
-    assert f"height: {tokens.size.control_height}px" in CLineEdit().styleSheet()
 
 
 def test_combo_box_has_no_native_subcontrol_rules(qapp):
