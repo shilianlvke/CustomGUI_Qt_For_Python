@@ -13,7 +13,7 @@ from PySide6.QtWidgets import QLabel, QMainWindow, QVBoxLayout, QWidget
 from sllkgui.appcore import AppSettings, Language, Logger, PathFactory, record_event
 from sllkgui.gallery.registry import SurfaceRecord
 from sllkgui.gallery.runtime import GalleryRuntime
-from sllkgui.guicore import CPageTransition
+from sllkgui.guicore import CPageTransition, CToast
 from sllkgui.guis.windows.main_window.builtin_shortcuts import (
     install_builtin_shortcuts,
     uninstall_builtin_shortcuts,
@@ -108,6 +108,29 @@ class GalleryWindow(QMainWindow):
         target = route or runtime.default_route()
         if target:
             self.open_route(target)
+        errors = self.runtime.errors()
+        if errors:
+            first = errors[0]
+            self._notify_failure(
+                first.get("plugin_id", "unknown"),
+                code=first.get("code"),
+                message=f"启动时 {len(errors)} 个插件未就绪，详情见日志",
+            )
+
+    def _notify_failure(self, target: str, *, code: str | None = None, message: str | None = None) -> None:
+        """把插件加载 / 页面构建失败显示给用户，避免「点了没反应」。
+
+        错误详情仍只写日志；通知条只给出可定位的最小信息（目标、错误码、
+        日志入口）。``gallery`` 只在本组合根弹通知，``guis`` 侧的桩窗口不受影响。
+        """
+        bar = getattr(self.ui, "title_bar", None)
+        offset = bar.height() + 8 if bar is not None else 56
+        hint = "详情见日志"
+        detail = message or hint
+        if hint not in detail:
+            detail = f"{detail}（{hint}）"
+        text = f"{target} · {code}\n{detail}" if code else f"{target}\n{detail}"
+        CToast.show_message(self, text, "页面加载失败", "error", life=6000, offset_top=offset)
 
     # ------------------------------------------------------------------
     # 窗口骨架信号槽（与宿主 MainWindow 约定一致）
@@ -135,11 +158,21 @@ class GalleryWindow(QMainWindow):
         surface = self.gallery_registry.get(route)
         if surface is None:
             Logger.warning(f"路由不存在: {route}")
+            self._notify_failure(route, message="路由不存在，详情见日志")
             return False
+        previous_error = self.runtime.last_error
         if not ensure_registered_page(self, surface.page_object):
+            error = self.runtime.last_error
+            fresh = error if error is not None and error is not previous_error else None
+            self._notify_failure(
+                surface.route,
+                code=fresh.get("code") if fresh else None,
+                message=(fresh.get("message") if fresh else None) or "页面构建失败，详情见日志",
+            )
             return False
         page = self.ui.load_pages.pages.findChild(QWidget, surface.page_object)
         if page is None:
+            self._notify_failure(surface.route, message="页面未生成，详情见日志")
             return False
         previous = self.ui.left_menu.active_button_id()
         self.ui.left_menu.select_only_one(surface.button_id)
