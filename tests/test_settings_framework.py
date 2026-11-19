@@ -271,10 +271,7 @@ def test_core_settings_cover_supported_user_fields():
     from sllkgui.appcore.user_settings import RUNTIME_ONLY_FIELDS, SUPPORTED_FIELDS
 
     declared = {
-        page.storage_key(spec)
-        for page in build_core_pages()
-        for section in page.sections
-        for spec in section.items
+        page.storage_key(spec) for page in build_core_pages() for section in page.sections for spec in section.items
     }
     assert set(SUPPORTED_FIELDS) == declared | RUNTIME_ONLY_FIELDS
 

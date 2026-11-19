@@ -348,8 +348,10 @@ class SourceManager:
         if record is None:
             raise GalleryError(SOURCE_NOT_FOUND, f"源不存在: {source_id}")
         path = self.store.source_path(source_id)
-        return _parse_source(path) if (path / SOURCE_MANIFEST_NAME).is_file() else SourceInfo(
-            source_id=source_id, name=source_id, path=path
+        return (
+            _parse_source(path)
+            if (path / SOURCE_MANIFEST_NAME).is_file()
+            else SourceInfo(source_id=source_id, name=source_id, path=path)
         )
 
     def add(
@@ -420,9 +422,7 @@ class SourceManager:
             if (destination / ".git").is_dir():
                 commit = git_backend.refresh(record.url, destination, allow_local=self.allow_local)
             else:
-                commit = git_backend.clone(
-                    record.url, destination, allow_local=self.allow_local
-                )
+                commit = git_backend.clone(record.url, destination, allow_local=self.allow_local)
             _parse_source(destination)
             for entry_dir in sorted((destination / "plugins").glob("*")):
                 if not entry_dir.is_dir():

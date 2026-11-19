@@ -122,8 +122,8 @@ class CPreviewPage:
     def title_row(cls, title: str) -> QHBoxLayout:
         """分区标题行：强调色短竖线 + 标题 + 延伸到右端的发丝线。
 
-       竖线只需要几何量（尺寸与圆角），颜色来自全局样式表；这样主题切换时
-        标题行无需重建，颜色自动跟随。
+        竖线只需要几何量（尺寸与圆角），颜色来自全局样式表；这样主题切换时
+         标题行无需重建，颜色自动跟随。
         """
         row = QHBoxLayout()
         row.setContentsMargins(0, 0, 0, 0)

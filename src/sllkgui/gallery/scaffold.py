@@ -213,9 +213,7 @@ def scaffold_plugin(
     (root / "resource" / "lang").mkdir(parents=True, exist_ok=True)
     (root / "tests").mkdir(exist_ok=True)
 
-    (root / "sllkgui-plugin.yml").write_text(
-        _PLUGIN_YML.format(plugin_id=plugin_id, name=name), encoding="utf-8"
-    )
+    (root / "sllkgui-plugin.yml").write_text(_PLUGIN_YML.format(plugin_id=plugin_id, name=name), encoding="utf-8")
     (root / "plugin.py").write_text(_PLUGIN_PY, encoding="utf-8")
     (root / "pages" / "__init__.py").write_text("", encoding="utf-8")
     (root / "pages" / "home.py").write_text(_HOME_PAGE, encoding="utf-8")

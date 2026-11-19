@@ -828,10 +828,55 @@ uv run sllkgui run --index-url https://pypi.tuna.tsinghua.edu.cn/simple
 ```powershell
 uv sync --extra dev
 
-uv run ruff check .
+uv run ruff check src tests examples scripts
+uv run ruff format --check src tests examples scripts
 uv run mypy
 uv run pytest --cov=sllkgui --cov-fail-under=70
 ```
+
+### 提交前门禁（pre-commit）
+
+把上面的命令前移到本地，避免「忘了跑」。装一次即可：
+
+```powershell
+uv run pre-commit install
+```
+
+之后每次 `git commit` 会自动执行：ruff lint、ruff format、mypy、文件卫生检查
+与一组快速冒烟用例。想手工跑全量：
+
+```powershell
+uv run pre-commit run --all-files
+```
+
+钩子全部使用本地实现（`language: system`），不联网拉取第三方仓库。
+
+### 代码风格
+
+格式由 `ruff format` 统一（与 ruff lint 同源，零额外依赖）。仓库里的
+`.editorconfig` 固定了换行符、缩进与末尾换行；资源文件（SVG 等）不参与
+格式化与卫生检查。
+
+### 类型标注的承诺范围
+
+包内带 `py.typed`，因此下游的类型检查器会读取本包的注解。需要注意的是，
+**承诺是分层的**：
+
+| 范围 | 类型保证 |
+| --- | --- |
+| `sllkgui.plugin` / `sllkgui.window` | 完整。插件作者的唯一入口，纳入 mypy 门禁 |
+| `sllkgui.gallery.api` 等插件协议 | 完整。协议本身纳入门禁 |
+| `sllkgui.appcore.settings` 设置 schema | 完整。插件声明设置页用的全部类型 |
+| `guicore` 组件库实现 | **不承诺**。运行期行为正确，但注解完备度不保证 |
+
+也就是说：你在插件里对 `GalleryContext`、`Setting`、`SettingsPage` 等类型做
+严格检查是可靠的；对 `guicore` 内部实现（如某个 `QWidget` 子类的私有属性）
+不要依赖 mypy 的推断。
+
+组件库之所以不在门禁内：它的历史欠账主要是 PySide6 类型存根的缺口
+（`Qt.UserRole` 这类）与未声明的实例属性，属于注解补全而非真实缺陷，
+一次性收敛到零不现实。门禁范围写在 `pyproject.toml` 的 `[tool.mypy]` 里，
+新增模块时请一并考虑。
 
 常用工具：
 

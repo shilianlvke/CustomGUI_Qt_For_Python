@@ -51,29 +51,45 @@ def panel_colors() -> dict[str, str | QColor]:
     on_accent = contrast_text(QColor(base["accent"]))
     if is_dark_theme():
         return {
-            "background": glass_surface(ColorPalette.custom_bg_one, 0.34, minimum=0.10) if glass else ColorPalette.custom_bg_one,
-            "header": glass_surface(ColorPalette.custom_dark_one, 0.10, minimum=0.04) if glass else ColorPalette.custom_dark_one,
+            "background": glass_surface(ColorPalette.custom_bg_one, 0.34, minimum=0.10)
+            if glass
+            else ColorPalette.custom_bg_one,
+            "header": glass_surface(ColorPalette.custom_dark_one, 0.10, minimum=0.04)
+            if glass
+            else ColorPalette.custom_dark_one,
             "header_solid": ColorPalette.custom_dark_one,
-            "hover": glass_surface(ColorPalette.custom_dark_three, 0.14, minimum=0.05) if glass else ColorPalette.custom_dark_three,
+            "hover": glass_surface(ColorPalette.custom_dark_three, 0.14, minimum=0.05)
+            if glass
+            else ColorPalette.custom_dark_three,
             "border": glass_tint(base["border"], 0.55) if glass else base["border"],
             "divider": glass_tint(base["border"], 0.35) if glass else base["border"],
             "text": base["text"],
             "muted": base["muted"],
             "accent": base["accent"],
-            "track": glass_surface(ColorPalette.custom_dark_four, 0.55, minimum=0.15) if glass else ColorPalette.custom_dark_four,
+            "track": glass_surface(ColorPalette.custom_dark_four, 0.55, minimum=0.15)
+            if glass
+            else ColorPalette.custom_dark_four,
             "on_accent": on_accent,
         }
     return {
-        "background": glass_surface(ColorPalette.custom_dark_three, 0.34, minimum=0.10) if glass else ColorPalette.custom_dark_three,
-        "header": glass_surface(ColorPalette.custom_dark_two, 0.10, minimum=0.04) if glass else ColorPalette.custom_dark_two,
+        "background": glass_surface(ColorPalette.custom_dark_three, 0.34, minimum=0.10)
+        if glass
+        else ColorPalette.custom_dark_three,
+        "header": glass_surface(ColorPalette.custom_dark_two, 0.10, minimum=0.04)
+        if glass
+        else ColorPalette.custom_dark_two,
         "header_solid": ColorPalette.custom_dark_two,
-        "hover": glass_surface(ColorPalette.custom_dark_four, 0.14, minimum=0.05) if glass else ColorPalette.custom_dark_four,
+        "hover": glass_surface(ColorPalette.custom_dark_four, 0.14, minimum=0.05)
+        if glass
+        else ColorPalette.custom_dark_four,
         "border": glass_tint(ColorPalette.custom_bg_two, 0.55) if glass else ColorPalette.custom_bg_two,
         "divider": glass_tint(ColorPalette.custom_bg_two, 0.35) if glass else ColorPalette.custom_bg_two,
         "text": ColorPalette.custom_text_title,
         "muted": ColorPalette.custom_text_description,
         "accent": ColorPalette.custom_context_color,
-        "track": glass_surface(ColorPalette.custom_bg_three, 0.55, minimum=0.15) if glass else ColorPalette.custom_bg_three,
+        "track": glass_surface(ColorPalette.custom_bg_three, 0.55, minimum=0.15)
+        if glass
+        else ColorPalette.custom_bg_three,
         "on_accent": on_accent,
     }
 

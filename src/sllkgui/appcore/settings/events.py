@@ -124,14 +124,14 @@ class SettingsPageBus:
         with self._lock:
             scoped = list(self._scoped.get(target, ()))
             listeners = list(self._global)
-        for callback in scoped:
+        for scoped_callback in scoped:
             try:
-                callback()
+                scoped_callback()
             except Exception as exc:  # noqa: BLE001 - 单个订阅者失败不影响其它人
                 Logger.warning(f"设置页刷新回调失败: {target}: {exc}")
-        for callback in listeners:
+        for listener in listeners:
             try:
-                callback(target)
+                listener(target)
             except Exception as exc:  # noqa: BLE001 - 单个订阅者失败不影响其它人
                 Logger.warning(f"设置页刷新监听失败: {target}: {exc}")
 

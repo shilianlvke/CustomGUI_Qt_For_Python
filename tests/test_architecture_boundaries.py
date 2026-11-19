@@ -128,9 +128,7 @@ def _collect_edges() -> dict[tuple[str, str], list[str]]:
             target = _package_of(module)
             if target is None or target == source:
                 continue
-            edges.setdefault((source, target), []).append(
-                f"{relative.as_posix()}:{module}"
-            )
+            edges.setdefault((source, target), []).append(f"{relative.as_posix()}:{module}")
     return edges
 
 

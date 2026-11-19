@@ -14,9 +14,14 @@ SRC_FILES = ["examples/hello_world/main.py"]
 # 即使被某些间接依赖引用，纯 QWidget 应用也“可以安全移除”的 Qt 模块家族。
 # 注意：本脚本只自动排除那些【源码中完全没用到】的家族；一旦源码用到，就自动保留。
 REMOVABLE_FAMILIES = {
-    "QtQuick", "QtQuickWidgets", "QtQuickControls2",
-    "QtQml", "QtQmlModels", "QtQmlWorkerScript",
-    "QtPdf", "QtPdfWidgets",
+    "QtQuick",
+    "QtQuickWidgets",
+    "QtQuickControls2",
+    "QtQml",
+    "QtQmlModels",
+    "QtQmlWorkerScript",
+    "QtPdf",
+    "QtPdfWidgets",
     "QtNetwork",
     "QtVirtualKeyboard",
 }
@@ -48,9 +53,9 @@ ALWAYS_KEEP = {"Qt6Core.dll", "Qt6Gui.dll", "Qt6Widgets.dll"}
 
 _IMPORT_RE = re.compile(
     r"^\s*(?:"
-    r"from\s+PySide6\.(\w+)\s+import"      # from PySide6.QtXxx import ...
-    r"|import\s+PySide6\.(\w+)"            # import PySide6.QtXxx
-    r"|from\s+PySide6\s+import\s+(\w+)"    # from PySide6 import QtXxx
+    r"from\s+PySide6\.(\w+)\s+import"  # from PySide6.QtXxx import ...
+    r"|import\s+PySide6\.(\w+)"  # import PySide6.QtXxx
+    r"|from\s+PySide6\s+import\s+(\w+)"  # from PySide6 import QtXxx
     r")",
     re.M,
 )
@@ -88,10 +93,7 @@ def compute_trim_plan() -> dict:
             keep_dlls.update(dlls)
 
     # 仅排除“完全未使用”的家族；用到其一即整体保留（避免漏包）
-    exclude_families = {
-        fam for fam in REMOVABLE_FAMILIES
-        if not any(u == fam or u.startswith(fam) for u in used)
-    }
+    exclude_families = {fam for fam in REMOVABLE_FAMILIES if not any(u == fam or u.startswith(fam) for u in used)}
     exclude_modules = sorted(f"PySide6.{f}" for f in exclude_families)
 
     return {
@@ -116,7 +118,7 @@ def _print_plan(plan: dict) -> None:
 # 完整 PyInstaller spec 模板。__KEEP_QT6__ / __EXCLUDE_QT_SUBSTR__ / __EXCLUDES__
 # 由本脚本按源码导入自动替换；路径类占位符替换为绝对路径，避免 cwd / spec 位置歧义。
 # 本模板在每次打包时写入 build/SllkGUI.spec 后由 PyInstaller 执行，无需提交到仓库。
-SPEC_TEMPLATE = r'''# -*- mode: python ; coding: utf-8 -*-
+SPEC_TEMPLATE = r"""# -*- mode: python ; coding: utf-8 -*-
 # 本文件由 scripts/build_package.py 在打包时自动生成，请勿手工编辑 / 提交。
 _KEEP_QT6 = __KEEP_QT6__
 _EXCLUDE_QT_SUBSTR = __EXCLUDE_QT_SUBSTR__
@@ -204,14 +206,13 @@ coll = COLLECT(
     upx_exclude=[],
     name='SllkGUI',
 )
-'''
+"""
 
 
 def _render_spec(plan: dict) -> str:
     """把自动推导的裁剪清单与绝对路径填入模板，生成完整可用的 spec 源码。"""
     return (
-        SPEC_TEMPLATE
-        .replace("__KEEP_QT6__", repr(set(plan["keep_dlls"])))
+        SPEC_TEMPLATE.replace("__KEEP_QT6__", repr(set(plan["keep_dlls"])))
         .replace("__EXCLUDE_QT_SUBSTR__", repr(tuple(plan["exclude_substr"])))
         .replace("__EXCLUDES__", repr(list(plan["exclude_modules"])))
         .replace("__MAIN__", (ROOT / "examples" / "hello_world" / "main.py").as_posix())

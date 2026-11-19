@@ -70,9 +70,7 @@ class CTree(QWidget):
         super().__init__(parent)
         self.setObjectName("CTree_Widget")
         self._nodes: list[dict] = list(nodes or [])
-        self._selection_mode = (
-            selection_mode if selection_mode in ("single", "multiple", "checkbox") else "single"
-        )
+        self._selection_mode = selection_mode if selection_mode in ("single", "multiple", "checkbox") else "single"
         self._theme_signature: tuple | None = None
 
         layout = QVBoxLayout(self)
@@ -120,9 +118,7 @@ class CTree(QWidget):
         """当前选中 / 勾选的节点键（按树顺序）。"""
         if self._selection_mode == "checkbox":
             return [
-                item.data(0, KEY_ROLE)
-                for item in self._iter_items()
-                if _check_state(item.checkState(0)) == Qt.Checked
+                item.data(0, KEY_ROLE) for item in self._iter_items() if _check_state(item.checkState(0)) == Qt.Checked
             ]
         return [index.data(KEY_ROLE) for index in self._tree.selectionModel().selectedRows(0)]
 
@@ -233,10 +229,7 @@ class CTree(QWidget):
                 self._apply_expanded(item.child(index), child)
 
     def _iter_items(self):
-        stack = [
-            self._tree.topLevelItem(row)
-            for row in reversed(range(self._tree.topLevelItemCount()))
-        ]
+        stack = [self._tree.topLevelItem(row) for row in reversed(range(self._tree.topLevelItemCount()))]
         while stack:
             item = stack.pop()
             if item is None:

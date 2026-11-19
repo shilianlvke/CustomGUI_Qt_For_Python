@@ -334,11 +334,7 @@ class CDataTable(QWidget):
         if not spec.sortable:
             return
         if self._model.sort_field() == spec.field:
-            order = (
-                Qt.DescendingOrder
-                if self._model.sort_order() == Qt.AscendingOrder
-                else Qt.AscendingOrder
-            )
+            order = Qt.DescendingOrder if self._model.sort_order() == Qt.AscendingOrder else Qt.AscendingOrder
         else:
             order = Qt.AscendingOrder
         # 排序会走模型 reset，selectionModel 随之清空；先记住选中记录，

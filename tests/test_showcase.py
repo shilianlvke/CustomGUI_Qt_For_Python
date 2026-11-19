@@ -95,9 +95,7 @@ def test_showcase_pages_direct_build(tmp_path, prepared):
     window = _window(tmp_path, "gallery")
     try:
         for module_name, class_name in PAGES.values():
-            module = importlib.import_module(
-                f"sllkgui.showcase.core_preview.surfaces.{module_name}.page"
-            )
+            module = importlib.import_module(f"sllkgui.showcase.core_preview.surfaces.{module_name}.page")
             page_class = getattr(module, class_name)
             widget = page_class.build(window)
             assert widget is not None

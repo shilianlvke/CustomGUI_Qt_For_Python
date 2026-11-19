@@ -356,10 +356,7 @@ def save_user_settings(**updates: Any) -> bool:
             _write_atomic(user_settings_path(), payload)
         except (OSError, yaml.YAMLError) as exc:
             # FIX-02: fsync / replace 的 OSError 仍返回 False，但日志保留异常类型与消息。
-            Logger.warning(
-                f"用户配置保存失败，将在下次保存时重试: "
-                f"{user_settings_path()}: {type(exc).__name__}: {exc}"
-            )
+            Logger.warning(f"用户配置保存失败，将在下次保存时重试: {user_settings_path()}: {type(exc).__name__}: {exc}")
             return False
         return True
 

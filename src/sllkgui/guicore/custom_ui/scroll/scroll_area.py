@@ -55,9 +55,7 @@ class CScrollArea(QScrollArea):
             self._refresh_widget(widget)
         if self._background is not None:
             color = self._background
-            self.setStyleSheet(
-                f'QWidget[{self.BG_PROP}="true"] {{ background-color: {color}; }}'
-            )
+            self.setStyleSheet(f'QWidget[{self.BG_PROP}="true"] {{ background-color: {color}; }}')
 
     def _refresh_widget(self, widget) -> None:
         """按背景配置同步内容部件的属性标记与自绘开关。"""

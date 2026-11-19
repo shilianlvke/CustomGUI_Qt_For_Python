@@ -72,7 +72,10 @@ def test_registry_roundtrip_and_corruption_backup(tmp_path: Path):
 
 def test_sources_roundtrip(tmp_path: Path):
     path = tmp_path / "sources.json"
-    save_sources(path, SourcesState(sources=[SourceRecord(source_id="official", url="https://example.com/x.git", trust="official")]))
+    save_sources(
+        path,
+        SourcesState(sources=[SourceRecord(source_id="official", url="https://example.com/x.git", trust="official")]),
+    )
     loaded = load_sources(path)
     assert loaded.get("official").trust == "official"
 
@@ -134,4 +137,3 @@ def test_move_to_history_survives_locked_directory(tmp_path: Path, monkeypatch):
     assert (history / ".git" / "objects" / "pack" / "pack-demo.idx").is_file()
     assert not current.exists()
     assert list(store.trash_root.glob("com.example.hello-*")) == []
-

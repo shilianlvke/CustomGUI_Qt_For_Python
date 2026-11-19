@@ -103,8 +103,7 @@ class _InstalledPanel(_StorePanel):
         rows = [
             row
             for row in self._rows
-            if not needle
-            or needle in f"{row.get('id')} {row.get('name')} {row.get('source')}".lower()
+            if not needle or needle in f"{row.get('id')} {row.get('name')} {row.get('source')}".lower()
         ]
         self.data_view.set_rows(rows)
 

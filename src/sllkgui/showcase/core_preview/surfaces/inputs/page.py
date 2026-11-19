@@ -104,7 +104,9 @@ class InputPreviewPage(CPreviewPage):
     def _input_numbers(cls):
         return [
             cls.fixed(CInputNumber(value=42, minimum=0, maximum=999, step=5, placeholder="Price"), 190),
-            cls.fixed(CInputNumber(value=8.5, minimum=0, maximum=100, step=0.5, decimals=1, placeholder="Quantity"), 190),
+            cls.fixed(
+                CInputNumber(value=8.5, minimum=0, maximum=100, step=0.5, decimals=1, placeholder="Quantity"), 190
+            ),
         ]
 
     @classmethod

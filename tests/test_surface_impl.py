@@ -31,9 +31,7 @@ def test_impl_path_escape_is_rejected_by_manifest(tmp_path: Path):
     root = scaffold_plugin(tmp_path / "sample", plugin_id="com.example.sample", name="Sample")
     manifest_path = root / "sllkgui-plugin.yml"
     manifest_path.write_text(
-        manifest_path.read_text(encoding="utf-8").replace(
-            "impl: pages/home.py", "impl: ../outside.py"
-        ),
+        manifest_path.read_text(encoding="utf-8").replace("impl: pages/home.py", "impl: ../outside.py"),
         encoding="utf-8",
     )
 

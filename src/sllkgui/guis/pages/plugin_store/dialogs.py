@@ -89,7 +89,16 @@ class _PluginDetailDialog(_DetailDialogBase):
                     None,
                 )
                 if current is not None:
-                    for key in ("version", "source", "commit", "path", "permissions", "previous", "enabled", "compliance"):
+                    for key in (
+                        "version",
+                        "source",
+                        "commit",
+                        "path",
+                        "permissions",
+                        "previous",
+                        "enabled",
+                        "compliance",
+                    ):
                         self.record[key] = current.get(key)
         super().__init__(page, page.ctx.text("installed.detail_title", "插件详情"))
         self._build_body()
@@ -112,7 +121,11 @@ class _PluginDetailDialog(_DetailDialogBase):
 
         items: list[tuple[str, str, bool]] = []
         version = str(record.get("version") or "?")
-        version_label = self.ctx.text("installed.version", "版本") if self.installed else self.ctx.text("detail.available", "可用版本")
+        version_label = (
+            self.ctx.text("installed.version", "版本")
+            if self.installed
+            else self.ctx.text("detail.available", "可用版本")
+        )
         items.append((version_label, f"v{version}", False))
         if self.available_version and self.available_version != version:
             items.append((self.ctx.text("detail.available", "可用版本"), f"v{self.available_version}", False))
@@ -212,7 +225,9 @@ class _SourceDetailDialog(_DetailDialogBase):
         record = self.record
         enabled = bool(record.get("enabled", True))
         trust = str(record.get("trust") or "user")
-        trust_text = self.ctx.text("sources.official", "官方") if trust == "official" else self.ctx.text("sources.user", "用户")
+        trust_text = (
+            self.ctx.text("sources.official", "官方") if trust == "official" else self.ctx.text("sources.user", "用户")
+        )
 
         body = QWidget()
         layout = QVBoxLayout(body)
@@ -250,7 +265,11 @@ class _SourceDetailDialog(_DetailDialogBase):
                     (self.ctx.text("detail.source_id", "源 ID"), str(record.get("id") or ""), True),
                     (self.ctx.text("detail.url", "地址"), str(record.get("url") or ""), True),
                     (self.ctx.text("detail.trust", "信任级别"), trust_text, False),
-                    (self.ctx.text("detail.status", "状态"), self.ctx.text(key, "已启用" if enabled else "已停用"), False),
+                    (
+                        self.ctx.text("detail.status", "状态"),
+                        self.ctx.text(key, "已启用" if enabled else "已停用"),
+                        False,
+                    ),
                     (self.ctx.text("installed.commit", "提交"), str(record.get("commit") or "-")[:12], True),
                     (self.ctx.text("detail.last_refresh", "最近刷新"), str(record.get("last_refresh") or "-"), False),
                 ]

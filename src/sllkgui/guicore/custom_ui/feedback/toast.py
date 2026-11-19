@@ -83,9 +83,7 @@ class CToast(QFrame):
         self.setAttribute(Qt.WA_StyledBackground, False)
 
         layout = QHBoxLayout(self)
-        layout.setContentsMargins(
-            14 + self._shadow, 12 + self._shadow // 2, 10 + self._shadow, 12 + self._shadow
-        )
+        layout.setContentsMargins(14 + self._shadow, 12 + self._shadow // 2, 10 + self._shadow, 12 + self._shadow)
         layout.setSpacing(10)
 
         self._icon = _MessageIcon(self._severity, parent=self)

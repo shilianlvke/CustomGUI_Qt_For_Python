@@ -74,6 +74,7 @@ stages:
           # 与 QualityGate.yml 用同一套规则集；这里再跑一遍是为了保证「能发布」的前提是
           # 打 tag 的那次提交本身就干净，不依赖 PR 阶段是否走过门禁。
           - uv run ruff check src tests examples scripts
+          - uv run ruff format --check src tests examples scripts
           - uv run mypy
           - uv run pytest --cov=sllkgui --cov-report=term-missing --cov-fail-under=70
           # ---- wheel 构建 + 干净环境冒烟（验证「开箱即用」）----

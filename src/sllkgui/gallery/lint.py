@@ -36,7 +36,11 @@ _PY_SUFFIXES = {".py"}
 _PATTERNS: tuple[tuple[str, re.Pattern[str], str], ...] = (
     ("PRINT", re.compile(r"(?<![\w.])print\s*\("), "禁止 print()，请使用 ctx.log / ctx.logger"),
     ("LOGGING_BASIC", re.compile(r"logging\.basicConfig\s*\("), "禁止 logging.basicConfig()"),
-    ("FILE_HANDLER", re.compile(r"\b(FileHandler|RotatingFileHandler|TimedRotatingFileHandler)\s*\("), "禁止自建文件日志 handler"),
+    (
+        "FILE_HANDLER",
+        re.compile(r"\b(FileHandler|RotatingFileHandler|TimedRotatingFileHandler)\s*\("),
+        "禁止自建文件日志 handler",
+    ),
     ("SYS_PATH", re.compile(r"\bsys\.path\s*\.(insert|append|extend)\s*\("), "禁止修改 sys.path"),
     ("EVAL", re.compile(r"(?<![\w.])eval\s*\("), "禁止 eval()"),
     ("EXEC", re.compile(r"(?<![\w.])exec\s*\("), "禁止 exec()"),
@@ -235,15 +239,11 @@ def _check_manifest(root: Path, report: LintReport) -> None:
     report.version = manifest.version
     for surface in manifest.surfaces:
         if not surface.icon:
-            report.warnings.append(
-                LintIssue("warning", "ICON_MISSING", f"Surface {surface.surface_id} 未声明图标")
-            )
+            report.warnings.append(LintIssue("warning", "ICON_MISSING", f"Surface {surface.surface_id} 未声明图标"))
         else:
             icon = root / surface.icon
             if icon.suffix.lower() != ".svg":
-                report.warnings.append(
-                    LintIssue("warning", "ICON_FORMAT", f"图标建议使用 SVG: {surface.icon}")
-                )
+                report.warnings.append(LintIssue("warning", "ICON_FORMAT", f"图标建议使用 SVG: {surface.icon}"))
             if not icon.is_file():
                 report.errors.append(LintIssue("error", "ICON_NOT_FOUND", f"图标不存在: {surface.icon}"))
         if not surface.impl:

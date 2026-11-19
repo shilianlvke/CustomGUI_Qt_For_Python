@@ -40,10 +40,7 @@ def _composite(front: str, alpha: float, back: str) -> str:
 
 def _gradient(top: str, bottom: str) -> str:
     """纵向渐变写法；两层色差很小，只用来给大面积色块一点空气感。"""
-    return (
-        "qlineargradient(x1:0, y1:0, x2:0, y2:1,"
-        f" stop:0 {top}, stop:1 {bottom})"
-    )
+    return f"qlineargradient(x1:0, y1:0, x2:0, y2:1, stop:0 {top}, stop:1 {bottom})"
 
 
 def _glass_gradient(top: str, bottom: str, alpha: float, minimum: float = 0.0) -> str:
@@ -273,7 +270,9 @@ class Styles(_ComponentStyles):
         self._accent_soft = _rgba(colors.accent, 0.18) if glass else colors.accent_soft
         self._accent_wash = _rgba(colors.accent, 0.10) if glass else colors.accent_wash
         self._accent_border = _rgba(colors.accent, 0.85) if glass else colors.accent
-        self._gridline = _rgba(colors.text_primary, 0.07) if glass else _mix(colors.surface_card, colors.text_primary, 0.07)
+        self._gridline = (
+            _rgba(colors.text_primary, 0.07) if glass else _mix(colors.surface_card, colors.text_primary, 0.07)
+        )
         # 滚动条把手：深浅主题都用正文色 + 透明度，保证在卡片底色上始终可辨
         self._scroll_handle = _rgba(colors.text_primary, 0.36 if glass else 0.30)
         self._scroll_handle_hover = _rgba(colors.text_primary, 0.56 if glass else 0.48)

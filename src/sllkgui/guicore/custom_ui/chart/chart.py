@@ -251,8 +251,7 @@ class CChart(QWidget):
             return
         palette = tokens()
         self._error_label.setStyleSheet(
-            f"color: {palette['muted']}; background: transparent;"
-            " padding: 12px; border: 1px solid transparent;"
+            f"color: {palette['muted']}; background: transparent; padding: 12px; border: 1px solid transparent;"
         )
 
     def _new_chart(self):

@@ -222,7 +222,9 @@ class SettingsController:
         if window is None:
             return
         session = window.session()
-        path = str(value) if key.endswith("background_image") else str(session.value("core.appearance.background_image"))
+        path = (
+            str(value) if key.endswith("background_image") else str(session.value("core.appearance.background_image"))
+        )
         fit = str(value) if key.endswith("background_fit") else str(session.value("core.appearance.background_fit"))
         self._apply_background(path, fit)
 

@@ -76,8 +76,7 @@ class CLeftColumn(QWidget):
         self.icon.set_icon(self._icon_path, ColorPalette.custom_icon_color)
         self.btn_close.set_color(QColor(get_design_tokens().colors.text_primary))
         self.subtitle_label.setStyleSheet(
-            f"#CLeftColumnTitle_Subtitle {{ color: {ColorPalette.custom_text_description};"
-            " background: transparent; }"
+            f"#CLeftColumnTitle_Subtitle {{ color: {ColorPalette.custom_text_description}; background: transparent; }}"
         )
         self.repaint()
 

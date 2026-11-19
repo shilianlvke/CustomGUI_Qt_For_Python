@@ -125,11 +125,7 @@ class SchemaPage(QWidget):
                     row = self._build_row(spec)
                     if row is not None:
                         group.add_row(row)
-                    if (
-                        page.namespace == "core"
-                        and page.page_id == "appearance"
-                        and spec.key == "background_image"
-                    ):
+                    if page.namespace == "core" and page.page_id == "appearance" and spec.key == "background_image":
                         group.add_row(self._build_recent_row())
             for action in section.actions:
                 self._add_action_row(group, action)
@@ -181,9 +177,30 @@ class SchemaPage(QWidget):
             if isinstance(saved_startup, (list, tuple)) and len(saved_startup) == 2
             else AppSettings.startup_size
         )
-        group.add_row(CInfoRow(Language.resolve_key("language.UI.ui_SettingsCurrentWindowSize", "当前尺寸"), current, mono=True, parent=self))
-        group.add_row(CInfoRow(Language.resolve_key("language.UI.ui_SettingsMinimumWindowSize", "最小尺寸"), f"{minimum[0]} × {minimum[1]}", mono=True, parent=self))
-        group.add_row(CInfoRow(Language.resolve_key("language.UI.ui_SettingsStartupSize", "启动尺寸"), f"{startup[0]} × {startup[1]}", mono=True, parent=self))
+        group.add_row(
+            CInfoRow(
+                Language.resolve_key("language.UI.ui_SettingsCurrentWindowSize", "当前尺寸"),
+                current,
+                mono=True,
+                parent=self,
+            )
+        )
+        group.add_row(
+            CInfoRow(
+                Language.resolve_key("language.UI.ui_SettingsMinimumWindowSize", "最小尺寸"),
+                f"{minimum[0]} × {minimum[1]}",
+                mono=True,
+                parent=self,
+            )
+        )
+        group.add_row(
+            CInfoRow(
+                Language.resolve_key("language.UI.ui_SettingsStartupSize", "启动尺寸"),
+                f"{startup[0]} × {startup[1]}",
+                mono=True,
+                parent=self,
+            )
+        )
         return group
 
     # ------------------------------------------------------------------
@@ -352,11 +369,7 @@ class SchemaPage(QWidget):
                         else QStandardPaths.StandardLocation.HomeLocation
                     )
                     start = QStandardPaths.writableLocation(location)
-                file_filter = (
-                    "Images (*.png *.jpg *.jpeg *.bmp *.webp *.gif)"
-                    if image_picker
-                    else "All files (*)"
-                )
+                file_filter = "Images (*.png *.jpg *.jpeg *.bmp *.webp *.gif)" if image_picker else "All files (*)"
                 path, _selected = QFileDialog.getOpenFileName(
                     self,
                     Language.resolve_key("language.UI.ui_SettingsChooseFile", "选择文件…"),
@@ -652,7 +665,11 @@ class ShortcutsPage(QWidget):
                 continue
             grouped.setdefault(item.owner, []).append(item)
 
-        layout.addWidget(self._build_group("language.UI.ui_SettingsSectionBaseShortcuts", "基座快捷键", base, "常用操作的系统快捷键。"))
+        layout.addWidget(
+            self._build_group(
+                "language.UI.ui_SettingsSectionBaseShortcuts", "基座快捷键", base, "常用操作的系统快捷键。"
+            )
+        )
         for owner, items in sorted(grouped.items()):
             layout.addWidget(self._build_group("", owner, items, "插件提供的快捷键。"))
 

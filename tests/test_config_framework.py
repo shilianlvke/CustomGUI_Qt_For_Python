@@ -491,6 +491,7 @@ def test_yaml_handler_root_relative_resolution(tmp_path, monkeypatch):
 
 def test_registry_wraps_io_error_boundary(tmp_path):
     """FIX-08: 坏 YAML 触发的 IOErrorBoundary 被注册表统一包装为 DomainErrorBoundary。"""
+
     # FIX-08: load_yaml_file 抛 YAML_PARSE_ERROR 时不得裸穿透，须带分组错误码。
     class _TmpRegistry(ConfigRegistry):
         pass

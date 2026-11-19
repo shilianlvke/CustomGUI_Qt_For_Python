@@ -351,8 +351,8 @@ def load_manifest(path: Path, *, current_sllkgui: str | None = None) -> PluginMa
         warnings.append(f"api {api} 与当前实现 {PLUGIN_API_VERSION} 不一致")
 
     return PluginManifest(
-        schema=int(schema),
-        api=int(api),
+        schema=int(str(schema)),  # 上面已校验取值合法
+        api=int(str(api)),  # 上面已校验取值合法
         plugin_id=plugin_id,
         name=name,
         version=version,

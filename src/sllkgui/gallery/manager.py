@@ -257,9 +257,7 @@ class PluginManager:
             payload={"entry": entry, "version": version_entry},
         )
         # 根插件始终参与安装；依赖可复用已安装版本
-        installed_versions = {
-            key: value.version for key, value in self.state.plugins.items() if key != plugin_id
-        }
+        installed_versions = {key: value.version for key, value in self.state.plugins.items() if key != plugin_id}
         ordered = resolve(
             {plugin_id: f"=={version_entry.version}"},
             {**candidates, plugin_id: [root_candidate]},
@@ -479,8 +477,7 @@ class PluginManager:
             requirement = record.dependencies.get(manifest.plugin_id)
             if requirement and not _satisfy(manifest.version, requirement):
                 Logger.warning(
-                    f"{record.plugin_id} 依赖 {manifest.plugin_id} {requirement}，"
-                    f"当前 {manifest.version} 不满足"
+                    f"{record.plugin_id} 依赖 {manifest.plugin_id} {requirement}，当前 {manifest.version} 不满足"
                 )
 
     # ------------------------------------------------------------------

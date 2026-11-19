@@ -365,9 +365,7 @@ class CImage(QWidget):
         content = self._content_rect()
         if content.width() > 1 and content.height() > 1:
             if not self._pixmap.isNull():
-                scaled = self._pixmap.scaled(
-                    content.size().toSize(), Qt.KeepAspectRatio, Qt.SmoothTransformation
-                )
+                scaled = self._pixmap.scaled(content.size().toSize(), Qt.KeepAspectRatio, Qt.SmoothTransformation)
                 x = content.left() + (content.width() - scaled.width()) / 2
                 y = content.top() + (content.height() - scaled.height()) / 2
                 painter.drawPixmap(int(x), int(y), scaled)

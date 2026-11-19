@@ -126,12 +126,8 @@ class CThemeCard(QWidget):
             painter.setBrush(accent)
             painter.drawEllipse(mark)
             painter.setPen(QPen(QColor(colors.text_on_accent), 1.6, Qt.SolidLine, Qt.RoundCap, Qt.RoundJoin))
-            painter.drawLine(
-                mark.left() + 4, mark.center().y(), mark.left() + 6.2, mark.bottom() - 4
-            )
-            painter.drawLine(
-                mark.left() + 6.2, mark.bottom() - 4, mark.right() - 3.5, mark.top() + 4.5
-            )
+            painter.drawLine(mark.left() + 4, mark.center().y(), mark.left() + 6.2, mark.bottom() - 4)
+            painter.drawLine(mark.left() + 6.2, mark.bottom() - 4, mark.right() - 3.5, mark.top() + 4.5)
         painter.end()
 
     def enterEvent(self, event):  # noqa: N802 - 覆写 Qt 命名

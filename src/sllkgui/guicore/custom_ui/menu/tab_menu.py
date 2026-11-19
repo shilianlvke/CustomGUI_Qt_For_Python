@@ -161,7 +161,12 @@ class CTabMenu(QWidget):
 
             if active:
                 painter.fillRect(
-                    QRectF(rect.left() + self._tab_padding, self._tab_height - self._indicator_height, max(0.0, rect.width() - self._tab_padding * 2), self._indicator_height),
+                    QRectF(
+                        rect.left() + self._tab_padding,
+                        self._tab_height - self._indicator_height,
+                        max(0.0, rect.width() - self._tab_padding * 2),
+                        self._indicator_height,
+                    ),
                     QColor(colors["accent"]),
                 )
         painter.end()

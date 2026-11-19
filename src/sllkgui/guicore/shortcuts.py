@@ -62,6 +62,7 @@ PRIORITY_NORMAL = 500
 #: 基座内置快捷键；插件无法覆盖
 PRIORITY_BASE = 900
 
+
 def _flag(value: Any) -> int:
     """PySide6 的 flag 枚举不能直接 ``int()``，统一走 ``.value``。"""
     return int(getattr(value, "value", value))

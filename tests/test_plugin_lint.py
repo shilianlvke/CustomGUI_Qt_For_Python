@@ -6,7 +6,7 @@ from gallery_helpers import write_plugin
 
 from sllkgui.gallery.lint import lint_plugin
 
-BAD_PLUGIN = '''from sllkgui.plugin import GalleryContext, Plugin
+BAD_PLUGIN = """from sllkgui.plugin import GalleryContext, Plugin
 
 
 def build_home(ctx):
@@ -23,7 +23,7 @@ class Bad(Plugin):
 
 
 PLUGIN = Bad()
-'''
+"""
 
 BAD_MANIFEST = """schema: 1
 api: 1
@@ -120,9 +120,7 @@ def test_lint_flags_absolute_import_of_local_module(tmp_path):
     root = tmp_path / "abs"
     root.mkdir()
     (root / "helper.py").write_text("VALUE = 1\n", encoding="utf-8")
-    (root / "plugin.py").write_text(
-        "import helper\nfrom helper import VALUE\nimport os\n", encoding="utf-8"
-    )
+    (root / "plugin.py").write_text("import helper\nfrom helper import VALUE\nimport os\n", encoding="utf-8")
     (root / "sllkgui-plugin.yml").write_text(
         """schema: 1
 api: 1
@@ -149,9 +147,7 @@ def test_lint_allows_standard_library_absolute_import(tmp_path):
     """标准库的绝对导入是正确写法，不能误报。"""
     root = tmp_path / "std"
     root.mkdir()
-    (root / "plugin.py").write_text(
-        "import os\nimport json\nfrom pathlib import Path\n", encoding="utf-8"
-    )
+    (root / "plugin.py").write_text("import os\nimport json\nfrom pathlib import Path\n", encoding="utf-8")
     (root / "sllkgui-plugin.yml").write_text(
         """schema: 1
 api: 1

@@ -106,7 +106,9 @@ class _StepIndicator(QWidget):
     def _block(self) -> float:
         if not self._titles:
             return 0.0
-        return self.width() / len(self._titles) if self._orientation == "horizontal" else self.height() / len(self._titles)
+        return (
+            self.width() / len(self._titles) if self._orientation == "horizontal" else self.height() / len(self._titles)
+        )
 
     def _circle_rect(self, index: int) -> QRectF:
         block = self._block()

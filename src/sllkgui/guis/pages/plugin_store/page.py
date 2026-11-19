@@ -372,9 +372,9 @@ class StorePage(QWidget):
             name="plugin_store.install",
             fn=lambda: manager.install(plugin_id, source_id=str(record.get("source") or "")),
             busy_text=self.ctx.text("status.installing", "正在安装 {id}…").format(id=plugin_id),
-            success_message=lambda _result: self.ctx.text(
-                "status.install_done", "已安装 {count} 个插件"
-            ).format(count=1),
+            success_message=lambda _result: self.ctx.text("status.install_done", "已安装 {count} 个插件").format(
+                count=1
+            ),
             error_code="PLUGIN_STORE_INSTALL_FAILED",
             error_prefix="安装失败",
             reload_plugins=True,
@@ -432,9 +432,7 @@ class StorePage(QWidget):
         ok = CConfirmDialog.ask(
             self.ctx.parent_window() or self,
             title=self.ctx.text("sources.remove", "移除"),
-            message=self.ctx.text("sources.confirm_remove", "移除源 {id}？已安装插件不受影响。").format(
-                id=source_id
-            ),
+            message=self.ctx.text("sources.confirm_remove", "移除源 {id}？已安装插件不受影响。").format(id=source_id),
             severity="warn",
         )
         if not ok:

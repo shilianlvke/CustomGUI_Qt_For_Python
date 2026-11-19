@@ -27,9 +27,7 @@ class CGrips(QWidget):
             self.wi.top_left(self)
             grip = QSizeGrip(self.wi.top_left_grip)
             grip.setFixedSize(self.wi.top_left_grip.size())
-            self.setGeometry(
-                self._corner_offset, self._corner_offset, self._corner_size, self._corner_size
-            )
+            self.setGeometry(self._corner_offset, self._corner_offset, self._corner_size, self._corner_size)
 
             # ENABLE COLOR
             if disable_color:
@@ -112,9 +110,7 @@ class CGrips(QWidget):
         # ///////////////////////////////////////////////////////////////
         elif position == "bottom":
             self.wi.bottom(self)
-            self.setGeometry(
-                0, self.parent.height() - self._edge_size, self.parent.width(), self._edge_size
-            )
+            self.setGeometry(0, self.parent.height() - self._edge_size, self.parent.width(), self._edge_size)
             self.setMaximumHeight(self._edge_size)
 
             # RESIZE BOTTOM

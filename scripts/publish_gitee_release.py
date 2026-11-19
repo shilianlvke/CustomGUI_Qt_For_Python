@@ -23,7 +23,14 @@ from pathlib import Path
 GITEE_API = os.environ.get("GITEE_API_BASE", "https://gitee.com/api/v5")
 
 
-def _request(method: str, url: str, *, params: dict | None = None, json_body: dict | None = None, multipart: tuple[bytes, str] | None = None) -> dict:
+def _request(
+    method: str,
+    url: str,
+    *,
+    params: dict | None = None,
+    json_body: dict | None = None,
+    multipart: tuple[bytes, str] | None = None,
+) -> dict:
     """发送请求并返回 JSON；非 2xx 时抛出带响应体的 RuntimeError。"""
     if params:
         url = f"{url}?{urllib.parse.urlencode(params)}"
@@ -51,10 +58,10 @@ def _encode_multipart(fields: dict[str, str], file_path: Path) -> tuple[bytes, s
     boundary = "----SllkGUI" + os.urandom(16).hex()
     lines = []
     for key, value in fields.items():
-        lines.append(f"--{boundary}\r\nContent-Disposition: form-data; name=\"{key}\"\r\n\r\n{value}\r\n".encode())
+        lines.append(f'--{boundary}\r\nContent-Disposition: form-data; name="{key}"\r\n\r\n{value}\r\n'.encode())
     filename = file_path.name
     lines.append(
-        f"--{boundary}\r\nContent-Disposition: form-data; name=\"file\"; filename=\"{filename}\"\r\n"
+        f'--{boundary}\r\nContent-Disposition: form-data; name="file"; filename="{filename}"\r\n'
         "Content-Type: application/octet-stream\r\n\r\n".encode()
     )
     lines.append(file_path.read_bytes())
@@ -112,9 +119,7 @@ def upload_assets(owner: str, repo: str, token: str, release_id: int, assets_dir
 
     list_url = f"{GITEE_API}/repos/{owner}/{repo}/releases/{release_id}/attach_files"
     existing_names = {
-        item.get("name")
-        for item in _request("GET", list_url, params={"access_token": token})
-        if item.get("name")
+        item.get("name") for item in _request("GET", list_url, params={"access_token": token}) if item.get("name")
     }
     upload_url = f"{GITEE_API}/repos/{owner}/{repo}/releases/{release_id}/attach_files"
     for file_path in files:
@@ -173,8 +178,10 @@ def main() -> int:
 
     assets_dir = Path(args.assets_dir)
     files = sorted(assets_dir.iterdir()) if assets_dir.is_dir() else []
-    print(f"[Gitee] 计划发布: {args.owner}/{args.repo} tag={tag} prerelease={parse_prerelease(args.prerelease)} "
-          f"附件数={sum(1 for f in files if f.is_file())}")
+    print(
+        f"[Gitee] 计划发布: {args.owner}/{args.repo} tag={tag} prerelease={parse_prerelease(args.prerelease)} "
+        f"附件数={sum(1 for f in files if f.is_file())}"
+    )
     if args.dry_run:
         for file_path in files:
             if file_path.is_file():
@@ -190,7 +197,9 @@ def main() -> int:
         print(f"[Gitee] 失败: {exc}", file=sys.stderr)
         return 1
 
-    print(f"[Gitee] 发布完成: https://gitee.com/{args.owner}/{args.repo}/releases/tag/{urllib.parse.quote(tag, safe='')}")
+    print(
+        f"[Gitee] 发布完成: https://gitee.com/{args.owner}/{args.repo}/releases/tag/{urllib.parse.quote(tag, safe='')}"
+    )
     return 0
 
 

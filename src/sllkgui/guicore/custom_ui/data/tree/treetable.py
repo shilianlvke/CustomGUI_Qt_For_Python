@@ -32,9 +32,7 @@ class _TreeTableView(QTreeView):
         pos = event.position().toPoint()
         index = self.indexAt(pos)
         if index.isValid() and index.column() == 0:
-            arrow, box, _icon_x, _text_x = _row_metrics(
-                QRectF(self.visualRect(index)), index, self._owner._checkbox
-            )
+            arrow, box, _icon_x, _text_x = _row_metrics(QRectF(self.visualRect(index)), index, self._owner._checkbox)
             if arrow is not None and arrow.contains(QPointF(pos)):
                 self.setExpanded(index, not self.isExpanded(index))
                 return
@@ -147,10 +145,7 @@ class CTreeTable(QWidget):
             selection.blockSignals(True)
             try:
                 selection.clearSelection()
-                flags = (
-                    QItemSelectionModel.SelectionFlag.ClearAndSelect
-                    | QItemSelectionModel.SelectionFlag.Rows
-                )
+                flags = QItemSelectionModel.SelectionFlag.ClearAndSelect | QItemSelectionModel.SelectionFlag.Rows
                 current = QModelIndex()
                 for item in self._all_items():
                     if item.data(KEY_ROLE) in wanted and item.isEnabled():
@@ -180,8 +175,7 @@ class CTreeTable(QWidget):
         return [
             item.data(NODE_ROLE)
             for item in self._all_items()
-            if _check_state(item.checkState()) == Qt.CheckState.Checked
-            and isinstance(item.data(NODE_ROLE), dict)
+            if _check_state(item.checkState()) == Qt.CheckState.Checked and isinstance(item.data(NODE_ROLE), dict)
         ]
 
     def selected_records(self) -> list[dict]:
@@ -253,9 +247,7 @@ class CTreeTable(QWidget):
         self._updating = True
         try:
             self._model.clear()
-            self._model.setHorizontalHeaderLabels(
-                [column.header or column.field for column in self._columns]
-            )
+            self._model.setHorizontalHeaderLabels([column.header or column.field for column in self._columns])
             root = self._model.invisibleRootItem()
             for node in self._rows:
                 if isinstance(node, dict):
@@ -283,9 +275,7 @@ class CTreeTable(QWidget):
         first.setData(_node_key(node), KEY_ROLE)
         if self._checkbox:
             first.setCheckable(True)
-            first.setCheckState(
-                Qt.CheckState.Checked if node.get("checked") else Qt.CheckState.Unchecked
-            )
+            first.setCheckState(Qt.CheckState.Checked if node.get("checked") else Qt.CheckState.Unchecked)
         if node.get("disabled"):
             for item in items:
                 item.setEnabled(False)
@@ -330,9 +320,7 @@ class CTreeTable(QWidget):
     def _refresh_ancestors(self, item: QStandardItem) -> None:
         parent = item.parent()
         while parent is not None:
-            states = [
-                _check_state(parent.child(row, 0).checkState()) for row in range(parent.rowCount())
-            ]
+            states = [_check_state(parent.child(row, 0).checkState()) for row in range(parent.rowCount())]
             if all(state == Qt.CheckState.Checked for state in states):
                 state = Qt.CheckState.Checked
             elif all(state == Qt.CheckState.Unchecked for state in states):
@@ -353,10 +341,7 @@ class CTreeTable(QWidget):
                 walk(child)
                 if child.rowCount() == 0:
                     continue
-                states = [
-                    _check_state(child.child(index, 0).checkState())
-                    for index in range(child.rowCount())
-                ]
+                states = [_check_state(child.child(index, 0).checkState()) for index in range(child.rowCount())]
                 if all(state == Qt.CheckState.Checked for state in states):
                     state = Qt.CheckState.Checked
                 elif all(state == Qt.CheckState.Unchecked for state in states):

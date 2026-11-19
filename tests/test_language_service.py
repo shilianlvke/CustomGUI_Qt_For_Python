@@ -198,7 +198,9 @@ def test_scroll_positions_survive_page_rebuild(qapp, monkeypatch):
 
     monkeypatch.setattr(registry, "load_registered_pages", _load_registered_pages)
     monkeypatch.setattr(registry, "ensure_registered_page", lambda *args, **kwargs: False)
-    monkeypatch.setattr(registry, "get_page_routes", lambda _language, _window=None: {"btn_home": ("home_page", "Home")})
+    monkeypatch.setattr(
+        registry, "get_page_routes", lambda _language, _window=None: {"btn_home": ("home_page", "Home")}
+    )
     monkeypatch.setattr(registry, "get_default_page_object", lambda _window=None: "home_page")
 
     window = SimpleNamespace(

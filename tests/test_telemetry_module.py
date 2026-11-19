@@ -44,9 +44,7 @@ def test_events_file_rotates(tmp_path, monkeypatch):
     assert (tmp_path / "events.jsonl").is_file(), "active event file must exist"
     assert (tmp_path / "events.jsonl.1").is_file(), "one backup must be kept"
     assert not (tmp_path / "events.jsonl.2").exists(), "only one backup is allowed"
-    assert "test.rotate.5" in [e["name"] for e in read_recent_events(limit=20)], (
-        "recent read must survive rotation"
-    )
+    assert "test.rotate.5" in [e["name"] for e in read_recent_events(limit=20)], "recent read must survive rotation"
 
 
 def test_record_event_swallows_serialization_errors(tmp_path, monkeypatch):

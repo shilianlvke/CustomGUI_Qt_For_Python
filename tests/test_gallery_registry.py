@@ -43,9 +43,7 @@ def test_core_plugin_not_preferred_as_default(tmp_path: Path):
     core = write_plugin(tmp_path / "core", plugin_id="com.example.core")
     registry = GalleryRegistry()
     registry.add(PluginRecord(manifest=load_manifest(hello), plugin=_Plugin(), path=hello))
-    registry.add(
-        PluginRecord(manifest=load_manifest(core), plugin=_Plugin(), path=core, is_core=True)
-    )
+    registry.add(PluginRecord(manifest=load_manifest(core), plugin=_Plugin(), path=core, is_core=True))
     # 非核心插件优先
     assert registry.default_route().startswith("com.example.")
     menu = {item["btn_id"]: item for item in registry.menu_items()}

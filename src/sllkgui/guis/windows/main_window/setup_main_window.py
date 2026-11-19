@@ -250,22 +250,12 @@ class SetupMainWindow:
         corner_inset = int(grips.corner_inset)
         edge_size = int(grips.edge_size)
         self.left_grip.setGeometry(corner_offset, edge_size, edge_size, self.height())
-        self.right_grip.setGeometry(
-            self.width() - corner_size, edge_size, edge_size, self.height()
-        )
-        self.top_grip.setGeometry(
-            corner_offset, corner_offset, self.width() - edge_size, edge_size
-        )
-        self.bottom_grip.setGeometry(
-            corner_offset, self.height() - corner_size, self.width() - edge_size, edge_size
-        )
+        self.right_grip.setGeometry(self.width() - corner_size, edge_size, edge_size, self.height())
+        self.top_grip.setGeometry(corner_offset, corner_offset, self.width() - edge_size, edge_size)
+        self.bottom_grip.setGeometry(corner_offset, self.height() - corner_size, self.width() - edge_size, edge_size)
         # self.top_left_grip.setGeometry(5, 5, 15, 15)
-        self.top_right_grip.setGeometry(
-            self.width() - corner_inset, corner_offset, corner_size, corner_size
-        )
-        self.bottom_left_grip.setGeometry(
-            corner_offset, self.height() - corner_inset, corner_size, corner_size
-        )
+        self.top_right_grip.setGeometry(self.width() - corner_inset, corner_offset, corner_size, corner_size)
+        self.bottom_left_grip.setGeometry(corner_offset, self.height() - corner_inset, corner_size, corner_size)
         self.bottom_right_grip.setGeometry(
             self.width() - corner_inset,
             self.height() - corner_inset,

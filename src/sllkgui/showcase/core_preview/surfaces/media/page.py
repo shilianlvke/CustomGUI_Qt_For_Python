@@ -28,7 +28,11 @@ class MediaPreviewPage(CPreviewPage):
 
     @staticmethod
     def _images() -> list[str]:
-        paths = [PathFactory.set_jpg_image("头像"), PathFactory.set_jpg_image("托盘"), PathFactory.set_svg_image("mihoutao")]
+        paths = [
+            PathFactory.set_jpg_image("头像"),
+            PathFactory.set_jpg_image("托盘"),
+            PathFactory.set_svg_image("mihoutao"),
+        ]
         return [str(Path(path)) for path in paths if path and Path(path).is_file()]
 
     @classmethod
@@ -41,10 +45,18 @@ class MediaPreviewPage(CPreviewPage):
     @classmethod
     def _carousel_demo(cls) -> QWidget:
         sources = cls._images()
-        items = [
-            {"title": f"{cls.tr('carousel_item')} {index + 1}", "description": cls.tr("carousel_desc"), "image": sources[index % len(sources)]}
-            for index in range(6)
-        ] if sources else []
+        items = (
+            [
+                {
+                    "title": f"{cls.tr('carousel_item')} {index + 1}",
+                    "description": cls.tr("carousel_desc"),
+                    "image": sources[index % len(sources)],
+                }
+                for index in range(6)
+            ]
+            if sources
+            else []
+        )
         carousel = CCarousel(items, num_visible=3)
         carousel.setMinimumHeight(340)
         return carousel
@@ -52,7 +64,14 @@ class MediaPreviewPage(CPreviewPage):
     @classmethod
     def _galleria_demo(cls) -> QWidget:
         sources = cls._images()
-        items = [{"title": f"{cls.tr('gallery_item')} {index + 1}", "image": sources[index % len(sources)]} for index in range(4)] if sources else []
+        items = (
+            [
+                {"title": f"{cls.tr('gallery_item')} {index + 1}", "image": sources[index % len(sources)]}
+                for index in range(4)
+            ]
+            if sources
+            else []
+        )
         galleria = CGalleria(items)
         galleria.setMinimumHeight(360)
         return galleria
@@ -71,9 +90,7 @@ class MediaPreviewPage(CPreviewPage):
         basic.filesSelected.connect(lambda files: status.setText(f"{len(files)} {cls.tr('files')}"))
         for title_key, widget in (("file_advanced", advanced), ("file_basic", basic)):
             title = QLabel(cls.tr(title_key))
-            title.setStyleSheet(
-                f"color: {ColorPalette.custom_text_description}; font-weight: 600;"
-            )
+            title.setStyleSheet(f"color: {ColorPalette.custom_text_description}; font-weight: 600;")
             layout.addWidget(title)
             layout.addWidget(widget)
         layout.addWidget(status)
@@ -86,7 +103,15 @@ class MediaPreviewPage(CPreviewPage):
         layout.setContentsMargins(0, 0, 0, 0)
         layout.setSpacing(12)
         line = CChart("line", cls.tr("chart_title"))
-        line.set_data([{"name": cls.tr("series"), "values": [12, 19, 14, 23, 18, 27], "labels": ["Jan", "Feb", "Mar", "Apr", "May", "Jun"]}])
+        line.set_data(
+            [
+                {
+                    "name": cls.tr("series"),
+                    "values": [12, 19, 14, 23, 18, 27],
+                    "labels": ["Jan", "Feb", "Mar", "Apr", "May", "Jun"],
+                }
+            ]
+        )
         line.setMinimumHeight(220)
         bar = CChart("bar", cls.tr("chart_bar"))
         bar.set_data([{"name": cls.tr("series"), "values": [7, 12, 9, 15], "labels": ["Q1", "Q2", "Q3", "Q4"]}])

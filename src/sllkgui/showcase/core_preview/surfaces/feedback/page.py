@@ -59,7 +59,9 @@ class FeedbackPreviewPage(CPreviewPage):
             severity="warn",
             closable=True,
         )
-        simple = CMessage("Simple message without background or border.", title="Simple", severity="success", simple=True)
+        simple = CMessage(
+            "Simple message without background or border.", title="Simple", severity="success", simple=True
+        )
         widgets = [outlined_success, outlined_danger, closable, long_text, simple]
         for widget in widgets:
             widget.setFixedWidth(380)

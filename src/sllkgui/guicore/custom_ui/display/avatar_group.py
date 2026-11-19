@@ -188,9 +188,7 @@ class CAvatarGroup(QWidget):
         step = max(1, self._avatar_size - self._overlap)
         for index in range(len(self._avatars) + (1 if self._overflow is not None else 0)):
             center_x = index * step + self._avatar_size / 2
-            painter.drawEllipse(
-                QRectF(center_x - radius, self._avatar_size / 2 - radius, radius * 2, radius * 2)
-            )
+            painter.drawEllipse(QRectF(center_x - radius, self._avatar_size / 2 - radius, radius * 2, radius * 2))
         painter.end()
 
 

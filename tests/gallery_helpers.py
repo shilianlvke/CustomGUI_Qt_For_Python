@@ -17,6 +17,7 @@ SLLKGUI_REQUIREMENT = f">={_BASE_MAJOR}.0.0,<{int(_BASE_MAJOR) + 1}.0.0"
 
 ICON = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><rect width="24" height="24"/></svg>'
 
+
 class _ManifestFormatter(str):
     """清单模板格式化器：未显式传入的键回落到默认值。
 
@@ -109,8 +110,7 @@ def write_plugin(
     (root / "resource" / "icon").mkdir(parents=True, exist_ok=True)
     (root / "resource" / "lang").mkdir(parents=True, exist_ok=True)
     (root / "sllkgui-plugin.yml").write_text(
-        manifest_text
-        or MANIFEST.format(plugin_id=plugin_id, name=name, version=version),
+        manifest_text or MANIFEST.format(plugin_id=plugin_id, name=name, version=version),
         encoding="utf-8",
     )
     (root / "plugin.py").write_text(plugin_source or PLUGIN, encoding="utf-8")

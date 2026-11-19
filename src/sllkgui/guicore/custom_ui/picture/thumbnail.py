@@ -44,7 +44,9 @@ class CThumbnail(QWidget):
         self._selected = bool(selected)
         self._hover = False
         self._size = QSize(max(8, int(width)), max(8, int(height)))
-        self._pixmap = load_scaled_pixmap(self._path, self._size.width(), self._size.height()) if self._path else QPixmap()
+        self._pixmap = (
+            load_scaled_pixmap(self._path, self._size.width(), self._size.height()) if self._path else QPixmap()
+        )
         self.setFixedSize(self._size)
         self.setCursor(Qt.PointingHandCursor)
         if self._path:

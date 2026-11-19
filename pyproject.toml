@@ -35,7 +35,7 @@ dev = [
     "pytest-qt>=4.4.0",
     "mypy>=1.13",
     "ruff>=0.11.2",
-    "black",
+    "pre-commit>=3.8",
     "pyinstaller>=6.22.3",
     "build>=1.2",
     "twine>=5.1",
@@ -47,12 +47,12 @@ Repository = "https://gitee.com/shilianlvke/SllkGui"
 Issues = "https://gitee.com/shilianlvke/SllkGui/issues"
 Changelog = "https://gitee.com/shilianlvke/SllkGui/blob/main/CHANGELOG.md"
 
-[project.scripts]
-sllkgui = "sllkgui.cli:main"
-
 [[tool.uv.index]]
 url = "https://pypi.tuna.tsinghua.edu.cn/simple"
 default = true
+
+[project.scripts]
+sllkgui = "sllkgui.cli:main"
 
 [tool.hatch.version]
 path = "src/sllkgui/_version.py"
@@ -60,6 +60,14 @@ path = "src/sllkgui/_version.py"
 [tool.ruff]
 line-length = 120
 target-version = "py312"
+
+[tool.ruff.format]
+# 与 ruff lint 同源，零额外依赖；取代曾经的 black（其默认 88 列与本项目
+# 的 120 列不符，仓库里也从未真正用它格式化过）。
+quote-style = "double"
+indent-style = "space"
+skip-magic-trailing-comma = false
+line-ending = "auto"
 
 [tool.ruff.lint]
 select = ["E", "F", "W", "I", "UP", "B"]
@@ -86,20 +94,46 @@ exclude_lines = [
     "raise NotImplementedError",
 ]
 
-# 类型检查采用“增量门禁”：先约束稳定 API 与公共工具模块，避免一次性
-# 在 2.9 万行组件代码上产生无法收敛的历史告警。
+# 类型检查采用"分层门禁"：约束**下游插件作者直接依赖**的那一层，
+# 组件库内部实现暂不纳入。
+#
+# 纳入范围 = 公开门面 + 插件协议 + 设置协议 + 用户配置存储：
+#   - sllkgui.plugin / sllkgui.window：插件与宿主作者的唯一入口
+#   - gallery.api / manifest / context / errors：插件协议本身
+#   - appcore.settings：插件声明设置页用的 schema
+#   - appcore.user_settings / config.py：用户配置的读写契约
+#   - guicore.callbacks / task：插件可用的异步与回调工具
+#
+# 不纳入范围：guicore 的 2.9 万行组件实现——历史欠账主要是 PySide6 stub
+# 缺口（Qt.UserRole 之类）与未声明的实例属性，属于注解补全而非真实缺陷，
+# 一次性收敛不现实。组件库对外仍提供运行时正确的实现，但不承诺类型完备。
+#
+# 下游若在自己的代码里对 sllkgui 做严格类型检查，可用 py.typed 获得
+# 上述公开 API 的类型信息；组件内部的类型精度不在承诺范围内。
 [tool.mypy]
 python_version = "3.12"
 files = [
+    "src/sllkgui/plugin.py",
+    "src/sllkgui/window.py",
     "src/sllkgui/config.py",
+    "src/sllkgui/gallery/api.py",
+    "src/sllkgui/gallery/context.py",
+    "src/sllkgui/gallery/errors.py",
+    "src/sllkgui/gallery/manifest.py",
+    "src/sllkgui/appcore/settings",
+    "src/sllkgui/appcore/user_settings.py",
     "src/sllkgui/guicore/callbacks.py",
     "src/sllkgui/guicore/task.py",
-    "src/sllkgui/appcore/user_settings.py",
 ]
 ignore_missing_imports = true
 follow_imports = "skip"
 check_untyped_defs = true
 warn_unused_ignores = false
+
+[dependency-groups]
+dev = [
+    "pre-commit>=3.8",
+]
 
 [tool.hatch.build.targets.sdist]
 include = ["src/sllkgui", "examples", "docs", "tests", "scripts"]

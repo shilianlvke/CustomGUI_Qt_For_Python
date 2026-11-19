@@ -197,7 +197,7 @@ def test_conflicts_view_hides_other_plugins(tmp_path: Path, registry):
 # ----------------------------------------------------------------------
 # 生命周期：加载 / 卸载
 # ----------------------------------------------------------------------
-PLUGIN_WITH_SHORTCUT = '''
+PLUGIN_WITH_SHORTCUT = """
 from sllkgui.plugin import GalleryContext, Plugin
 
 
@@ -217,7 +217,7 @@ class ShortcutPlugin(Plugin):
 
 
 PLUGIN = ShortcutPlugin()
-'''
+"""
 
 
 def test_loader_clears_shortcuts_on_unload(tmp_path: Path, registry):

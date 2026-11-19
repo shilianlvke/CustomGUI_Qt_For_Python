@@ -50,10 +50,7 @@ def _relative_import_hint(exc: ModuleNotFoundError, root: Path) -> str:
     if not top:
         return ""
     if (root / top).exists():
-        return (
-            f"插件内请用相对导入：把 `import {top}` 改为 `from . import {top}`"
-            f"（或 `from .{name} import ...`）"
-        )
+        return f"插件内请用相对导入：把 `import {top}` 改为 `from . import {top}`（或 `from .{name} import ...`）"
     return "插件内请用相对导入（`from . import ...`），基座不会把插件目录加入 sys.path"
 
 
@@ -223,9 +220,7 @@ def load_plugin(
         return None
 
     if any(item.plugin_id == manifest.plugin_id for item in registry.plugins()):
-        registry._errors.append(
-            {"plugin_id": manifest.plugin_id, "code": "PLUGIN_ALREADY_INSTALLED"}
-        )
+        registry._errors.append({"plugin_id": manifest.plugin_id, "code": "PLUGIN_ALREADY_INSTALLED"})
         Logger.warning(f"插件重复，已跳过: {manifest.plugin_id}")
         return None
 
@@ -233,9 +228,7 @@ def load_plugin(
     try:
         _verify_surface_impls(manifest, root)
     except GalleryError as exc:
-        registry._errors.append(
-            {"plugin_id": manifest.plugin_id, "code": exc.code, "detail": str(exc)}
-        )
+        registry._errors.append({"plugin_id": manifest.plugin_id, "code": exc.code, "detail": str(exc)})
         Logger.warning(f"Surface 实现缺失，已跳过: {manifest.plugin_id}: {exc.message}")
         return None
 
@@ -250,9 +243,7 @@ def load_plugin(
             parent=parent_window() if parent_window is not None else None,
         )
     except GalleryError as exc:
-        registry._errors.append(
-            {"plugin_id": manifest.plugin_id, "code": exc.code, "detail": str(exc)}
-        )
+        registry._errors.append({"plugin_id": manifest.plugin_id, "code": exc.code, "detail": str(exc)})
         Logger.warning(f"插件依赖未就绪，已跳过: {manifest.plugin_id}: {exc.message}")
         record_event(
             "plugin.dependencies_blocked",
@@ -316,9 +307,7 @@ def load_plugin(
         context.clear_tray()
         context.clear_shortcuts()
         context.clear_settings()
-        registry._errors.append(
-            {"plugin_id": manifest.plugin_id, "code": PLUGIN_LOAD_FAILED, "detail": detail}
-        )
+        registry._errors.append({"plugin_id": manifest.plugin_id, "code": PLUGIN_LOAD_FAILED, "detail": detail})
         Logger.error(f"插件加载失败: {manifest.plugin_id}: {detail}")
         return None
     except Exception as exc:  # noqa: BLE001 - 单个插件失败必须隔离
@@ -327,9 +316,7 @@ def load_plugin(
         context.clear_tray()
         context.clear_shortcuts()
         context.clear_settings()
-        registry._errors.append(
-            {"plugin_id": manifest.plugin_id, "code": PLUGIN_LOAD_FAILED, "detail": str(exc)}
-        )
+        registry._errors.append({"plugin_id": manifest.plugin_id, "code": PLUGIN_LOAD_FAILED, "detail": str(exc)})
         Logger.exception(f"插件加载失败: {manifest.plugin_id}: {exc}")
         return None
 

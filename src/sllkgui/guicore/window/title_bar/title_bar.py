@@ -101,7 +101,16 @@ class CTitleBar(QWidget):
         # 自身：它们都是主界面 CWindow 的子控件，事件留在原控件树上，不需要
         # 任何额外的背景窗口；空白区域同样可以拖动窗口。
         if self._is_custom_title_bar:
-            draggable = (self, self.bg, self.top_logo, self.logo_svg, self.div_1, self.title_label, self.div_2, self.div_3)
+            draggable = (
+                self,
+                self.bg,
+                self.top_logo,
+                self.logo_svg,
+                self.div_1,
+                self.title_label,
+                self.div_2,
+                self.div_3,
+            )
             for widget in draggable:
                 widget.mousePressEvent = self._drag_press
                 widget.mouseMoveEvent = self._drag_move

@@ -95,9 +95,7 @@ class _Logger:
             datefmt="%Y-%m-%d %H:%M:%S",
         )
         use_color = self._read_color_enabled_from_console_config()
-        log_file_name, log_max_bytes, log_backup_count = (
-            self._read_file_policy_from_console_config()
-        )
+        log_file_name, log_max_bytes, log_backup_count = self._read_file_policy_from_console_config()
 
         if not self._logger.handlers:
             console_handler = logging.StreamHandler()
@@ -177,11 +175,7 @@ class _Logger:
             max_bytes = cls.DEFAULT_LOG_MAX_BYTES
 
         backup_count = section.get("backup_count")
-        if (
-            isinstance(backup_count, bool)
-            or not isinstance(backup_count, int)
-            or backup_count <= 0
-        ):
+        if isinstance(backup_count, bool) or not isinstance(backup_count, int) or backup_count <= 0:
             backup_count = cls.DEFAULT_LOG_BACKUP_COUNT
 
         return name, max_bytes, backup_count

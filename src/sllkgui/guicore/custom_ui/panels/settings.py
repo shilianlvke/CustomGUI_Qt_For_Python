@@ -184,7 +184,6 @@ class CSettingRow(QWidget):
     def error(self) -> str:
         return self._error.text()
 
-
     # ------------------------------------------------------------------
     def update_style(self) -> None:
         tokens = get_design_tokens()
@@ -213,8 +212,7 @@ class CSettingRow(QWidget):
         badge_bg = QColor(colors.state_warning)
         badge_bg.setAlpha(28)
         self._badge.setStyleSheet(
-            f"color: {colors.state_warning}; background: {qss_color(badge_bg)};"
-            f" border-radius: 7px; padding: 1px 6px;"
+            f"color: {colors.state_warning}; background: {qss_color(badge_bg)}; border-radius: 7px; padding: 1px 6px;"
         )
         self._dot.set_color(colors.state_warning)
         self._reset.update()
@@ -403,6 +401,7 @@ class CActionRow(QWidget):
 
 class CInfoRow(QWidget):
     """只读信息行：键 + 值 + 可选操作按钮（关于页 / 当前窗口信息）。"""
+
     def __init__(self, key: str, value: str = "", *, mono: bool = True, parent=None):
         super().__init__(parent)
         self._mono = mono

@@ -102,14 +102,11 @@ def select_version(
     usable = [
         item
         for item in candidates
-        if (allow_yanked or not item.yanked)
-        and (include_prerelease or not _version(item.version).is_prerelease)
+        if (allow_yanked or not item.yanked) and (include_prerelease or not _version(item.version).is_prerelease)
     ]
     if include_prerelease:
         usable = [item for item in candidates if allow_yanked or not item.yanked]
-    matching = [
-        item for item in usable if specifier.contains(_version(item.version), prereleases=include_prerelease)
-    ]
+    matching = [item for item in usable if specifier.contains(_version(item.version), prereleases=include_prerelease)]
     if not matching:
         return None
     return max(matching, key=lambda item: _version(item.version))

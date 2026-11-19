@@ -236,7 +236,7 @@ class GalleryContextImpl(GalleryContext):
     ) -> None:
         if self._record is not None:
             self._record.telemetry_seen = True
-        merged = {"plugin_id": self.plugin_id, "plugin_version": self.plugin_version}
+        merged: dict[str, Any] = {"plugin_id": self.plugin_id, "plugin_version": self.plugin_version}
         if payload:
             merged.update({str(key): value for key, value in payload.items()})
         try:

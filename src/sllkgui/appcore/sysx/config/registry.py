@@ -238,9 +238,7 @@ class ConfigContext:
             themes = self._registry.load_themes()
             languages = self._registry.load_languages()
             others = self._registry.load_others()
-            self._data = _ContextData(
-                settings=settings, themes=themes, languages=languages, others=others
-            )
+            self._data = _ContextData(settings=settings, themes=themes, languages=languages, others=others)
             self._loaded = True
         return self
 

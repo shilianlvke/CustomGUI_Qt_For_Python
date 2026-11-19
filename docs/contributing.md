@@ -10,13 +10,24 @@
 
 ```powershell
 uv sync --extra dev
-uv run ruff check src tests apps examples scripts
+uv run ruff check src tests examples scripts
+uv run ruff format --check src tests examples scripts
 uv run mypy
 uv run pytest --cov=sllkgui --cov-report=term-missing --cov-fail-under=70
 ```
 
-三条命令都必须干净：`ruff check` 零告警，`mypy` 零错误，`pytest` 零失败、覆盖率不低于
-70%、skip 只允许平台相关的用例。测试数量随代码变化，以实际输出为准，不要写进文档。
+四条命令都必须干净：`ruff check` 零告警、`ruff format --check` 零差异、`mypy` 零错误、
+`pytest` 零失败、覆盖率不低于 70%、skip 只允许平台相关的用例。测试数量随代码变化，
+以实际输出为准，不要写进文档。
+
+建议装上提交前门禁，把上面这些命令前移到本地：
+
+```powershell
+uv run pre-commit install
+```
+
+钩子见 `.pre-commit-config.yaml`：ruff lint、ruff format、mypy、文件卫生检查与一组
+快速冒烟用例。全部使用本地实现（`language: system`），不联网拉取第三方仓库。
 
 本地命令只便于自查，CI 的判定标准以 `.workflow/*.yml` 里的实际命令为准：向 `main` 提 PR
 （以及推送 `main`）会触发 `.workflow/QualityGate.yml`；打 `base-v*` tag 触发
@@ -26,6 +37,10 @@ uv run pytest --cov=sllkgui --cov-report=term-missing --cov-fail-under=70
 本地与无头容器都不需要真实显示。`ruff` 的规则集在 `pyproject.toml` 的
 `[tool.ruff.lint]`（`E/F/W/I/UP/B`，忽略 `E501`、`TID252`），新增规则要同步更新该处，
 不要只在命令行加 `--select`。
+
+代码格式由 `ruff format` 统一（**不要**再用 black：它已从 dev 依赖中移除，默认 88 列
+与本项目的 120 列不符）。`.editorconfig` 固定换行符、缩进与末尾换行；资源文件
+（SVG 等）不参与格式化与卫生检查。
 
 ## 硬规则：许可证边界
 

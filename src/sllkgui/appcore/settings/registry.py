@@ -61,9 +61,7 @@ class SettingsRegistry:
             slot = (target_ns, registered.page_id)
             existing = self._pages.get(slot)
             if existing is not None and not replace:
-                raise SettingsConflictError(
-                    f"{target_ns}.{registered.page_id}: 设置页已注册"
-                )
+                raise SettingsConflictError(f"{target_ns}.{registered.page_id}: 设置页已注册")
             # 先检查整页的键是否与现有页面冲突，再一次性写入，避免半注册状态。
             # replace 时只允许占用「本页旧键」，与其它页面冲突仍然报错。
             old_keys = {existing.full_key(spec.key) for spec in existing.specs()} if existing is not None else set()

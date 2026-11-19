@@ -43,6 +43,7 @@ _WEIGHTS = {
     "bold": QFont.Weight.Bold,
 }
 
+
 class CText(QLabel):
     """排版文本组件：``size`` + ``weight`` + ``mono`` + ``wrap``。"""
 

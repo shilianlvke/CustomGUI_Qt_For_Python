@@ -144,7 +144,7 @@ def manual_command(requirements: list[str], index_url: str = "") -> str:
     index = f" --index-url {index_url}" if index_url else ""
     if find_uv():
         return f'uv pip install --python "{sys.executable}"{index} {packages}'
-    return f'python -m pip install{index} {packages}'
+    return f"python -m pip install{index} {packages}"
 
 
 def _redact(index_url: str) -> str:
@@ -304,9 +304,7 @@ def _ask_choice(
         package_box = QWidget(dialog.card())
         package_box.setAttribute(Qt.WA_StyledBackground, True)
         package_box.setStyleSheet(
-            f"background:{colors.surface_sunken};"
-            f"border:1px solid {colors.border_hairline};"
-            f"border-radius:{radius}px;"
+            f"background:{colors.surface_sunken};border:1px solid {colors.border_hairline};border-radius:{radius}px;"
         )
         package_layout = QVBoxLayout(package_box)
         package_layout.setContentsMargins(12, 8, 12, 8)
@@ -322,8 +320,7 @@ def _ask_choice(
         dialog.add_widget(package_box)
 
         hint = QLabel(
-            "自动安装使用 uv 安装到当前 Python 环境 · 镜像源："
-            + (_redact(index_url) or "默认"),
+            "自动安装使用 uv 安装到当前 Python 环境 · 镜像源：" + (_redact(index_url) or "默认"),
             dialog.card(),
         )
         hint.setWordWrap(True)
@@ -353,9 +350,7 @@ def _ask_choice(
 
         dialog.add_action_button("跳过", lambda: pick("skip"))
         dialog.add_action_button("手动安装", lambda: pick("manual"))
-        auto_button = dialog.add_action_button(
-            "自动安装", lambda: pick("auto"), severity="primary", variant="solid"
-        )
+        auto_button = dialog.add_action_button("自动安装", lambda: pick("auto"), severity="primary", variant="solid")
         auto_button.setDefault(True)
         _exec_overlay(dialog)
         return choice["value"]

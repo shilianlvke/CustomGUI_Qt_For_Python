@@ -34,6 +34,7 @@ def _cfg():
 
     return current_config()
 
+
 _ROOT_ENV = "SLLKGUI_ROOT_DIR"
 _GALLERY_ENV = "SLLKGUI_GALLERY_DIR"
 _RESOURCE_ENV = "SLLKGUI_RESOURCE_DIR"

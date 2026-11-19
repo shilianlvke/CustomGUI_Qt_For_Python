@@ -107,11 +107,7 @@ class PluginSettingsBackend:
                 state = {str(key): value for key, value in values.items()}
             else:
                 # 兼容早期手写的扁平文件：元数据键之外都视为配置值
-                state = {
-                    str(key): value
-                    for key, value in raw.items()
-                    if key not in (_SCHEMA_KEY, _PLUGIN_ID_KEY)
-                }
+                state = {str(key): value for key, value in raw.items() if key not in (_SCHEMA_KEY, _PLUGIN_ID_KEY)}
             self._cache[plugin_id] = state
             return dict(state)
 

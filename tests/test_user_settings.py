@@ -211,9 +211,7 @@ def test_restore_ui_state_applies_user_config():
 
     class Window:
         def __init__(self):
-            self.ui = SimpleNamespace(
-                window=SimpleNamespace(apply_style=lambda: calls.setdefault("style", True))
-            )
+            self.ui = SimpleNamespace(window=SimpleNamespace(apply_style=lambda: calls.setdefault("style", True)))
 
         def resize(self, width, height):
             calls["size"] = (width, height)
@@ -376,8 +374,7 @@ def test_write_atomic_uses_unique_temp_and_fsync(monkeypatch):
     assert len(fsynced) == 2, "each save must fsync once"
     assert replaced[0] != replaced[1], "temp file names must be unique"
     assert all(
-        name.startswith(".user.yaml.") and name.endswith(".tmp")
-        for name in (Path(item).name for item in replaced)
+        name.startswith(".user.yaml.") and name.endswith(".tmp") for name in (Path(item).name for item in replaced)
     ), "mkstemp prefix/suffix must be used"
 
 
@@ -405,9 +402,9 @@ def test_migrate_state_fills_v2_v3_defaults():
     assert set(from_v2) == set(user_settings.V3_BACKGROUND_DEFAULTS) | {"remember_window_size"}, (
         "v3 and v5 defaults must be filled"
     )
-    assert user_settings._migrate_state({"theme_name": "eye"}, version=1) == {
-        "theme_name": "eye"
-    }, "incremental read must not inject defaults"
+    assert user_settings._migrate_state({"theme_name": "eye"}, version=1) == {"theme_name": "eye"}, (
+        "incremental read must not inject defaults"
+    )
 
 
 def test_save_reports_fsync_failure(monkeypatch):
@@ -429,6 +426,4 @@ def test_save_reports_fsync_failure(monkeypatch):
 
     assert not user_settings.save_user_settings(theme_name="bright"), "fsync failure must return False"
     assert any("OSError" in m and "fsync failed" in m for m in messages), "failure must be observable in log"
-    assert not list(user_settings.user_settings_path().parent.glob(".user.yaml.*.tmp")), (
-        "temp file must be cleaned up"
-    )
+    assert not list(user_settings.user_settings_path().parent.glob(".user.yaml.*.tmp")), "temp file must be cleaned up"

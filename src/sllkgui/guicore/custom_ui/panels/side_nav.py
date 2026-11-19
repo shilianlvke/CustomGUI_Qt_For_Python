@@ -287,9 +287,7 @@ class CSideNav(QWidget):
             hit = not self._query or self._query in haystack
             button.setVisible(hit)
         for group_widget in self._group_widgets:
-            visible = any(
-                not child.isHidden() for child in group_widget.findChildren(_CSideNavButton)
-            )
+            visible = any(not child.isHidden() for child in group_widget.findChildren(_CSideNavButton))
             group_widget.setVisible(visible)
 
     def _find(self, item_id: str) -> _CSideNavButton | None:

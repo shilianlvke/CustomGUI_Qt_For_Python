@@ -99,11 +99,7 @@ class DrawerLayout:
     # ------------------------------------------------------------------
     def set_mode(self, mode: str) -> None:
         value = normalize_drawer_mode(mode)
-        if (
-            value == self._mode
-            and self._overlay_ready == (value == "overlay")
-            and self._right_ready(value)
-        ):
+        if value == self._mode and self._overlay_ready == (value == "overlay") and self._right_ready(value):
             return
 
         # 静态开合动画改的是 min/max 尺寸；换容器前必须先停掉，否则动画会

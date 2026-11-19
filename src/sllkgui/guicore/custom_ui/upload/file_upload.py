@@ -228,9 +228,7 @@ class _ElidingLabel(QLabel):
         self._refresh()
 
     def _refresh(self) -> None:
-        elided = self.fontMetrics().elidedText(
-            self._full_text, Qt.ElideMiddle, max(0, self.width())
-        )
+        elided = self.fontMetrics().elidedText(self._full_text, Qt.ElideMiddle, max(0, self.width()))
         QLabel.setText(self, elided)
 
 

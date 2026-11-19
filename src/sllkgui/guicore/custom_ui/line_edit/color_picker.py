@@ -20,6 +20,7 @@ def _alpha(value: str, alpha: int) -> QColor:
     color.setAlpha(max(0, min(255, int(alpha))))
     return color
 
+
 #: 色块按钮尺寸的兼容兜底值（运行时以配置为准）
 SWATCH = 40
 #: 色板格子尺寸的兼容兜底值（运行时以配置为准）

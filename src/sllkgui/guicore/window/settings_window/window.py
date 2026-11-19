@@ -91,7 +91,9 @@ class _TitleBar(QWidget):
         layout.addWidget(self.subtitle, 0, Qt.AlignVCenter)
         layout.addStretch(1)
 
-        self.close_button = CCloseButton(QColor(get_design_tokens().colors.text_primary), size=28, radius=6, parent=self)
+        self.close_button = CCloseButton(
+            QColor(get_design_tokens().colors.text_primary), size=28, radius=6, parent=self
+        )
         self.close_button.clicked.connect(window.close)
         layout.addWidget(self.close_button, 0, Qt.AlignVCenter)
 
@@ -99,14 +101,11 @@ class _TitleBar(QWidget):
         tokens = get_design_tokens()
         colors = tokens.colors
         self.mark.setStyleSheet(
-            f"background: {colors.accent}; color: {colors.text_on_accent};"
-            f" border-radius: 6px; font-weight: 800;"
+            f"background: {colors.accent}; color: {colors.text_on_accent}; border-radius: 6px; font-weight: 800;"
         )
         self.title.setText(Language.resolve_key("language.UI.ui_SettingsWindowTitle", "设置"))
         self.title.setStyleSheet(f"color: {colors.text_title}; background: transparent;")
-        self.subtitle.setText(
-            Language.resolve_key("language.UI.ui_SettingsWindowSubtitle", "基座与插件配置，统一保存")
-        )
+        self.subtitle.setText(Language.resolve_key("language.UI.ui_SettingsWindowSubtitle", "基座与插件配置，统一保存"))
         self.subtitle.setStyleSheet(f"color: {colors.text_muted}; background: transparent;")
         self.close_button.set_color(QColor(colors.text_primary))
         self.update()
@@ -227,9 +226,7 @@ class CSettingsWindow(QDialog):
         self.nav_scroll.setWidget(self.nav)
         nav_layout.addWidget(self.nav_scroll, 1)
 
-        self.nav_empty = QLabel(
-            Language.resolve_key("language.UI.ui_SettingsNavEmpty", "没有匹配的设置页"), nav_column
-        )
+        self.nav_empty = QLabel(Language.resolve_key("language.UI.ui_SettingsNavEmpty", "没有匹配的设置页"), nav_column)
         self.nav_empty.setAlignment(Qt.AlignCenter)
         self.nav_empty.setVisible(False)
         nav_layout.addWidget(self.nav_empty)
@@ -343,9 +340,7 @@ class CSettingsWindow(QDialog):
             _PAGE_ABOUT,
             about,
             Language.resolve_key("language.UI.ui_SettingsPageAbout", "关于"),
-            Language.resolve_key(
-                "language.UI.ui_SettingsPageAboutHint", "版本、运行环境与数据目录；这里的信息只读。"
-            ),
+            Language.resolve_key("language.UI.ui_SettingsPageAboutHint", "版本、运行环境与数据目录；这里的信息只读。"),
             "icon_me",
             keywords="关于 版本 环境 目录 about version",
         )
@@ -392,7 +387,13 @@ class CSettingsWindow(QDialog):
                     keywords=f"插件 plugin {plugin_id}",
                 )
                 plugin_items.append(
-                    CSideNavItem(item_id, title, "icon_store", badge=Language.resolve_key("language.UI.ui_SettingsUndeclared", "未声明"), keywords=f"插件 {plugin_id}")
+                    CSideNavItem(
+                        item_id,
+                        title,
+                        "icon_store",
+                        badge=Language.resolve_key("language.UI.ui_SettingsUndeclared", "未声明"),
+                        keywords=f"插件 {plugin_id}",
+                    )
                 )
 
         if not plugin_items:
@@ -684,9 +685,7 @@ class CSettingsWindow(QDialog):
         self.action_bar.set_saving(False)
         if not ok:
             self.action_bar.set_error(
-                Language.resolve_key(
-                    "language.UI.ui_SettingsSaveFailed", "保存失败，请检查配置目录的写入权限。"
-                )
+                Language.resolve_key("language.UI.ui_SettingsSaveFailed", "保存失败，请检查配置目录的写入权限。")
             )
             self.action_bar.setVisible(True)
             return False
@@ -788,9 +787,7 @@ class CSettingsWindow(QDialog):
     def update_theme_label(self) -> None:
         name = get_theme_manager().current()
         label = _THEME_NAMES.get(name, name.replace("_", " ").title())
-        self.theme_label.setText(
-            f"{label} · {Language.resolve_key('language.UI.ui_SettingsCurrentTheme', '当前主题')}"
-        )
+        self.theme_label.setText(f"{label} · {Language.resolve_key('language.UI.ui_SettingsCurrentTheme', '当前主题')}")
 
     def paintEvent(self, event):  # noqa: N802 - 覆写 Qt 命名
         """绘制窗口自身表面；不再有内层卡片或描边。"""
@@ -871,9 +868,7 @@ class CSettingsWindow(QDialog):
             try:
                 dialog = CConfirmDialog(
                     Language.resolve_key("language.UI.ui_SettingsCloseTitle", "未保存的更改"),
-                    Language.resolve_key(
-                        "language.UI.ui_SettingsCloseText", "关闭设置窗口将丢失未保存的更改。"
-                    ),
+                    Language.resolve_key("language.UI.ui_SettingsCloseText", "关闭设置窗口将丢失未保存的更改。"),
                     severity="warn",
                     accept_text=Language.resolve_key("language.UI.ui_SettingsCloseDiscard", "放弃并关闭"),
                     reject_text=Language.resolve_key("language.UI.ui_SettingsCancel", "取消"),

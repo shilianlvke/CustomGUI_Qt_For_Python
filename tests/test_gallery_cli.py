@@ -81,15 +81,31 @@ def test_plugin_lifecycle_cli(tmp_path: Path, capsys):
     init_repo(source)
     data = tmp_path / "data"
 
-    assert cli.main(["source", "add", source.as_uri(), "--id", "test", "--allow-local", "--yes", "--data-dir", str(data)]) == 0
+    assert (
+        cli.main(["source", "add", source.as_uri(), "--id", "test", "--allow-local", "--yes", "--data-dir", str(data)])
+        == 0
+    )
     assert cli.main(["source", "refresh", "test", "--allow-local", "--data-dir", str(data)]) == 0
     capsys.readouterr()
     assert cli.main(["source", "info", "test", "--json", "--allow-local", "--data-dir", str(data)]) == 0
     assert json.loads(capsys.readouterr().out)["id"] == "test"
 
-    assert cli.main(
-        ["plugin", "install", "com.example.hello", "--source", "test", "--yes", "--allow-local", "--data-dir", str(data)]
-    ) == 0
+    assert (
+        cli.main(
+            [
+                "plugin",
+                "install",
+                "com.example.hello",
+                "--source",
+                "test",
+                "--yes",
+                "--allow-local",
+                "--data-dir",
+                str(data),
+            ]
+        )
+        == 0
+    )
     capsys.readouterr()
     assert cli.main(["plugin", "info", "com.example.hello", "--allow-local", "--data-dir", str(data)]) == 0
     payload = json.loads(capsys.readouterr().out)
@@ -102,6 +118,9 @@ def test_plugin_lifecycle_cli(tmp_path: Path, capsys):
     assert cli.main(["plugin", "disable", "com.example.hello", "--allow-local", "--data-dir", str(data)]) == 0
     assert cli.main(["plugin", "enable", "com.example.hello", "--allow-local", "--data-dir", str(data)]) == 0
     capsys.readouterr()
-    assert cli.main(
-        ["plugin", "remove", "com.example.hello", "--yes", "--purge", "--allow-local", "--data-dir", str(data)]
-    ) == 0
+    assert (
+        cli.main(
+            ["plugin", "remove", "com.example.hello", "--yes", "--purge", "--allow-local", "--data-dir", str(data)]
+        )
+        == 0
+    )

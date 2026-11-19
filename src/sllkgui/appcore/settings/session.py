@@ -237,11 +237,7 @@ class SettingsSession:
 
     def restore_defaults_snapshot(self) -> dict[str, Any]:
         """全部声明默认值：``full_key -> 默认值``（测试与诊断用）。"""
-        return {
-            page.full_key(spec.key): spec.default
-            for page in self._registry.pages()
-            for spec in page.specs()
-        }
+        return {page.full_key(spec.key): spec.default for page in self._registry.pages() for spec in page.specs()}
 
     def with_values(self, values: Mapping[str, Any]) -> SettingsSession:
         """返回应用了给定值的副本（不落盘，测试 / 预览用）。"""

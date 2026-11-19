@@ -63,10 +63,14 @@ class DataPreviewPage(CPreviewPage):
                 "label": cls.tr("col_name"),
                 "key": "docs",
                 "children": [
-                    {"label": "规范", "key": "docs/spec", "children": [
-                        {"label": "色彩.md", "key": "docs/spec/color"},
-                        {"label": "间距.md", "key": "docs/spec/spacing"},
-                    ]},
+                    {
+                        "label": "规范",
+                        "key": "docs/spec",
+                        "children": [
+                            {"label": "色彩.md", "key": "docs/spec/color"},
+                            {"label": "间距.md", "key": "docs/spec/spacing"},
+                        ],
+                    },
                     {"label": "接口", "key": "docs/api"},
                 ],
             },
@@ -89,10 +93,15 @@ class DataPreviewPage(CPreviewPage):
                 "type": "目录",
                 "size": "—",
                 "children": [
-                    {"name": "guicore", "type": "目录", "size": "—", "children": [
-                        {"name": "button.py", "type": "Python", "size": "18 KB"},
-                        {"name": "table.py", "type": "Python", "size": "26 KB"},
-                    ]},
+                    {
+                        "name": "guicore",
+                        "type": "目录",
+                        "size": "—",
+                        "children": [
+                            {"name": "button.py", "type": "Python", "size": "18 KB"},
+                            {"name": "table.py", "type": "Python", "size": "26 KB"},
+                        ],
+                    },
                     {"name": "appcore", "type": "目录", "size": "—"},
                 ],
             },
@@ -145,9 +154,7 @@ class DataPreviewPage(CPreviewPage):
 
         toggle = CSelectButton([cls.tr("layout_grid"), cls.tr("layout_list")], index=0, size="sm")
         toggle.setFixedWidth(140)
-        toggle.selectionChanged.connect(
-            lambda index: view.set_layout("grid" if index == 0 else "list")
-        )
+        toggle.selectionChanged.connect(lambda index: view.set_layout("grid" if index == 0 else "list"))
 
         box = QWidget()
         layout = QVBoxLayout(box)

@@ -10,7 +10,18 @@
 
 from __future__ import annotations
 
+from typing import TypedDict
+
 from .schema import SettingControl, SettingOption, SettingsPage, SettingSpec, SettingsSection
+
+
+class _CoreDefaults(TypedDict):
+    """核心设置页的默认值：类型固定，避免取值后退化为 ``object``。"""
+
+    theme: str
+    language: str
+    transparency: int
+
 
 #: 基座页面 ID（左侧导航与测试复用）
 PAGE_APPEARANCE = "appearance"
@@ -66,7 +77,7 @@ def _language_options(default: str) -> list[tuple[str, str]]:
     return [(code, _LANGUAGE_LABELS.get(code, code)) for code in codes]
 
 
-def _defaults() -> dict[str, object]:
+def _defaults() -> _CoreDefaults:
     """从当前配置读取默认值；配置不可用时回落到硬编码值。"""
     theme = "default"
     language = "zh_cn"

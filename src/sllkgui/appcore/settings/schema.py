@@ -555,15 +555,16 @@ class SettingsSection:
     """设置分组：渲染为一张卡片（标题 + 说明 + 若干行）。"""
 
     title: str
-    items: tuple[SettingSpec, ...] = ()
+    #: 值项列表；运行时归一成 tuple，声明处接受 list 或 tuple
+    items: Sequence[SettingSpec] = ()
     section_id: str = ""
     hint: str = ""
     title_key: str = ""
     hint_key: str = ""
     #: 只读信息行（统计、连接摘要等），显示在值行之前
-    info: tuple[SettingsInfo, ...] = ()
+    info: Sequence[SettingsInfo] = ()
     #: 动作行（测试 / 导入 / 同步等），显示在值行之后
-    actions: tuple[SettingsAction, ...] = ()
+    actions: Sequence[SettingsAction] = ()
 
     def __post_init__(self) -> None:
         object.__setattr__(self, "items", tuple(self.items))
@@ -595,7 +596,9 @@ class SettingsPage:
 
     page_id: str
     title: str
-    sections: tuple[SettingsSection, ...] = ()
+    #: 分组列表。运行时 ``__post_init__`` 会归一成 tuple（内部一律按 tuple 处理），
+    #: 因此声明处接受 list 或 tuple——文档示例用 list，改成 tuple 也能过。
+    sections: Sequence[SettingsSection] = ()
     hint: str = ""
     icon: str = "icon_setting"
     title_key: str = ""
@@ -613,7 +616,14 @@ class SettingsPage:
         # 共用一个键空间，避免「同名动作覆盖配置」这类难以排查的写法。
         seen: set[str] = set()
         for section in self.sections:
-            for item in (*section.info, *section.items, *section.actions):
+            # 三类行的键空间共用，但类型不同；显式标注避免元组展开后
+            # 类型信息丢失（mypy 会把展开结果收敛成 object）
+            rows: tuple[SettingsInfo | SettingsAction | SettingSpec, ...] = (
+                *section.info,
+                *section.items,
+                *section.actions,
+            )
+            for item in rows:
                 if item.key in seen:
                     raise SettingsConflictError(f"{self.namespace}.{self.page_id}: 设置键重复 {item.key!r}")
                 seen.add(item.key)
