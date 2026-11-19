@@ -6,7 +6,7 @@ from sllkgui.appcore import get_design_tokens
 class CMenu(QMenu):
     """下拉菜单。
 
-    样式约定（与 ``CPushButton`` 一致）：**颜色**由 ``sllkgui.guicore/styles.py`` 的
+    样式约定：**颜色**由 ``sllkgui.guicore/styles.py`` 的
     ``#CMenu_Menu`` 提供，透明度经动态属性 ``transparent`` 选择。菜单是独立
     顶层窗口，不经过 ``CWindow``，因此依赖 ``CWindow.apply_style`` 下发的应用级
     样式表着色。**实例级几何**（圆角、边框宽度、菜单项内边距）由本类本地覆盖。

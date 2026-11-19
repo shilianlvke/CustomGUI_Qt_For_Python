@@ -17,7 +17,7 @@ class CInputText(QLineEdit):
 
     颜色/状态（normal / hover / focus / invalid / disabled）由 ``sllkgui.guicore/styles.py``
     的 ``#CInputText_LineEdit`` 提供；高度、圆角、内边距、字号属几何量，由本类本地
-    覆盖（与 ``CPushButton`` 的约定一致）。
+    覆盖（与其它输入类组件的约定一致）。
     """
 
     def __init__(

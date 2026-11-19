@@ -157,7 +157,7 @@ def card_stroke_color() -> QColor:
 class Styles(_ComponentStyles):
     """全局样式表：所有组件的**颜色 / 状态 / 字体**都集中在这里。
 
-    约定（与 ``CPushButton`` 一致）：
+    约定：
 
     1. 组件在 ``__init__`` 里只声明 ``setObjectName("<组件名>_<Qt类名>")``；
     2. 组件的全部颜色/状态/字体样式在本文件内按该 objectName 定义；
@@ -299,7 +299,6 @@ class Styles(_ComponentStyles):
         self.update_lineedit_style()
         self.update_combobox_style()
         self.update_menu_style()
-        self.update_show_card_style()
         self.update_tooltip_style()
         self.update_title_bar_style()
         self.update_columns_style()

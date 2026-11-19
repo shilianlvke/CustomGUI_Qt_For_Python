@@ -1,4 +1,4 @@
-from .common import PathFactory, PicFixFactory
+from .common import PathFactory
 from .config import (
     AppLanguages,
     AppOthers,
@@ -41,7 +41,6 @@ __all__ = [
     "AppThemes",
     "gallery_root",
     "PathFactory",
-    "PicFixFactory",
     "get_app_context",
     "ColorPalette",
     "COLOR_SWATCHES",

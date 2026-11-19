@@ -163,6 +163,30 @@ def test_pending_inversions_are_still_needed():
         assert not stale, f"PENDING_INVERSIONS 已过期，请删除: {sorted(stale)}"
 
 
+def test_appcore_is_qt_free():
+    """``appcore`` 必须是纯标准库，可在无 PySide6 的环境里导入。
+
+    插件规范校验（``sllkgui plugin lint``）与源仓库 CI 都要求「不启动 Qt
+    就能校验插件」；一旦 appcore 顶层 import PySide6，这条前提就失效，
+    等于逼着校验方安装约 200 MB 的 GUI 依赖。
+    """
+    violations = []
+    for path in _iter_python_files(SRC / "appcore"):
+        tree = ast.parse(path.read_text(encoding="utf-8"), filename=str(path))
+        for node in ast.walk(tree):
+            if isinstance(node, ast.Import):
+                roots = [alias.name for alias in node.names]
+            elif isinstance(node, ast.ImportFrom):
+                roots = [node.module or ""]
+            else:
+                continue
+            for module in roots:
+                if module == "PySide6" or module.startswith("PySide6."):
+                    violations.append(f"{path.relative_to(ROOT).as_posix()}:{node.lineno} -> {module}")
+
+    assert not violations, "appcore must stay Qt-free:\n" + "\n".join(violations)
+
+
 def test_presentation_layer_uses_appcore_public_api_only():
     violations = []
     for path in _iter_python_files(SRC / "guis", SRC / "guicore"):

@@ -61,7 +61,7 @@ class _ComponentStyles:
     def update_btn_style(self):
         """按钮族样式。
 
-        ``CMenuButton`` / ``CPushButton`` 的圆角与边框宽度属实例级几何，由组件
+        ``CMenuButton`` 的圆角与边框宽度属实例级几何，由组件
         本地覆盖；这里只提供颜色、内边距与 ``::menu-indicator`` 的图标资源。
         焦点态统一用 1px 强调色描边（不改变边框宽度，避免聚焦时内容位移）。
         """
@@ -299,33 +299,6 @@ class _ComponentStyles:
             }}
             #CMenu_Menu::separator {{
                 background-color: {self._hairline};
-            }}
-        """
-
-    def update_show_card_style(self):
-        """CShowCard：上下分区配色（颜色随主题；圆角由组件按实例覆盖）。"""
-        self.style += f"""
-            #CShowCard #topArea {{
-                background-color: {self._fill_rest};
-            }}
-            #CShowCard #bottomArea {{
-                background-color: {self._fill_hover};
-            }}
-            #CShowCard #SourceLabel {{
-                color: {self.tokens.colors.text_primary};
-                background-color: {self._fill_hover};
-            }}
-            #CShowCard #IconLabel {{
-                background-color: {self._fill_hover};
-            }}
-            /* 外观配置里的背景图手风琴：Fluent 设置卡片 */
-            #CBackgroundAccordion_Frame {{
-                background-color: {self._card_bg};
-                border: 1px solid {self._control_stroke_secondary};
-                border-radius: {self.tokens.radius.window}px;
-            }}
-            #CBackgroundAccordionHeader, #CBackgroundAccordionContent {{
-                background: transparent;
             }}
         """
 

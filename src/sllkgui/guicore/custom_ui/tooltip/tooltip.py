@@ -7,7 +7,7 @@ from sllkgui.appcore import ColorPalette, get_design_tokens
 class CToolTip(QLabel):
     """提示气泡。
 
-    样式约定（与 ``CPushButton`` 一致）：**颜色与字体**由 ``sllkgui.guicore/styles.py``
+    样式约定：**颜色与字体**由 ``sllkgui.guicore/styles.py``
     的 ``#label_tooltip`` 提供；本类只声明 objectName，并本地提供**实例级几何**
     （圆角、内边距）。``accent`` 参数保留以兼容既有调用方，但 Fluent 提示气泡
     不再绘制彩色强调边。

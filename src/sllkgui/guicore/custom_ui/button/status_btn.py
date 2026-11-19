@@ -2,7 +2,9 @@ from PySide6.QtCore import QSize, Qt, Signal
 from PySide6.QtGui import QIcon, QPixmap
 from PySide6.QtWidgets import QPushButton
 
-from sllkgui.appcore import PathFactory, get_design_tokens
+from sllkgui.appcore import get_design_tokens
+
+from ..paint_utils import rounded_pixmap
 
 #: 默认按钮尺寸；放进模块常量，避免在参数默认值里构造可变对象
 _DEFAULT_SIZE = QSize(64, 32)
@@ -11,7 +13,7 @@ _DEFAULT_SIZE = QSize(64, 32)
 class CStatusButton(QPushButton):
     """多态按钮：点击在若干状态间循环，边框颜色随状态变化。
 
-    样式约定（与 ``CPushButton`` 一致）：颜色、悬停/按下、各状态的边框色统一
+    样式约定：颜色、悬停/按下、各状态的边框色统一
     由 ``sllkgui.guicore/styles.py`` 的 ``#CStatusButton_PushButton`` 提供；状态经动态
     属性 ``status`` 由 QSS 属性选择器匹配。本类只保留实例级几何（圆角、边框
     宽度）覆盖，且不订阅主题——主题切换由全局样式表整体重建后自动生效。
@@ -51,24 +53,24 @@ class CStatusButton(QPushButton):
         if icon_negative is not None:
             if isinstance(icon_negative, str):
                 pixmap = QPixmap(icon_negative)
-                rounded_pixmap = PathFactory.create_rounded_pixmap(pixmap, pixmap.height() / 2)
-                self.icon_negative = QIcon(rounded_pixmap)
+                rounded = rounded_pixmap(pixmap, pixmap.height() / 2)
+                self.icon_negative = QIcon(rounded)
                 self.icon_size_negative = QSize(int(size.width() * 0.8), int(size.height() * 0.8))
             elif isinstance(icon_negative, QIcon):
                 self.icon_negative = icon_negative
         if icon_positive is not None:
             if isinstance(icon_positive, str):
                 pixmap = QPixmap(icon_positive)
-                rounded_pixmap = PathFactory.create_rounded_pixmap(pixmap, pixmap.height() / 2)
-                self.icon_positive = QIcon(rounded_pixmap)
+                rounded = rounded_pixmap(pixmap, pixmap.height() / 2)
+                self.icon_positive = QIcon(rounded)
                 self.icon_size_size = QSize(int(size.width() * 0.8), int(size.height() * 0.8))
             elif isinstance(icon_positive, QIcon):
                 self.icon_positive = icon_positive
         if icon_normal is not None:
             if isinstance(icon_normal, str):
                 pixmap = QPixmap(icon_normal)
-                rounded_pixmap = PathFactory.create_rounded_pixmap(pixmap, pixmap.height() / 2)
-                self.icon_normal = QIcon(rounded_pixmap)
+                rounded = rounded_pixmap(pixmap, pixmap.height() / 2)
+                self.icon_normal = QIcon(rounded)
                 self.icon_size_normal = QSize(int(size.width() * 0.8), int(size.height() * 0.8))
             elif isinstance(icon_normal, QIcon):
                 self.icon_normal = icon_normal

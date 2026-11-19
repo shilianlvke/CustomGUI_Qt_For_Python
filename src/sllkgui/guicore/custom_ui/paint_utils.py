@@ -1,11 +1,11 @@
-"""自绘组件共用的图形小工具（勾、叉、箭头、日历、星形）。"""
+"""自绘组件共用的图形小工具（勾、叉、箭头、日历、星形、圆角位图）。"""
 
 from __future__ import annotations
 
 import math
 
 from PySide6.QtCore import QPointF, QRectF, Qt
-from PySide6.QtGui import QColor, QPainter, QPainterPath, QPen, QPolygonF
+from PySide6.QtGui import QColor, QPainter, QPainterPath, QPen, QPixmap, QPolygonF
 
 from sllkgui.appcore import ColorPalette
 
@@ -136,6 +136,33 @@ def shadow_layers(
     return result
 
 
+def rounded_pixmap(pixmap: QPixmap, radius: int | float) -> QPixmap:
+    """把位图裁成圆角矩形；空图原样返回。
+
+    绘制属于表现层：``appcore`` 只保留路径解析，才能在无 Qt 环境下导入。
+    """
+    if pixmap.isNull():
+        return pixmap
+
+    width = pixmap.width()
+    height = pixmap.height() or width
+
+    scaled = pixmap.scaled(width, height, Qt.IgnoreAspectRatio, Qt.SmoothTransformation)
+    result = QPixmap(width, height)
+    result.fill(Qt.transparent)
+
+    painter = QPainter(result)
+    painter.setRenderHint(QPainter.Antialiasing)
+    painter.setRenderHint(QPainter.SmoothPixmapTransform)
+
+    path = QPainterPath()
+    path.addRoundedRect(QRectF(0, 0, width, height), radius, radius)
+    painter.setClipPath(path)
+    painter.drawPixmap(0, 0, width, height, scaled)
+    painter.end()
+    return result
+
+
 def draw_shadow(painter: QPainter, body_path: QPainterPath, body_rect: QRectF, radius: float) -> None:
     """直接画阴影（不做缓存；低频重绘的浮层用，高频重绘请自建缓存）。"""
     for layer, color in shadow_layers(body_path, body_rect, radius):
@@ -150,6 +177,7 @@ __all__ = [
     "draw_chevron",
     "draw_cross",
     "draw_shadow",
+    "rounded_pixmap",
     "shadow_layers",
     "star_path",
 ]

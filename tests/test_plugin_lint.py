@@ -81,3 +81,35 @@ def test_scaffold_source_template(tmp_path: Path):
     assert (root / "categories.yaml").is_file()
     assert (root / "plugins" / "com.example.sample" / "entry.yaml").is_file()
     assert (root / "CONTRIBUTING.md").is_file()
+
+
+def test_lint_runs_without_qt(tmp_path):
+    """插件规范校验必须能在无 PySide6 的环境运行。
+
+    源仓库 CI 用它做插件准入，校验方不该被迫安装约 200 MB 的 GUI 依赖。
+    这里拦截 ``PySide6`` 导入，若 appcore / gallery 的校验链偷偷依赖 Qt，
+    导入即失败。
+    """
+    import builtins
+    import importlib
+    import sys
+
+    for name in [key for key in sys.modules if key.startswith("sllkgui.gallery.lint")]:
+        del sys.modules[name]
+
+    real_import = builtins.__import__
+
+    def guarded(name, *args, **kwargs):
+        if name == "PySide6" or name.startswith("PySide6."):
+            raise ImportError(f"PySide6 is not available: {name}")
+        return real_import(name, *args, **kwargs)
+
+    builtins.__import__ = guarded
+    try:
+        module = importlib.import_module("sllkgui.gallery.lint")
+        report = module.lint_plugin(Path("examples/plugin-hello"))
+        assert report.ok
+    finally:
+        builtins.__import__ = real_import
+        for name in [key for key in sys.modules if key.startswith("sllkgui.gallery.lint")]:
+            del sys.modules[name]

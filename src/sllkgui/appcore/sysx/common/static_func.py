@@ -1,7 +1,10 @@
-from pathlib import Path
+"""资源路径解析：只依赖标准库，不引入 Qt。
 
-from PySide6.QtCore import QRectF, Qt
-from PySide6.QtGui import QPainter, QPainterPath, QPixmap
+绘制相关的图像处理（圆角位图）已下沉到 ``guicore.custom_ui.paint_utils``，
+本模块因此可以在无 PySide6 的环境下导入（插件校验 CLI 依赖此性质）。
+"""
+
+from pathlib import Path
 
 from sllkgui.appcore.sysx.config.paths import find_resource, resolve_path
 from sllkgui.appcore.sysx.modules.logger_module import Logger
@@ -77,39 +80,3 @@ class PathFinder:
     @classmethod
     def set_update_log(cls):
         return cls.__get_path(cls.others, "DevelopLog" + ".yaml")
-
-
-class PicFixFactory:
-    @staticmethod
-    def create_rounded_pixmap(pixmap: QPixmap, radius: int | float) -> QPixmap:
-        # 不处理空数据或者错误数据
-        if pixmap.isNull():
-            return pixmap
-
-        # 获取图片尺寸
-        image_width = pixmap.width()
-        image_height = pixmap.height()
-
-        # 处理大尺寸的图片,保证图片显示区域完整
-        new_pixmap = QPixmap(
-            pixmap.scaled(
-                image_width,
-                image_width if image_height == 0 else image_height,
-                Qt.IgnoreAspectRatio,
-                Qt.SmoothTransformation,
-            )
-        )
-        dest_image = QPixmap(image_width, image_height)
-        dest_image.fill(Qt.transparent)
-
-        painter = QPainter(dest_image)
-        painter.setRenderHint(QPainter.Antialiasing)  # 抗锯齿
-        painter.setRenderHint(QPainter.SmoothPixmapTransform)  # 平滑处理
-        # 裁圆角
-        path = QPainterPath()
-        rect = QRectF(0, 0, image_width, image_height)
-        path.addRoundedRect(rect, radius, radius)
-        painter.setClipPath(path)
-        painter.drawPixmap(0, 0, image_width, image_height, new_pixmap)
-
-        return dest_image

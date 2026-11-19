@@ -2,7 +2,9 @@ from PySide6.QtCore import QSize, Qt
 from PySide6.QtGui import QIcon, QPixmap
 from PySide6.QtWidgets import QPushButton
 
-from sllkgui.appcore import PathFactory, get_design_tokens
+from sllkgui.appcore import get_design_tokens
+
+from ..paint_utils import rounded_pixmap
 
 #: 默认按钮尺寸；放进模块常量，避免在参数默认值里构造可变对象
 _DEFAULT_SIZE = QSize(64, 32)
@@ -11,7 +13,7 @@ _DEFAULT_SIZE = QSize(64, 32)
 class CMenuButton(QPushButton):
     """带下拉菜单的按钮。
 
-    样式约定（与 ``CPushButton`` 一致）：**颜色与图标**由 ``sllkgui.guicore/styles.py``
+    样式约定：**颜色与图标**由 ``sllkgui.guicore/styles.py``
     的 ``#CMenuButton_PushButton`` 提供（含 ``::menu-indicator`` 箭头图标），
     本类只声明 objectName，不做任何主题订阅；**实例级几何**（圆角、边框宽度、
     箭头偏移）由本类本地覆盖。
@@ -36,8 +38,7 @@ class CMenuButton(QPushButton):
         if icon is not None:
             if isinstance(icon, str):
                 pixmap = QPixmap(icon)
-                rounded_pixmap = PathFactory.create_rounded_pixmap(pixmap, pixmap.height() / 2)
-                icon = QIcon(rounded_pixmap)
+                icon = QIcon(rounded_pixmap(pixmap, pixmap.height() / 2))
                 icon_size = QSize(int(size.width() * 0.8), int(size.height() * 0.8))
                 self.setIconSize(icon_size)
             self.setIcon(icon)
