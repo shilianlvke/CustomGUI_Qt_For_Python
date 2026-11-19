@@ -30,7 +30,9 @@
 - [ ] `uv run ruff check src tests examples scripts`
 - [ ] `uv run ruff format --check src tests examples scripts`
 - [ ] `uv run mypy`
-- [ ] `uv run pytest --cov=sllkgui --cov-fail-under=70`
+- [ ] `uv run pytest --cov=sllkgui --cov-fail-under=71`
+
+CI 链接：______（请贴本 PR 对应门禁运行的链接）
 
 实际输出：
 

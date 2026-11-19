@@ -79,7 +79,7 @@ stages:
           - uv run ruff check src tests examples scripts
           - uv run ruff format --check src tests examples scripts
           - uv run mypy
-          - uv run pytest --cov=sllkgui --cov-report=term-missing --cov-fail-under=70
+          - uv run pytest --cov=sllkgui --cov-report=term-missing --cov-fail-under=71 -rf
           # ---- wheel 构建 + 干净环境冒烟（验证「开箱即用」）----
           - uv run python -m build --wheel
           - uv run twine check dist/*.whl

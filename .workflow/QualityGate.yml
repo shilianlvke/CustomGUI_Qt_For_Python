@@ -67,8 +67,9 @@ stages:
           # （见 pyproject 的 [tool.mypy]，含承诺范围说明）。
           - uv run mypy
           # pytest 的 offscreen 由 tests/conftest.py 统一设置，无需虚拟显示。
-          # 覆盖率阈值取当前基线的下方（实测约 72%，门禁 70% 防回退）。
-          - uv run pytest --cov=sllkgui --cov-report=term-missing --cov-fail-under=70
+          # 覆盖率阈值贴当前基线（实测 71%，门禁 71% 防回退）；
+          # -rf 在失败时输出失败用例清单，便于 PR 里直接定位。
+          - uv run pytest --cov=sllkgui --cov-report=term-missing --cov-fail-under=71 -rf
           # ---- 跨平台降级冒烟 ----
           # CI 只有 Linux runner；Windows 特化分支（亚克力 / 托盘 / 修饰键）
           # 的**降级路径**必须在这里被验证，否则要等有人在 Linux 上装一次
