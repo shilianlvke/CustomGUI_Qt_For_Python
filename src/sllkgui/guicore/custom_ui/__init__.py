@@ -23,7 +23,9 @@ from .button import (
     Variant as Variant,
 )
 from .card import CCard as CCard
+from .card import CMetricCard as CMetricCard
 from .card import CShowCard as CShowCard
+from .card import CSurfacePanel as CSurfacePanel
 from .chart import CChart as CChart
 from .combo_box import CComboBox as CComboBox
 from .data import CDataTable as CDataTable
@@ -50,6 +52,12 @@ from .display import (
 )
 from .display import (
     CDivider as CDivider,
+)
+from .display import (
+    CElidedLabel as CElidedLabel,
+)
+from .display import (
+    CIconTile as CIconTile,
 )
 from .display import (
     CProgressBar as CProgressBar,
@@ -242,6 +250,8 @@ __all__ = [
     "CTabMenu",
     "CStepper",
     "CCard",
+    "CMetricCard",
+    "CSurfacePanel",
     "CShowCard",
     "CPixmap",
     "CThumbnail",
@@ -281,6 +291,8 @@ __all__ = [
     "CThemeCard",
     "CBadge",
     "CChip",
+    "CElidedLabel",
+    "CIconTile",
     "CAvatar",
     "CAvatarGroup",
     "CSkeleton",

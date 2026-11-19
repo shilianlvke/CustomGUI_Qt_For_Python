@@ -48,13 +48,14 @@ class _CSideNavButton(QWidget):
 
     clicked = Signal(str)
 
-    def __init__(self, item: CSideNavItem, parent=None):
+    def __init__(self, item: CSideNavItem, parent=None, *, height: int = 34):
         super().__init__(parent)
         self._item = item
         self._selected = False
         self._hover = False
+        self._height = max(24, int(height))
         self.setCursor(Qt.PointingHandCursor if item.enabled else Qt.ArrowCursor)
-        self.setFixedHeight(34)
+        self.setFixedHeight(self._height)
         self.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed)
         if item.tooltip:
             self.setToolTip(item.tooltip)
@@ -76,10 +77,10 @@ class _CSideNavButton(QWidget):
             self.update()
 
     def sizeHint(self) -> QSize:  # noqa: N802 - 覆写 Qt 命名
-        return QSize(180, 34)
+        return QSize(180, self._height)
 
     def minimumSizeHint(self) -> QSize:  # noqa: N802 - 覆写 Qt 命名
-        return QSize(80, 34)
+        return QSize(80, self._height)
 
     def paintEvent(self, event):  # noqa: N802 - 覆写 Qt 命名
         tokens = get_design_tokens()
@@ -199,8 +200,15 @@ class CSideNav(QWidget):
 
     itemClicked = Signal(str)
 
-    def __init__(self, groups: tuple[CSideNavGroup, ...] | list[CSideNavGroup] | None = None, parent=None):
+    def __init__(
+        self,
+        groups: tuple[CSideNavGroup, ...] | list[CSideNavGroup] | None = None,
+        parent=None,
+        *,
+        item_height: int = 34,
+    ):
         super().__init__(parent)
+        self._item_height = max(24, int(item_height))
         self._buttons: list[_CSideNavButton] = []
         self._group_widgets: list[QWidget] = []
         self._current = ""
@@ -238,7 +246,7 @@ class CSideNav(QWidget):
                 label = _CSideNavGroupLabel(group.title, box)
                 box_layout.addWidget(label)
             for item in group.items:
-                button = _CSideNavButton(item, box)
+                button = _CSideNavButton(item, box, height=self._item_height)
                 button.clicked.connect(self._on_clicked)
                 box_layout.addWidget(button)
                 self._buttons.append(button)

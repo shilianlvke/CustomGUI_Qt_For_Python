@@ -104,3 +104,21 @@ def install_system_fonts() -> int:
 
 
 __all__ = ["install_fonts", "install_system_fonts"]
+
+
+#: 等宽字体族（按优先级）；组件与页面统一从这里取，避免各处抄同一份列表
+MONO_FAMILIES = ("Cascadia Mono", "Consolas", "JetBrains Mono", "monospace")
+
+
+def mono_font(pixel_size: int = 12):
+    """等宽字体：先按族列表回退，再指定像素字号。"""
+    from PySide6.QtGui import QFont
+
+    font = QFont()
+    font.setFamilies(list(MONO_FAMILIES))
+    font.setStyleHint(QFont.StyleHint.Monospace)
+    font.setPixelSize(int(pixel_size))
+    return font
+
+
+__all__ = ["install_fonts", "install_system_fonts", "MONO_FAMILIES", "mono_font"]

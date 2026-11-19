@@ -39,9 +39,16 @@ class CChip(QWidget):
         image: str | None = None,
         removable: bool = False,
         parent=None,
+        *,
+        height: int | None = None,
+        font_pixel_size: int = 13,
+        tone: str = "neutral",
     ):
         super().__init__(parent)
         self._height, self._padding_x, self._icon_size, self._icon_gap = _chip_config()
+        if height is not None:
+            self._height = max(16, int(height))
+        self._tone = tone if tone in ("neutral", "accent") else "neutral"
         self._text = text
         self._icon = icon
         self._image = QPixmap(image) if image else QPixmap()
@@ -50,7 +57,7 @@ class CChip(QWidget):
         self._remove_rect = QRectF()
         self.setSizePolicy(QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Fixed)
         font = self.font()
-        font.setPixelSize(13)
+        font.setPixelSize(int(font_pixel_size))
         self.setFont(font)
         self.setFixedHeight(self._height)
         if removable:
@@ -107,9 +114,18 @@ class CChip(QWidget):
         rect = QRectF(self.rect()).adjusted(0.5, 0.5, -0.5, -0.5)
         path = QPainterPath()
         path.addRoundedRect(rect, rect.height() / 2, rect.height() / 2)
-        painter.fillPath(path, content_surface_color())
-        painter.setBrush(Qt.NoBrush)
-        painter.setPen(QColor(palette["border"]))
+        if self._tone == "accent":
+            fill = QColor(palette["accent"])
+            fill.setAlpha(38)
+            painter.fillPath(path, fill)
+            stroke = QColor(palette["accent"])
+            stroke.setAlpha(110)
+            painter.setBrush(Qt.NoBrush)
+            painter.setPen(stroke)
+        else:
+            painter.fillPath(path, content_surface_color())
+            painter.setBrush(Qt.NoBrush)
+            painter.setPen(QColor(palette["border"]))
         painter.drawPath(path)
 
         left = self._padding_x
@@ -130,7 +146,7 @@ class CChip(QWidget):
                 left += self._icon_size + self._icon_gap
 
         right = self.width() - self._padding_x - (18 if self._removable else 0)
-        painter.setPen(QColor(palette["text"]))
+        painter.setPen(QColor(palette["accent"] if self._tone == "accent" else palette["text"]))
         painter.drawText(
             QRectF(left, 0, right - left, self.height()),
             Qt.AlignLeft | Qt.AlignVCenter,

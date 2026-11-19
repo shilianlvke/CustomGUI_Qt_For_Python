@@ -12,6 +12,20 @@ from PySide6.QtCore import Qt
 from PySide6.QtGui import QFont
 from PySide6.QtWidgets import QLabel, QSizePolicy, QWidget
 
+from ...fonts import MONO_FAMILIES
+
+#: 语义角色 → (像素字号, 字重, 是否等宽)；页面只需声明"这是什么文字"
+_ROLES: dict[str, tuple[int, str, bool]] = {
+    "eyebrow": (9, "medium", False),
+    "title": (18, "semibold", False),
+    "section": (12, "semibold", False),
+    "entry": (13, "medium", False),
+    "body": (10, "regular", False),
+    "muted": (9, "regular", False),
+    "value": (11, "regular", True),
+    "metric": (22, "semibold", True),
+}
+
 #: 字号档位（像素）
 _SIZES = {
     "xs": 12,
@@ -29,9 +43,6 @@ _WEIGHTS = {
     "bold": QFont.Weight.Bold,
 }
 
-_MONO_FAMILIES = ["Cascadia Mono", "Consolas", "JetBrains Mono", "monospace"]
-
-
 class CText(QLabel):
     """排版文本组件：``size`` + ``weight`` + ``mono`` + ``wrap``。"""
 
@@ -44,11 +55,14 @@ class CText(QLabel):
         wrap: bool = False,
         selectable: bool = True,
         parent: QWidget | None = None,
+        *,
+        pixel_size: int | None = None,
     ):
         super().__init__(text, parent)
         self._size = size if size in _SIZES else "md"
         self._weight = weight if weight in _WEIGHTS else "regular"
         self._mono = bool(mono)
+        self._pixel_size = int(pixel_size) if pixel_size else None
         self.setWordWrap(bool(wrap))
         self.setTextInteractionFlags(Qt.TextSelectableByMouse if selectable else Qt.NoTextInteraction)
         self.setSizePolicy(QSizePolicy.Policy.Preferred, QSizePolicy.Policy.Preferred)
@@ -57,12 +71,18 @@ class CText(QLabel):
     # ------------------------------------------------------------------
     # 排版
     # ------------------------------------------------------------------
+    @classmethod
+    def with_role(cls, role: str, text: str = "", parent: QWidget | None = None, **kwargs) -> CText:
+        """按语义角色构造：``eyebrow / title / section / entry / body / muted / value / metric``。"""
+        pixel_size, weight, mono = _ROLES.get(role, _ROLES["body"])
+        return cls(text, weight=weight, mono=mono, parent=parent, pixel_size=pixel_size, **kwargs)
+
     def _apply_font(self) -> None:
         font = QFont(self.font())
-        font.setPixelSize(_SIZES[self._size])
+        font.setPixelSize(self._pixel_size or _SIZES[self._size])
         font.setWeight(_WEIGHTS[self._weight])
         if self._mono:
-            font.setFamilies(_MONO_FAMILIES)
+            font.setFamilies(list(MONO_FAMILIES))
         self.setFont(font)
 
     def text_size(self) -> str:
