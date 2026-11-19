@@ -52,9 +52,9 @@ class ShellPreviewPage(CPreviewPage):
         menu = CAppMenu(cls._menu_items())
         menu.setMinimumWidth(280)
 
-        # 设置不再以页面浮层出现：改为打开主窗口右侧抽屉里的设置页。
+        # 设置不再以页面浮层出现：与标题栏、快捷键一致，打开独立设置窗口。
         trigger = CButton(cls.tr("open_config"), icon="icon_setting", variant="outlined")
-        trigger.clicked.connect(lambda: cls._toggle_settings_drawer(window))
+        trigger.clicked.connect(lambda: cls._open_settings(window))
 
         row = QWidget()
         row_layout = QHBoxLayout(row)
@@ -72,24 +72,12 @@ class ShellPreviewPage(CPreviewPage):
         return [cls.card(cls.tr("group_topbar"), topbar), row]
 
     @staticmethod
-    def _toggle_settings_drawer(window) -> None:
-        """打开/收起主窗口右侧的设置抽屉（兼容无 controller 的测试宿主）。"""
+    def _open_settings(window) -> None:
+        """打开独立设置窗口（与标题栏按钮、``Ctrl+,`` 走同一条路径）。"""
         controller = getattr(window, "controller", None)
-        settings_controller = getattr(controller, "settings_controller", None) if controller is not None else None
-        toggle = getattr(settings_controller, "toggle_settings_drawer", None)
-        if callable(toggle):
-            toggle()
-            return
-
-        ui = getattr(window, "ui", None)
-        menu = getattr(ui, "settings_menu", None)
-        if menu is None or not hasattr(ui, "right_column"):
-            return
-        from sllkgui.guis.windows.main_window.functions import MainFunctions
-
-        ui.right_column.menus.setCurrentWidget(menu)
-        if not MainFunctions.right_column_is_visible(window):
-            MainFunctions.toggle_right_column(window)
+        opener = getattr(controller, "open_settings_window", None)
+        if callable(opener):
+            opener()
 
 
 def build(ctx):

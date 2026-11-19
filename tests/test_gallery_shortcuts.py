@@ -260,7 +260,7 @@ class _StubController:
         self.searches += 1
         return True
 
-    def toggle_settings_drawer(self) -> bool:
+    def open_settings_window(self) -> bool:
         self.settings += 1
         return True
 

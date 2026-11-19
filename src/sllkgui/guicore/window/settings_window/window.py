@@ -14,6 +14,8 @@
 
 from __future__ import annotations
 
+from collections.abc import Callable, Mapping
+
 from PySide6.QtCore import QEvent, QPoint, QRectF, Qt, QTimer, Signal
 from PySide6.QtGui import QColor, QFont, QPainter, QPainterPath, QPen
 from PySide6.QtWidgets import (
@@ -150,6 +152,7 @@ class CSettingsWindow(QDialog):
         *,
         session: SettingsSession | None = None,
         host: QWidget | None = None,
+        plugin_titles: Callable[[], Mapping[str, str]] | None = None,
     ):
         super().__init__(parent)
         self.setObjectName("CSettingsWindow")
@@ -163,6 +166,8 @@ class CSettingsWindow(QDialog):
         ensure_core_pages(session.registry if session is not None else None)
         self._session = session if session is not None else SettingsSession()
         self._host = host if host is not None else parent
+        #: 插件显示名提供者：由装配层注入，guicore 不 import gallery
+        self._plugin_titles_provider = plugin_titles
         self._entries: dict[str, dict] = {}
         self._schema_pages: dict[str, SchemaPage] = {}
         self._previewed: dict[str, object] = {}
@@ -354,11 +359,11 @@ class CSettingsWindow(QDialog):
         )
 
         plugin_items: list[CSideNavItem] = []
-        for plugin_id, record, pages in self._plugin_pages():
+        for plugin_id, plugin_name, pages in self._plugin_pages():
             if pages:
                 for page in pages:
                     item_id = f"plugin::{plugin_id}::{page.page_id}"
-                    title = record.name if record is not None else page.display_title()
+                    title = plugin_name or page.display_title()
                     if len(pages) > 1:
                         title = f"{title} · {page.display_title()}"
                     self._add_schema_page(page, prefix=item_id)
@@ -373,7 +378,7 @@ class CSettingsWindow(QDialog):
                     )
             else:
                 item_id = f"{_PLUGIN_EMPTY_PREFIX}{plugin_id}"
-                title = record.name if record is not None else plugin_id
+                title = plugin_name or plugin_id
                 empty = build_plugin_empty_page(title, self)
                 self._add_custom_page(
                     item_id,
@@ -487,24 +492,21 @@ class CSettingsWindow(QDialog):
                 continue
             plugin_id = page.namespace.split(".", 1)[1]
             pages_by_plugin.setdefault(plugin_id, []).append(page)
-        records = self._plugin_records()
-        for plugin_id in records:
+        titles = self._plugin_titles()
+        for plugin_id in titles:
             pages_by_plugin.setdefault(plugin_id, [])
         result = []
-        for plugin_id in sorted(pages_by_plugin, key=lambda item: (records.get(item).name if records.get(item) else item).lower()):
-            result.append((plugin_id, records.get(plugin_id), pages_by_plugin[plugin_id]))
+        for plugin_id in sorted(pages_by_plugin, key=lambda item: titles.get(item, item).lower()):
+            result.append((plugin_id, titles.get(plugin_id, ""), pages_by_plugin[plugin_id]))
         return result
 
-    @staticmethod
-    def _plugin_records() -> dict:
+    def _plugin_titles(self) -> dict[str, str]:
+        """插件显示名；宿主未注入或读取失败时返回空表（导航退化为插件 ID）。"""
+        if self._plugin_titles_provider is None:
+            return {}
         try:
-            from sllkgui.gallery.registry import current_registry
-
-            registry = current_registry()
-            if registry is None:
-                return {}
-            return {record.plugin_id: record for record in registry.plugins()}
-        except Exception:  # noqa: BLE001 - 预览/测试环境可能没有插件注册表
+            return {str(key): str(value) for key, value in self._plugin_titles_provider().items()}
+        except Exception:  # noqa: BLE001 - 导航分组失败不应阻断设置窗口
             return {}
 
     # ------------------------------------------------------------------

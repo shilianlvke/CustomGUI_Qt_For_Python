@@ -147,11 +147,6 @@ class UiMainWindow:
         # ADD RIGHT PAGES TO RIGHT COLUMN
         self.right_column = Ui_RightColumn()
         self.right_column.setupUi(self.content_area_right_bg_frame)
-        # 右侧抽屉的“设置”页按需创建：CSettingsDrawer 含 3 个单屏子页、
-        # 主题卡片与背景手风琴，启动即建约 10 MB。首次打开设置抽屉时由
-        # MainWindowController 创建并按当前抽屉模式挂到右列 / 浮层。
-        self.settings_drawer = None
-        self.settings_menu = None
         # ADD TO LAYOUTS
         self.content_area_layout.addWidget(self.content_area_left_frame)
         self.content_area_layout.addWidget(self.right_column_frame)

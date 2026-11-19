@@ -40,9 +40,7 @@ def install_builtin_shortcuts(window: Any, controller: Any) -> int:
     registry.unregister_owner(BASE_OWNER)
     actions = {
         "base.search": getattr(controller, "open_search_palette", None),
-        # 新宿主提供 open_settings_window；旧宿主回落到抽屉开合
-        "base.settings": getattr(controller, "open_settings_window", None)
-        or getattr(controller, "toggle_settings_drawer", None),
+        "base.settings": getattr(controller, "open_settings_window", None),
     }
     registered = 0
     for shortcut_id, sequence, description in BUILTIN_BINDINGS:

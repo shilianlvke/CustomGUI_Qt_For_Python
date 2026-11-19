@@ -37,14 +37,8 @@ EDGE_ALLOWLIST: dict[tuple[str, str], set[str]] = {
     ("gallery", "guis"): {"gallery/window.py"},
 }
 
-#: 已知待清理的反向依赖：P3 删设置抽屉后此表必须为空（空表本身也由此测试守护）
-PENDING_INVERSIONS: dict[tuple[str, str], set[str]] = {
-    ("guicore", "gallery"): {
-        "guicore/window/settings/sections.py",
-        "guicore/window/left_column/settings_panel.py",
-        "guicore/window/settings_window/window.py",
-    },
-}
+#: 已知待清理的反向依赖：为空表示分层已闭合（删除设置抽屉后清空）
+PENDING_INVERSIONS: dict[tuple[str, str], set[str]] = {}
 
 
 def _iter_python_files(*folders: Path):

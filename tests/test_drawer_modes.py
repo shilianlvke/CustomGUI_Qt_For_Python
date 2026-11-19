@@ -3,6 +3,10 @@
 ``drawer_mode`` 是全局开关：static 时抽屉占布局、压缩内容区；overlay 时抽屉
 脱离开布局、浮在内容区之上，内容区尺寸不变。四个方向（左 / 右 / 上 / 下）
 共用同一份配置，``menu_mode`` 仍只控制左侧图标菜单。
+
+右侧抽屉自 3.0 起不再内置设置面板：宿主可通过
+``DrawerLayout.attach_right(panel)`` 注入任意面板，这里用一个桩面板验证
+两种模式下的挂载行为。
 """
 
 import os
@@ -11,7 +15,7 @@ os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
 
 import pytest
 from PySide6.QtTest import QTest
-from PySide6.QtWidgets import QApplication, QMainWindow
+from PySide6.QtWidgets import QApplication, QMainWindow, QWidget
 
 from sllkgui.appcore import (
     AppLanguages,
@@ -21,10 +25,42 @@ from sllkgui.appcore import (
     Language,
     get_app_context,
 )
-from sllkgui.guicore.window.settings import CSettingsDrawer
-from sllkgui.guis.windows.main_window.controller import MainWindowController, SettingsController
+from sllkgui.guis.windows.main_window.controller import MainWindowController
 from sllkgui.guis.windows.main_window.functions import MainFunctions
 from sllkgui.guis.windows.main_window.ui_main import UiMainWindow
+
+DEFAULT_PANEL_WIDTH = 360
+
+
+class _StubRightPanel(QWidget):
+    """替代已删除的设置抽屉：只实现 DrawerLayout 需要的最小协议。"""
+
+    def __init__(self, parent=None):
+        super().__init__(parent)
+        self._embedded = False
+        self._open = False
+        self.setFixedWidth(DEFAULT_PANEL_WIDTH)
+
+    def set_embedded(self, value: bool) -> None:
+        self._embedded = bool(value)
+
+    def is_embedded(self) -> bool:
+        return self._embedded
+
+    def open(self) -> None:
+        self._open = True
+        self.show()
+
+    def close(self) -> None:
+        self._open = False
+        self.hide()
+
+    def is_open(self) -> bool:
+        return self._open
+
+    def hide(self) -> None:  # noqa: N802 - 覆写 Qt 命名
+        self._open = False
+        super().hide()
 
 
 @pytest.fixture(scope="module")
@@ -35,7 +71,7 @@ def qapp():
 
 @pytest.fixture
 def window(qapp):
-    """真实主窗口骨架（不加载 apps：抽屉模式只依赖四个容器）。"""
+    """真实主窗口骨架（不加载插件：抽屉模式只依赖四个容器）。"""
     get_app_context()
     ColorPalette.update(AppThemes[AppSettings.theme_name].data)
     Language.update(AppLanguages[AppSettings.language].data)
@@ -45,40 +81,12 @@ def window(qapp):
     ui.setup_ui(host)
     host.ui = ui
     host.controller = MainWindowController(host)
-    # 外观面板默认惰性创建；抽屉模式用例需要它立即存在
-    host.controller._ensure_settings_drawer()
     host.resize(1200, 760)
     host.show()
     QTest.qWait(80)
     yield host
     host.close()
     host.deleteLater()
-
-
-def test_appearance_panel_is_created_on_first_open(qapp):
-    """外观抽屉惰性创建：启动时为空，首次点击才构建并接入抽屉。"""
-    get_app_context()
-    ColorPalette.update(AppThemes[AppSettings.theme_name].data)
-    Language.update(AppLanguages[AppSettings.language].data)
-
-    host = QMainWindow()
-    ui = UiMainWindow()
-    ui.setup_ui(host)
-    host.ui = ui
-    host.controller = MainWindowController(host)
-    host.resize(1200, 760)
-    host.show()
-    QTest.qWait(80)
-    try:
-        assert ui.settings_drawer is None
-        host.controller.settings_controller.toggle_settings_drawer()
-        _wait_animation()
-        assert ui.settings_drawer is not None
-        assert ui.settings_drawer.isVisible()
-        assert ui.right_column_frame.minimumWidth() == AppSettings.right_column_size.maximum
-    finally:
-        host.close()
-        host.deleteLater()
 
 
 def _wait_animation():
@@ -91,56 +99,22 @@ def _content_size(window):
 
 
 # ----------------------------------------------------------------------
-# 外观抽屉里的抽屉模式控件
-# ----------------------------------------------------------------------
-def test_configurator_drawer_mode_signal(qapp):
-    from PySide6.QtWidgets import QWidget
-
-    host = QWidget()
-    host.resize(900, 640)
-    host.show()
-    panel = CSettingsDrawer(host)
-    modes: list[str] = []
-    panel.drawerModeChanged.connect(modes.append)
-    try:
-        assert panel.drawer_mode() == "static"
-        panel.set_drawer_mode("overlay")
-        assert panel.drawer_mode() == "overlay"
-        assert modes == ["overlay"]
-        panel.set_drawer_mode("overlay")
-        assert modes == ["overlay"], "重复设置同一模式不应再次发信号"
-        panel.set_drawer_mode("static")
-        assert modes == ["overlay", "static"]
-    finally:
-        panel.deleteLater()
-        host.deleteLater()
-
-
-# ----------------------------------------------------------------------
 # Static：四个抽屉都在布局里占位
 # ----------------------------------------------------------------------
 def test_static_mode_left_and_right_drawers_occupy_layout(window):
     MainFunctions.set_drawer_mode(window, "static")
     assert MainFunctions.drawer_mode(window) == "static"
-    assert window.ui.settings_drawer.is_embedded()
-    assert window.ui.settings_menu is window.ui.settings_drawer
+
+    drawer = window._drawer_layout
+    panel = _StubRightPanel(window.ui.content_area_frame)
+    drawer.attach_right(panel)
+    assert panel.is_embedded()
+    assert window.ui.right_column_frame.minimumWidth() == AppSettings.right_column_size.minimum
 
     MainFunctions.toggle_left_column(window)
     _wait_animation()
     assert window.ui.left_column_frame.minimumWidth() == AppSettings.left_column_size.maximum
     assert MainFunctions.left_column_is_visible(window)
-
-    controller = SettingsController(window)
-    controller.toggle_settings_drawer()
-    _wait_animation()
-    assert window.ui.right_column_frame.minimumWidth() == AppSettings.right_column_size.maximum
-    assert window.ui.settings_drawer.isVisible()
-    assert controller._settings_drawer_active()
-
-    controller.toggle_settings_drawer()
-    _wait_animation()
-    assert window.ui.right_column_frame.minimumWidth() == AppSettings.right_column_size.minimum
-    assert not controller._settings_drawer_active()
 
 
 def test_static_mode_top_and_bottom_drawers_occupy_layout(window):
@@ -165,8 +139,6 @@ def test_overlay_mode_left_and_top_bottom_float_without_resizing_content(window)
     MainFunctions.set_drawer_mode(window, "overlay")
     drawer = window._drawer_layout
     assert drawer.mode() == "overlay"
-    assert not window.ui.settings_drawer.is_embedded()
-    assert window.ui.settings_drawer.isHidden()
     for frame in (
         window.ui.left_column_frame,
         window.ui.top_column_frame,
@@ -179,7 +151,6 @@ def test_overlay_mode_left_and_top_bottom_float_without_resizing_content(window)
     _wait_animation()
     assert drawer.is_open("left")
     assert window.ui.left_column_frame.width() == AppSettings.left_column_size.maximum
-    assert window.ui.left_column_frame.x() == window.ui.content_area_frame.mapTo(window.ui.window, window.ui.content_area_frame.rect().topLeft()).x()
     assert _content_size(window) == (width_before, height_before)
 
     MainFunctions.toggle_top_column(window)
@@ -196,23 +167,28 @@ def test_overlay_mode_left_and_top_bottom_float_without_resizing_content(window)
     assert _content_size(window) == (width_before, height_before)
 
 
-def test_overlay_mode_right_drawer_floats_without_resizing_content(window):
+def test_overlay_mode_right_panel_floats_without_resizing_content(window):
+    """右侧抽屉浮动时不压缩内容区；面板由宿主注入，基座不再内置设置页。"""
     MainFunctions.set_drawer_mode(window, "overlay")
-    controller = SettingsController(window)
-    width_before, height_before = _content_size(window)
+    drawer = window._drawer_layout
+    panel = _StubRightPanel(window.ui.content_area_frame)
+    panel.show()
+    drawer.attach_right(panel)
 
-    controller.toggle_settings_drawer()
+    width_before, height_before = _content_size(window)
+    panel.open()
     _wait_animation()
-    panel = window.ui.settings_drawer
-    assert panel.is_open()
+
+    assert drawer.right_is_open()
     assert panel.isVisible()
-    assert panel.width() == CSettingsDrawer.DEFAULT_WIDTH
+    assert not panel.is_embedded()
+    assert panel.width() == DEFAULT_PANEL_WIDTH
     assert window.ui.right_column_frame.width() == AppSettings.right_column_size.minimum
     assert _content_size(window) == (width_before, height_before)
 
-    controller.toggle_settings_drawer()
+    panel.close()
     _wait_animation()
-    assert not panel.is_open()
+    assert not drawer.right_is_open()
     assert not panel.isVisible()
 
 

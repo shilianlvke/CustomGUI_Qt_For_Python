@@ -104,7 +104,7 @@ def test_drawer_mode_roundtrip_and_validation():
     assert not user_settings.save_user_settings(drawer_mode="floating")
 
 
-def test_restore_drawer_mode_applies_and_syncs(monkeypatch):
+def test_restore_drawer_mode_applies(monkeypatch):
     applied = []
 
     class _Functions:
@@ -112,21 +112,12 @@ def test_restore_drawer_mode_applies_and_syncs(monkeypatch):
         def set_drawer_mode(window, mode):
             applied.append(mode)
 
-    class _Config:
-        def __init__(self):
-            self.value = None
-
-        def set_drawer_mode(self, mode):
-            self.value = mode
-
-    config = _Config()
-    window = SimpleNamespace(ui=SimpleNamespace(settings_drawer=config))
+    window = SimpleNamespace(ui=SimpleNamespace())
     monkeypatch.setattr(setup_window_module, "MainFunctions", _Functions)
 
     SetupMainWindow.restore_drawer_mode(window, {"drawer_mode": "overlay"})
 
     assert applied == ["overlay"]
-    assert config.value == "overlay"
 
 
 def test_restore_drawer_mode_defaults_to_static(monkeypatch):
@@ -137,15 +128,11 @@ def test_restore_drawer_mode_defaults_to_static(monkeypatch):
         def set_drawer_mode(window, mode):
             applied.append(mode)
 
-    class _Config:
-        def set_drawer_mode(self, mode):
-            applied.append(mode)
-
-    window = SimpleNamespace(ui=SimpleNamespace(settings_drawer=_Config()))
+    window = SimpleNamespace(ui=SimpleNamespace())
     monkeypatch.setattr(setup_window_module, "MainFunctions", _Functions)
 
     SetupMainWindow.restore_drawer_mode(window, {"drawer_mode": "floating"})
-    assert applied == ["static", "static"], "非法值回退 static，并同步面板选中态"
+    assert applied == ["static"], "非法值回退 static"
 
 
 def test_appearance_fields_roundtrip():
@@ -243,7 +230,7 @@ def test_restore_ui_state_applies_user_config():
         Language.apply("zh_cn")
 
 
-def test_restore_menu_mode_syncs_drawer(monkeypatch):
+def test_restore_menu_mode_applies(monkeypatch):
     applied = []
 
     class _Functions:
@@ -251,21 +238,12 @@ def test_restore_menu_mode_syncs_drawer(monkeypatch):
         def set_menu_mode(window, mode):
             applied.append(mode)
 
-    class _Config:
-        def __init__(self):
-            self.value = None
-
-        def set_menu_mode(self, mode):
-            self.value = mode
-
-    config = _Config()
-    window = SimpleNamespace(ui=SimpleNamespace(settings_drawer=config))
+    window = SimpleNamespace(ui=SimpleNamespace())
     monkeypatch.setattr(setup_window_module, "MainFunctions", _Functions)
 
     SetupMainWindow.restore_menu_mode(window, {"menu_mode": "overlay"})
 
     assert applied == ["overlay"]
-    assert config.value == "overlay"
 
 
 def test_restore_menu_mode_ignores_invalid_value(monkeypatch):
@@ -274,23 +252,16 @@ def test_restore_menu_mode_ignores_invalid_value(monkeypatch):
         def set_menu_mode(window, mode):  # pragma: no cover - 不应被调用
             raise AssertionError(mode)
 
-    window = SimpleNamespace(ui=SimpleNamespace(settings_drawer=SimpleNamespace(set_menu_mode=lambda mode: None)))
+    window = SimpleNamespace(ui=SimpleNamespace())
     monkeypatch.setattr(setup_window_module, "MainFunctions", _Functions)
 
     SetupMainWindow.restore_menu_mode(window, {"menu_mode": "floating"})
 
 
-def test_restore_appearance_applies_and_syncs_panel():
+def test_restore_appearance_applies():
     from sllkgui.guicore import acrylic_transparency, glass_strength, reset_appearance_overrides
 
-    synced = {}
-
-    class _Config:
-        def set_appearance(self, transparency=None, strength=None):
-            synced["transparency"] = transparency
-            synced["strength"] = strength
-
-    window = SimpleNamespace(ui=SimpleNamespace(settings_drawer=_Config()))
+    window = SimpleNamespace(ui=SimpleNamespace())
     try:
         applied = SetupMainWindow.restore_appearance(
             window,
@@ -299,7 +270,6 @@ def test_restore_appearance_applies_and_syncs_panel():
         assert applied
         assert acrylic_transparency() == 72
         assert glass_strength() == 35
-        assert synced == {"transparency": 72, "strength": 35}
     finally:
         reset_appearance_overrides()
 

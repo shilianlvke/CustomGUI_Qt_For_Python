@@ -182,10 +182,6 @@ class SetupMainWindow:
             set_acrylic_transparency(transparency)
         if strength is not None:
             set_glass_strength(strength)
-        config = getattr(getattr(window, "ui", None), "settings_drawer", None)
-        setter = getattr(config, "set_appearance", None)
-        if callable(setter):
-            setter(transparency=transparency, strength=strength)
         return applied
 
     @staticmethod
@@ -206,7 +202,7 @@ class SetupMainWindow:
 
     @staticmethod
     def restore_menu_mode(window, state: dict) -> None:
-        """按用户配置恢复左菜单 Static / Overlay 模式并同步设置抽屉选中态。"""
+        """按用户配置恢复左菜单 Static / Overlay 模式。"""
         mode = state.get("menu_mode")
         if not isinstance(mode, str) or mode not in ("static", "overlay"):
             return
@@ -214,18 +210,12 @@ class SetupMainWindow:
             MainFunctions.set_menu_mode(window, mode)
         except Exception as exc:  # noqa: BLE001 - 菜单恢复失败不应阻断启动
             Logger.warning(f"恢复菜单模式失败，回退 Static: {exc}")
-            return
-        config = getattr(getattr(window, "ui", None), "settings_drawer", None)
-        setter = getattr(config, "set_menu_mode", None)
-        if callable(setter):
-            setter(mode)
 
     @staticmethod
     def restore_drawer_mode(window, state: dict) -> None:
-        """按用户配置恢复四向抽屉的 Static / Overlay 模式并同步选中态。
+        """按用户配置恢复四向抽屉的 Static / Overlay 模式。
 
-        未配置时显式应用 ``static``：外观面板默认以浮层形态创建，必须在这里
-        统一收进右列，才能与「固定」的语义一致。
+        未配置时显式应用 ``static``，保证启动形态与默认一致。
         """
         mode = state.get("drawer_mode")
         if not isinstance(mode, str) or mode not in ("static", "overlay"):
@@ -234,11 +224,6 @@ class SetupMainWindow:
             MainFunctions.set_drawer_mode(window, mode)
         except Exception as exc:  # noqa: BLE001 - 抽屉恢复失败不应阻断启动
             Logger.warning(f"恢复抽屉模式失败，回退 Static: {exc}")
-            return
-        config = getattr(getattr(window, "ui", None), "settings_drawer", None)
-        setter = getattr(config, "set_drawer_mode", None)
-        if callable(setter):
-            setter(mode)
 
     @staticmethod
     def clamp_to_screen(window):

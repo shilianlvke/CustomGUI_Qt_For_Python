@@ -57,6 +57,9 @@ class DrawerLayout:
         self._indices: dict[str, int] = {}
         self._tracker: _DrawerResizeTracker | None = None
         self._right_embedded = False
+        #: 右侧抽屉承载的面板：由宿主通过 :meth:`attach_right` 注入，
+        #: DrawerLayout 不再认识设置面板类型
+        self._right_panel = None
 
     # ------------------------------------------------------------------
     # 状态
@@ -82,7 +85,8 @@ class DrawerLayout:
         """右侧设置抽屉是否展开。"""
         if self._mode == "overlay" and self._overlay_ready:
             panel = self._panel()
-            return bool(panel is not None and panel.is_open())
+            is_open = getattr(panel, "is_open", None)
+            return bool(callable(is_open) and is_open())
         frame = self._frame("right")
         if frame is None:
             return False
@@ -168,6 +172,7 @@ class DrawerLayout:
         静态模式：收进右列堆栈，宽度保持收起态；浮层模式：保持为内容区的
         浮层子控件并隐藏，等首次 open 时滑入。
         """
+        self._right_panel = panel
         if self._mode == "static":
             self._apply_static_right(False)
             return
@@ -199,7 +204,6 @@ class DrawerLayout:
         panel.set_embedded(True)
         if panel.parentWidget() is not stack:
             stack.addWidget(panel)
-        self.ui.settings_menu = panel
         self._right_embedded = True
 
     def _float_right(self, panel) -> None:
@@ -291,7 +295,8 @@ class DrawerLayout:
         panel = self._panel()
         if panel is None:
             return
-        if panel.is_open():
+        is_open = getattr(panel, "is_open", None)
+        if callable(is_open) and is_open():
             panel.close()
         if opened:
             panel.open()
@@ -494,8 +499,7 @@ class DrawerLayout:
         return getattr(ui, attribute, None) if attribute else None
 
     def _panel(self):
-        ui = self.ui
-        return getattr(ui, "settings_drawer", None) if ui is not None else None
+        return self._right_panel
 
     def _right_stack(self):
         ui = self.ui

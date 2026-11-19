@@ -19,7 +19,7 @@
 | 文件/图表 | `CFileUpload` `CChart` |
 | 布局 | `CFluid` `CTabs` `CAccordion` `CAccordionPanel` `CFieldset` `CFormField` `CFormGrid` `CScrollArea` `CScrollTop` `CSplitter` `CSplitterHandle` `CToolbar` |
 | 设置与导航 | `CSettingsWindow` `CSideNav` `CSideNavGroup` `CSideNavItem` `CSettingGroup` `CSettingRow` `CInfoRow` `CEditActionBar` `CThemeCard` `CThumbnail` |
-| 窗口部件 | `CWindow` `CTitleBar` `CLeftMenu` `CLeftColumn` `CTopColumn` `CBottomColumn` `CGrips` `CCredits` `CAppTopbar` `CAppMenu` `CAppMenuItem` `CSettingsDrawer` |
+| 窗口部件 | `CWindow` `CTitleBar` `CLeftMenu` `CLeftColumn` `CTopColumn` `CBottomColumn` `CGrips` `CCredits` `CAppTopbar` `CAppMenu` `CAppMenuItem` `CSettingsWindow` |
 | 材质 | `apply_acrylic` `remove_acrylic` `acrylic_active` `acrylic_opacity` `acrylic_supported` `acrylic_tint` `glass_tint` |
 
 分类只是导航；同名对象都从 `sllkgui.guicore` 顶层导入。
@@ -242,7 +242,7 @@ chart.set_data([{"name": "访问量", "values": [3, 5, 8], "labels": ["一", "�
 ```python
 CAppTopbar(title="控制台", logo=icon)      # logo / 菜单开关 / 搜索 / 通知 / 用户菜单
 CAppMenu(items=[...])                      # 嵌套侧边菜单
-CSettingsDrawer(window)                    # 右侧设置抽屉（软件信息 / 外观 / 界面）
+CSettingsWindow(window)                    # 独立设置窗口（软件信息 / 外观 / 界面 / 插件）
 ```
 
 壳层组件用于「应用内再套一层后台布局」，与基座主窗口的四向栏目互不替代。
@@ -257,7 +257,7 @@ CSettingsDrawer(window)                    # 右侧设置抽屉（软件信息 /
 | `CLeftColumn` / `CTopColumn` / `CBottomColumn` | 三个方向的栏目抽屉，47px 标题条 + `menus` 堆栈 |
 | `CGrips` | 八方向缩放夹点 |
 | `CCredits` | 底部版权/版本栏，订阅语言变化 |
-| `CAppTopbar` / `CAppMenu` / `CAppMenuItem` / `CSettingsDrawer` | 应用壳层 |
+| `CAppTopbar` / `CAppMenu` / `CAppMenuItem` | 应用壳层 |
 | `CSettingsWindow` | 独立设置窗口：分类导航、声明页渲染、脏值保存 / 放弃 / 关闭确认 |
 
 右列 `Ui_RightColumn` 由 `sllkgui.guis` 再导出（实现位于 `guicore.window`）。
@@ -298,7 +298,7 @@ get_theme_manager().apply("eye")
 | `overlay_preview` | `CDialog` `CConfirmDialog` `COverlayPanel` + 四向栏目抽屉 |
 | `panel_preview` | `CTabs` `CAccordion` `CPanel` `CFieldset` `CToolbar` `CSplitter` `CFormGrid` |
 | `media_preview` | `CImage` `CCarousel` `CGalleria` `CPixmap` `CChart` `CFileUpload` |
-| `shell_preview` | `CAppTopbar` `CAppMenu` `CSettingsDrawer` |
+| `shell_preview` | `CAppTopbar` `CAppMenu`（「打开设置」按钮指向独立设置窗口） |
 
 ## 7. 设置项速查（`_resources/sllkgui/settings/window.yaml`）
 

@@ -119,8 +119,8 @@ def test_button_to_page_route_chain():
     assert title_state["text"] == "Home"
 
 
-def test_settings_button_toggles_native_settings_drawer():
-    """标题栏「设置」只负责开合右侧抽屉，不切换页面或左菜单选中态。"""
+def test_settings_button_opens_settings_window():
+    """标题栏「设置」打开独立设置窗口，不切换页面或左菜单选中态。"""
     window, left_menu, _title_state = _build_window()
     main_functions = _MainFunctionStub()
     controller = MainWindowController(
@@ -136,7 +136,7 @@ def test_settings_button_toggles_native_settings_drawer():
         get_routes=lambda _language, _window=None: {},
     )
     calls: list[bool] = []
-    controller.settings_controller = SimpleNamespace(toggle_settings_drawer=lambda: calls.append(True))
+    controller.settings_controller = SimpleNamespace(open_settings_window=lambda: calls.append(True))
 
     controller.handle_button(_FakeButton("btn_settings"))
 

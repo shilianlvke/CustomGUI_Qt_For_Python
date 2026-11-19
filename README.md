@@ -402,7 +402,7 @@ SllkGui/
 | 文件与图表 | `CFileUpload` `CChart` |
 | 布局 | `CTabs` `CAccordion` `CFieldset` `CFormField` `CFormGrid` `CScrollArea` `CSplitter` `CToolbar` |
 | 设置与导航 | `CSettingsWindow` `CSideNav` `CSettingGroup` `CSettingRow` `CInfoRow` `CEditActionBar` `CThemeCard` `CThumbnail` |
-| 窗口部件 | `CWindow` `CTitleBar` `CLeftMenu` `CSettingsDrawer` `CGrips` `CCredits` |
+| 窗口部件 | `CWindow` `CTitleBar` `CLeftMenu` `CSettingsWindow` `CGrips` `CCredits` |
 
 完整签名与用法见 [docs/COMPONENTS.md](docs/COMPONENTS.md)。
 
