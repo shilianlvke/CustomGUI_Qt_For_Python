@@ -42,7 +42,7 @@ path = PathFactory.set_ico("icon")                    # images/ico/icon.ico
   由基座解析菜单图标：
 
 ```text
-apps/myapp/
+my-plugin/                      # 你的插件或宿主项目根目录
 └── resource/
     └── icon/
         └── my_icon.svg

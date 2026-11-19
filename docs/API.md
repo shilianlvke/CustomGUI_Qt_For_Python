@@ -135,7 +135,7 @@ save_user_settings(theme_name="bright")     # 手动写入，失败返回 False 
 user_settings_path()                        # -> Path
 ```
 
-优先级：**user.yaml > 品牌覆盖层（`apps/<app>/brand`）> 基座默认 `settings/*.yaml`**。
+优先级：**user.yaml > 品牌覆盖层（`configure(resource_dirs=...)` 指定的资源目录）> 基座默认 `settings/*.yaml`**。
 用户文件缺失、YAML 损坏、顶层不是字典或字段值非法时回退下层配置；写入使用
 `mkstemp` 生成的同目录唯一临时文件 + `fsync` + `os.replace` 原子替换，失败记录
 告警（含具体异常类型与消息）且不影响当前会话，回写保留磁盘原始版本与未知键。

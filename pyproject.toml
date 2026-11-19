@@ -15,6 +15,8 @@ keywords = ["pyside6", "qt", "ui", "desktop", "widgets", "theme", "plugin", "fra
 classifiers = [
     "Development Status :: 4 - Beta",
     "Intended Audience :: Developers",
+    # 基座核心代码在其它桌面平台可运行（亚克力 / 托盘 / 修饰键降级，见
+    # tests/test_cross_platform.py）；仅 Windows 启动器是平台特化的，不随 wheel 分发。
     "Operating System :: OS Independent",
     "Programming Language :: Python :: 3.12",
     "Programming Language :: Python :: 3.13",

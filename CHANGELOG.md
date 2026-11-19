@@ -90,9 +90,10 @@ minor 与 patch 保持向后兼容。
 
 ### 内部重构
 
-- 插件管理页由 1577 行单文件拆为 8 个模块的包（`guis/pages/plugin_store/`），只允许
-  向下依赖：`page ← panels ← dialogs ← entries ← widgets ← theme ← context`；
-  随后自绘件全部换用组件库，页面净减约 260 行。行为与文案零变化。
+- 插件管理页由 1577 行单文件拆为 7 个模块的包（`guis/pages/plugin_store/` 下的
+  `__init__` / `context` / `theme` / `entries` / `dialogs` / `panels` / `page`），
+  只允许向下依赖：`page ← panels ← dialogs ← entries ← theme ← context`；
+  自绘件全部上移组件库（`widgets` 层随之取消），页面净减约 260 行。行为与文案零变化。
 
 ---
 

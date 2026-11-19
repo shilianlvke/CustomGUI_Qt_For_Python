@@ -29,7 +29,7 @@
 | F-05 | 中高 | 表格预览 / 状态列 | 表头“库存状态”在拉伸后的列中居中，状态标签却固定画在单元格左侧 `+10px`；视觉上标签落在“评分”和“库存状态”之间，和表头错位约 100px。 | [delegate.py](../src/sllkgui/guicore/custom_ui/data/table/delegate.py) `_paint_tag` 未执行 `initStyleOption`，`option.displayAlignment` 为空，标签始终左对齐 |
 | F-06 | 中 | 表格预览 / 冻结列 | 主表点表头可正常排序；点冻结列“名称”表头，首行数据不变、排序指示器不切换。 | [view.py](../src/sllkgui/guicore/custom_ui/data/table/view.py) 只连接主表头 `sectionClicked`，冻结表头未连接 |
 | F-07 | 中 | 壳层/菜单预览 / 卡片标题 | 卡片被同行更高的卡片拉高时，标题 `QLabel` 纵向膨胀（实测 AppMenu 标题高 134px，内容被推到 y=154），标题与内容之间出现大段空白，内容贴底。 | [page.py](../src/sllkgui/guicore/app_ui/page.py) `card()` 直接 `addWidget(title_label)`，未限制标题高度或加 stretch |
-| F-08 | 中 | 菜单预览 / 状态提示 | `ContextMenu` 的“点击按钮打开菜单”提示、`TabMenu` 内容文字、`Menubar` 回调提示使用 `palette(mid)`，在玻璃深色卡片上几乎不可见。 | `apps/menu_preview/gui/main.py`（旧 App 协议，3.0 已移除） 多处 `color: palette(mid)` |
+| F-08 | 中 | 菜单预览 / 状态提示 | `ContextMenu` 的“点击按钮打开菜单”提示、`TabMenu` 内容文字、`Menubar` 回调提示使用 `palette(mid)`，在玻璃深色卡片上几乎不可见。 | 历史来源：旧 App 协议菜单预览（3.0 已移除），当时多处 `color: palette(mid)`；当前同类实现见 `guicore/custom_ui/menu/` |
 | F-09 | 中 | 壳层 / 主题配置 | “菜单模式”的 `Static / Overlay` 只改变按钮选中态，基座和示例应用都没有消费 `menuModeChanged`，左菜单行为完全不变。 | `app_configurator.py`（3.0 已删除） 只发信号，无宿主连接 |
 | F-10 | 中 | 标题栏 / 主题配置按钮 | 从壳层页或标题栏打开主题抽屉后，标题栏月亮按钮始终无 active/按下态；关闭后也无变化。每次切页还输出 `标题栏按钮不可用` 调试日志。 | [controller.py](../src/sllkgui/guis/windows/main_window/controller.py) `toggle_theme_drawer()` 未同步 `btn_themes`；仍在查旧名 `btn_top_settings` |
 | F-11 | 中 | 右侧抽屉 / 主题配置 | 主题抽屉只有内部标题“主题配置”，没有关闭按钮；普通右抽屉没有列头也没有关闭按钮，与左/顶/底抽屉不一致。 | `CAppConfigurator(embedded=True)` 隐藏 `close_button`；右列本身无列头 |
@@ -434,7 +434,7 @@
 
 | 编号 | 目的 | 前置 | 步骤 | 预期 | 实际（本轮） |
 | --- | --- | --- | --- | --- | --- |
-| O-01 | 插件清单非法 | 修改 `apps/<app>/config.yml` | 1) 删字段/写错类型；2) 启动；3) `sllkgui doctor`（默认不加载，仅发现） | 错误被隔离，doctor 指出具体应用 | 正常：坏 YAML 被隔离，加 `--load` 后 doctor 显示发现 1/成功加载 0，并给出解析错误 |
+| O-01 | 插件清单非法 | 修改插件仓库的 `sllkgui-plugin.yml` | 1) 删字段/写错类型；2) 启动；3) `sllkgui doctor`（默认不加载，仅发现） | 错误被隔离，doctor 指出具体应用 | 正常：坏 YAML 被隔离，加 `--load` 后 doctor 显示发现 1/成功加载 0，并给出解析错误 |
 | O-02 | 插件图标/语言缺失 | 移除资源 | 1) 启动；2) 观察左菜单/页面 | 回退占位，不阻塞其他应用 | 部分通过：缺图标/语言插件仍加载 1/1，不阻塞其他应用；菜单显示原始 key，缺友好回退（F-34） |
 | O-03 | 品牌覆盖层 | 配置 `resource_dirs` | 1) 覆盖 window.yaml 三行；2) 观察合并结果 | 深合并生效，其他资源整份替换 | 正常：品牌层 window.yaml 只写 2 个键，`right_column_size.maximum=320`、`window_border_radius=14` 生效，其余默认保留 |
 | O-04 | 数据目录只读 | 设置只读 data_dir | 1) 启动；2) 切主题/语言 | 只读不崩溃，有明确日志/提示 | **异常**：data_dir 指向文件时启动直接抛 `FileNotFoundError`（logs 目录），无降级提示（F-33） |
