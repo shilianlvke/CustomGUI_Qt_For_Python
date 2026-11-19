@@ -59,8 +59,12 @@ def _sync_changelog(old: str, new: str) -> None:
 
 def _gate(target: str) -> None:
     dist = ROOT / "dist"
+    # 路径不含 apps：旧 App 协议移除后该目录已不存在，ruff 遇到不存在的
+    # 路径会直接以 E902 失败。
     steps: tuple[tuple[str, tuple[str, ...]], ...] = (
-        ("ruff", ("uv", "run", "ruff", "check", "src", "tests", "apps", "examples", "scripts")),
+        ("ruff", ("uv", "run", "ruff", "check", "src", "tests", "examples", "scripts")),
+        ("ruff format", ("uv", "run", "ruff", "format", "--check", "src", "tests", "examples", "scripts")),
+        ("lock check", ("uv", "lock", "--check")),
         ("mypy", ("uv", "run", "mypy")),
         (
             "pytest",
@@ -111,7 +115,10 @@ def main(argv: list[str] | None = None) -> int:
         raise SystemExit(f"tag 已存在：{tag}")
 
     if args.dry_run:
-        print("dry-run：将修改 _version.py / CHANGELOG.md，运行质量门禁并推送 tag")
+        if args.tag_only:
+            print(f"dry-run：版本号不变，将运行质量门禁并推送 tag {tag}")
+        else:
+            print("dry-run：将修改 _version.py / CHANGELOG.md，运行质量门禁并推送 tag")
         return 0
 
     if not args.tag_only:
@@ -122,10 +129,12 @@ def main(argv: list[str] | None = None) -> int:
         _gate(target)
 
     message = args.message or f"release: SllkGUI {target} ({tag})"
-    _run("git", "add", "src/sllkgui/_version.py", "CHANGELOG.md")
-    commit = _run("git", "commit", "-m", message, check=False)
-    if commit.returncode != 0:
-        print(commit.stdout or commit.stderr)
+    if not args.tag_only:
+        # 只有改了版本号才提交；--tag-only 模式下版本号未变，提交会失败或产生空提交
+        _run("git", "add", "src/sllkgui/_version.py", "CHANGELOG.md")
+        commit = _run("git", "commit", "-m", message, check=False)
+        if commit.returncode != 0:
+            print(commit.stdout or commit.stderr)
     _run("git", "tag", "-a", tag, "-m", f"SllkGUI {target}")
     _run("git", "push", "origin", "HEAD")
     _run("git", "push", "origin", tag)
