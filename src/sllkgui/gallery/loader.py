@@ -23,8 +23,8 @@ from .api import Plugin
 from .context import GalleryContextImpl, _flatten
 from .defaults import MANIFEST_NAME
 from .dependencies import ensure_python_dependencies
-from .errors import PLUGIN_LOAD_FAILED, GalleryError
-from .manifest import ensure_within, load_manifest
+from .errors import PLUGIN_LOAD_FAILED, PLUGIN_SURFACE_IMPL_MISSING, GalleryError
+from .manifest import PluginManifest, ensure_within, load_manifest
 from .registry import GalleryRegistry, PluginRecord, sanitize_route
 from .store import GalleryStore
 from .tray import TrayService
@@ -176,6 +176,26 @@ def _modules_under(root: Path) -> list[str]:
     return names
 
 
+def _verify_surface_impls(manifest: PluginManifest, root: Path) -> None:
+    """校验清单声明的 Surface 实现文件确实存在。
+
+    在 ``on_load`` 之前失败：否则托盘 / 快捷键 / 设置页已经注册，
+    回滚代价高，而且用户只能在点击菜单时才发现页面是空的。
+    """
+    missing: list[str] = []
+    for spec in manifest.surfaces:
+        if not spec.impl:
+            continue
+        if not ensure_within(root, spec.impl).is_file():
+            missing.append(f"{spec.surface_id} -> {spec.impl}")
+    if missing:
+        raise GalleryError(
+            PLUGIN_SURFACE_IMPL_MISSING,
+            "Surface 实现文件缺失: " + ", ".join(missing),
+            manifest.plugin_id,
+        )
+
+
 def load_plugin(
     path: Path,
     store: GalleryStore,
@@ -206,6 +226,16 @@ def load_plugin(
             {"plugin_id": manifest.plugin_id, "code": "PLUGIN_ALREADY_INSTALLED"}
         )
         Logger.warning(f"插件重复，已跳过: {manifest.plugin_id}")
+        return None
+
+    # 声明式实现校验先于依赖安装：坏清单不值得触发一次 pip 安装
+    try:
+        _verify_surface_impls(manifest, root)
+    except GalleryError as exc:
+        registry._errors.append(
+            {"plugin_id": manifest.plugin_id, "code": exc.code, "detail": str(exc)}
+        )
+        Logger.warning(f"Surface 实现缺失，已跳过: {manifest.plugin_id}: {exc.message}")
         return None
 
     # 第三方依赖必须先就绪：插件模块本身就会在顶层 import 它们

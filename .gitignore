@@ -10,9 +10,9 @@ output/
 files/
 logs/
 # 程序运行根目录下的用户配置（数据根默认落点，不应进入版本库）
+# 只匹配仓库根的 Data/：不带前导斜杠会连 src 下的 data/ 子包一起忽略（Windows 大小写不敏感）
 /settings/
-Data/
-!src/sllkgui/guicore/custom_ui/data/
+/Data/
 
 # 编辑器 / IDE
 .vscode/

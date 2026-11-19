@@ -63,6 +63,9 @@ class SurfaceSpec:
     icon: str = ""
     default: bool = False
     order: int = 100
+    #: Surface 实现文件的仓库相对路径；声明后由加载器在 ``on_load`` 之前校验存在性，
+    #: 避免"清单写了、点击才报 ModuleNotFoundError"。留空表示沿用工厂自校验。
+    impl: str = ""
 
 
 @dataclass(frozen=True)
@@ -205,6 +208,10 @@ def _parse_surfaces(value: Any, root: Path) -> tuple[SurfaceSpec, ...]:
             icon_path = ensure_within(root, icon)
             if not icon_path.is_file():
                 icon = ""
+        # ``impl`` 只做路径越界校验：存在性由加载器校验，保留 manifest 的纯解析语义。
+        impl = str(item.get("impl") or "").strip()
+        if impl:
+            ensure_within(root, impl)
         default = bool(item.get("default", False))
         result.append(
             SurfaceSpec(
@@ -213,6 +220,7 @@ def _parse_surfaces(value: Any, root: Path) -> tuple[SurfaceSpec, ...]:
                 icon=icon,
                 default=default,
                 order=order,
+                impl=impl,
             )
         )
     if sum(1 for item in result if item.default) > 1:

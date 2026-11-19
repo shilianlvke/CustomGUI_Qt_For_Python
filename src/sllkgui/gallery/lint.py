@@ -175,14 +175,30 @@ def _check_manifest(root: Path, report: LintReport) -> None:
             report.warnings.append(
                 LintIssue("warning", "ICON_MISSING", f"Surface {surface.surface_id} 未声明图标")
             )
-            continue
-        icon = root / surface.icon
-        if icon.suffix.lower() != ".svg":
+        else:
+            icon = root / surface.icon
+            if icon.suffix.lower() != ".svg":
+                report.warnings.append(
+                    LintIssue("warning", "ICON_FORMAT", f"图标建议使用 SVG: {surface.icon}")
+                )
+            if not icon.is_file():
+                report.errors.append(LintIssue("error", "ICON_NOT_FOUND", f"图标不存在: {surface.icon}"))
+        if not surface.impl:
             report.warnings.append(
-                LintIssue("warning", "ICON_FORMAT", f"图标建议使用 SVG: {surface.icon}")
+                LintIssue(
+                    "warning",
+                    "SURFACE_IMPL_UNSPECIFIED",
+                    f"Surface {surface.surface_id} 未声明 impl，无法静态校验页面实现是否存在",
+                )
             )
-        if not icon.is_file():
-            report.errors.append(LintIssue("error", "ICON_NOT_FOUND", f"图标不存在: {surface.icon}"))
+        elif not (root / surface.impl).is_file():
+            report.errors.append(
+                LintIssue(
+                    "error",
+                    "SURFACE_IMPL_NOT_FOUND",
+                    f"Surface {surface.surface_id} 的实现文件不存在: {surface.impl}",
+                )
+            )
 
 
 def _check_telemetry(root: Path, report: LintReport) -> None:

@@ -14,6 +14,7 @@ requires:
 
 surfaces:
   - id: buttons
+    impl: surfaces/buttons/page.py
     title:
       zh_cn: 按钮
       zh_tw: 按鈕
@@ -23,6 +24,7 @@ surfaces:
     default: true
     order: 10
   - id: tables
+    impl: surfaces/tables/page.py
     title:
       zh_cn: 表格
       zh_tw: 表格
@@ -31,6 +33,7 @@ surfaces:
     icon: resource/icon/tables.svg
     order: 20
   - id: data
+    impl: surfaces/data/page.py
     title:
       zh_cn: 数据展示
       zh_tw: 資料展示
@@ -39,6 +42,7 @@ surfaces:
     icon: resource/icon/data.svg
     order: 30
   - id: feedback
+    impl: surfaces/feedback/page.py
     title:
       zh_cn: 反馈
       zh_tw: 回饋
@@ -47,6 +51,7 @@ surfaces:
     icon: resource/icon/feedback.svg
     order: 40
   - id: inputs
+    impl: surfaces/inputs/page.py
     title:
       zh_cn: 输入
       zh_tw: 輸入
@@ -55,6 +60,7 @@ surfaces:
     icon: resource/icon/inputs.svg
     order: 50
   - id: media
+    impl: surfaces/media/page.py
     title:
       zh_cn: 媒体
       zh_tw: 媒體
@@ -63,6 +69,7 @@ surfaces:
     icon: resource/icon/media.svg
     order: 60
   - id: menus
+    impl: surfaces/menus/page.py
     title:
       zh_cn: 菜单
       zh_tw: 選單
@@ -71,6 +78,7 @@ surfaces:
     icon: resource/icon/menus.svg
     order: 70
   - id: overlays
+    impl: surfaces/overlays/page.py
     title:
       zh_cn: 浮层
       zh_tw: 浮層
@@ -79,6 +87,7 @@ surfaces:
     icon: resource/icon/overlays.svg
     order: 80
   - id: panels
+    impl: surfaces/panels/page.py
     title:
       zh_cn: 面板
       zh_tw: 面板
@@ -87,6 +96,7 @@ surfaces:
     icon: resource/icon/panels.svg
     order: 90
   - id: shell
+    impl: surfaces/shell/page.py
     title:
       zh_cn: 外壳
       zh_tw: 外殼
