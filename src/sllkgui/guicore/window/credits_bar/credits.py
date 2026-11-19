@@ -4,12 +4,27 @@ from PySide6.QtWidgets import QFrame, QHBoxLayout, QLabel, QSizePolicy, QSpacerI
 from sllkgui.appcore import Language
 
 
+def _app_version() -> str:
+    """当前版本号。
+
+    早期版本把版本号写进语言资源（``custom_ui.sys_version``），于是每次改
+    版本都要同时改四个语言文件——实际没人记得，版权栏长期显示 1.0.0。
+    版本号是构建事实而非可翻译文案，统一从 ``sllkgui.__version__`` 取。
+    """
+    try:
+        from sllkgui import __version__
+
+        return str(__version__)
+    except Exception:  # pragma: no cover - 仅在极早期初始化阶段兜底
+        return "0.0.0"
+
+
 class CCredits(QWidget):
     def __init__(self):
         super().__init__()
         # PROPERTIES
         self._copyright = Language.custom_ui.sys_copyright
-        self._version = Language.custom_ui.sys_version
+        self._version = _app_version()
 
         # SETUP UI
         self.setup_ui()
@@ -18,7 +33,7 @@ class CCredits(QWidget):
     def apply_language(self):
         """清空旧语言残留并刷新版权和版本文本。"""
         self._copyright = Language.custom_ui.sys_copyright
-        self._version = Language.custom_ui.sys_version
+        self._version = _app_version()
         self.copyright_label.setText(self._copyright)
         self.version_label.setText(self._version)
 

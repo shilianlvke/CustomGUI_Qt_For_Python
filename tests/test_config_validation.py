@@ -89,7 +89,7 @@ def _base_language():
     return {
         "custom_ui": {
             "sys_name": "SllkGUI",
-            "sys_version": "1.0.0",
+            # 版本号不再属于语言资源（由 sllkgui.__version__ 提供）
             "sys_copyright": "MIT",
             "sys_github": "https://example.com",
         },

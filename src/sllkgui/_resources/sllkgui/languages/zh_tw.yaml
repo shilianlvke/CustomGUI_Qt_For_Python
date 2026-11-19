@@ -2,7 +2,6 @@
 # 譯自 SllkGUI 術語表（MulanPSL-2.0），與 zh_cn.yaml 逐鍵對齊
 custom_ui:
   sys_name: SllkGUI
-  sys_version: 1.0.0
   sys_author: shilianlvke
   sys_author_email: 1352161062@qq.com
   sys_copyright: SllkGUI · 基於 PySide6 的開源 UI 基座

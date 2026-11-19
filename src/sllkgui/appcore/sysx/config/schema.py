@@ -740,7 +740,9 @@ def validate_language_data(language_data: Any, language_name: str = "unknown") -
 
     _require_keys(
         language_data["custom_ui"],
-        ["sys_name", "sys_version", "sys_copyright", "sys_github"],
+        # 不含 sys_version：版本号是构建事实，不该出现在可翻译文案里，
+        # 统一由 sllkgui.__version__ 提供（见 guicore/window/credits_bar）。
+        ["sys_name", "sys_copyright", "sys_github"],
         f"{label}.custom_ui",
     )
     # PAGE 段仅要求存在（页面文本由 Apps/<app>/resource/lang 提供）

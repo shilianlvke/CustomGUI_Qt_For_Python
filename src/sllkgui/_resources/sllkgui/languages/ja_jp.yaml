@@ -2,7 +2,6 @@
 # 訳出元: SllkGUI 用語集（MulanPSL-2.0）、zh_cn.yaml とキーを 1 対 1 で対応
 custom_ui:
   sys_name: SllkGUI
-  sys_version: 1.0.0
   sys_author: shilianlvke
   sys_author_email: 1352161062@qq.com
   sys_copyright: SllkGUI · PySide6 ベースのオープンソース UI 基盤
