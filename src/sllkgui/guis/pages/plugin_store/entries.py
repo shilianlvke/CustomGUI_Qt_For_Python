@@ -8,10 +8,23 @@ from typing import Any
 from PySide6.QtCore import Qt
 from PySide6.QtWidgets import QGridLayout, QHBoxLayout, QVBoxLayout, QWidget
 
-from sllkgui.guicore import CToggleSwitch
+from sllkgui.guicore import CChip, CElidedLabel, CIconTile, CText, CToggleSwitch
 
 from .context import PageContext
-from .widgets import _Chip, _ElidedLabel, _IconTile, _ThemedLabel
+
+
+def _chip(text: str, *, accent: bool = False) -> CChip:
+    """紧凑标签片：20px 高、10px 字，强调态走 accent 色调。"""
+    return CChip(text, height=20, font_pixel_size=10, tone="accent" if accent else "neutral")
+
+
+def _elided(text: str, pixel_size: int = 10) -> CElidedLabel:
+    """单行省略文本；字号沿用条目排版（默认 10px）。"""
+    label = CElidedLabel(text)
+    font = label.font()
+    font.setPixelSize(pixel_size)
+    label.setFont(font)
+    return label
 
 
 def _build_entry(
@@ -66,19 +79,19 @@ def _build_entry(
         layout.setSpacing(8)
         top = QHBoxLayout()
         top.setSpacing(8)
-        top.addWidget(_IconTile(icon, 40, icon_file=icon_file))
+        top.addWidget(CIconTile(icon, 40, image=icon_file))
         top.addStretch(1)
         if toggle is not None:
             top.addWidget(toggle, 0, Qt.AlignmentFlag.AlignTop)
         layout.addLayout(top)
-        title_label = _ThemedLabel(title, "entry")
+        title_label = CText.with_role("entry", title)
         title_label.setWordWrap(True)
         layout.addWidget(title_label)
-        layout.addWidget(_ElidedLabel(subtitle, size=10))
+        layout.addWidget(_elided(subtitle))
         badge_row = QHBoxLayout()
         badge_row.setSpacing(4)
         for text, accent in badges:
-            badge_row.addWidget(_Chip(text, accent=accent))
+            badge_row.addWidget(_chip(text, accent=accent))
         badge_row.addStretch(1)
         layout.addLayout(badge_row)
         root.setMinimumHeight(132)
@@ -87,16 +100,16 @@ def _build_entry(
     layout = QHBoxLayout(root)
     layout.setContentsMargins(2, 2, 2, 2)
     layout.setSpacing(12)
-    layout.addWidget(_IconTile(icon, 38, icon_file=icon_file), 0, Qt.AlignmentFlag.AlignTop)
+    layout.addWidget(CIconTile(icon, 38, image=icon_file), 0, Qt.AlignmentFlag.AlignTop)
     column = QVBoxLayout()
     column.setSpacing(4)
     title_row = QHBoxLayout()
     title_row.setSpacing(6)
-    title_row.addWidget(_ThemedLabel(title, "entry"), 1)
+    title_row.addWidget(CText.with_role("entry", title), 1)
     for text, accent in badges:
-        title_row.addWidget(_Chip(text, accent=accent))
+        title_row.addWidget(_chip(text, accent=accent))
     column.addLayout(title_row)
-    column.addWidget(_ElidedLabel(subtitle, size=10))
+    column.addWidget(_elided(subtitle))
     layout.addLayout(column, 1)
     if toggle is not None:
         layout.addWidget(toggle, 0, Qt.AlignmentFlag.AlignVCenter)
@@ -113,9 +126,9 @@ def _meta_grid(items: list[tuple[str, str, bool]]) -> QWidget:
     grid.setHorizontalSpacing(12)
     grid.setVerticalSpacing(8)
     for row, (key, value, mono) in enumerate(items):
-        key_label = _ThemedLabel(key, "muted")
+        key_label = CText.with_role("muted", key)
         key_label.setFixedWidth(72)
-        value_label = _ThemedLabel(value or "—", "value", mono=mono)
+        value_label = CText.with_role("value", value or "—", mono=bool(mono))
         value_label.setWordWrap(True)
         value_label.setTextInteractionFlags(Qt.TextInteractionFlag.TextSelectableByMouse)
         grid.addWidget(key_label, row, 0, Qt.AlignmentFlag.AlignTop)
@@ -129,16 +142,16 @@ def _permission_block(permissions: list[str], ctx: PageContext) -> QWidget:
     layout = QVBoxLayout(box)
     layout.setContentsMargins(0, 0, 0, 0)
     layout.setSpacing(6)
-    layout.addWidget(_ThemedLabel(ctx.text("detail.permissions", "权限"), "section"))
+    layout.addWidget(CText.with_role("section", ctx.text("detail.permissions", "权限")))
     if not permissions:
-        layout.addWidget(_ThemedLabel("—", "muted"))
+        layout.addWidget(CText.with_role("muted", "—"))
         return box
     grid = QGridLayout()
     grid.setContentsMargins(0, 0, 0, 0)
     grid.setHorizontalSpacing(6)
     grid.setVerticalSpacing(6)
     for index, permission in enumerate(permissions):
-        grid.addWidget(_Chip(str(permission)), index // 3, index % 3)
+        grid.addWidget(_chip(str(permission)), index // 3, index % 3)
     grid.setColumnStretch(3, 1)
     layout.addLayout(grid)
     return box
@@ -149,27 +162,27 @@ def _detail_hero(record: dict[str, Any], ctx: PageContext, *, installed: bool, i
     layout = QHBoxLayout(box)
     layout.setContentsMargins(0, 0, 0, 0)
     layout.setSpacing(14)
-    layout.addWidget(_IconTile(icon, 54), 0, Qt.AlignmentFlag.AlignTop)
+    layout.addWidget(CIconTile(icon, 54), 0, Qt.AlignmentFlag.AlignTop)
 
     column = QVBoxLayout()
     column.setSpacing(4)
     title = str(record.get("name") or record.get("id") or "")
-    title_label = _ThemedLabel(title, "title")
+    title_label = CText.with_role("title", title)
     title_label.setWordWrap(True)
     column.addWidget(title_label)
-    column.addWidget(_ThemedLabel(str(record.get("id") or ""), "muted", mono=True))
+    column.addWidget(CText.with_role("muted", str(record.get("id") or ""), mono=True))
 
     chips = QHBoxLayout()
     chips.setSpacing(6)
-    chips.addWidget(_Chip(f"v{record.get('version') or '?'}", accent=True))
+    chips.addWidget(_chip(f"v{record.get('version') or '?'}", accent=True))
     if installed:
-        chips.addWidget(_Chip(ctx.text("detail.installed", "已安装"), accent=True))
+        chips.addWidget(_chip(ctx.text("detail.installed", "已安装"), accent=True))
         enabled = bool(record.get("enabled", True))
         key = "installed.enabled" if enabled else "installed.disabled"
         fallback = "已启用" if enabled else "已停用"
-        chips.addWidget(_Chip(ctx.text(key, fallback), accent=enabled))
+        chips.addWidget(_chip(ctx.text(key, fallback), accent=enabled))
     else:
-        chips.addWidget(_Chip(ctx.text("detail.not_installed", "未安装")))
+        chips.addWidget(_chip(ctx.text("detail.not_installed", "未安装")))
     chips.addStretch(1)
     column.addLayout(chips)
     layout.addLayout(column, 1)

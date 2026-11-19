@@ -11,6 +11,12 @@ from sllkgui.appcore import get_theme_manager
 from sllkgui.guicore import (
     CConfirmDialog,
     CDialog,
+    CMetricCard,
+    CSideNav,
+    CSideNavGroup,
+    CSideNavItem,
+    CSurfacePanel,
+    CText,
     CToast,
     run_task,
     single_shot,
@@ -19,7 +25,6 @@ from sllkgui.guicore import (
 from .context import PageContext
 from .panels import _DiscoverPanel, _InstalledPanel, _SourcesPanel
 from .theme import _toast_offset
-from .widgets import _ModeCard, _Panel, _StatTile, _ThemedLabel
 
 
 def build_plugin_store_page(window) -> QWidget:
@@ -34,7 +39,8 @@ class StorePage(QWidget):
         super().__init__(parent)
         self.ctx = ctx
         self.runtime = ctx.runtime()
-        self._mode_cards: dict[str, _ModeCard] = {}
+        #: 三个模式的计数，用于导轨徽标（切换模式/刷新统计时同步）
+        self._counts = {"installed": 0, "discover": 0, "sources": 0}
         self._detail_dialog: CDialog | None = None
         self._busy = False
         self._busy_toast: CToast | None = None
@@ -55,16 +61,16 @@ class StorePage(QWidget):
         hero.setSpacing(14)
         titles = QVBoxLayout()
         titles.setSpacing(2)
-        titles.addWidget(_ThemedLabel("SLLKGUI / PLUGINS", "eyebrow"))
-        titles.addWidget(_ThemedLabel(self.ctx.text("store.title", "插件管理"), "title"))
-        subtitle = _ThemedLabel(self.ctx.text("store.subtitle", "已安装、发现与来源，在一页内完成"), "muted")
+        titles.addWidget(CText.with_role("eyebrow", "SLLKGUI / PLUGINS"))
+        titles.addWidget(CText.with_role("title", self.ctx.text("store.title", "插件管理")))
+        subtitle = CText.with_role("muted", self.ctx.text("store.subtitle", "已安装、发现与来源，在一页内完成"))
         subtitle.setWordWrap(True)
         titles.addWidget(subtitle)
         hero.addLayout(titles, 1)
 
-        self.stat_installed = _StatTile(self.ctx.text("stats.installed", "已安装"))
-        self.stat_enabled = _StatTile(self.ctx.text("stats.enabled", "启用中"))
-        self.stat_sources = _StatTile(self.ctx.text("stats.sources", "来源"))
+        self.stat_installed = CMetricCard(self.ctx.text("stats.installed", "已安装"))
+        self.stat_enabled = CMetricCard(self.ctx.text("stats.enabled", "启用中"))
+        self.stat_sources = CMetricCard(self.ctx.text("stats.sources", "来源"))
         hero.addWidget(self.stat_installed)
         hero.addWidget(self.stat_enabled)
         hero.addWidget(self.stat_sources)
@@ -76,17 +82,11 @@ class StorePage(QWidget):
         rail = QVBoxLayout()
         rail.setContentsMargins(10, 10, 10, 10)
         rail.setSpacing(4)
-        for mode, key, caption in (
-            ("installed", "modes.installed", "已安装"),
-            ("discover", "modes.discover", "发现"),
-            ("sources", "modes.sources", "源"),
-        ):
-            card = _ModeCard(mode, self.ctx.text(key, caption))
-            card.clicked.connect(self.switch_mode)
-            self._mode_cards[mode] = card
-            rail.addWidget(card)
+        self.mode_nav = CSideNav(self._mode_groups(), item_height=58)
+        self.mode_nav.itemClicked.connect(self.switch_mode)
+        rail.addWidget(self.mode_nav)
         rail.addStretch(1)
-        rail_host = _Panel()
+        rail_host = CSurfacePanel(radius=8)
         rail_host.setLayout(rail)
         rail_host.setFixedWidth(232)
         body.addWidget(rail_host)
@@ -98,7 +98,7 @@ class StorePage(QWidget):
         self.stack.addWidget(self.installed_panel)
         self.stack.addWidget(self.discover_panel)
         self.stack.addWidget(self.sources_panel)
-        workspace = _Panel()
+        workspace = CSurfacePanel(radius=8)
         workspace_layout = QVBoxLayout(workspace)
         workspace_layout.setContentsMargins(16, 14, 16, 14)
         workspace_layout.setSpacing(10)
@@ -119,8 +119,7 @@ class StorePage(QWidget):
         if panel is None:
             return
         self.stack.setCurrentWidget(panel)
-        for key, card in self._mode_cards.items():
-            card.set_active(key == mode)
+        self.mode_nav.set_current(mode)
         if mode == "installed":
             self.installed_panel.refresh()
         elif mode == "discover":
@@ -169,12 +168,39 @@ class StorePage(QWidget):
         self.stat_installed.set_value(len(rows))
         self.stat_enabled.set_value(sum(1 for row in rows if row.get("enabled")))
         self.stat_sources.set_value(source_count)
-        self._mode_cards["installed"].set_count(len(rows))
-        self._mode_cards["discover"].set_count(discover_count)
-        self._mode_cards["sources"].set_count(source_count)
+        self._counts = {
+            "installed": len(rows),
+            "discover": discover_count,
+            "sources": source_count,
+        }
+        self._sync_mode_nav()
 
     def update_discover_count(self, count: int) -> None:
-        self._mode_cards["discover"].set_count(max(0, int(count)))
+        self._counts["discover"] = max(0, int(count))
+        self._sync_mode_nav()
+
+    #: 模式导轨：(id, 语言键, 文案兜底, 图标)
+    _MODE_SPECS = (
+        ("installed", "modes.installed", "已安装", "icon_store"),
+        ("discover", "modes.discover", "发现", "icon_search"),
+        ("sources", "modes.sources", "源", "icon_database"),
+    )
+
+    def _mode_groups(self) -> list[CSideNavGroup]:
+        items = tuple(
+            CSideNavItem(
+                mode,
+                self.ctx.text(key, caption),
+                icon,
+                str(self._counts.get(mode, 0)),
+            )
+            for mode, key, caption, icon in self._MODE_SPECS
+        )
+        return [CSideNavGroup("", items)]
+
+    def _sync_mode_nav(self) -> None:
+        """计数变化后重建导轨；``set_groups`` 会保留当前选中项。"""
+        self.mode_nav.set_groups(self._mode_groups())
 
     def refresh_all(self) -> None:
         self.installed_panel.refresh()

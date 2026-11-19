@@ -8,10 +8,9 @@ from typing import TYPE_CHECKING, Any
 from PySide6.QtCore import Qt
 from PySide6.QtWidgets import QHBoxLayout, QVBoxLayout, QWidget
 
-from sllkgui.guicore import CButton, CDialog, CHDiv, single_shot
+from sllkgui.guicore import CButton, CDialog, CHDiv, CIconTile, CText, single_shot
 
-from .entries import _detail_hero, _meta_grid, _permission_block
-from .widgets import _Chip, _IconTile, _ThemedLabel
+from .entries import _chip, _detail_hero, _meta_grid, _permission_block
 
 if TYPE_CHECKING:  # pragma: no cover - 仅类型检查，避免与 page.py 循环导入
     from .page import StorePage
@@ -105,11 +104,11 @@ class _PluginDetailDialog(_DetailDialogBase):
 
         layout.addWidget(_detail_hero(record, self.ctx, installed=self.installed, icon="icon_store"))
         summary = str(record.get("summary") or self.ctx.text("detail.no_description", "暂无简介"))
-        summary_label = _ThemedLabel(summary, "muted")
+        summary_label = CText.with_role("muted", summary)
         summary_label.setWordWrap(True)
         layout.addWidget(summary_label)
         layout.addWidget(CHDiv())
-        layout.addWidget(_ThemedLabel(self.ctx.text("detail.meta", "基础信息"), "section"))
+        layout.addWidget(CText.with_role("section", self.ctx.text("detail.meta", "基础信息")))
 
         items: list[tuple[str, str, bool]] = []
         version = str(record.get("version") or "?")
@@ -225,26 +224,26 @@ class _SourceDetailDialog(_DetailDialogBase):
         hero_row = QHBoxLayout(hero)
         hero_row.setContentsMargins(0, 0, 0, 0)
         hero_row.setSpacing(14)
-        hero_row.addWidget(_IconTile("icon_database", 54), 0, Qt.AlignmentFlag.AlignTop)
+        hero_row.addWidget(CIconTile("icon_database", 54), 0, Qt.AlignmentFlag.AlignTop)
         column = QVBoxLayout()
         column.setSpacing(4)
-        title = _ThemedLabel(str(record.get("id") or ""), "title")
+        title = CText.with_role("title", str(record.get("id") or ""))
         title.setWordWrap(True)
         column.addWidget(title)
         chips = QHBoxLayout()
         chips.setSpacing(6)
-        chips.addWidget(_Chip(trust_text, accent=trust == "official"))
-        chips.addWidget(_Chip(self.ctx.text(key, "已启用" if enabled else "已停用"), accent=enabled))
+        chips.addWidget(_chip(trust_text, accent=trust == "official"))
+        chips.addWidget(_chip(self.ctx.text(key, "已启用" if enabled else "已停用"), accent=enabled))
         chips.addStretch(1)
         column.addLayout(chips)
         hero_row.addLayout(column, 1)
         layout.addWidget(hero)
 
-        url_label = _ThemedLabel(str(record.get("url") or ""), "muted", mono=True)
+        url_label = CText.with_role("muted", str(record.get("url") or ""), mono=True)
         url_label.setWordWrap(True)
         layout.addWidget(url_label)
         layout.addWidget(CHDiv())
-        layout.addWidget(_ThemedLabel(self.ctx.text("detail.meta", "基础信息"), "section"))
+        layout.addWidget(CText.with_role("section", self.ctx.text("detail.meta", "基础信息")))
         layout.addWidget(
             _meta_grid(
                 [
