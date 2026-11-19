@@ -11,6 +11,7 @@ from sllkgui.appcore import (
     get_theme_manager,
     load_user_settings,
 )
+from sllkgui.appcore.settings.base import STORAGE_THEME
 from sllkgui.guicore import CGrips, set_acrylic_transparency, set_glass_strength
 
 from .functions import MainFunctions
@@ -141,7 +142,7 @@ class SetupMainWindow:
         SetupMainWindow.restore_background(window, state)
 
         theme_applied = False
-        theme = state.get("theme_name")
+        theme = state.get(STORAGE_THEME)
         if isinstance(theme, str) and theme in AppThemes:
             get_theme_manager().apply(theme)
             theme_applied = True

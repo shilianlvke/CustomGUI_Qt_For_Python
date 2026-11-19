@@ -2,10 +2,13 @@ from PySide6.QtCore import QEvent, QObject, Qt
 from PySide6.QtWidgets import QPushButton, QWidget
 
 from sllkgui.appcore import (
+    KEY_THEME,
     Language,
     Logger,
     MainWindowButtonUseCase,
     PathFactory,
+    SettingsSession,
+    ensure_core_pages,
     get_theme_manager,
     load_user_settings,
     record_event,
@@ -130,6 +133,8 @@ class SettingsController:
         self._settings_window: CSettingsWindow | None = None
         #: 实时预览主题时不落盘，保存由设置会话统一负责
         self._previewing_theme = False
+        #: 主题持久化重入保护（session.save → settings change → 应用主题）
+        self._persisting_theme = False
         # 主题变更 -> 重建全局样式并应用（弱引用订阅）
         self._theme_manager.subscribe(self._apply_styles)
 
@@ -197,7 +202,7 @@ class SettingsController:
 
     def _preview_setting(self, key: str, value) -> None:
         """设置窗口的实时预览：只改运行期观感，不写用户配置。"""
-        if key == "core.appearance.theme":
+        if key == KEY_THEME:
             self._apply_theme_preview(str(value))
         elif key == "core.appearance.transparency":
             set_acrylic_transparency(int(value))
@@ -248,10 +253,10 @@ class SettingsController:
 
     def _apply_saved_settings(self, changes: dict) -> None:
         """保存成功后应用非预览类设置（语言 / 布局 / 窗口记忆）。"""
-        if "core.appearance.theme" in changes:
+        if KEY_THEME in changes:
             self._previewing_theme = True
             try:
-                self._theme_manager.apply(str(changes["core.appearance.theme"]))
+                self._theme_manager.apply(str(changes[KEY_THEME]))
             finally:
                 self._previewing_theme = False
         if "core.appearance.transparency" in changes:
@@ -340,9 +345,21 @@ class SettingsController:
 
     def _apply_styles(self):
         self.refresh_styles()
-        # 设置窗口里的主题预览不落盘：用户点「保存」时才由会话统一写入
-        if not self._previewing_theme:
-            save_user_settings(theme_name=self._theme_manager.current())
+        # 设置窗口里的主题预览不落盘：用户点「保存」时才由会话统一写入。
+        # 非预览路径（如插件切换主题）经 SettingsSession 写回，键名与校验
+        # 复用 base.py 的单一声明；_persisting_theme 阻断 save→apply→save 回路。
+        if self._previewing_theme or self._persisting_theme:
+            return
+        self._persisting_theme = True
+        try:
+            ensure_core_pages()
+            session = SettingsSession()
+            if session.set(KEY_THEME, str(self._theme_manager.current())):
+                session.save()
+        except Exception as exc:  # noqa: BLE001 - 持久化失败不影响已应用的主题
+            self._logger.warning(f"主题持久化失败: {exc}")
+        finally:
+            self._persisting_theme = False
 
     def detach(self) -> None:
         """窗口关闭时退订主题变更，避免已销毁窗口继续响应全局主题切换。"""
