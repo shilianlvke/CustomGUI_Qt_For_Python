@@ -341,7 +341,7 @@ SllkGui/
 ├─ gallery/                 # 运行时生成的插件目录（gitignore）
 ├─ logs/                    # 运行时生成的日志（gitignore）
 ├─ pyproject.toml
-├─ uv.lock
+├─ uv.lock                 # 依赖锁：提交入库，保证开发与 CI 可复现
 ├─ CHANGELOG.md
 └─ README.md
 ```

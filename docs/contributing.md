@@ -20,6 +20,30 @@ uv run pytest --cov=sllkgui --cov-report=term-missing --cov-fail-under=70
 `pytest` 零失败、覆盖率不低于 70%、skip 只允许平台相关的用例。测试数量随代码变化，
 以实际输出为准，不要写进文档。
 
+### 依赖锁
+
+`uv.lock` **必须提交到版本库**，不要加进 `.gitignore`。
+
+它锁定精确依赖版本（含全部传递依赖与哈希），保证每个开发者与每条 CI 流水线
+装到的是同一套依赖——否则一次传递依赖发布就能让 CI 在代码毫无改动的情况下失败。
+
+它**不进入** `wheel` / `sdist`（两者只读 `pyproject.toml` 里的宽松版本区间），
+因此不会影响下游使用者：下游 `pip install sllkgui` 时按自己的约束重新解析，
+根本不会看到本仓库的 lock。
+
+| 场景 | 做法 |
+| --- | --- |
+| 改了 `pyproject.toml` 的依赖 | 跑 `uv lock` 重新生成，**不要手改** `uv.lock` |
+| `uv.lock` 合并冲突 | 取任意一侧后重新 `uv lock`，不要手工拼接 |
+| 只想升级某个包 | `uv lock --upgrade-package <名字>`，其余包保持不动 |
+| 全部升级 | `uv lock --upgrade` |
+| 确认 lock 是否过期 | `uv lock --check`（不一致时退出码非 0） |
+
+两条流水线（`.workflow/QualityGate.yml`、`.workflow/ReleasePipeline.yml`）都先跑
+`uv lock --check`、再用 `uv sync --locked` 安装：`--locked` 在 lock 与 `pyproject.toml`
+不一致时**直接失败**，不会静默重新解析——否则「改了 pyproject 却忘了 `uv lock`」
+会悄悄通过门禁。
+
 建议装上提交前门禁，把上面这些命令前移到本地：
 
 ```powershell
