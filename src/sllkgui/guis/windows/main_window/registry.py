@@ -45,10 +45,6 @@ def get_registry(window=None) -> GalleryRegistry | None:
     return getattr(window, "gallery_registry", None) if window is not None else None
 
 
-def register_builtin_menus() -> None:
-    """保留旧入口：内置菜单现在由 :func:`get_menu_items` 直接拼装。"""
-
-
 def load_registered_pages(window, *, eager: bool = False):
     """页面改为首次导航时构建；这里只记录一次统计。"""
     registry = get_registry(window)
@@ -134,18 +130,12 @@ def get_menu_items(target: str, window=None):
     return []
 
 
-#: 兼容旧代码的导入名；不再包含任何 App 页面。
-PAGE_REGISTRY: list = []
-
-
 __all__ = [
     "BUILTIN_TITLE_MENU_ITEMS",
-    "PAGE_REGISTRY",
     "ensure_registered_page",
     "get_default_page_object",
     "get_menu_items",
     "get_page_routes",
     "get_registry",
     "load_registered_pages",
-    "register_builtin_menus",
 ]

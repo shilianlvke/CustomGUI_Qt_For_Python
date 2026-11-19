@@ -3,13 +3,13 @@ api: 1
 
 id: com.sllkgui.showcase.core_preview
 name: SllkGUI Core Preview
-version: 2.0.0
+version: 3.0.0
 description: 基座内置组件预览，仅在 sllkgui gallery 模式加载
 license: MulanPSL-2.0
 entry: plugin.py
 
 requires:
-  sllkgui: ">=2.0.0,<3.0.0"
+  sllkgui: ">=3.0.0,<4.0.0"
   python: ">=3.12"
 
 surfaces:
