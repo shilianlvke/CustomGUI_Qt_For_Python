@@ -233,19 +233,16 @@ class SettingsController:
             setter(path, fit)
 
     def _apply_menu_mode(self, mode: str) -> None:
+        """应用菜单模式；持久化由 ``SettingsSession.save()`` 统一负责。"""
         setter = getattr(MainFunctions, "set_menu_mode", None)
         if callable(setter):
             setter(self._window, mode)
-        save_user_settings(menu_mode=mode)
 
     def _apply_drawer_mode(self, mode: str) -> None:
+        """应用抽屉模式；持久化由 ``SettingsSession.save()`` 统一负责。"""
         setter = getattr(MainFunctions, "set_drawer_mode", None)
         if callable(setter):
             setter(self._window, mode)
-        save_user_settings(drawer_mode=mode)
-        sync = getattr(self, "_sync_settings_button", None)
-        if callable(sync):
-            sync()
 
     def _apply_saved_settings(self, changes: dict) -> None:
         """保存成功后应用非预览类设置（语言 / 布局 / 窗口记忆）。"""

@@ -168,11 +168,13 @@ def test_reset_buttons_stay_visible_and_disable_at_default(prepared):
         assert row._reset.isEnabled() == (not session.is_default(key)), key
 
     key = "core.appearance.transparency"
-    view._commit(key, 90)
-    assert session.value(key) == 90
+    default = session.value(key)
+    changed = 90 if default != 90 else 10
+    view._commit(key, changed)
+    assert session.value(key) == changed
     assert view._rows[key]._reset.isEnabled()
     view._rows[key]._reset.click()
-    assert session.value(key) == 60
+    assert session.value(key) == default
     assert not view._rows[key]._reset.isEnabled()
 
 

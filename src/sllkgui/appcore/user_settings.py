@@ -66,6 +66,13 @@ SUPPORTED_FIELDS = (
     "background_recent",
 )
 
+#: 不属于用户可编辑设置的字段：由运行期写入，不参与 ``SettingSpec`` 校验。
+#: - ``startup_size``：窗口关闭时由 ``_WindowStateTracker`` 写回；
+#: - ``background_recent``：背景选择器的历史队列（最多 5 条）。
+#: ``test_user_settings.py`` 断言 ``SUPPORTED_FIELDS`` 恰好等于
+#: "核心设置页声明的存储键 ∪ RUNTIME_ONLY_FIELDS"，防止两边漂移。
+RUNTIME_ONLY_FIELDS = frozenset({"startup_size", "background_recent"})
+
 #: 背景图的适应模式（与 Windows 个性化设置一致）
 BACKGROUND_FIT_MODES = ("fill", "fit", "stretch", "tile", "center")
 
@@ -366,6 +373,7 @@ def reset_user_settings_cache() -> None:
 
 __all__ = [
     "BACKGROUND_FIT_MODES",
+    "RUNTIME_ONLY_FIELDS",
     "SCHEMA_VERSION",
     "SUPPORTED_FIELDS",
     "load_user_settings",

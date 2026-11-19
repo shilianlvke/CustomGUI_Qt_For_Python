@@ -177,7 +177,8 @@ def test_invalid_stored_value_falls_back_to_default(tmp_path, core, registry):
     core.data["acrylic_transparency"] = 999
     store = SettingsStore(settings_dir=tmp_path, core=core)
     session = SettingsSession(registry, store)
-    assert session.value("core.appearance.transparency") == 60
+    # 不写死数字：默认值由 acrylic.opacity 推导，断言"回落到声明里的默认值"
+    assert session.value("core.appearance.transparency") == _core_spec("transparency").default
 
 
 def test_plugin_namespace_requires_valid_id():
@@ -243,3 +244,85 @@ def test_info_provider_failure_is_isolated():
         raise RuntimeError("boom")
 
     assert Setting.info("stats", "统计", boom).value() == "—"
+
+
+def _core_spec(key: str):
+    from sllkgui.appcore.settings.base import build_core_pages
+
+    for page in build_core_pages():
+        for section in page.sections:
+            for spec in section.items:
+                if spec.key == key:
+                    return spec
+    raise AssertionError(f"核心设置页缺少 {key}")
+
+
+def test_transparency_default_is_complement_of_acrylic_opacity():
+    """``transparency`` 越大越透明，``acrylic.opacity`` 越大越不透明，必须互补。"""
+    from sllkgui.appcore.sysx import AppSettings
+
+    spec = _core_spec("transparency")
+    assert spec.default == 100 - int(AppSettings.acrylic.opacity)
+
+
+def test_core_settings_cover_supported_user_fields():
+    """SUPPORTED_FIELDS 必须等于「声明过的存储键 ∪ 运行期专用字段」。"""
+    from sllkgui.appcore.settings.base import build_core_pages
+    from sllkgui.appcore.user_settings import RUNTIME_ONLY_FIELDS, SUPPORTED_FIELDS
+
+    declared = {
+        page.storage_key(spec)
+        for page in build_core_pages()
+        for section in page.sections
+        for spec in section.items
+    }
+    assert set(SUPPORTED_FIELDS) == declared | RUNTIME_ONLY_FIELDS
+
+
+def test_language_options_follow_resource_discovery():
+    """语言下拉必须随 LANGUAGE_OPTIONS 动态发现，而不是写死四种。"""
+    from sllkgui.appcore.sysx.modules.language_module import LANGUAGE_OPTIONS
+
+    spec = _core_spec("language")
+    assert [option.value for option in spec.options] == [str(code) for code in LANGUAGE_OPTIONS]
+
+
+def _core_spec(key: str):
+    from sllkgui.appcore.settings.base import build_core_pages
+
+    for page in build_core_pages():
+        for section in page.sections:
+            for spec in section.items:
+                if spec.key == key:
+                    return spec
+    raise AssertionError(f"核心设置页缺少 {key}")
+
+
+def test_transparency_default_is_complement_of_acrylic_opacity():
+    """``transparency`` 越大越透明，``acrylic.opacity`` 越大越不透明，必须互补。"""
+    from sllkgui.appcore.sysx import AppSettings
+
+    spec = _core_spec("transparency")
+    assert spec.default == 100 - int(AppSettings.acrylic.opacity)
+
+
+def test_core_settings_cover_supported_user_fields():
+    """SUPPORTED_FIELDS 必须等于「声明过的存储键 ∪ 运行期专用字段」。"""
+    from sllkgui.appcore.settings.base import build_core_pages
+    from sllkgui.appcore.user_settings import RUNTIME_ONLY_FIELDS, SUPPORTED_FIELDS
+
+    declared = {
+        page.storage_key(spec)
+        for page in build_core_pages()
+        for section in page.sections
+        for spec in section.items
+    }
+    assert set(SUPPORTED_FIELDS) == declared | RUNTIME_ONLY_FIELDS
+
+
+def test_language_options_follow_resource_discovery():
+    """语言下拉必须随 LANGUAGE_OPTIONS 动态发现，而不是写死四种。"""
+    from sllkgui.appcore.sysx.modules.language_module import LANGUAGE_OPTIONS
+
+    spec = _core_spec("language")
+    assert [option.value for option in spec.options] == [str(code) for code in LANGUAGE_OPTIONS]

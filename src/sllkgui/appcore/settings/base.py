@@ -40,20 +40,49 @@ KEY_DRAWER_MODE = f"core.{PAGE_INTERFACE}.drawer_mode"
 KEY_REMEMBER_SIZE = f"core.{PAGE_WINDOW}.remember_size"
 
 
+#: 语言显示名：不在表里的语言直接显示代码，新增语言无需改动这里
+_LANGUAGE_LABELS = {
+    "zh_cn": "简体中文",
+    "zh_tw": "繁體中文",
+    "en_us": "English",
+    "ja_jp": "日本語",
+}
+
+
+def _language_options(default: str) -> list[tuple[str, str]]:
+    """按当前资源根动态发现语言，避免应用追加语言后设置页看不到。
+
+    ``LANGUAGE_OPTIONS`` 是惰性视图（随 ``configure(resource_dirs=...)`` 变化），
+    因此必须运行期读取，不能固化成模块级常量。
+    """
+    try:
+        from ..sysx.modules.language_module import LANGUAGE_OPTIONS
+
+        codes = [str(code) for code in LANGUAGE_OPTIONS]
+    except Exception:  # noqa: BLE001 - 配置未就绪时回落到基座内置四种
+        codes = ["zh_cn", "zh_tw", "en_us", "ja_jp"]
+    if default and default not in codes:
+        codes.insert(0, default)
+    return [(code, _LANGUAGE_LABELS.get(code, code)) for code in codes]
+
+
 def _defaults() -> dict[str, object]:
     """从当前配置读取默认值；配置不可用时回落到硬编码值。"""
     theme = "default"
     language = "zh_cn"
-    opacity = 60
+    transparency = 40
     try:
         from ..sysx import AppSettings
 
         theme = str(AppSettings.theme_name)
         language = str(AppSettings.language)
-        opacity = int(AppSettings.acrylic.opacity)
+        # ``acrylic.opacity`` 越大越不透明，而设置项 ``transparency`` 越大越透明，
+        # 两者互为补数——直接拿 opacity 当默认值会让"打开设置未改动就保存"改变观感。
+        transparency = 100 - int(AppSettings.acrylic.opacity)
     except Exception:  # noqa: BLE001 - 配置未就绪时组件仍可构造
         pass
-    return {"theme": theme, "language": language, "opacity": opacity}
+    transparency = max(0, min(100, transparency))
+    return {"theme": theme, "language": language, "transparency": transparency}
 
 
 def build_core_pages() -> tuple[SettingsPage, ...]:
@@ -95,7 +124,7 @@ def build_core_pages() -> tuple[SettingsPage, ...]:
                 items=(
                     SettingSpec.slider(
                         "transparency",
-                        int(defaults["opacity"]),
+                        int(defaults["transparency"]),
                         "窗口透明度",
                         hint="数值越大，桌面内容透出越明显。",
                         label_key="language.UI.ui_Transparency",
@@ -174,12 +203,7 @@ def build_core_pages() -> tuple[SettingsPage, ...]:
                         "language",
                         str(defaults["language"]),
                         "界面语言",
-                        [
-                            ("zh_cn", "简体中文"),
-                            ("zh_tw", "繁體中文"),
-                            ("en_us", "English"),
-                            ("ja_jp", "日本語"),
-                        ],
+                        _language_options(str(defaults["language"])),
                         hint="",
                         label_key="language.UI.ui_Language",
                         hint_key="",
