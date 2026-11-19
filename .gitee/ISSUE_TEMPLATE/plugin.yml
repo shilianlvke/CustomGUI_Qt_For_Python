@@ -1,0 +1,51 @@
+name: 插件相关
+description: 插件开发、加载或规范问题
+labels: plugin
+body:
+  - type: input
+    id: plugin_id
+    attributes:
+      label: 插件 ID
+      placeholder: com.example.my-plugin
+    validations:
+      required: true
+
+  - type: input
+    id: plugin_version
+    attributes:
+      label: 插件版本
+
+  - type: dropdown
+    id: symptom
+    attributes:
+      label: 症状
+      options:
+        - 加载失败
+        - 规范校验不通过（sllkgui plugin lint）
+        - 装不上 / 依赖装不上
+        - 页面打不开
+        - 托盘 / 快捷键不生效
+        - 其它
+    validations:
+      required: true
+
+  - type: textarea
+    id: manifest
+    attributes:
+      label: 清单内容
+      description: 贴 `sllkgui-plugin.yml`（可删掉无关字段）
+      render: yaml
+
+  - type: textarea
+    id: detail
+    attributes:
+      label: 详细描述与复现步骤
+    validations:
+      required: true
+
+  - type: textarea
+    id: lint
+    attributes:
+      label: lint 输出
+      description: 若是校验不通过，贴 `sllkgui plugin lint <路径>` 的完整输出
+      render: shell

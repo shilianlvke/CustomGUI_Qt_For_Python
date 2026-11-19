@@ -1,0 +1,58 @@
+# 提交前门禁：把 CI 的三条命令前移到本地，避免「忘了跑」。
+#
+# 安装：uv run pre-commit install
+# 全量：uv run pre-commit run --all-files
+# 跳过：uv run pre-commit run --all-files --hook-stage manual
+#
+# 钩子与 CI（.workflow/QualityGate.yml）保持同一套工具与规则：
+# ruff 负责 lint + format，mypy 负责公开 API 层的类型门禁。
+# 全部使用本地钩子（language: system），不依赖联网拉取官方仓库。
+repos:
+  - repo: local
+    hooks:
+      # ---- 静态检查 ----
+      - id: ruff-check
+        name: ruff lint
+        entry: uv run ruff check --force-exclude
+        language: system
+        types_or: [python]
+        require_serial: true
+
+      - id: ruff-format
+        name: ruff format
+        entry: uv run ruff format --force-exclude
+        language: system
+        types_or: [python]
+        require_serial: true
+
+      # ---- 类型门禁（只覆盖公开 API 层，见 pyproject 的 [tool.mypy]）----
+      - id: mypy
+        name: mypy
+        language: system
+        entry: uv run mypy
+        types: [python]
+        pass_filenames: false
+        require_serial: true
+
+      # ---- 文件卫生：末尾换行与行尾空白 ----
+      # 用 files 精确限定后缀，不依赖 types: [text]——后者会把 SVG 等
+      # 资源文件当成文本改写（资源由导出工具生成，不该动）。
+      - id: text-hygiene
+        name: 文件卫生
+        entry: uv run python scripts/fix_text_hygiene.py --fix
+        language: system
+        files: \.(py|md|markdown|ya?ml|toml|json|cfg|ini|txt|bat|cmd|ps1|ui|qml)$
+        require_serial: true
+
+      # 快速冒烟：只跑导入敏感的用例，完整测试留给 CI
+      - id: pytest-smoke
+        name: pytest 冒烟
+        language: system
+        entry: >-
+          uv run pytest -q -x
+          tests/test_package_metadata.py
+          tests/test_architecture_boundaries.py
+          tests/test_plugin_lint.py
+        types: [python]
+        pass_filenames: false
+        require_serial: true

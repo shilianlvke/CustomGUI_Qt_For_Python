@@ -1,0 +1,49 @@
+name: 功能请求
+description: 提出新能力或改进想法
+labels: enhancement
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: 要解决的问题
+      description: 先说清楚「现在做不到什么」，再说想怎么做
+    validations:
+      required: true
+
+  - type: textarea
+    id: proposal
+    attributes:
+      label: 期望的用法
+      description: 最好给出代码或配置示例，说明你期望的接口形态
+      placeholder: |
+        ```python
+        from sllkgui.plugin import Setting, SettingsPage
+
+        # 期望这样用
+        ```
+    validations:
+      required: true
+
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: 你考虑过的其它方案
+
+  - type: dropdown
+    id: scope
+    attributes:
+      label: 影响范围
+      options:
+        - 仅插件作者（插件 API）
+        - 宿主应用（窗口与装配）
+        - 组件库（guicore）
+        - 基座内部
+    validations:
+      required: true
+
+  - type: checkboxes
+    id: breaking
+    attributes:
+      label: 兼容性
+      options:
+        - label: 这个改动会破坏现有用法（若勾选，请在描述里说明迁移方式）
