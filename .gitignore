@@ -1,34 +1,25 @@
-# 项目专属
-TestRes
-test/
-demo.py
-test_rc.qrc
-test_rc_rc.py
-main_test.py
-output/
-.file-status/
-files/
-logs/
-# 程序运行根目录下的用户配置（数据根默认落点，不应进入版本库）
-# 只匹配仓库根的 Data/：不带前导斜杠会连 src 下的 data/ 子包一起忽略（Windows 大小写不敏感）
+# ---------------------------------------------------------------------------
+# 运行时产物（程序运行后自动生成）
+# ---------------------------------------------------------------------------
+# 用户配置的数据根：默认落在程序运行根目录，可被 configure(data_dir=...) 覆盖。
+# 只匹配仓库根的 /settings/ 与 /Data/：不带前导斜杠会连 src 下的 data/ 子包一起忽略
+# （Windows 大小写不敏感）。
 /settings/
 /Data/
 
-# 编辑器 / IDE
-.vscode/
-.idea/
-.spyderproject
-.spyproject
-.ropeproject
+# 插件安装目录（已安装插件、源仓库克隆、历史版本、暂存与回收站）
+/gallery/
 
-# AI / 智能体本地工作区（不纳入版本控制）
-.workbuddy-ai/
-/.workbuddy/
+# 运行日志与遥测事件
+/logs/
 
-# 字节码与缓存
+# ---------------------------------------------------------------------------
+# Python 字节码与工具缓存
+# ---------------------------------------------------------------------------
 __pycache__/
 *.py[cod]
 *$py.class
+
 .pytest_cache/
 .pytest_tmp/
 .ruff_cache/
@@ -37,37 +28,65 @@ __pycache__/
 .pyre/
 .pytype/
 .hypothesis/
-
-# 构建与打包产物
-build/
-dist/
-*.egg-info/
-*.egg
-wheels/
-sdist/
-*.manifest
-*.spec
-!packaging/*.spec
-
-# 测试与覆盖率
-htmlcov/
-.tox/
-.nox/
 .coverage
 .coverage.*
 coverage.xml
 nosetests.xml
+htmlcov/
 
-# 环境
-.venv
+# uv 的本地缓存（默认在用户目录；若显式指到仓库内则在此忽略）
+.uv-cache/
+uv-cache/
+
+# ---------------------------------------------------------------------------
+# 虚拟环境与依赖
+# ---------------------------------------------------------------------------
+.venv/
 venv/
 env/
 ENV/
 .env
 __pypackages__/
 
-# 其他
+# 注意：uv.lock **必须**提交到版本库。它锁定精确依赖版本，保证开发与 CI 可复现；
+# 它不进入 wheel / sdist，因此不会影响下游使用者。不要把它加进忽略列表。
+# 详见 docs/contributing.md「依赖锁」。
+
+# ---------------------------------------------------------------------------
+# 构建与打包产物
+# ---------------------------------------------------------------------------
+build/
+dist/
+*.egg-info/
+
+# PyInstaller 的 .spec 由 scripts/build_package.py 在 build/ 内动态生成，不入库
+*.spec
+
+# ---------------------------------------------------------------------------
+# 测试与工具残留
+# ---------------------------------------------------------------------------
+# 编辑器 / IDE
+.vscode/
+.idea/
+.spyderproject
+.spyproject
+.ropeproject
+
+# AI / 智能体本地工作区
+.workbuddy-ai/
+/.workbuddy/
+
+# 合并冲突与编辑器备份
+*.bak
+*.orig
+*.rej
+*~
+*.swp
+
+# 本地化编译产物
 *.mo
 *.pot
 
-/gallery/
+# 注意：这里刻意**不**忽略 test/。仓库里真实存在的是 tests/（带 s），
+# 而 pytest / mypy 的配置也都指向 tests/。忽略一个只差一个字母的 test/ 会让
+# 误建的目录悄悄消失，比误提交更难发现。

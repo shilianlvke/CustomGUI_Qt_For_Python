@@ -50,7 +50,11 @@ stages:
           - export PATH="$HOME/.local/bin:$PATH"
           - uv python install 3.13
           - uv venv --python 3.13
-          - uv sync --extra dev
+          # uv.lock 必须提交到版本库：它锁定精确依赖版本，保证 CI 可复现。
+          # --locked 在 lock 与 pyproject.toml 不一致时直接报错，不会静默重新解析
+          # ——否则「改了 pyproject 却忘了 uv lock」会悄悄通过门禁。
+          - uv lock --check
+          - uv sync --extra dev --locked
           # ---- 质量检查 ----
           # ruff 不带 --select，直接用 pyproject.toml 的 E/F/W/I/UP/B 规则集。
           # 全仓检查：examples 是用户入口，不能只检查 src/tests。

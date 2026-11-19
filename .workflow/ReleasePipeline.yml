@@ -68,7 +68,10 @@ stages:
           - uv --version
           - uv python install 3.13
           - uv venv --python 3.13
-          - uv sync --extra dev
+          # 与 QualityGate.yml 同样锁定依赖：lock 与 pyproject 不一致就直接失败，
+          # 保证「能发布」的那次提交其依赖树也是确定的。
+          - uv lock --check
+          - uv sync --extra dev --locked
           - uv pip install "pyinstaller>=6.10.0"
           # ---- 质量检查 ----
           # 与 QualityGate.yml 用同一套规则集；这里再跑一遍是为了保证「能发布」的前提是
