@@ -105,6 +105,27 @@ PLUGIN = NotesPlugin()
 - 清单 `surfaces[].id` 与 factory 键一一对应；缺失会报 `PLUGIN_SURFACE_FACTORY_MISSING`。
 - 生命周期：`on_load` → `surfaces()` →（语言切换）`on_locale_changed` → `on_unload`。
 
+### 3.1 插件内一律用相对导入
+
+3.0 起基座**不会**把插件目录加入 `sys.path`。原因很直接：把插件根插到
+`sys.path[0]` 等于让它排到标准库之前，插件里一个 `json.py` 就能在全进程劫持
+`import json`，影响基座自身与其它插件。
+
+因此插件内部**必须**使用相对导入：
+
+```python
+# 正确：相对导入，入口模块被当作包加载（submodule_search_locations）
+from .pages.list import NotesPage
+from . import helpers
+
+# 错误：绝对导入——插件目录不在 sys.path 里，会抛 ModuleNotFoundError
+import helpers
+```
+
+基座会在错误信息里直接给出改法（`插件内请用相对导入：把 import helpers 改为
+from . import helpers`）。若确实需要加载插件目录下的文件，用 `importlib`
+配合插件根路径自行处理，不要动 `sys.path`。
+
 ## 4. `GalleryContext`
 
 | 成员 | 说明 |

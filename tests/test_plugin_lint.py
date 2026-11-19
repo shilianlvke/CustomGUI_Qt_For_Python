@@ -113,3 +113,60 @@ def test_lint_runs_without_qt(tmp_path):
         builtins.__import__ = real_import
         for name in [key for key in sys.modules if key.startswith("sllkgui.gallery.lint")]:
             del sys.modules[name]
+
+
+def test_lint_flags_absolute_import_of_local_module(tmp_path):
+    """插件内对本仓库模块的绝对导入必须被指出（3.0 起不再支持）。"""
+    root = tmp_path / "abs"
+    root.mkdir()
+    (root / "helper.py").write_text("VALUE = 1\n", encoding="utf-8")
+    (root / "plugin.py").write_text(
+        "import helper\nfrom helper import VALUE\nimport os\n", encoding="utf-8"
+    )
+    (root / "sllkgui-plugin.yml").write_text(
+        """schema: 1
+api: 1
+id: com.example.abs
+name: Abs
+version: 1.0.0
+entry: plugin.py
+requires:
+  sllkgui: ">=3.0.0,<4.0.0"
+surfaces:
+  - id: home
+    title: {en_us: Home}
+""",
+        encoding="utf-8",
+    )
+
+    report = lint_plugin(root)
+    messages = [issue.message for issue in report.warnings if issue.code == "ABSOLUTE_IMPORT"]
+    assert len(messages) == 2, messages
+    assert any("import helper" in m for m in messages)
+
+
+def test_lint_allows_standard_library_absolute_import(tmp_path):
+    """标准库的绝对导入是正确写法，不能误报。"""
+    root = tmp_path / "std"
+    root.mkdir()
+    (root / "plugin.py").write_text(
+        "import os\nimport json\nfrom pathlib import Path\n", encoding="utf-8"
+    )
+    (root / "sllkgui-plugin.yml").write_text(
+        """schema: 1
+api: 1
+id: com.example.std
+name: Std
+version: 1.0.0
+entry: plugin.py
+requires:
+  sllkgui: ">=3.0.0,<4.0.0"
+surfaces:
+  - id: home
+    title: {en_us: Home}
+""",
+        encoding="utf-8",
+    )
+
+    report = lint_plugin(root)
+    assert not [issue for issue in report.warnings if issue.code == "ABSOLUTE_IMPORT"]

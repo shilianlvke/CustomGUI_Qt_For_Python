@@ -117,6 +117,69 @@ def _scan_file(path: Path, root: Path, permission_values: set[str], report: Lint
                 continue
             report.warnings.append(LintIssue("warning", code, message, relative, number))
 
+    _check_absolute_imports(path, root, lines, report)
+
+
+def _check_absolute_imports(path: Path, root: Path, lines: list[str], report: LintReport) -> None:
+    """插件内部对本仓库模块的绝对导入必须改用相对导入。
+
+    3.0 起基座不再把插件目录加入 ``sys.path``，因此 ``import helpers``
+    在运行期会直接失败。这里在 lint 阶段就指出改法，避免作者等到装好
+    插件才发现。
+
+    只针对**插件仓库自己的模块**：标准库与第三方库用绝对导入是正确的。
+    """
+    import ast
+
+    try:
+        tree = ast.parse("\n".join(lines), filename=str(path))
+    except SyntaxError:
+        return
+
+    # 插件仓库根下的顶层模块名（目录或 .py 文件）
+    local_modules: set[str] = set()
+    try:
+        for child in root.iterdir():
+            if child.name.startswith((".", "_")):
+                continue
+            if child.is_dir() and (child / "__init__.py").is_file():
+                local_modules.add(child.name)
+            elif child.suffix == ".py" and child.stem != "setup":
+                local_modules.add(child.stem)
+    except OSError:
+        return
+
+    if not local_modules:
+        return
+
+    relative = path.relative_to(root).as_posix()
+    for node in ast.walk(tree):
+        if isinstance(node, ast.Import):
+            for alias in node.names:
+                top = alias.name.split(".")[0]
+                if top in local_modules:
+                    report.warnings.append(
+                        LintIssue(
+                            "warning",
+                            "ABSOLUTE_IMPORT",
+                            f"插件内请用相对导入：把 `import {alias.name}` 改为 `from . import {top}`",
+                            relative,
+                            node.lineno,
+                        )
+                    )
+        elif isinstance(node, ast.ImportFrom) and node.level == 0 and node.module:
+            top = node.module.split(".")[0]
+            if top in local_modules:
+                report.warnings.append(
+                    LintIssue(
+                        "warning",
+                        "ABSOLUTE_IMPORT",
+                        f"插件内请用相对导入：把 `from {node.module} import ...` 改为 `from . import {top}`",
+                        relative,
+                        node.lineno,
+                    )
+                )
+
 
 def _check_language(root: Path, report: LintReport) -> None:
     folder = root / "resource" / "lang"

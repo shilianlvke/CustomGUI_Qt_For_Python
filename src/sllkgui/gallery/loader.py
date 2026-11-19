@@ -2,6 +2,11 @@
 
 一个目录 = 一个插件；入口必须导出 ``PLUGIN`` 实例。导入使用唯一模块名，
 卸载时按模块名前缀清理 ``sys.modules``，避免重载后仍命中旧模块。
+
+3.0 起插件**不再**把自己的目录插进 ``sys.path``：那等于把插件根放到标准库
+之前，插件里一个 ``json.py`` 就能劫持全进程的 ``import json``。插件内部一律
+用相对导入（``from .pages.home import HomePage``）；入口模块通过
+``submodule_search_locations=[root]`` 被当作包加载，相对导入天然可用。
 """
 
 from __future__ import annotations
@@ -32,29 +37,24 @@ from .tray import TrayService
 #: plugin_id -> locale -> flatten(key -> text)
 _LANG: dict[str, dict[str, dict[str, str]]] = {}
 _PROVIDER_REGISTERED = False
-#: 插件根目录 -> 引用计数；卸载时只为最后一个使用者移除 sys.path
-_SYS_PATH_REFS: dict[str, int] = {}
 
 
-def _add_sys_path(root: Path) -> list[str]:
-    text = str(root.resolve())
-    _SYS_PATH_REFS[text] = _SYS_PATH_REFS.get(text, 0) + 1
-    if text not in sys.path:
-        # 插件仓库根作为顶层包搜索路径：允许 ``import pyrm`` 这类仓库内包
-        sys.path.insert(0, text)
-        return [text]
-    return []
+def _relative_import_hint(exc: ModuleNotFoundError, root: Path) -> str:
+    """把「插件内绝对导入失败」翻译成可操作的提示。
 
-
-def _remove_sys_path(paths: list[str]) -> None:
-    for text in paths:
-        count = _SYS_PATH_REFS.get(text, 0) - 1
-        if count > 0:
-            _SYS_PATH_REFS[text] = count
-            continue
-        _SYS_PATH_REFS.pop(text, None)
-        while text in sys.path:
-            sys.path.remove(text)
+    插件不再把自己的目录插进 ``sys.path``，因此 ``import mylib`` 这类写法
+    会失败。这里指出仓库里是否存在同名目录，并给出相对导入的写法。
+    """
+    name = exc.name or ""
+    top = name.split(".")[0]
+    if not top:
+        return ""
+    if (root / top).exists():
+        return (
+            f"插件内请用相对导入：把 `import {top}` 改为 `from . import {top}`"
+            f"（或 `from .{name} import ...`）"
+        )
+    return "插件内请用相对导入（`from . import ...`），基座不会把插件目录加入 sys.path"
 
 
 def _language_provider(language: str) -> dict[str, Any]:
@@ -155,11 +155,12 @@ def _import_entry(root: Path, entry: str, plugin_id: str) -> tuple[ModuleType, l
 
 
 def _modules_under(root: Path) -> list[str]:
-    """返回所有从插件根目录导入的模块名（含顶层包与惰性导入的子模块）。
+    """返回所有从插件根目录加载的模块名（含惰性导入的子模块）。
 
-    插件入口里的 ``import pyrm``、``importlib.import_module("surfaces.x")``
-    不带唯一入口模块前缀；只按前缀清理会让更新后的插件继续命中旧代码。
-    这里按模块文件的归属目录判断，重载/卸载后能彻底清掉插件自己的模块。
+    相对导入的子模块带唯一入口前缀（如 ``sllkgui_plugin_x.pages.home``），
+    按前缀即可清理；但插件若用 ``importlib.import_module("surfaces.x")``
+    这类不带前缀的写法加载自己的模块，只按前缀清理会让更新后的插件
+    继续命中旧代码。这里按模块文件的归属目录兜底判断。
     """
     prefix = os.path.normcase(str(Path(root).resolve())) + os.sep
     names: list[str] = []
@@ -289,9 +290,7 @@ def load_plugin(
     )
     context._record = record
     module_names: list[str] = []
-    sys_path_added: list[str] = []
     try:
-        sys_path_added = _add_sys_path(root)
         module, module_names = _import_entry(root, manifest.entry, manifest.plugin_id)
         plugin = getattr(module, "PLUGIN", None)
         if not isinstance(plugin, Plugin):
@@ -307,12 +306,24 @@ def load_plugin(
         context.event("plugin.loaded", {"name": manifest.name})
         Logger.info(f"插件已加载: {manifest.plugin_id} {manifest.version}（{len(record.surfaces)} 个 Surface）")
         record._module_names = module_names  # type: ignore[attr-defined]
-        record._sys_path_added = sys_path_added  # type: ignore[attr-defined]
         return record
+    except ModuleNotFoundError as exc:
+        # 插件内绝对导入：给出相对导入的明确指引，而不是裸露的 ModuleNotFoundError
+        hint = _relative_import_hint(exc, root)
+        detail = f"{exc}: {hint}" if hint else str(exc)
+        for name in {*module_names, *_modules_under(root)}:
+            sys.modules.pop(name, None)
+        context.clear_tray()
+        context.clear_shortcuts()
+        context.clear_settings()
+        registry._errors.append(
+            {"plugin_id": manifest.plugin_id, "code": PLUGIN_LOAD_FAILED, "detail": detail}
+        )
+        Logger.error(f"插件加载失败: {manifest.plugin_id}: {detail}")
+        return None
     except Exception as exc:  # noqa: BLE001 - 单个插件失败必须隔离
         for name in {*module_names, *_modules_under(root)}:
             sys.modules.pop(name, None)
-        _remove_sys_path(sys_path_added)
         context.clear_tray()
         context.clear_shortcuts()
         context.clear_settings()
@@ -336,7 +347,6 @@ def unload_plugin(record: PluginRecord) -> None:
         record.context.clear_settings()
     for name in {*(getattr(record, "_module_names", []) or []), *_modules_under(record.path)}:
         sys.modules.pop(name, None)
-    _remove_sys_path(list(getattr(record, "_sys_path_added", []) or []))
     _LANG.pop(record.plugin_id, None)
     Logger.debug(f"插件已卸载: {record.plugin_id}")
 
