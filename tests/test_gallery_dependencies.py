@@ -211,3 +211,83 @@ def test_config_pip_index_url_precedence(monkeypatch):
         "https://explicit.example/simple"
     )
     assert AppConfig(env_fallback=False).resolved_pip_index_url() == ""
+
+
+# ----------------------------------------------------------------------
+# 冻结形态（PyInstaller 等）
+# ----------------------------------------------------------------------
+class _Frozen:
+    """模拟 PyInstaller 冻结形态：``sys.frozen`` 被置位。"""
+
+    def __init__(self, monkeypatch):
+        monkeypatch.setattr(deps.sys, "frozen", True, raising=False)
+
+
+def test_is_frozen_detects_flag(monkeypatch):
+    """``sys.frozen`` 存在即视为冻结形态。"""
+    assert deps.is_frozen() is False
+    _Frozen(monkeypatch)
+    assert deps.is_frozen() is True
+
+
+def test_is_frozen_detects_meipass(monkeypatch):
+    """``sys._MEIPASS`` 存在（PyInstaller 解包目录）也算冻结形态。"""
+    monkeypatch.setattr(deps.sys, "_MEIPASS", "/tmp/_MEI", raising=False)
+    assert deps.is_frozen() is True
+
+
+def test_manual_command_explains_frozen_instead_of_broken_command(monkeypatch):
+    """冻结形态下不能给出跑不通的手动安装命令。"""
+    _Frozen(monkeypatch)
+    command = deps.manual_command(["somepkg>=1"])
+    assert "冻结形态" in command
+    assert "pip install" not in command
+
+
+def test_install_with_uv_reports_frozen_env(monkeypatch):
+    """冻结形态下安装依赖要报明确错误码，而不是让 uv 撞墙。"""
+    _Frozen(monkeypatch)
+    with pytest.raises(GalleryError) as excinfo:
+        deps.install_with_uv(["somepkg>=1"])
+    assert excinfo.value.code == "FROZEN_ENV_UNSUPPORTED"
+    assert "冻结形态" in excinfo.value.message
+
+
+def test_ensure_python_dependencies_reports_frozen_env(monkeypatch):
+    """缺依赖且处于冻结形态时，直接报 FROZEN_ENV_UNSUPPORTED。
+
+    不能退化成「已跳过依赖安装」——那会让用户以为是自己跳过的。
+    """
+    _Frozen(monkeypatch)
+    with pytest.raises(GalleryError) as excinfo:
+        deps.ensure_python_dependencies(
+            ["sllkgui-missing-for-test>=1"],
+            plugin_id="com.example.dep",
+            install=True,
+        )
+    assert excinfo.value.code == "FROZEN_ENV_UNSUPPORTED"
+    # 说明必须出现在 message 里：加载器只展示 message，用户看不到 detail
+    assert "冻结形态" in excinfo.value.message
+
+
+def test_tool_status_skips_pip_probe_when_frozen(monkeypatch):
+    """冻结形态下不再白跑一次 ``-m pip`` 子进程。"""
+    _Frozen(monkeypatch)
+    called = []
+    monkeypatch.setattr(
+        deps.subprocess,
+        "run",
+        lambda *a, **k: called.append(a) or deps.subprocess.CompletedProcess(a[0], 0, "", ""),
+    )
+    status = deps.tool_status()
+    assert status.pip is False
+    assert not called
+
+
+def test_ensure_uv_reports_frozen_env(monkeypatch):
+    """冻结形态下装 uv 也装不进依赖，应当直接说明。"""
+    _Frozen(monkeypatch)
+    monkeypatch.setattr(deps.shutil, "which", lambda name: None)
+    with pytest.raises(GalleryError) as excinfo:
+        deps.ensure_uv(interactive=True)
+    assert excinfo.value.code == "FROZEN_ENV_UNSUPPORTED"

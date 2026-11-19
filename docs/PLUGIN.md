@@ -61,6 +61,12 @@ permissions:
   `SLLKGUI_PIP_INDEX_URL` / `sllkgui.configure(pip_index_url=...)`。
   能用标准库、纯 Python 小库或 `vendor/` 内联解决的，优先不声明。
 
+  > **冻结形态例外**：宿主以 PyInstaller 等方式打包分发时，解释器不是可执行的
+  > Python，`uv pip install` 无从谈起。此时基座直接报 `FROZEN_ENV_UNSUPPORTED`
+  > 并跳过该插件，而不是给出一条注定失败的手动命令。冻结形态下的可行做法：
+  > 把依赖内置到 `vendor/` 随仓库分发、由宿主在启动前自行安装、或改用源码分发
+  > 形态（启动器 bootstrap 出真实 venv）。
+
 ## 3. 入口 `plugin.py`
 
 ```python

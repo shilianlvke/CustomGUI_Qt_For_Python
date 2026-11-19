@@ -43,6 +43,14 @@ minor 与 patch 保持向后兼容。
 - **脚手架生成的插件无法导入**：模板里写的是 `{{...}}` 双花括号，生成后 `plugin.py`
   一导入就抛 `TypeError: unhashable type: 'dict'`，而 lint 只做文本扫描所以一直是绿的。
 - **CI 门禁路径错误**：ruff 检查路径包含不存在的 `apps` 目录，命令会直接失败。
+- **插件目录劫持全进程模块解析**：加载插件时把插件根插到 `sys.path[0]`，等于让它排到
+  标准库之前——插件里一个 `json.py` 就能在全进程劫持 `import json`，影响基座自身与
+  其它插件。这是基座唯一主动引入的跨信任边界污染。现已彻底移除，插件内部一律用
+  相对导入（`from . import x`）；误用绝对导入时错误信息直接给出改法。
+- **冻结形态下插件依赖静默失效**：宿主以 PyInstaller 打包后，`sys.executable` 指向
+  打包产物而非解释器，`pip` / `uv pip install` 必然失败，但此前会退化成一句
+  「依赖未就绪，已跳过」。现在识别 `sys.frozen` / `sys._MEIPASS` 并报
+  `FROZEN_ENV_UNSUPPORTED`，同时给出三种可行做法。
 
 ### 架构
 
@@ -54,6 +62,15 @@ minor 与 patch 保持向后兼容。
   现在真的可以在无 GUI 依赖的环境运行。
 - **设置写入路径收敛**：菜单 / 抽屉模式改为只应用不落盘，持久化统一由
   `SettingsSession.save()` 负责。
+- **类型承诺与实际对齐**：此前包内带 `py.typed`、classifier 写 `Typing :: Typed`，
+  而 mypy 只覆盖 4 个文件，对下游构成过度承诺。现在 mypy 门禁扩到**下游插件作者
+  真正依赖的那一层**（`sllkgui.plugin` / `sllkgui.window` / 插件协议 / 设置 schema，
+  共 17 个文件），组件库内部不纳入并明确说明原因；README 与 ARCHITECTURE 文档里
+  写清了承诺边界。
+- **工程化配套补齐**：新增 `pre-commit`（把 CI 门禁前移到本地）、`.editorconfig`、
+  三类 issue 模板与 PR 模板；格式化工具从 `black` 换成 `ruff format`（同源、零额外
+  依赖，且 `black` 的默认 88 列与本项目 120 列本就不符）；`scripts/validate_plugin.py`
+  不再自行修改 `sys.path`——那正是 lint 禁止插件做的事。
 
 ### 组件库
 

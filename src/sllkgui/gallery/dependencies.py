@@ -3,6 +3,10 @@
 运行时只检查、不静默安装：发现缺失时先询问用户，再通过 ``uv pip install``
 安装到**当前 Python 环境**。镜像源可由 ``SLLKGUI_PIP_INDEX_URL`` /
 ``configure(pip_index_url=...)`` / ``--index-url`` 配置。
+
+冻结形态（PyInstaller 等）下 ``sys.executable`` 指向打包出来的可执行文件，
+不是可执行的 Python 解释器——``pip install`` 在那里必然失败。这里显式
+识别该形态并给出明确错误码，而不是让它退化成「依赖未就绪，已跳过」。
 """
 
 from __future__ import annotations
@@ -23,6 +27,7 @@ from packaging.requirements import InvalidRequirement, Requirement
 from sllkgui.appcore import Logger, record_event
 
 from .errors import (
+    FROZEN_ENV_UNSUPPORTED,
     PYTHON_DEPENDENCY_INSTALL_FAILED,
     PYTHON_DEPENDENCY_MISSING,
     TOOL_MISSING,
@@ -34,6 +39,27 @@ _INSTALL_TIMEOUT = 300
 _NORMALIZE_RE = re.compile(r"[-.]+")
 #: 这些平台没有真实用户点击，不能弹模态框（否则 exec() 永久阻塞）
 _NON_INTERACTIVE_PLATFORMS = frozenset({"offscreen", "minimal"})
+
+
+def is_frozen() -> bool:
+    """当前是否运行在冻结产物里（PyInstaller / cx_Freeze 等）。
+
+    ``sys.frozen`` 是打包工具写入的标记；``sys._MEIPASS`` 是 PyInstaller
+    专用的解包目录变量，两者出现其一即视为冻结形态。
+    """
+    return bool(getattr(sys, "frozen", False)) or hasattr(sys, "_MEIPASS")
+
+
+def _frozen_hint() -> str:
+    """冻结形态下给用户的可执行说明。"""
+    return (
+        "当前是打包后的冻结形态，无法向解释器安装 Python 依赖"
+        "（sys.executable 指向打包产物而非 Python 解释器）。\n"
+        "可行的做法：\n"
+        "  1. 插件把依赖内置到 vendor/ 目录，随仓库一起分发；\n"
+        "  2. 宿主改用源码分发形态（启动器 bootstrap 出真实 venv）；\n"
+        "  3. 由宿主在启动前自行安装依赖，插件清单里不再声明 python_dependencies。"
+    )
 
 
 def _gui_available() -> bool:
@@ -103,16 +129,19 @@ def missing_packages(requirements: list[str] | tuple[str, ...]) -> list[str]:
 
 def tool_status() -> ToolStatus:
     pip_available = False
-    try:
-        result = subprocess.run(
-            [sys.executable, "-m", "pip", "--version"],
-            capture_output=True,
-            timeout=10,
-            check=False,
-        )
-        pip_available = result.returncode == 0
-    except (OSError, subprocess.SubprocessError):
-        pip_available = False
+    if not is_frozen():
+        # 冻结形态下 sys.executable 是打包产物，`-m pip` 必然失败：
+        # 不如直接判定不可用，避免每次 doctor 都白跑一次子进程
+        try:
+            result = subprocess.run(
+                [sys.executable, "-m", "pip", "--version"],
+                capture_output=True,
+                timeout=10,
+                check=False,
+            )
+            pip_available = result.returncode == 0
+        except (OSError, subprocess.SubprocessError):
+            pip_available = False
     return ToolStatus(
         uv=find_uv(),
         git=find_git() or "",
@@ -140,6 +169,13 @@ def find_git() -> str:
 
 
 def manual_command(requirements: list[str], index_url: str = "") -> str:
+    """给用户手动安装的命令。
+
+    冻结形态下没有可执行的 Python 解释器，给出的命令必然跑不通；
+    此时返回冻结形态说明，而不是一条会误导用户的命令。
+    """
+    if is_frozen():
+        return _frozen_hint()
     packages = " ".join(requirements)
     index = f" --index-url {index_url}" if index_url else ""
     if find_uv():
@@ -477,6 +513,10 @@ def ensure_uv(*, interactive: bool, index_url: str = "", parent: Any = None) -> 
     existing = shutil.which("uv")
     if existing:
         return existing
+    if is_frozen():
+        # 冻结形态里即便装了 uv 也装不进依赖（没有可执行的解释器），
+        # 不如在这里说清楚，省得用户白等一次下载
+        raise GalleryError(FROZEN_ENV_UNSUPPORTED, "冻结形态下无法安装 Python 依赖", _frozen_hint())
     command = uv_manual_command()
     if not interactive:
         raise GalleryError(UV_MISSING, "未找到 uv，无法自动安装依赖", command)
@@ -537,11 +577,15 @@ def ensure_tools(*, interactive: bool = True, parent: Any = None) -> ToolStatus:
     """
     status = tool_status()
     missing: list[str] = []
-    if not status.uv:
+    # 冻结形态下即便装上 uv 也装不进依赖（没有可执行的解释器），
+    # 不把它算进「缺失工具」，免得弹一个注定失败的对话框
+    if not status.uv and not is_frozen():
         missing.append("uv（用于安装插件 Python 依赖）")
     if not status.git:
         missing.append("Git（用于从插件源安装/刷新）")
     if not missing:
+        if is_frozen() and not status.uv:
+            Logger.info("冻结形态：跳过 uv 检测（该形态下无法安装 Python 依赖）")
         return status
     Logger.warning(f"未检测到工具: {', '.join(name.split('（')[0] for name in missing)}")
 
@@ -587,6 +631,10 @@ def ensure_tools(*, interactive: bool = True, parent: Any = None) -> ToolStatus:
 
 
 def install_with_uv(packages: list[str], *, index_url: str = "", uv_path: str | None = None) -> None:
+    if is_frozen():
+        # 冻结形态下 sys.executable 是打包产物，uv pip install --python <exe>
+        # 必然失败；明确报错，别让用户对着一个跑不通的命令排查
+        raise GalleryError(FROZEN_ENV_UNSUPPORTED, "冻结形态下无法安装 Python 依赖", _frozen_hint())
     executable = uv_path or ensure_uv(interactive=False)
     command = [executable, "pip", "install", "--python", sys.executable]
     if index_url:
@@ -627,6 +675,17 @@ def ensure_python_dependencies(
     if not missing:
         return []
     command = manual_command(missing, index_url)
+    if is_frozen():
+        # 冻结形态无法安装依赖：明确报错，而不是让用户选「自动安装」后
+        # 撞上一个跑不通的 uv 命令，最后只看到「依赖未就绪，已跳过」
+        #
+        # 说明文字放进 message（加载器只展示 message），detail 留技术细节
+        raise GalleryError(
+            FROZEN_ENV_UNSUPPORTED,
+            f"冻结形态下无法安装 Python 依赖: {', '.join(missing)}。{_frozen_hint()}",
+            command,
+            params={"packages": missing, "command": command},
+        )
     if not install:
         raise GalleryError(
             PYTHON_DEPENDENCY_MISSING,
@@ -677,6 +736,7 @@ __all__ = [
     "git_manual_command",
     "import_name",
     "install_with_uv",
+    "is_frozen",
     "manual_command",
     "missing_packages",
     "parse_requirement",
