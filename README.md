@@ -3,7 +3,7 @@
 基于 **PySide6** 的桌面 UI 基座：窗口骨架、设计令牌、组件库、主题与多语言、
 插件运行时，以及一个「双击即用」的 Windows 启动器。
 
-> 当前版本：**2.6.1**（tag `base-v2.6.1`）
+> 当前版本：**3.0.0**（tag `base-v3.0.0`）
 >
 > 2.0 起采用新的插件协议：**一个 Git 仓库 = 一个插件，插件可贡献多个 Surface**。
 > 旧的 App 协议（`apps/`、`config.yml`、`plugins.yml`）已删除，不提供兼容层。
@@ -277,7 +277,7 @@ uv run sllkgui run --index-url https://pypi.tuna.tsinghua.edu.cn/simple
 安装为其它项目的依赖：
 
 ```powershell
-uv add "sllkgui @ git+https://gitee.com/shilianlvke/SllkGui.git@base-v2.2.3"
+uv add "sllkgui @ git+https://gitee.com/shilianlvke/SllkGui.git@base-v3.0.0"
 ```
 
 运行环境要求：Python 3.12+、PySide6 6.10.1+、PyYAML 6.0.3+、packaging 24+。
@@ -403,6 +403,16 @@ SllkGui/
 | 布局 | `CTabs` `CAccordion` `CFieldset` `CFormField` `CFormGrid` `CScrollArea` `CSplitter` `CToolbar` |
 | 设置与导航 | `CSettingsWindow` `CSideNav` `CSettingGroup` `CSettingRow` `CInfoRow` `CEditActionBar` `CThemeCard` `CThumbnail` |
 | 窗口部件 | `CWindow` `CTitleBar` `CLeftMenu` `CSettingsWindow` `CGrips` `CCredits` |
+
+界面效果（内置预览插件的实拍）：
+
+| 概览 | 默认主题 |
+| --- | --- |
+| ![概览](docs/assets/概览.png) | ![默认主题](docs/assets/默认主题.png) |
+
+| 明亮主题 | 梦幻主题 | 护眼主题 |
+| --- | --- | --- |
+| ![明亮主题](docs/assets/明亮主题.png) | ![梦幻主题](docs/assets/梦幻主题.png) | ![护眼主题](docs/assets/护眼主题.png) |
 
 完整签名与用法见 [docs/COMPONENTS.md](docs/COMPONENTS.md)。
 
@@ -646,11 +656,19 @@ surfaces:
   - id: notes
     title: {zh_cn: 便签, zh_tw: 便籤, en_us: Notes, ja_jp: ノート}
     icon: resource/icon/notes.svg
+    impl: pages/notes.py
     default: true
     order: 10
 permissions:
   - filesystem.write
 ```
+
+`impl` 是该 Surface 的页面实现文件路径（相对插件根目录）。声明后基座在加载期就
+校验文件存在，缺失时跳过整个插件并记 `PLUGIN_SURFACE_IMPL_MISSING`，而不是等到
+用户点击时才报错。
+
+插件内部一律用**相对导入**（`from .pages.notes import NotesPage`）：基座不会把
+插件目录加入 `sys.path`，否则插件里的同名模块会遮蔽标准库、劫持全进程。
 
 入口示例：
 
@@ -783,6 +801,12 @@ uv run sllkgui run --index-url https://pypi.tuna.tsinghua.edu.cn/simple
 
 如果插件安装失败，基座会隔离该插件并记录
 `PYTHON_DEPENDENCY_MISSING` / `PYTHON_DEPENDENCY_INSTALL_FAILED`。
+
+> **打包后的冻结形态例外**：若基座以 PyInstaller 等方式打包，`sys.executable`
+> 指向打包产物而非 Python 解释器，无法安装任何依赖。此时基座会直接报
+> `FROZEN_ENV_UNSUPPORTED` 并跳过该插件。可行做法：让插件把依赖内置到
+> `vendor/` 随仓库分发、由宿主在启动前自行安装，或改用源码分发形态
+> （启动器会 bootstrap 出真实 venv）。
 
 ### Q6. 预览模式为什么看不到已安装插件？
 

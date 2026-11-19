@@ -1,7 +1,5 @@
 # 统一设置系统
 
-> 适用版本：2.7.0+
->
 > 原型：[docs/prototype/settings-window.html](prototype/settings-window.html)
 
 设置系统把「基座配置」与「插件配置」收进同一个独立窗口、同一套声明模型与

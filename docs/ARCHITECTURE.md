@@ -1,4 +1,4 @@
-# 架构总览（2.0）
+# 架构总览
 
 ```text
 ┌─────────────────────────────────────────────┐
@@ -54,9 +54,15 @@
 
 ## 相关文档
 
-- [PLUGIN.md](./PLUGIN.md)：插件协议
-- [PLUGIN_STANDARD.md](./PLUGIN_STANDARD.md)：开发规范
-- [SOURCE.md](./SOURCE.md)：源仓库协议
-- [GALLERY.md](./GALLERY.md)：命令与存储
-- [TRAY.md](./TRAY.md)：托盘所有权与插件动作
-- [SHORTCUTS.md](./SHORTCUTS.md)：快捷键作用域、优先级与插件协议
+| 文档 | 内容 |
+| --- | --- |
+| [PLUGIN.md](./PLUGIN.md) | 插件协议：清单、Surface、生命周期、相对导入约定 |
+| [PLUGIN_STANDARD.md](./PLUGIN_STANDARD.md) | 插件开发规范与 lint 规则 |
+| [SOURCE.md](./SOURCE.md) | 源仓库协议 |
+| [GALLERY.md](./GALLERY.md) | 命令与存储 |
+| [API.md](./API.md) | 公开 API 速查 |
+| [SETTINGS.md](./SETTINGS.md) | 设置 schema 与持久化 |
+| [COMPONENTS.md](./COMPONENTS.md) | 组件分类与设计令牌 |
+| [POPUP_MENU.md](./POPUP_MENU.md) | 自绘弹出菜单：接口、交互与 QMenu 迁移 |
+| [TRAY.md](./TRAY.md) | 托盘所有权与插件动作 |
+| [SHORTCUTS.md](./SHORTCUTS.md) | 快捷键作用域、优先级与插件协议 |

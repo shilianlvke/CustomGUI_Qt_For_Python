@@ -65,18 +65,20 @@ uv run pre-commit install
 
 | 层 | 包 | 可以做 | 不可以做 |
 | --- | --- | --- | --- |
-| 逻辑层 | `sllkgui.appcore` | 配置、主题、语言、令牌、插件协议、错误边界、工具 | 不得 import `guicore` / `guis` |
-| 组件层 | `sllkgui.guicore` | 组件实现、窗口部件、QSS 生成 | 不得 import `guis` |
-| 装配层 | `sllkgui.guis` | 主窗口组装、页面栈、插件加载、语言服务 | 只能使用 `appcore` 公开面（禁止 `appcore.sysx.*`） |
-| 门面 | `sllkgui.window` | 把装配层的能力收成稳定 API | 不写业务逻辑 |
+| 逻辑层 | `sllkgui.appcore` | 配置、主题、语言、令牌、错误边界、工具 | 不得 import PySide6；不得 import `guicore` / `guis` |
+| 组件层 | `sllkgui.guicore` | 组件实现、窗口部件、QSS 生成 | 不得 import `guis` / `gallery` |
+| 装配层 | `sllkgui.guis` | 主窗口组装、页面栈、语言服务 | 只能使用 `appcore` 公开面（禁止 `appcore.sysx.*`） |
+| 插件层 | `sllkgui.gallery` | 插件协议、源、安装、加载、运行时 | 不得 import `guis`（组合根除外） |
+| 预览插件 | `sllkgui.showcase` | 内置组件预览（gallery 模式） | 只用 plugin API，不得 import `gallery` 内部 |
+| 门面 | `sllkgui.window` | 把装配层与插件层的能力收成稳定 API | 不写业务逻辑 |
 
-这些不是口头约定，`tests/test_architecture_boundaries.py` 用 AST 扫 import 根逐条守着。
-新增层级依赖前先想清楚，改断言要单独说明理由。
+这些不是口头约定，`tests/test_architecture_boundaries.py` 用 AST 扫 import 根逐条守着，
+并按 5×5 白名单矩阵表达包间依赖。新增层级依赖前先想清楚，改断言要单独说明理由。
 
 ## 代码约定
 
 - **包名/模块名全小写**，单词间用下划线。历史的 `SYS` / `CustomUI` 命名已清除，不要再引入
-  （现存 `appcore/tool/Net.py` 属于待改的历史命名）。Linux 文件系统大小写敏感，这条不是洁癖。
+  （`appcore/tool/Net.py` 已更名为 `storage.py`）。Linux 文件系统大小写敏感，这条不是洁癖。
 - **不要用 `Path(__file__).resolve().parents[N]` 定位资源**。源码运行、wheel 安装、
   PyInstaller 收集三种形态的目录深度不同，这是最隐蔽的「装完就崩」来源。
   一律走 `sllkgui.appcore.sysx.config.paths` 的 `find_resource()` / `resolve_path()` / `iter_files()`。
@@ -94,13 +96,11 @@ uv run pre-commit install
   否则测的是源码树，而不是 wheel 里的东西，「装完能不能用」这类问题永远测不出来。
 - 修 bug 请带一条能复现的测试；扫描类断言必须加「扫到了东西」的自检，
   本仓库历史上出现过「扫空目录、永远通过」的假绿测试。
-- 已知遗留：`tests/test_example_paradigm.py` 整文件 skip 且指向已删除的 `Apps_legacy`，
-  修改示例协议时顺手清理或重写它。
 
 ## 文档
 
-- `docs/` 是唯一文档来源，**手工维护**；不再使用 `scripts/generate_docs.py` 生成 API 列表
-  （AST 列表看不到 `__init__` 的再导出，且行号一改就过期）。
+- `docs/` 是唯一文档来源，**手工维护**。不要写脚本自动生成 API 列表——AST 列表看不到
+  `__init__` 的再导出，且行号一改就过期。
 - 协议与清单字段只写在 `docs/PLUGIN.md`，组件签名只写在 `docs/COMPONENTS.md`，
   README 只做摘要并链接，避免同一事实多处维护。
 - 不写过程记录与待办清单：变更归 `CHANGELOG.md`，现状归 `docs/ARCHITECTURE.md`。

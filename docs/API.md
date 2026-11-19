@@ -1,8 +1,8 @@
 # API 速查
 
 公开 API 只保证**门面**的名字稳定：`sllkgui`、`sllkgui.config`、`sllkgui.appcore`、
-`sllkgui.window`、`sllkgui.guicore`。`sllkgui.appcore.sysx.*`、`sllkgui.guis.*`
-属于内部实现，可能重组，宿主代码不应直接依赖。
+`sllkgui.plugin`、`sllkgui.window`、`sllkgui.guicore`。`sllkgui.appcore.sysx.*`、
+`sllkgui.guis.*`、`sllkgui.gallery.*` 属于内部实现，可能重组，宿主代码不应直接依赖。
 
 `sllkgui.guicore.window` 下的窗口部件可直接使用；其中 `window/window/` 与
 `guis/windows/` 是组件内部装配，未来可能调整。完整稳定面见下表，其余导出符号
@@ -15,8 +15,9 @@
 | 入口 | 提供 |
 | --- | --- |
 | `sllkgui` | `configure()` / `current_config()` / `reset_config()` / `__version__` / `package_root()` / `resource_root()` |
-| `sllkgui.appcore` | 配置视图、主题、语言、令牌、插件协议、错误边界、遥测、存储工具 |
-| `sllkgui.window` | 窗口骨架、应用装载、语言服务 |
+| `sllkgui.appcore` | 配置视图、主题、语言、设计令牌、设置 schema 与存储、错误边界、遥测 |
+| `sllkgui.plugin` | 插件作者门面：`Plugin` / `GalleryContext` / `Permission` / 设置与托盘、快捷键类型 |
+| `sllkgui.window` | 窗口骨架、Gallery 装载（`load_gallery` / `load_run`）、语言服务 |
 | `sllkgui.guicore` | 组件、窗口部件、页面基类 `CPreviewPage`、样式、字体、后台任务、回调守卫、快捷键表 |
 
 ## 2. 配置
@@ -24,17 +25,18 @@
 ```python
 def configure(
     *,
-    apps_dir: str | os.PathLike | None = None,
+    gallery_dir: str | os.PathLike | None = None,
     resource_dirs: Sequence[str | os.PathLike] | None = None,
     data_dir: str | os.PathLike | None = None,
     diagnostics_dir: str | os.PathLike | None = None,
     builtin_menus: bool | None = None,
+    pip_index_url: str | None = None,
     env_fallback: bool | None = None,
     force_reload: bool = False,
 ) -> AppConfig: ...
 ```
 
-- `apps_dir` / `data_dir` / `diagnostics_dir` / `builtin_menus` 传 `None` 时保留上次 `configure()` 的值（首次为 `None`，由环境变量或默认值回落）。
+- `gallery_dir` / `data_dir` / `diagnostics_dir` / `builtin_menus` 传 `None` 时保留上次 `configure()` 的值（首次为 `None`，由环境变量或默认值回落）。
 - `resource_dirs` 传 `None` 保留上次值，传空序列清空覆盖层；`env_fallback` 传 `None` 保留上次值，设为 `False` 时不再用 `SLLKGUI_*` 环境变量兜底。
 - 优先级：显式参数 > `SLLKGUI_*` 环境变量 > 内置默认值（环境变量仅在 `env_fallback` 打开时兜底）。
 - 配置上下文已加载后再调用且未传 `force_reload=True`，抛 `ConfigAlreadyLoadedError`。
@@ -46,15 +48,15 @@ cfg = current_config()          # 当前生效配置
 reset_config()                  # 清空（主要给测试用）
 ```
 
-环境变量：`SLLKGUI_APPS_DIR`、`SLLKGUI_RESOURCE_DIR`、`SLLKGUI_ROOT_DIR`、
-`SLLKGUI_DATA_DIR`、`SLLKGUI_DIAGNOSTICS_DIR`、`SLLKGUI_BUILTIN_MENUS`。
+环境变量：`SLLKGUI_GALLERY_DIR`、`SLLKGUI_RESOURCE_DIR`、`SLLKGUI_ROOT_DIR`、
+`SLLKGUI_DATA_DIR`、`SLLKGUI_PROGRAM_DIR`、`SLLKGUI_PIP_INDEX_URL`。
 
 ## 3. 配置视图与上下文
 
 ```python
 from sllkgui.appcore import (
     AppSettings, AppLanguages, AppThemes, AppOthers,
-    get_app_context, apps_root, ColorPalette, Language, PathFactory,
+    get_app_context, ColorPalette, Language, PathFactory,
 )
 
 get_app_context(force_reload=False)     # 首次调用时惰性加载并校验
@@ -63,7 +65,6 @@ AppSettings.startup_size                # -> (960, 540)
 AppSettings.lef_menu_size               # -> SizeRange(minimum=..., maximum=...)
 AppThemes["dracula"].data               # -> Attrs
 AppLanguages["zh_cn"].data
-apps_root()                             # -> Path
 ```
 
 `Attrs` 同时支持属性与字典访问：`node.key` / `node["key"]`，缺失时返回空 `Attrs()` 而不是抛错。
@@ -76,7 +77,7 @@ apps_root()                             # -> Path
 | `find_resource(rel)` / `resolve_path(rel)` | 在资源根中查找 / 解析为绝对路径 |
 | `iter_files(dir, suffix)` | 同名只保留最高优先级那份 |
 | `iter_file_layers(dir, suffix)` | 返回每层的同名文件，供配置深合并 |
-| `apps_root()` / `data_root()` | 应用目录 / 可写数据根 |
+| `gallery_root()` / `data_root()` | 插件安装目录 / 可写数据根 |
 
 ### 用户配置持久化
 
@@ -94,6 +95,7 @@ apps_root()                             # -> Path
 | `drawer_mode` | 四向抽屉 Static / Overlay | 点「保存」时写入 |
 | `acrylic_transparency` / `glass_strength` | 材质滑块 | 点「保存」时写入 |
 | `background_image` / `background_fit` | 背景设置 | 点「保存」时写入 |
+| `background_recent` | 最近使用的背景图 | 选择背景图时写入，最多 5 条并自动去重 |
 | `remember_window_size` | 启动与窗口 | 点「保存」时写入 |
 | `startup_size` | 窗口尺寸 | 正常关闭且「记住窗口尺寸」开启时写入（最大化/最小化/全屏跳过） |
 
@@ -124,11 +126,6 @@ ctx.settings.set("key", value)
 （别名 `Setting`）、`SettingsPage`、`SettingsSection`、`SettingOption`、
 `SettingsError` / `SettingsConflictError` / `SettingsValidationError`。
 窗口：`sllkgui.guicore.CSettingsWindow`。
-| `acrylic_transparency` | 设置「外观 / 窗口透明度」滑块 | 拖动过程中节流写入，松手再落盘一次 |
-| `glass_strength` | 设置「外观 / 亚克力质感强度」滑块 | 拖动过程中节流写入，松手再落盘一次 |
-| `background_image` | 设置「外观 / 个性化设置背景」 | 选择/清除背景图时立即写入，空字符串表示纯色 |
-| `background_fit` | 背景图适应模式 | 选择填充/适应/拉伸/平铺/居中时写入 |
-| `background_recent` | 最近使用的背景图 | 选择背景图时写入，最多 5 条并自动去重 |
 
 ```python
 from sllkgui.appcore import load_user_settings, save_user_settings, user_settings_path
@@ -192,24 +189,27 @@ available_languages()                # -> ("en_us", "ja_jp", "zh_cn", "zh_tw")
 
 ## 6. 插件
 
-```python
-from sllkgui.appcore import (
-    AppPlugin, AppPage, AppPluginError, PROTOCOL_VERSION, SUPPORTED_PROTOCOL_VERSIONS,
-    PluginRegistry, MenuPlugin, PagePlugin, CommandPlugin,
-    get_plugin_registry,
-)
+插件作者的门面是 `sllkgui.plugin`：
 
-registry = get_plugin_registry()
-registry.register_menu(MenuPlugin(...))
-registry.register_page(PagePlugin(...))
-registry.load_page_plugin(page_object)     # 按需构建页面
-registry.build_page_routes(language)       # button_id -> (page_object, title)
-registry.has_page(page_object)
-registry.page_plugins / menu_plugins / command_plugins
-registry.disable_plugin(plugin_id) / enable_plugin(plugin_id)
+```python
+from sllkgui.plugin import (
+    Plugin, GalleryContext, GallerySettings, GalleryShortcut, GalleryShortcuts,
+    GalleryTray, Permission, PLUGIN_API_VERSION,
+    Setting, SettingOption, SettingsAction, SettingsInfo, SettingsPage, SettingsSection,
+    PluginError, ShortcutBinding, ShortcutConflict, TrayEntry, TrayGroup,
+)
 ```
 
-插件协议与清单字段见 [PLUGIN.md](PLUGIN.md)。
+宿主侧（加载器、注册表、存储）在 `sllkgui.gallery`：
+
+```python
+from sllkgui.gallery import (
+    GalleryRegistry, GalleryStore, PluginManager, PluginRecord, SurfaceRecord,
+    load_plugin, unload_plugin, discover_plugin_dirs, load_manifest,
+)
+```
+
+插件协议、清单字段与生命周期见 [PLUGIN.md](PLUGIN.md)。
 
 ## 7. 错误边界
 
@@ -305,22 +305,28 @@ registry.conflicts()            # 冲突观测（序列 / 归属 / 生效者）
 from sllkgui.window import (
     UiMainWindow, SetupMainWindow, MainWindowController, MainFunctions,
     Ui_MainPages, Ui_LeftColumn, Ui_RightColumn,
-    AppContext, AppHandle, discover_app_dirs, load_apps, load_app_handles,
-    get_app_handle, load_app_manifest, register_app, reset_apps_cache,
+    GalleryWindow, load_gallery, load_run,
     apply_language, available_languages, current_language,
 )
-
-load_apps(root=None, force=False)          # 发现 + 注册全部应用，返回已注册的应用目录列表
-load_app_handles(root=None)                # 同上，返回 AppHandle 列表
-get_app_handle("button_preview")           # 按名字取已加载应用（不存在返回 None）
-discover_app_dirs(root=None)               # 只发现，不注册
 ```
 
-`reset_apps_cache()` 的语义（B5 起）：除复位加载标记外，还会按本轮 `load_apps()`
-登记的 `plugin_id` **定向清理**全局 `PluginRegistry` 中应用自己注册的菜单/页面，
-再清空 `app_state` 缓存。它**不会整体 reset**（`builtin` 菜单、模块导入期快照等
-其它持有者的注册项原样保留）。因此 `reset_apps_cache()` → `load_apps(force=True)`
-可安全重复重载，不会触发 `PLUGIN_DUPLICATE_MENU` 而让应用消失。
+两种模式的入口：
+
+```python
+window = load_gallery(route="", data_dir=None)   # 组件展厅：只加载内置预览插件
+window = load_run(                              # 正式模式
+    route="",
+    data_dir=None,
+    gallery_dir=None,          # 已安装插件目录
+    plugin_dirs=None,          # 额外加载的本地插件目录
+    safe_mode=False,
+    allow_local=False,
+    install_missing_deps=True, # 缺失依赖时询问是否安装
+    interactive=True,
+    index_url="",
+    check_tools=False,         # 启动时检测 uv / Git
+)
+```
 
 窗口装配顺序（`sllkgui run` 与宿主 `main.py` 一致）：
 
@@ -329,6 +335,9 @@ ui = UiMainWindow(); ui.setup_ui(window)
 SetupMainWindow.setup_gui(window)
 controller = MainWindowController(window)
 ```
+
+`MainWindowController` 负责窗口状态持久化与路由；路由函数（`get_page_routes` /
+`get_menu_items` / `get_default_page_object`）显式接收 `window`，不再依赖进程级注册表单例。
 
 ### 窗口背景图
 
@@ -345,29 +354,26 @@ window.set_background_image("")  # 清除
 背景图由 `CWindow.paintEvent` 绘制并按尺寸缓存缩放结果；激活时各层表面自动转为
 半透明（复用玻璃层参数并保留可读性下限），不会新增外层背景控件。
 
-单页面应用可以直接继承预览页基类，省掉滚动容器、卡片与标题样式的样板：
+预览页基类拼好页面外壳（滚动容器、卡片、分区标题），子类只需实现 `sections`：
 
 ```python
 from sllkgui.guicore import CPreviewPage
 
 
-class MyPage(CPreviewPage):
-    slug = "my_app"           # 语言命名空间 app.my_app；objectName 推导为 myAppPage
-    columns = 3               # 分区内默认每行控件数
-    title_scale = "subtitle"  # 分区标题字号：subtitle（默认）或 title
+class MyPreviewPage(CPreviewPage):
+    slug = "my_preview"           # 语言命名空间 my_preview；objectName 推导为 myPreviewPage
+    columns = 3                   # 分区内默认每行控件数
+    title_scale = "subtitle"      # 分区标题字号：subtitle（默认）或 title
 
     @classmethod
     def sections(cls, page, window):
         # 条目三种写法：(标题, 控件) / (标题, [控件...], 每行列数) / 现成 QWidget
         return [(cls.tr("group_a"), [widget_a, widget_b], 2)]
-
-
-PAGE = MyPage
 ```
 
-`slug` 决定语言命名空间与 `page_object`，须与清单 `config.yml` 的 `page_object` 一致
-（`tests/test_preview_apps.py` 会校验）。钩子都是 `classmethod`，因此 `PAGE` 写成类或实例
-都能被加载器正确调用。
+`slug` 决定语言命名空间与 `page_object`（留空时按 `slug` 推导）；钩子都是
+`classmethod`，因此写成类或实例都能被加载器正确调用。内置预览插件的各 Surface
+页面都基于它（见 `src/sllkgui/showcase/core_preview/surfaces/`）。
 
 ## 12. 样式与字体
 
@@ -383,5 +389,7 @@ install_system_fonts()               # 注册系统字体，缓解 offscreen / �
 
 - 版本单一来源：`src/sllkgui/_version.py`。`sllkgui.__version__` **先读该文件**，
   只有文件缺失时才回落到已安装元数据——反过来会让源码树显示 site-packages 里旧 wheel 的版本号。
-- 已下线的历史入口由 `tests/test_removed_entry_points.py` 守着，不得复活。
-- `1.x` 内保持向后兼容，破坏性变更只在新的 major 版本引入，并写入 [CHANGELOG](../CHANGELOG.md)。
+- 已下线的历史入口由 `tests/test_legacy_removed.py` 与
+  `tests/test_legacy_import_policy.py` 守着，不得复活。
+- 同一 major 内保持向后兼容；破坏性变更只在新的 major 版本引入，并写入
+  [CHANGELOG](../CHANGELOG.md)。

@@ -1,5 +1,12 @@
 # SllkGUI 手工测试用例（视觉与交互）
 
+> **历史验收档案。** 记录的是 `SllkGUI 0.6.0`（tag `base-v0.6.0`，2026-11-04）
+> 一轮人工走查的观测结果，**不是当前代码状态的描述**。其中多条已随 3.0 重构
+> 修复或失去对应代码（文中标注「已删除 / 已移除」处即如此）。
+>
+> 用途：保留当时的视觉与交互问题清单，作为回归时的人工复测清单与历史依据。
+> 复测前请先按当前代码确认现象是否仍存在。
+>
 > 历史基线：`SllkGUI 0.6.0` / tag `base-v0.6.0`，测试日期 2026-11-04。
 > 代码基线：`src/sllkgui` 当前 `main`，四套主题、四种语言、10 个内置预览应用。
 > 自动化前置：`uv run ruff check src tests` 全绿；`uv run pytest -q` 485 passed / 1 skipped。
@@ -18,12 +25,12 @@
 | F-01 | 高 | 数据预览 / `CDataView` | 列表布局下每行条目高 56px，而内层模板需要 74px；标题/分类/价格被上下裁切，文字只剩中间一条。网格布局正常。 | [views.py](../src/sllkgui/guicore/custom_ui/data/views.py) `_DataViewItem` 固定 `setMinimumHeight(56)`，模板两行标签被压到 9px 高 |
 | F-02 | 高 | 菜单预览 / `CPanelMenu` | 展开“组件”后只显示 `DataTable / 表单 / Tree`，`页面 / 禁用项`被卡片下沿裁掉；菜单贴卡片底部，上方留大块空白。 | 组件 `minHeight=300 / maxHeight=110`（`CMenuList` 固定高度 + 示例 `setMinimumHeight(300)`） |
 | F-03 | 高 | 输入预览 / `CPopover` 系列 | `Select / MultiSelect / TreeSelect / DatePicker / AutoComplete / ColorPicker` 弹层背景仅约 22% 不透明；覆盖在页面控件上时，底层的“下拉选择 / 多选 / Rome / React”清晰透出，选项文字互相干扰。 | [overlay.py](../src/sllkgui/guicore/custom_ui/line_edit/overlay.py) 使用 `colors()["background"]`；[styles.py](../src/sllkgui/guicore/styles.py) `GLASS_CONTROL=0.22` |
-| F-04 | 高 | 壳层预览 / 主题配置抽屉 | 900×620 窗口下，抽屉底部“菜单模式 / 深色模式”被窗口裁掉；无可见滚动条，用户不知道还能继续滚动。 | [app_configurator.py](../src/sllkgui/guicore/window/app_configurator.py) 使用 `CScrollArea`；[scroll_area.py](../src/sllkgui/guicore/custom_ui/scroll/scroll_area.py) 两个滚动条策略均为 `AlwaysOff` |
+| F-04 | 高 | 壳层预览 / 主题配置抽屉 | 900×620 窗口下，抽屉底部“菜单模式 / 深色模式”被窗口裁掉；无可见滚动条，用户不知道还能继续滚动。 | `app_configurator.py`（3.0 已删除） 使用 `CScrollArea`；[scroll_area.py](../src/sllkgui/guicore/custom_ui/scroll/scroll_area.py) 两个滚动条策略均为 `AlwaysOff` |
 | F-05 | 中高 | 表格预览 / 状态列 | 表头“库存状态”在拉伸后的列中居中，状态标签却固定画在单元格左侧 `+10px`；视觉上标签落在“评分”和“库存状态”之间，和表头错位约 100px。 | [delegate.py](../src/sllkgui/guicore/custom_ui/data/table/delegate.py) `_paint_tag` 未执行 `initStyleOption`，`option.displayAlignment` 为空，标签始终左对齐 |
 | F-06 | 中 | 表格预览 / 冻结列 | 主表点表头可正常排序；点冻结列“名称”表头，首行数据不变、排序指示器不切换。 | [view.py](../src/sllkgui/guicore/custom_ui/data/table/view.py) 只连接主表头 `sectionClicked`，冻结表头未连接 |
 | F-07 | 中 | 壳层/菜单预览 / 卡片标题 | 卡片被同行更高的卡片拉高时，标题 `QLabel` 纵向膨胀（实测 AppMenu 标题高 134px，内容被推到 y=154），标题与内容之间出现大段空白，内容贴底。 | [page.py](../src/sllkgui/guicore/app_ui/page.py) `card()` 直接 `addWidget(title_label)`，未限制标题高度或加 stretch |
-| F-08 | 中 | 菜单预览 / 状态提示 | `ContextMenu` 的“点击按钮打开菜单”提示、`TabMenu` 内容文字、`Menubar` 回调提示使用 `palette(mid)`，在玻璃深色卡片上几乎不可见。 | [apps/menu_preview/gui/main.py](../apps/menu_preview/gui/main.py) 多处 `color: palette(mid)` |
-| F-09 | 中 | 壳层 / 主题配置 | “菜单模式”的 `Static / Overlay` 只改变按钮选中态，基座和示例应用都没有消费 `menuModeChanged`，左菜单行为完全不变。 | [app_configurator.py](../src/sllkgui/guicore/window/app_configurator.py) 只发信号，无宿主连接 |
+| F-08 | 中 | 菜单预览 / 状态提示 | `ContextMenu` 的“点击按钮打开菜单”提示、`TabMenu` 内容文字、`Menubar` 回调提示使用 `palette(mid)`，在玻璃深色卡片上几乎不可见。 | `apps/menu_preview/gui/main.py`（旧 App 协议，3.0 已移除） 多处 `color: palette(mid)` |
+| F-09 | 中 | 壳层 / 主题配置 | “菜单模式”的 `Static / Overlay` 只改变按钮选中态，基座和示例应用都没有消费 `menuModeChanged`，左菜单行为完全不变。 | `app_configurator.py`（3.0 已删除） 只发信号，无宿主连接 |
 | F-10 | 中 | 标题栏 / 主题配置按钮 | 从壳层页或标题栏打开主题抽屉后，标题栏月亮按钮始终无 active/按下态；关闭后也无变化。每次切页还输出 `标题栏按钮不可用` 调试日志。 | [controller.py](../src/sllkgui/guis/windows/main_window/controller.py) `toggle_theme_drawer()` 未同步 `btn_themes`；仍在查旧名 `btn_top_settings` |
 | F-11 | 中 | 右侧抽屉 / 主题配置 | 主题抽屉只有内部标题“主题配置”，没有关闭按钮；普通右抽屉没有列头也没有关闭按钮，与左/顶/底抽屉不一致。 | `CAppConfigurator(embedded=True)` 隐藏 `close_button`；右列本身无列头 |
 | F-12 | — | 输入预览 / 浮动标签 | **误报（复测撤销）**：几何探针显示两个 `CFloatLabel` 顶层 y=243、输入框 y=257、height=40，上下完全对齐；截图中的差异是浮动标签本身在空态/有值态的高度变化，不是基线错位。 | 无缺陷 |
@@ -38,7 +45,7 @@
 | F-21 | 低 | 四向抽屉 / 占位内容 | 右/顶/底抽屉的占位文本在内容区垂直居中，标题条与正文之间留出大块空白，看起来像内容丢失。 | 示例占位页布局使用 stretch |
 | F-22 | 低 | 全局 / 滚动 | `CScrollArea` 默认隐藏纵横滚动条，主题抽屉、长内容卡片和部分页面没有滚动位置提示；依赖滚轮才能发现下方内容。 | [scroll_area.py](../src/sllkgui/guicore/custom_ui/scroll/scroll_area.py) `ScrollBarAlwaysOff` |
 | F-23 | 中 | 标题栏 / 搜索 | 点击搜索图标没有任何弹层或面板；`action_routes` 中没有 `btn_search` 对应动作，仅能输出“按钮动作未实现”的日志。 | [controller.py](../src/sllkgui/guis/windows/main_window/controller.py) `action_routes` |
-| F-24 | 中 | 主题配置 / 深色模式 | Default 主题下关闭“深色模式”：开关变为关闭但界面仍是暗色 Default；再打开时主题固定跳到 Dracula，开关状态与主题不一致。 | [app_configurator.py](../src/sllkgui/guicore/window/app_configurator.py) `_default_theme()` 返回 `AppSettings.theme_name`（Default 本身是暗色） |
+| F-24 | 中 | 主题配置 / 深色模式 | Default 主题下关闭“深色模式”：开关变为关闭但界面仍是暗色 Default；再打开时主题固定跳到 Dracula，开关状态与主题不一致。 | `app_configurator.py`（3.0 已删除） `_default_theme()` 返回 `AppSettings.theme_name`（Default 本身是暗色） |
 | F-25 | 中 | 输入预览 / `CTextarea` | 输入 20 行文本后高度仍为 69px，只在 51px 的内部视口滚动，`auto_resize` 未生效；清空后高度也不回收变化。 | [textarea.py](../src/sllkgui/guicore/custom_ui/line_edit/textarea.py) `_adjust_height` 读取 `document().size().height()` 得到行数级数值 |
 | F-26 | 中 | 全局 / 主题切换 | 本机连续切换 4 套主题实测平均约 1081ms、最大约 1124ms，切换时主线程明显阻塞。 | 主题 `apply` 重建全局 QSS 并按订阅者刷新 |
 | F-27 | 低 | 表格 / 语言切换 | 切语言会重建页面，筛选文本、当前页码、滚动位置全部重置。 | [language_service.py](../src/sllkgui/guis/language_service.py)；是否为预期需产品确认 |

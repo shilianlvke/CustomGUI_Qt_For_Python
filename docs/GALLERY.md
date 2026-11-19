@@ -1,6 +1,6 @@
 # Gallery 架构与命令
 
-SllkGUI 2.0 把「组件预览」与「插件运行」拆成两个严格分离的命令。
+SllkGUI 把「组件预览」与「插件运行」拆成两个严格分离的命令。
 
 ## 1. 模式
 
@@ -81,6 +81,9 @@ sllkgui scaffold <dir> [--id ID] [--name NAME] [--source]
 - 插件清单声明 `python_dependencies` 时，加载前检查当前解释器；缺失则提示
   自动安装（`uv pip install --python <当前解释器>`）或给出手动命令。安装失败
   的插件被隔离，记录 `PYTHON_DEPENDENCY_MISSING` / `PYTHON_DEPENDENCY_INSTALL_FAILED`。
+- **冻结形态例外**：宿主以 PyInstaller 等方式打包时，`sys.executable` 指向打包产物
+  而非解释器，安装必然失败。此时基座识别 `sys.frozen` / `sys._MEIPASS`，直接报
+  `FROZEN_ENV_UNSUPPORTED` 并跳过该插件，而不是给出一条注定失败的手动命令。
 - 镜像源优先级：`run --index-url` > `SLLKGUI_PIP_INDEX_URL` >
   `sllkgui.configure(pip_index_url=...)` > 默认 PyPI。`--no-install-deps`
   只检查不安装，适合离线/受控环境。
@@ -121,6 +124,7 @@ sllkgui scaffold <dir> [--id ID] [--name NAME] [--source]
 
 | 模块 | 职责 |
 | --- | --- |
+| `gallery/api.py` | 插件协议类型：权限、Surface 工厂签名 |
 | `gallery/manifest.py` | 清单解析与校验 |
 | `gallery/state.py` | registry/sources 原子读写 |
 | `gallery/store.py` | 插件/历史/数据/暂存/回收站 |
@@ -134,5 +138,8 @@ sllkgui scaffold <dir> [--id ID] [--name NAME] [--source]
 | `gallery/shortcuts.py` | 插件快捷键门面：权限、命名空间与冲突错误码（见 `docs/SHORTCUTS.md`） |
 | `gallery/registry.py` | Surface 路由与默认页 |
 | `gallery/context.py` | 插件上下文 |
+| `gallery/settings.py` | 插件设置命名空间与存储 |
 | `gallery/lint.py` | 开发规范检查 |
+| `gallery/scaffold.py` | 插件与源仓库模板生成 |
+| `gallery/runtime.py` | 模式运行时（gallery / run） |
 | `gallery/window.py` | Gallery 外壳窗口 |

@@ -1,6 +1,13 @@
 # 变更规划与追溯
 
-> 基线：SllkGUI `1.0.0` / tag `base-v1.0.0`，代码基线 `main`（`c6bc018`），日期 2026-11-09。
+> **历史归档（1.0.0 时期）。** 本文件记录的是 `SllkGUI 1.0.0`（tag `base-v1.0.0`，
+> 2026-11-09）一轮修复的规划矩阵与追溯表。`FIX-01`..`FIX-12` 已全部完成并合入，
+> 其中的 commit 与结论仍可用 `git log --oneline --grep "FIX-"` 复核。
+>
+> 3.0.0 起的重构与评审整改**不在本表内**，见 `CHANGELOG.md` 的 3.0.0 章节与
+> `docs/reviews/2026-11-19-third-party-review.md`。下表仅保留 `EXT-01`..`EXT-12`
+> 作为后续演进计划。
+>
 > 记录约定：本文件是**一次性规划矩阵**，只以表格与稳定编号归档结论，不记录过程、不维护待办清单；结论已合入 `CHANGELOG.md` / `docs/ARCHITECTURE.md` / `docs/MANUAL_QA.md`。
 > **归档状态：已归档。** 本轮 `FIX-01`..`FIX-12` 全部完成并分 7 批提交；§7 已回填 commit 与验证结果，`EXT-01`..`EXT-12` 保留为后续演进计划。
 > 编号：`FIX-01`..`FIX-12` 为本轮修复主键，`EXT-01`..`EXT-12` 为扩展项主键；编号一经分配不再变更，各节以「编号」为主键互相引用，并落到 commit message 与新增测试注释。刻意不复用 `docs/MANUAL_QA.md` 的 `F-xx` / `A-xx` / `ENV-xx` 编号。

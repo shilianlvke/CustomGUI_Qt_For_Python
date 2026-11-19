@@ -18,8 +18,9 @@
 | 反馈 | `CMessage` `CToast` |
 | 文件/图表 | `CFileUpload` `CChart` |
 | 布局 | `CFluid` `CTabs` `CAccordion` `CAccordionPanel` `CFieldset` `CFormField` `CFormGrid` `CScrollArea` `CScrollTop` `CSplitter` `CSplitterHandle` `CToolbar` |
-| 设置与导航 | `CSettingsWindow` `CSideNav` `CSideNavGroup` `CSideNavItem` `CSettingGroup` `CSettingRow` `CInfoRow` `CEditActionBar` `CThemeCard` `CThumbnail` |
+| 设置与导航 | `CSettingsWindow` `CSideNav` `CSideNavGroup` `CSideNavItem` `CSettingGroup` `CSettingRow` `CActionRow` `CInfoRow` `CEditActionBar` `CThemeCard` `CThumbnail` |
 | 窗口部件 | `CWindow` `CTitleBar` `CLeftMenu` `CLeftColumn` `CTopColumn` `CBottomColumn` `CGrips` `CCredits` `CAppTopbar` `CAppMenu` `CAppMenuItem` `CSettingsWindow` |
+| 页面基类 | `CPreviewPage`（预览页装配基类，子类只声明 `slug` 并实现 `sections`） |
 | 材质 | `apply_acrylic` `remove_acrylic` `acrylic_active` `acrylic_opacity` `acrylic_supported` `acrylic_tint` `glass_tint` |
 
 分类只是导航；同名对象都从 `sllkgui.guicore` 顶层导入。
@@ -285,20 +286,24 @@ get_theme_manager().apply("eye")
 
 ## 6. 预览应用
 
-`apps/` 下的 10 个示例应用就是组件目录的活文档，`sllkgui install-demo` 后从左侧菜单进入：
+内置预览插件 `src/sllkgui/showcase/core_preview/` 的 10 个 Surface 就是组件目录的活文档，
+`sllkgui gallery` 启动后从左侧菜单进入：
 
-| 应用 | 覆盖组件 |
+| Surface | 覆盖组件 |
 | --- | --- |
-| `button_preview` | `CButton` 全形态、按钮组、分体按钮、状态按钮、菜单按钮 |
-| `input_preview` | 输入框、文本域、数字、下拉、多选、日期、滑块、评分、开关、输入组 |
-| `data_preview` | `CDataView` `CPickList` `COrderList` `CTree` `CTimeline` |
-| `table_preview` | `CDataTable` + `CTableColumn` + `CPaginator`（分页、排序、冻结列、分组、行展开） |
-| `menu_preview` | 菜单族、`CStepper`、`CTabMenu` |
-| `feedback_preview` | `CMessage` `CToast` `CTag` `CBadge` `CChip` `CAvatar` `CSkeleton` `CProgressBar` `CDivider` |
-| `overlay_preview` | `CDialog` `CConfirmDialog` `COverlayPanel` + 四向栏目抽屉 |
-| `panel_preview` | `CTabs` `CAccordion` `CPanel` `CFieldset` `CToolbar` `CSplitter` `CFormGrid` |
-| `media_preview` | `CImage` `CCarousel` `CGalleria` `CChart` `CFileUpload` |
-| `shell_preview` | `CAppTopbar` `CAppMenu`（「打开设置」按钮指向独立设置窗口） |
+| 按钮 | `CButton` 全形态、`CButtonGroup`、`CSplitButton` |
+| 表格 | `CDataTable` `CTableColumn` `CInputText`（筛选、排序、冻结列、分页） |
+| 数据展示 | `CDataView` `CPickList` `COrderList` `CTree` `CTreeTable` `CTimeline` `CSelectButton` |
+| 反馈 | `CMessage` `CToast` `CTag` `CBadge` `CChip` `CAvatar` `CSkeleton` `CProgressBar` `CDivider` |
+| 输入 | `CInputText` `CTextarea` `CInputNumber` `CInputGroup` `CInputGroupAddon` `CFloatLabel` `CSelect` `CListbox` `CMultiSelect` `CTreeSelect` `CAutoComplete` `CDatePicker` `CColorPicker` `CSlider` `CKnob` `CRating` `CCheckbox` `CRadioButton` `CToggleSwitch` `CToggleButton` `CSelectButton` |
+| 媒体 | `CImage` `CCarousel` `CGalleria` `CChart` `CFileUpload` `CConfirmPopup` `CAvatarGroup` `CIconField` |
+| 菜单 | `CMenubar` `CContextMenu` `CPanelMenu` `CTieredMenu` `CMegaMenu` `CTabMenu` `CStepper` |
+| 浮层 | `CDialog` `CConfirmDialog` `COverlayPanel` `CToast` |
+| 面板 | `CTabs` `CAccordion` `CPanel` `CFieldset` `CToolbar` `CSplitter` `CFormGrid` `CBreadcrumb` `CSteps` |
+| 外壳 | `CAppTopbar` `CAppMenu`（「打开设置」按钮指向独立设置窗口） |
+
+每个 Surface 的页面实现都在 `surfaces/<id>/page.py`，基于 `CPreviewPage` 基类，
+清单里用 `impl:` 字段声明路径，加载期即校验存在性。
 
 ## 7. 设置项速查（`_resources/sllkgui/settings/window.yaml`）
 
