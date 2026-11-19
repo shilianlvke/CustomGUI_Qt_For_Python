@@ -459,6 +459,8 @@ class SchemaPage(QWidget):
         if self._recent_box is None:
             return
         for thumb in self._thumbs:
+            # 先 hide()：可见缩略图 setParent(None) 后会变成顶层窗口并闪现。
+            thumb.hide()
             thumb.setParent(None)
             thumb.deleteLater()
         self._thumbs.clear()

@@ -138,6 +138,8 @@ class CLeftMenu(QWidget):
     def clear_menus(self) -> None:
         """移除全部页面菜单按钮（插件重载后重建菜单用）。"""
         for button in self._menu_buttons.values():
+            # 先 hide()：可见按钮 setParent(None) 后会变成顶层窗口并被自动显示。
+            button.hide()
             button.setParent(None)
             button.deleteLater()
         self._menu_buttons.clear()

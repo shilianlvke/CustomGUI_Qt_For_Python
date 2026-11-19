@@ -229,6 +229,9 @@ class CSideNav(QWidget):
             item = self._layout.takeAt(0)
             widget = item.widget()
             if widget is not None:
+                # 必须先 hide()：可见控件 setParent(None) 后会成为顶层窗口并被
+                # Qt 自动显示 —— 表现为切换栏目时一闪而过的小窗。
+                widget.hide()
                 widget.setParent(None)
                 widget.deleteLater()
         self._buttons.clear()

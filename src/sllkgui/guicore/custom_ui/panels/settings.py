@@ -145,6 +145,8 @@ class CSettingRow(QWidget):
             item = self._controls_layout.takeAt(0)
             child = item.widget()
             if child is not None:
+                # 先 hide()：可见控件 setParent(None) 后会变成顶层窗口并闪现。
+                child.hide()
                 child.setParent(None)
                 child.deleteLater()
         self._controls_layout.insertWidget(0, widget, 0, Qt.AlignVCenter)

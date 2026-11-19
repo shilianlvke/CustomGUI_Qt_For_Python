@@ -541,6 +541,8 @@ class CSettingsWindow(QDialog):
             else:
                 self.stack.addWidget(new_widget)
             self.stack.removeWidget(old_widget)
+            # 先 hide()：可见页面 setParent(None) 后会变成顶层窗口并闪现。
+            old_widget.hide()
             old_widget.setParent(None)
             old_widget.deleteLater()
 
@@ -607,6 +609,8 @@ class CSettingsWindow(QDialog):
         while self.stack.count():
             widget = self.stack.widget(0)
             self.stack.removeWidget(widget)
+            # 先 hide()：可见页面 setParent(None) 后会变成顶层窗口并闪现。
+            widget.hide()
             widget.setParent(None)
             widget.deleteLater()
         self._entries.clear()

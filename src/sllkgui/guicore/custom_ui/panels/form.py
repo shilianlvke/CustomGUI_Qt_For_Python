@@ -137,6 +137,8 @@ class CFormField(QWidget):
     def set_field(self, field: QWidget) -> None:
         old = self._field
         if old is not None:
+            # 先 hide()：可见字段 setParent(None) 后会变成顶层窗口并闪现。
+            old.hide()
             old.setParent(None)
             old.deleteLater()
         self._field = field

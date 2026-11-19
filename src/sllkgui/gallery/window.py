@@ -222,6 +222,8 @@ class GalleryWindow(QMainWindow):
         while pages.count():
             widget = pages.widget(0)
             pages.removeWidget(widget)
+            # 先 hide()：可见页面 setParent(None) 后会变成顶层窗口并闪现。
+            widget.hide()
             widget.setParent(None)
             widget.deleteLater()
 

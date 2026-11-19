@@ -304,6 +304,8 @@ class CGalleria(QWidget):
             entry = self._thumb_layout.takeAt(0)
             widget = entry.widget()
             if widget is not None:
+                # 先 hide()：可见缩略图 setParent(None) 后会变成顶层窗口并闪现。
+                widget.hide()
                 widget.setParent(None)
                 widget.deleteLater()
         self._thumbnails = []

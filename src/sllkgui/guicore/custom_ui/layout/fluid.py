@@ -47,6 +47,8 @@ class CFluid(QWidget):
             entry = self._layout.takeAt(0)
             widget = entry.widget()
             if widget is not None:
+                # 先 hide()：可见控件 setParent(None) 后会变成顶层窗口并闪现。
+                widget.hide()
                 widget.setParent(None)
         self._content = None
 

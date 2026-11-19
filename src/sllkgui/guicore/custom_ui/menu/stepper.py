@@ -420,6 +420,8 @@ class CStepper(QWidget):
                 self._owned.remove(widget)
                 widget.deleteLater()
             else:
+                # 先 hide()：可见步骤页 setParent(None) 后会变成顶层窗口并闪现。
+                widget.hide()
                 widget.setParent(None)
 
     def _sync(self) -> None:
