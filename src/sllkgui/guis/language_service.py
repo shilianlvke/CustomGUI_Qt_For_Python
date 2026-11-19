@@ -69,16 +69,16 @@ def apply_language(language: str, window=None) -> str:
             Language.apply(previous)
             return previous
     # 3. 成功分支：通知 v2 插件，再记住用户选择
-    _notify_plugins_language_changed(language)
+    _notify_plugins_language_changed(language, window)
     save_user_settings(language=language)
     return language
 
 
-def _notify_plugins_language_changed(language: str) -> None:
+def _notify_plugins_language_changed(language: str, window=None) -> None:
     """语言切换成功后通知全部 Gallery 插件；单个钩子异常被隔离。"""
-    from sllkgui.gallery.registry import current_registry
+    from .windows.main_window.registry import get_registry
 
-    registry = current_registry()
+    registry = get_registry(window)
     if registry is None:
         return
     for record in registry.plugins():
@@ -303,7 +303,7 @@ def _rebuild_pages(window) -> None:
 
     load_registered_pages(window, eager=False)
 
-    routes = get_page_routes(Language)
+    routes = get_page_routes(Language, window)
     target = routes.get(current_btn)
     page_object = target[0] if target else get_default_page_object()
     ensure_registered_page(window, page_object)
@@ -329,7 +329,7 @@ def _refresh_current_page_title(window) -> None:
 
     from .windows.main_window.registry import get_page_routes
 
-    routes = get_page_routes(Language)
+    routes = get_page_routes(Language, window)
     active_id = left_menu.active_button_id()
     if active_id and active_id in routes:
         title_bar.set_title(routes[active_id][1])

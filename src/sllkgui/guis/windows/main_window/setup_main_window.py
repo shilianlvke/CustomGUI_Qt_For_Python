@@ -79,14 +79,14 @@ class SetupMainWindow:
         # PAGES (default page only; others are built on first navigation)
         load_registered_pages(self, eager=False)
         # 设置初始页面/设置左右列菜单（无任何应用时内容区留空）
-        default_page = get_default_page_object()
+        default_page = get_default_page_object(self)
         if default_page:
             ensure_registered_page(self, default_page)
         page = self.ui.load_pages.pages.findChild(QWidget, default_page) if default_page else None
         if page is not None:
             MainFunctions.set_page(self, page)
             try:
-                routes = get_page_routes(Language)
+                routes = get_page_routes(Language, self)
                 active = next((route for route in routes.values() if route[0] == default_page), None)
                 if active:
                     self.ui.title_bar.set_title(active[1])
@@ -289,8 +289,8 @@ class SetupMainWindow:
         )
 
     def menu_add_btn(self):
-        left_menu_items = get_menu_items("LeftMenu")
-        title_menu_items = get_menu_items("TitleMenu")
+        left_menu_items = get_menu_items("LeftMenu", self)
+        title_menu_items = get_menu_items("TitleMenu", self)
         self.ui.left_menu.add_menus(left_menu_items)
         self.ui.title_bar.add_menus(title_menu_items)
         # 按钮绑定

@@ -51,7 +51,7 @@ class CSearchPalette(CPopover):
     # ------------------------------------------------------------------
     def show_for(self, anchor) -> None:
         """贴住标题栏按钮展开，并重置过滤条件。"""
-        self._routes = dict(get_page_routes(Language))
+        self._routes = dict(get_page_routes(Language, self._window))
         self._input.clear()
         self._apply_filter("")
         super().show_at(anchor)

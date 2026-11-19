@@ -198,8 +198,8 @@ def test_scroll_positions_survive_page_rebuild(qapp, monkeypatch):
 
     monkeypatch.setattr(registry, "load_registered_pages", _load_registered_pages)
     monkeypatch.setattr(registry, "ensure_registered_page", lambda *args, **kwargs: False)
-    monkeypatch.setattr(registry, "get_page_routes", lambda _language: {"btn_home": ("home_page", "Home")})
-    monkeypatch.setattr(registry, "get_default_page_object", lambda: "home_page")
+    monkeypatch.setattr(registry, "get_page_routes", lambda _language, _window=None: {"btn_home": ("home_page", "Home")})
+    monkeypatch.setattr(registry, "get_default_page_object", lambda _window=None: "home_page")
 
     window = SimpleNamespace(
         ui=SimpleNamespace(
@@ -295,8 +295,6 @@ def test_apply_language_rolls_back_user_settings_on_refresh_failure(monkeypatch)
 
 def test_language_hooks_are_invoked(monkeypatch):
     """语言切换成功后调用 Gallery 插件的 on_locale_changed，单个钩子失败被隔离。"""
-    import sllkgui.gallery.registry as gallery_registry
-
     calls = []
 
     class _Plugin:
@@ -314,9 +312,9 @@ def test_language_hooks_are_invoked(monkeypatch):
                 SimpleNamespace(plugin_id="ok", plugin=_Plugin()),
             ]
 
-    monkeypatch.setattr(gallery_registry, "current_registry", lambda: _Registry())
+    window = SimpleNamespace(gallery_registry=_Registry())
     try:
-        result = apply_language("en_us")
+        result = apply_language("en_us", window=window)
         assert result == "en_us", "a failing hook must not break the switch"
         assert calls == ["en_us"], "on_locale_changed must be invoked on success"
     finally:

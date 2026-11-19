@@ -98,14 +98,20 @@ class PageContext:
         if detail:
             Logger.debug(f"[plugin-store] {code} detail: {detail}")
         try:
-            from sllkgui.gallery.runtime import current_runtime
-
-            runtime = current_runtime()
+            runtime = self.runtime()
             if runtime is not None:
                 runtime.last_error = {"code": code, "message": message, "detail": detail or ""}
         except Exception:  # noqa: BLE001 - 错误记录失败不影响页面
             pass
         self.event("plugin_store.error", {"code": code, "message": message}, level="error")
+
+    def runtime(self):
+        """窗口持有的插件运行时。
+
+        原生页面归装配层管，这里按鸭子类型从窗口取，``guis`` 不 import ``gallery``；
+        未接入 Gallery 的宿主返回 ``None``（页面照常可用，只是没有插件动作）。
+        """
+        return getattr(self.parent_window(), "runtime", None)
 
     def parent_window(self) -> QWidget | None:
         return self._parent_provider()
@@ -1169,9 +1175,7 @@ class StorePage(QWidget):
     def __init__(self, ctx: PageContext, parent=None) -> None:
         super().__init__(parent)
         self.ctx = ctx
-        from sllkgui.gallery.runtime import current_runtime
-
-        self.runtime = current_runtime()
+        self.runtime = ctx.runtime()
         self._mode_cards: dict[str, _ModeCard] = {}
         self._detail_dialog: CDialog | None = None
         self._busy = False

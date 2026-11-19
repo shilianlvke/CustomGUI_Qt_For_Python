@@ -48,7 +48,7 @@ def test_page_router_switch_page_routes_target_widget():
         window=window,
         main_functions=_StubMainFunctions,
         language=None,
-        get_routes=lambda _language: {"btn_home": ("home_page", "Home")},
+        get_routes=lambda _language, _window=None: {"btn_home": ("home_page", "Home")},
     )
 
     route = router.route_for("btn_home")

@@ -103,7 +103,7 @@ class GalleryWindow(QMainWindow):
         title = "SllkGUI Gallery" if runtime.mode == "gallery" else "SllkGUI"
         self.setWindowTitle(title)
         self.ui.title_bar.set_title(title)
-        if self.gallery_registry.surface_count() == 0 and not get_default_page_object():
+        if self.gallery_registry.surface_count() == 0 and not get_default_page_object(self):
             self._show_empty_state()
         target = route or runtime.default_route()
         if target:
@@ -175,7 +175,7 @@ class GalleryWindow(QMainWindow):
         self.gallery_registry = self.runtime.registry
         self._current_route = ""
         self.ui.left_menu.clear_menus()
-        self.ui.left_menu.add_menus(get_menu_items("LeftMenu"))
+        self.ui.left_menu.add_menus(get_menu_items("LeftMenu", self))
         target = current if self.gallery_registry.get(current) else self.runtime.default_route()
         if target and self.open_route(target):
             return

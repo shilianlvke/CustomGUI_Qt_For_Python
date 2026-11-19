@@ -7,12 +7,16 @@
 
 from __future__ import annotations
 
+from typing import TYPE_CHECKING
+
 from PySide6.QtWidgets import QWidget
 
 from sllkgui.appcore import Logger, record_event
-from sllkgui.gallery.registry import GalleryRegistry, current_registry
 
 from .native_pages import NATIVE_PAGES, native_menu_items, native_page_for, native_page_routes
+
+if TYPE_CHECKING:  # pragma: no cover - 仅类型检查，guis 不反向依赖 gallery
+    from sllkgui.gallery.registry import GalleryRegistry
 
 BUILTIN_TITLE_MENU_ITEMS = [
     {
@@ -33,8 +37,12 @@ BUILTIN_TITLE_MENU_ITEMS = [
 
 
 def get_registry(window=None) -> GalleryRegistry | None:
-    registry = getattr(window, "gallery_registry", None) if window is not None else None
-    return registry or current_registry()
+    """返回窗口持有的插件注册表。
+
+    注册表由组合根（``gallery/window.py``）挂在 ``window.gallery_registry`` 上；
+    这里**不再回落到进程级单例**，``guis`` 因此不需要 import ``gallery``。
+    """
+    return getattr(window, "gallery_registry", None) if window is not None else None
 
 
 def register_builtin_menus() -> None:
@@ -95,32 +103,32 @@ def ensure_registered_page(window, page_object: str) -> bool:
     return True
 
 
-def get_page_routes(language=None):
+def get_page_routes(language=None, window=None):
     from sllkgui.appcore import Language
 
     # 旧调用方传入的是 Language 单例而非语言代码（PageRouterController 等），
     # 统一归一成字符串，避免 display_title 里 dict.get 抛 unhashable。
     code = language if isinstance(language, str) and language else Language.current()
-    registry = get_registry()
+    registry = get_registry(window)
     routes = registry.page_routes(code) if registry is not None else {}
     routes.update(native_page_routes())
     return routes
 
 
-def get_default_page_object():
+def get_default_page_object(window=None):
     """默认页面：优先插件的 default Surface，没有插件时回到原生插件管理。"""
-    registry = get_registry()
+    registry = get_registry(window)
     surface = registry.get(registry.default_route()) if registry is not None else None
     if surface is not None:
         return surface.page_object
     return NATIVE_PAGES[0].page_object if NATIVE_PAGES else ""
 
 
-def get_menu_items(target: str):
+def get_menu_items(target: str, window=None):
     if target == "TitleMenu":
         return [dict(item) for item in BUILTIN_TITLE_MENU_ITEMS]
     if target == "LeftMenu":
-        registry = get_registry()
+        registry = get_registry(window)
         items = registry.menu_items() if registry is not None else []
         return [*items, *native_menu_items()]
     return []

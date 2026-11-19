@@ -86,7 +86,7 @@ class PageRouterController:
         self._record_event = event_recorder
 
     def route_for(self, btn_name: str):
-        return self._get_routes(self._language).get(btn_name)
+        return self._get_routes(self._language, self._window).get(btn_name)
 
     def switch_page(self, btn_name: str, page_name: str, title: str):
         left_menu = self._window.ui.left_menu

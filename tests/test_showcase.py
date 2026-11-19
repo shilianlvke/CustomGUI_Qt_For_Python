@@ -179,3 +179,16 @@ def test_reload_rebuilds_surface_pages(tmp_path, prepared):
         assert rebuilt is not stale_page
     finally:
         _close(window)
+
+
+def test_page_routes_require_explicit_window(tmp_path, prepared):
+    """路由函数不再回落到进程级单例：不传窗口只剩原生页面。"""
+    from sllkgui.appcore import Language
+    from sllkgui.guis.windows.main_window.registry import get_page_routes
+
+    window = _window(tmp_path, "gallery")
+    try:
+        assert len(get_page_routes(Language, window)) == 11  # 10 个 Surface + 插件管理
+        assert list(get_page_routes(Language)) == ["btn_native_plugin_store"]
+    finally:
+        _close(window)

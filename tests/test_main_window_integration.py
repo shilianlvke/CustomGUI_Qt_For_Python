@@ -109,7 +109,7 @@ def test_button_to_page_route_chain():
         window=window,
         main_functions=main_functions,
         language=None,
-        get_routes=lambda _language: {"btn_home": ("home_page", "Home")},
+        get_routes=lambda _language, _window=None: {"btn_home": ("home_page", "Home")},
     )
 
     controller.handle_button(_FakeButton("btn_home"))
@@ -133,7 +133,7 @@ def test_settings_button_toggles_native_settings_drawer():
         window=window,
         main_functions=main_functions,
         language=None,
-        get_routes=lambda _language: {},
+        get_routes=lambda _language, _window=None: {},
     )
     calls: list[bool] = []
     controller.settings_controller = SimpleNamespace(toggle_settings_drawer=lambda: calls.append(True))

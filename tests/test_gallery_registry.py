@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from pathlib import Path
+from types import SimpleNamespace
 
 from gallery_helpers import write_plugin
 
@@ -59,17 +60,14 @@ def test_core_plugin_not_preferred_as_default(tmp_path: Path):
 def test_page_routes_accept_language_handler(tmp_path: Path):
     """旧调用方传 Language 单例时不能把单例当 dict 键（unhashable）。"""
     from sllkgui.appcore import Language
-    from sllkgui.gallery.registry import set_current_registry
     from sllkgui.guis.windows.main_window.registry import get_page_routes
 
     root = write_plugin(tmp_path / "hello")
     registry = GalleryRegistry()
     registry.add(PluginRecord(manifest=load_manifest(root), plugin=_Plugin(), path=root))
-    set_current_registry(registry)
-    try:
-        routes = get_page_routes(Language)
-        assert routes
-        surface = registry.get("com.example.hello/home")
-        assert surface.display_title(Language) == "首页"
-    finally:
-        set_current_registry(None)
+    window = SimpleNamespace(gallery_registry=registry)
+
+    routes = get_page_routes(Language, window)
+    assert routes
+    surface = registry.get("com.example.hello/home")
+    assert surface.display_title(Language) == "首页"
