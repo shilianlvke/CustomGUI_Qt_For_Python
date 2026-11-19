@@ -28,11 +28,14 @@
 | 层 | 职责 | 依赖 |
 | --- | --- | --- |
 | `sllkgui.appcore` | 配置、主题、语言、日志、遥测、错误边界 | 仅标准库（不 import PySide6，有守卫测试锁定） |
-| `sllkgui.guicore` | 组件库、设计令牌、窗口部件、快捷键表 | PySide6 |
-| `sllkgui.gallery` | 插件协议、源、存储、安装、加载、外壳 | appcore + guicore |
-| `sllkgui.showcase` | 内置组件预览插件 | plugin API + guicore |
-| `sllkgui.guis.pages` | 基座原生页面（插件管理） | guicore + gallery 查询 |
+| `sllkgui.guicore` | 组件库、设计令牌、窗口部件、快捷键表 | appcore + PySide6 |
+| `sllkgui.gallery` | 插件协议、源、存储、安装、加载、外壳 | appcore + guicore + guis（**仅组合根 `gallery/window.py` 可 import guis**） |
+| `sllkgui.showcase` | 内置组件预览插件 | appcore + guicore + guis（经插件 API） |
+| `sllkgui.guis.pages` | 基座原生页面（插件管理） | appcore + guicore + 窗口持有的 gallery registry（鸭子类型读取，**不 import gallery 模块**） |
 | `sllkgui.plugin` | 插件作者公开门面 | gallery.api |
+
+**包间依赖矩阵以 `tests/test_architecture_boundaries.py` 的 `ALLOWED_EDGES` / `EDGE_ALLOWLIST` 为唯一真相**，
+上表与之对齐；新增跨包 import 时先改守卫、再同步本表。
 
 ## 关键约定
 
