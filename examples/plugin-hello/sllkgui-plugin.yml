@@ -14,6 +14,7 @@ requires:
 
 surfaces:
   - id: home
+    impl: pages/home.py
     title:
       zh_cn: Hello
       zh_tw: Hello

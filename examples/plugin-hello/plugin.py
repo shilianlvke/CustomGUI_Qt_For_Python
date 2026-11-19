@@ -10,7 +10,7 @@ def build_home(ctx: GalleryContext):
 
     with ctx.timing("home.surface.build"):
         page = HomePage(ctx)
-    ctx.event("surface.ready", {{"surface": "home"}})
+    ctx.event("surface.ready", {"surface": "home"})
     return page
 
 
@@ -23,7 +23,7 @@ class SamplePlugin(Plugin):
         ctx.event("sample.loaded")
 
     def surfaces(self):
-        return {{"home": build_home}}
+        return {"home": build_home}
 
     def on_unload(self) -> None:
         self.ctx.log("unloading sample plugin")
