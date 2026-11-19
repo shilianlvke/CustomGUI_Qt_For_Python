@@ -8,9 +8,29 @@ from pathlib import Path
 
 import yaml
 
+from sllkgui._version import __version__ as BASE_VERSION
+
+#: 基座的当前主版本；插件清单要求 ``sllkgui >=<major>.0.0,<major+1>.0.0``
+_BASE_MAJOR = BASE_VERSION.split(".")[0]
+#: 插件清单里声明的基座版本区间（随基座升版自动跟随，避免手工漂移）
+SLLKGUI_REQUIREMENT = f">={_BASE_MAJOR}.0.0,<{int(_BASE_MAJOR) + 1}.0.0"
+
 ICON = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><rect width="24" height="24"/></svg>'
 
-MANIFEST = """schema: 1
+class _ManifestFormatter(str):
+    """清单模板格式化器：未显式传入的键回落到默认值。
+
+    ``MANIFEST.format(plugin_id=..., name=..., version=...)`` 是常见用法，
+    这里让 ``SLLKGUI_REQUIREMENT`` 等键不必在每个调用点重复传参，
+    避免基座升版时漏改导致 KeyError。
+    """
+
+    def format(self, *args, **kwargs):
+        kwargs.setdefault("SLLKGUI_REQUIREMENT", SLLKGUI_REQUIREMENT)
+        return str.format(self, *args, **kwargs)
+
+
+MANIFEST = _ManifestFormatter("""schema: 1
 api: 1
 id: {plugin_id}
 name: {name}
@@ -19,7 +39,7 @@ description: test plugin
 license: MIT
 entry: plugin.py
 requires:
-  sllkgui: ">=2.0.0,<3.0.0"
+  sllkgui: "{SLLKGUI_REQUIREMENT}"
   python: ">=3.12"
 surfaces:
   - id: home
@@ -33,7 +53,7 @@ surfaces:
     order: 10
 permissions:
   - filesystem.write
-"""
+""")
 
 PLUGIN = '''"""Test plugin."""
 
@@ -89,7 +109,8 @@ def write_plugin(
     (root / "resource" / "icon").mkdir(parents=True, exist_ok=True)
     (root / "resource" / "lang").mkdir(parents=True, exist_ok=True)
     (root / "sllkgui-plugin.yml").write_text(
-        manifest_text or MANIFEST.format(plugin_id=plugin_id, name=name, version=version),
+        manifest_text
+        or MANIFEST.format(plugin_id=plugin_id, name=name, version=version),
         encoding="utf-8",
     )
     (root / "plugin.py").write_text(plugin_source or PLUGIN, encoding="utf-8")
@@ -160,7 +181,7 @@ def write_entry(
                 "commit": commit or git("rev-parse", "HEAD", cwd=plugin_repo),
                 "manifest_sha256": sha or manifest_sha256(plugin_repo),
                 "api": 1,
-                "sllkgui": ">=2.0.0,<3.0.0",
+                "sllkgui": SLLKGUI_REQUIREMENT,
                 "python": ">=3.12",
                 "permissions": ["filesystem.write"],
                 "yanked": yanked,

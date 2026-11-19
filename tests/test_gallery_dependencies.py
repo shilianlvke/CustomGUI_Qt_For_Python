@@ -3,7 +3,7 @@ from __future__ import annotations
 from pathlib import Path
 
 import pytest
-from gallery_helpers import write_plugin
+from gallery_helpers import SLLKGUI_REQUIREMENT, write_plugin
 
 from sllkgui.gallery import dependencies as deps
 from sllkgui.gallery.errors import GalleryError
@@ -12,19 +12,19 @@ from sllkgui.gallery.manifest import load_manifest
 from sllkgui.gallery.registry import GalleryRegistry
 from sllkgui.gallery.store import GalleryStore
 
-MANIFEST_WITH_DEPS = """schema: 1
+MANIFEST_WITH_DEPS = f"""schema: 1
 api: 1
 id: com.example.dep
 name: Dep
 version: 1.0.0
 entry: plugin.py
 requires:
-  sllkgui: ">=2.0.0,<3.0.0"
+  sllkgui: "{SLLKGUI_REQUIREMENT}"
 python_dependencies:
   - sllkgui-missing-for-test>=1
 surfaces:
   - id: home
-    title: {en_us: Home}
+    title: {{en_us: Home}}
     icon: resource/icon/home.svg
 """
 

@@ -53,8 +53,9 @@ stages:
           - uv sync --extra dev
           # ---- 质量检查 ----
           # ruff 不带 --select，直接用 pyproject.toml 的 E/F/W/I/UP/B 规则集。
-          # 全仓检查：apps/examples 是用户入口，不能只检查 src/tests。
-          - uv run ruff check src tests apps examples scripts
+          # 全仓检查：examples 是用户入口，不能只检查 src/tests。
+          # （曾写 apps，但该目录不存在，ruff 会因路径缺失直接失败。）
+          - uv run ruff check src tests examples scripts
           # 增量类型门禁：只约束稳定 API 与公共工具模块（见 pyproject 的 [tool.mypy]）。
           - uv run mypy
           # pytest 的 offscreen 由 tests/conftest.py 统一设置，无需虚拟显示。

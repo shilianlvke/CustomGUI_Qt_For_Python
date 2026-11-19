@@ -3,7 +3,15 @@ from __future__ import annotations
 from pathlib import Path
 
 import yaml
-from gallery_helpers import git, init_repo, manifest_sha256, write_entry, write_plugin, write_source
+from gallery_helpers import (
+    SLLKGUI_REQUIREMENT,
+    git,
+    init_repo,
+    manifest_sha256,
+    write_entry,
+    write_plugin,
+    write_source,
+)
 
 from sllkgui.gallery.manager import PluginManager
 from sllkgui.gallery.source import SourceManager
@@ -22,7 +30,7 @@ def _append_version(source_root: Path, plugin_repo: Path, *, version: str, ref: 
             "commit": commit,
             "manifest_sha256": sha,
             "api": 1,
-            "sllkgui": ">=2.0.0,<3.0.0",
+            "sllkgui": SLLKGUI_REQUIREMENT,
             "python": ">=3.12",
             "permissions": ["filesystem.write"],
             "yanked": False,
