@@ -269,7 +269,7 @@ plugin_store:
   store:
     title: 外掛管理
     subtitle: 已安裝、探索與來源，在同一頁完成
-    refresh: 全部重新整理
+    refresh: 重新整理
   stats:
     installed: 已安裝
     enabled: 啟用中
@@ -281,7 +281,27 @@ plugin_store:
   view:
     grid: 網格
     list: 列表
+  action:
+    refresh: 重新整理
+    refresh_sources: 重新整理來源
+    add_source: 新增來源
+    go_discover: 去探索看看
+    cancel: 取消
+  list:
+    title:
+      installed: 已安裝外掛
+      discover: 可探索的外掛
+      sources: 外掛來源
+    meta:
+      installed: 共 {count} 個
+      discover: 共 {count} 個結果
+      sources: 共 {count} 個來源
+    no_match_title: 沒有符合的外掛
+    no_match_source_title: 沒有符合的來源
+    no_match_hint: '找不到符合「{query}」的結果。'
+    clear_search: 清除搜尋
   detail:
+    about: 簡介
     meta: 基礎資訊
     permissions: 權限
     installed: 已安裝
@@ -298,13 +318,30 @@ plugin_store:
     url: 位址
     last_refresh: 最近重新整理
     trust: 信任級別
+  inspector:
+    title: 詳情
+    empty_title: 選擇一個外掛
+    empty_hint: 在左側選擇外掛，右側會顯示版本、權限與可用操作。
+    empty_source_title: 選擇一個來源
+    empty_source_hint: 在左側選擇來源，右側會顯示位址、信任等級與重新整理操作。
+    add_source_title: 新增來源
+    add_source_hint: 支援 Git 儲存庫位址；新增後會自動重新整理索引。
+    url: 位址
+    url_placeholder: https://example.com/plugins.git
+    no_permissions: 沒有宣告額外權限
+    no_previous: 沒有可回復的版本
+  compliance:
+    verified: 已驗證
+    community: 社群維護
   installed:
     filter: 篩選外掛…
     update: 更新
-    rollback: 回滾
+    rollback: 回復版本
     enable: 啟用
     disable: 停用
     remove: 解除安裝
+    empty_title: 尚未安裝外掛
+    empty_hint: 從「探索」挑一個外掛，安裝後就能在這裡啟停與更新。
     empty: 尚無已安裝外掛，去「探索」看看
     select_hint: 選擇一個外掛查看詳情
     detail_title: 外掛詳情
@@ -316,38 +353,50 @@ plugin_store:
     enabled: 已啟用
     disabled: 已停用
   discover:
-    placeholder: 搜尋外掛名稱、ID 或簡介…
+    placeholder: 搜尋外掛名稱、簡介或作者…
     search: 搜尋
     refresh_sources: 重新整理來源
+    empty_title: 目前沒有可探索的外掛
+    empty_hint: 新增或啟用一個外掛來源，再回來看看。
     empty: 沒有符合的可安裝外掛
     install: 安裝
     permissions: '{count} 項權限'
   sources:
-    placeholder: Git 倉庫位址
+    placeholder: 搜尋來源…
     add: 新增
     detail_title: 來源詳情
     refresh_all: 全部重新整理
     refresh: 重新整理
     remove: 移除
+    empty_title: 尚未設定外掛來源
+    empty_hint: 加入一個 Git 儲存庫位址，就能探索並安裝社群外掛。
     empty: 尚未設定外掛來源
     official: 官方
     user: 使用者
-    confirm_remove: '移除來源 {id}？已安裝外掛不受影響。'
-    added: '已新增來源 {id}'
+    url_required: 請輸入儲存庫位址。
+    confirm_remove: '移除來源「{name}」？已安裝外掛不受影響。'
+    added: 已新增來源。
   status:
     action_done: 操作完成
-    action_failed: '操作失敗: {error}'
-    installing: '正在安裝 {id}…'
-    updating: '正在更新 {id}…'
-    rolling_back: '正在回滾 {id}…'
-    removing: '正在解除安裝 {id}…'
+    action_failed: 操作未能完成，請再試一次。
+    failed: 操作未能完成，請再試一次。
+    installing: 正在安裝外掛…
+    updating: 正在更新外掛…
+    rolling_back: 正在回復版本…
+    removing: 正在解除安裝…
     adding_source: 正在新增來源…
     removing_source: 正在移除來源…
-    install_done: '已安裝 {count} 個外掛'
-    up_to_date: 已是最新版本
-    update_done: '已更新到 v{version}'
+    install_done: '已安裝「{name}」'
+    up_to_date: '「{name}」已是最新版本'
+    update_done: '「{name}」已更新到 v{version}'
+    rollback_done: '「{name}」已回復到 v{version}'
+    remove_done: '已解除安裝「{name}」'
+    enabled_done: '已啟用「{name}」'
+    disabled_done: '已停用「{name}」'
+    source_refreshed: 來源已重新整理
+    list_refreshed: 外掛清單已重新整理
     refreshing: 正在重新整理來源…
     refresh_done: 來源重新整理完成
   confirm:
-    remove: 確定解除安裝該外掛？資料目錄預設保留。
+    remove: '確定解除安裝「{name}」？外掛的設定與資料目錄會保留。'
     install: '安裝 {id} v{version}？權限：{permissions}'

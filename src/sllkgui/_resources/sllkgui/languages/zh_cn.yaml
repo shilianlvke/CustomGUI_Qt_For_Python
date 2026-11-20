@@ -268,8 +268,8 @@ TEXT:
 plugin_store:
   store:
     title: 插件管理
-    subtitle: 已安装、发现与来源，在一页内完成
-    refresh: 全部刷新
+    subtitle: 已安装、发现与来源，在一处完成
+    refresh: 刷新
   stats:
     installed: 已安装
     enabled: 启用中
@@ -277,11 +277,31 @@ plugin_store:
   modes:
     installed: 已安装
     discover: 发现
-    sources: 源
+    sources: 来源
   view:
     grid: 网格
     list: 列表
+  action:
+    refresh: 刷新
+    refresh_sources: 刷新来源
+    add_source: 添加来源
+    go_discover: 去发现看看
+    cancel: 取消
+  list:
+    title:
+      installed: 已安装插件
+      discover: 可发现的插件
+      sources: 插件源
+    meta:
+      installed: 共 {count} 个
+      discover: 共 {count} 个结果
+      sources: 共 {count} 个来源
+    no_match_title: 没有匹配的插件
+    no_match_source_title: 没有匹配的来源
+    no_match_hint: 没有找到与「{query}」匹配的结果。
+    clear_search: 清除搜索
   detail:
+    about: 简介
     meta: 基础信息
     permissions: 权限
     installed: 已安装
@@ -298,6 +318,21 @@ plugin_store:
     url: 地址
     last_refresh: 最近刷新
     trust: 信任级别
+  inspector:
+    title: 详情
+    empty_title: 选择一个插件
+    empty_hint: 在左侧选择插件，右侧会显示版本、权限与可用操作。
+    empty_source_title: 选择一个来源
+    empty_source_hint: 在左侧选择来源，右侧会显示地址、信任级别与刷新操作。
+    add_source_title: 添加来源
+    add_source_hint: 支持 Git 仓库地址；添加后会自动刷新索引。
+    url: 地址
+    url_placeholder: https://example.com/plugins.git
+    no_permissions: 没有声明额外权限
+    no_previous: 没有可回滚的版本
+  compliance:
+    verified: 已校验
+    community: 社区维护
   installed:
     filter: 过滤插件…
     update: 更新
@@ -305,6 +340,8 @@ plugin_store:
     enable: 启用
     disable: 停用
     remove: 卸载
+    empty_title: 还没有安装插件
+    empty_hint: 从「发现」里挑一个插件，安装后就能在这里启停与更新。
     empty: 还没有安装插件，去「发现」看看
     select_hint: 选择一个插件查看详情
     detail_title: 插件详情
@@ -316,38 +353,50 @@ plugin_store:
     enabled: 已启用
     disabled: 已停用
   discover:
-    placeholder: 搜索插件名称、ID 或简介…
+    placeholder: 搜索插件名称、简介或作者…
     search: 搜索
-    refresh_sources: 刷新源
+    refresh_sources: 刷新来源
+    empty_title: 没有可发现的插件
+    empty_hint: 添加或启用一个插件源，再回来看看。
     empty: 没有匹配的可安装插件
     install: 安装
     permissions: '{count} 项权限'
   sources:
-    placeholder: Git 仓库地址
+    placeholder: 搜索来源…
     add: 添加
     detail_title: 源详情
     refresh_all: 全部刷新
     refresh: 刷新
     remove: 移除
+    empty_title: 还没有配置插件源
+    empty_hint: 添加一个 Git 仓库地址，就能发现并安装社区插件。
     empty: 还没有配置插件源
     official: 官方
     user: 用户
-    confirm_remove: '移除源 {id}？已安装插件不受影响。'
-    added: '已添加源 {id}'
+    url_required: 请输入仓库地址。
+    confirm_remove: '移除来源「{name}」？已安装插件不受影响。'
+    added: 已添加来源。
   status:
     action_done: 操作完成
-    action_failed: '操作失败: {error}'
-    installing: '正在安装 {id}…'
-    updating: '正在更新 {id}…'
-    rolling_back: '正在回滚 {id}…'
-    removing: '正在卸载 {id}…'
-    adding_source: 正在添加源…
-    removing_source: 正在移除源…
-    install_done: '已安装 {count} 个插件'
-    up_to_date: 已是最新版本
-    update_done: '已更新到 v{version}'
-    refreshing: 正在刷新源…
-    refresh_done: 源刷新完成
+    action_failed: 操作未能完成，请重试。
+    failed: 操作未能完成，请重试。
+    installing: 正在安装插件…
+    updating: 正在更新插件…
+    rolling_back: 正在回滚插件…
+    removing: 正在卸载插件…
+    adding_source: 正在添加来源…
+    removing_source: 正在移除来源…
+    install_done: '已安装「{name}」'
+    up_to_date: '「{name}」已是最新版本'
+    update_done: '「{name}」已更新到 v{version}'
+    rollback_done: '「{name}」已回滚到 v{version}'
+    remove_done: '已卸载「{name}」'
+    enabled_done: '已启用「{name}」'
+    disabled_done: '已停用「{name}」'
+    source_refreshed: 来源已刷新
+    list_refreshed: 插件列表已刷新
+    refreshing: 正在刷新来源…
+    refresh_done: 来源刷新完成
   confirm:
-    remove: 确定卸载该插件？数据目录默认保留。
+    remove: '确定卸载「{name}」？插件的设置与数据目录会保留。'
     install: '安装 {id} v{version}？权限：{permissions}'

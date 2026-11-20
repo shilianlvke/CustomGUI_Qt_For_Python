@@ -268,8 +268,8 @@ TEXT:
 plugin_store:
   store:
     title: Plugin Manager
-    subtitle: Installed, discover and sources — all on one page
-    refresh: Refresh all
+    subtitle: Installed, discover, and sources — all in one place
+    refresh: Refresh
   stats:
     installed: Installed
     enabled: Enabled
@@ -281,7 +281,27 @@ plugin_store:
   view:
     grid: Grid
     list: List
+  action:
+    refresh: Refresh
+    refresh_sources: Refresh sources
+    add_source: Add source
+    go_discover: Browse plugins
+    cancel: Cancel
+  list:
+    title:
+      installed: Installed plugins
+      discover: Discover plugins
+      sources: Plugin sources
+    meta:
+      installed: '{count} installed'
+      discover: '{count} results'
+      sources: '{count} sources'
+    no_match_title: No matching plugins
+    no_match_source_title: No matching sources
+    no_match_hint: 'Nothing matched “{query}”.'
+    clear_search: Clear search
   detail:
+    about: About
     meta: Basic info
     permissions: Permissions
     installed: Installed
@@ -298,6 +318,21 @@ plugin_store:
     url: URL
     last_refresh: Last refresh
     trust: Trust level
+  inspector:
+    title: Details
+    empty_title: Select a plugin
+    empty_hint: Choose a plugin on the left to see its version, permissions, and available actions.
+    empty_source_title: Select a source
+    empty_source_hint: Choose a source on the left to see its URL, trust level, and refresh action.
+    add_source_title: Add source
+    add_source_hint: Git repository URLs are supported. The index refreshes right after adding.
+    url: URL
+    url_placeholder: https://example.com/plugins.git
+    no_permissions: No extra permissions declared
+    no_previous: No previous version to roll back to
+  compliance:
+    verified: Verified
+    community: Community
   installed:
     filter: Filter plugins…
     update: Update
@@ -305,6 +340,8 @@ plugin_store:
     enable: Enable
     disable: Disable
     remove: Remove
+    empty_title: No plugins installed yet
+    empty_hint: Pick one from Discover. Once installed you can enable, update, and remove it here.
     empty: Nothing installed yet — browse Discover
     select_hint: Select a plugin to inspect it
     detail_title: Plugin details
@@ -316,38 +353,50 @@ plugin_store:
     enabled: Enabled
     disabled: Disabled
   discover:
-    placeholder: Search plugin name, ID or summary…
+    placeholder: Search by name, summary, or author…
     search: Search
     refresh_sources: Refresh sources
+    empty_title: Nothing to discover yet
+    empty_hint: Add or enable a plugin source, then come back.
     empty: No installable plugins match
     install: Install
     permissions: '{count} permissions'
   sources:
-    placeholder: Git repository URL
+    placeholder: Search sources…
     add: Add
     detail_title: Source details
     refresh_all: Refresh all
     refresh: Refresh
     remove: Remove
+    empty_title: No plugin sources yet
+    empty_hint: Add a Git repository URL to discover community plugins.
     empty: No plugin sources configured
     official: Official
-    user: User
-    confirm_remove: 'Remove source {id}? Installed plugins are kept.'
-    added: 'Added source {id}'
+    user: Community
+    url_required: Enter a repository URL.
+    confirm_remove: 'Remove “{name}”? Installed plugins are kept.'
+    added: Source added.
   status:
     action_done: Done
-    action_failed: 'Action failed: {error}'
-    installing: 'Installing {id}…'
-    updating: 'Updating {id}…'
-    rolling_back: 'Rolling back {id}…'
-    removing: 'Removing {id}…'
+    action_failed: Couldn’t complete that. Please try again.
+    failed: Couldn’t complete that. Please try again.
+    installing: Installing plugin…
+    updating: Updating plugin…
+    rolling_back: Rolling back plugin…
+    removing: Uninstalling plugin…
     adding_source: Adding source…
     removing_source: Removing source…
-    install_done: 'Installed {count} plugins'
-    up_to_date: Up to date
-    update_done: 'Updated to v{version}'
+    install_done: '“{name}” installed'
+    up_to_date: '“{name}” is up to date'
+    update_done: '“{name}” updated to v{version}'
+    rollback_done: '“{name}” rolled back to v{version}'
+    remove_done: '“{name}” uninstalled'
+    enabled_done: '“{name}” enabled'
+    disabled_done: '“{name}” disabled'
+    source_refreshed: Sources refreshed
+    list_refreshed: Plugin list refreshed
     refreshing: Refreshing sources…
     refresh_done: Sources refreshed
   confirm:
-    remove: Remove this plugin? Its data directory is kept by default.
+    remove: 'Uninstall “{name}”? Its settings and data folder are kept.'
     install: 'Install {id} v{version}? Permissions: {permissions}'

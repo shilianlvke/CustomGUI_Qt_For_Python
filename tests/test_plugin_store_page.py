@@ -1,14 +1,14 @@
-"""插件管理页：结构拆分后的最小行为契约（模式切换与组件收敛）。"""
+"""插件管理页：页签、主从结构、空态与本地化的最小行为契约。"""
 
 from __future__ import annotations
 
 import importlib.util
 import os
+from types import SimpleNamespace
 
 os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
 
 import pytest
-from PySide6.QtTest import QTest
 from PySide6.QtWidgets import QApplication, QWidget
 
 
@@ -17,77 +17,173 @@ def qapp():
     yield QApplication.instance() or QApplication([])
 
 
-def test_page_builds_and_switches_modes(qapp):
+class _Manager:
+    def __init__(self) -> None:
+        self.enabled_calls: list[tuple[str, bool]] = []
+        self.update_calls: list[str] = []
+
+    def installed_rows(self):
+        return [
+            {
+                "id": "com.example.one",
+                "name": "One",
+                "summary": "First plugin",
+                "version": "1.2.0",
+                "source": "official",
+                "repository": "https://example.com/one",
+                "commit": "0123456789abcdef",
+                "permissions": ["filesystem.write"],
+                "compliance": "verified",
+                "enabled": True,
+                "path": "plugins/com.example.one",
+                "previous": {"version": "1.1.0"},
+                "icon": "",
+            }
+        ]
+
+    def search(self, query: str = "", source_id: str = ""):
+        return [
+            {
+                "id": "com.example.two",
+                "name": "Two",
+                "summary": "Second plugin",
+                "version": "2.0.0",
+                "source": "official",
+                "author": "tester",
+                "categories": ["tools"],
+                "permissions": [],
+                "compliance": "community",
+                "repository": "https://example.com/two",
+                "icon": "",
+            }
+        ]
+
+    def set_enabled(self, plugin_id: str, enabled: bool) -> None:
+        self.enabled_calls.append((plugin_id, enabled))
+
+    def update(self, plugin_id: str):
+        self.update_calls.append(plugin_id)
+        return {"id": plugin_id, "updated": True, "version": "1.3.0"}
+
+    def rollback(self, plugin_id: str):
+        return {"id": plugin_id, "version": "1.1.0"}
+
+    def remove(self, plugin_id: str):
+        return {}
+
+    def install(self, plugin_id: str, source_id: str = ""):
+        return {}
+
+
+class _Sources:
+    def list(self):
+        return [
+            SimpleNamespace(
+                source_id="official",
+                url="https://example.com/source.git",
+                trust="official",
+                enabled=True,
+                commit="abcdef012345",
+                last_refresh="2026-11-20 10:00",
+            )
+        ]
+
+    def info(self, source_id: str):
+        return SimpleNamespace(name="Official Source", source_id=source_id)
+
+    def add(self, url: str, refresh: bool = True):
+        return SimpleNamespace(source_id="custom")
+
+    def refresh(self, source_id: str):
+        return None
+
+    def refresh_all(self):
+        return None
+
+    def remove(self, source_id: str):
+        return None
+
+    def set_enabled(self, source_id: str, enabled: bool) -> None:
+        return None
+
+
+def _page(host: QWidget):
     from sllkgui.guis.pages.plugin_store import build_plugin_store_page
 
-    host = QWidget()
     page = build_plugin_store_page(host)
     page.resize(1120, 720)
     page.show()
-    QTest.qWait(20)
+    return page
+
+
+def test_page_builds_and_switches_modes(qapp):
+    host = QWidget()
+    page = _page(host)
     try:
-        assert page.mode_nav.item_ids() == ("installed", "discover", "sources")
-        assert page.stack.currentWidget() is page.installed_panel
+        assert page.mode == "installed"
+        assert page.mode_tabs.current_index() == 0
 
         page.switch_mode("sources")
-        assert page.stack.currentWidget() is page.sources_panel
-        assert page.mode_nav.current() == "sources"
+        assert page.mode == "sources"
+        assert page.mode_tabs.current_index() == 2
+        assert not page.add_source_button.isHidden()
 
         page.switch_mode("discover")
-        assert page.stack.currentWidget() is page.discover_panel
+        assert page.mode == "discover"
+        assert page.mode_tabs.current_index() == 1
     finally:
         page.deleteLater()
         host.deleteLater()
 
 
-def test_mode_badges_follow_counts(qapp):
-    from sllkgui.guis.pages.plugin_store import build_plugin_store_page
-
+def test_empty_page_has_empty_list_and_inspector(qapp):
     host = QWidget()
-    page = build_plugin_store_page(host)
+    page = _page(host)
     try:
-        page.update_discover_count(7)
-        assert page._counts["discover"] == 7
-        # 重建导轨后徽标仍取最新计数
-        assert page.mode_nav.item_ids() == ("installed", "discover", "sources")
+        assert page.list_panel.rows() == []
+        assert page._counts == {"installed": 0, "discover": 0, "sources": 0}
+        assert page.inspector_panel.body_layout.count() >= 1
     finally:
         page.deleteLater()
         host.deleteLater()
 
 
-def test_plugin_and_source_detail_dialogs_open(qapp):
-    """点击插件/源条目后详情对话框应能构造并打开（历史 bug: mono 重复传参）。"""
-    from sllkgui.guis.pages.plugin_store import build_plugin_store_page
-    from sllkgui.guis.pages.plugin_store.dialogs import _PluginDetailDialog, _SourceDetailDialog
-
+def test_rows_and_inspector_follow_runtime(qapp):
     host = QWidget()
-    page = build_plugin_store_page(host)
-    page.resize(1120, 720)
-    page.show()
+    host.runtime = SimpleNamespace(manager=_Manager(), sources=_Sources())
+    page = _page(host)
     try:
-        record = {
-            "id": "com.example.x",
-            "name": "X",
-            "summary": "test",
-            "version": "1.0.0",
-            "permissions": ["filesystem.write"],
-            "categories": ["tools"],
-            "commit": "0123456789abcdef",
-        }
-        plugin_dialog = _PluginDetailDialog(page, record, installed=False)
-        plugin_dialog.open()
-        assert plugin_dialog.dialog.isVisible()
+        rows = page.list_panel.rows()
+        assert len(rows) == 1
+        assert rows[0].record["id"] == "com.example.one"
+        assert page._selection["installed"] == "com.example.one"
 
-        source_dialog = _SourceDetailDialog(
-            page, {"id": "test", "url": "https://example.com/source.git", "trust": "user", "enabled": True}
-        )
-        source_dialog.open()
-        assert source_dialog.dialog.isVisible()
+        page.switch_mode("discover")
+        assert page.mode == "discover"
+        assert page._selection["discover"] == "com.example.two"
+        record = page._selected_record()
+        assert record is not None and record["installed"] is False
+
+        page._set_plugin_enabled("com.example.one", False)
+        assert host.runtime.manager.enabled_calls == [("com.example.one", False)]
     finally:
         page.deleteLater()
         host.deleteLater()
 
 
-def test_legacy_widgets_module_is_removed():
-    """自绘件已全部上移 guicore：包内不应再有 widgets 模块。"""
-    assert importlib.util.find_spec("sllkgui.guis.pages.plugin_store.widgets") is None
+def test_retranslate_keeps_mode(qapp):
+    host = QWidget()
+    page = _page(host)
+    try:
+        page.switch_mode("sources")
+        page.retranslate()
+        assert page.mode == "sources"
+        assert page.mode_tabs.current_index() == 2
+    finally:
+        page.deleteLater()
+        host.deleteLater()
+
+
+def test_legacy_detail_dialogs_are_removed():
+    """详情已改为内嵌检查器，包内不应再有 dialogs 模块。"""
+    assert importlib.util.find_spec("sllkgui.guis.pages.plugin_store.dialogs") is None

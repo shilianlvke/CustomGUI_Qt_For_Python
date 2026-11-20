@@ -2,7 +2,7 @@
 
 模块分层（只允许向下依赖）：
 
-    page ← panels ← dialogs ← entries ← widgets ← theme ← context
+    page ← panels ← entries ← theme ← context
 """
 
 from .page import StorePage as StorePage

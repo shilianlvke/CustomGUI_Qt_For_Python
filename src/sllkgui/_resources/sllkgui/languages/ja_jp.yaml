@@ -268,8 +268,8 @@ TEXT:
 plugin_store:
   store:
     title: プラグイン管理
-    subtitle: 導入済み・検索・ソースを 1 ページで
-    refresh: すべて更新
+    subtitle: 導入済み・検索・ソースを 1 か所で
+    refresh: 更新
   stats:
     installed: 導入済み
     enabled: 有効
@@ -281,7 +281,27 @@ plugin_store:
   view:
     grid: グリッド
     list: リスト
+  action:
+    refresh: 更新
+    refresh_sources: ソースを更新
+    add_source: ソースを追加
+    go_discover: 見つけに行く
+    cancel: キャンセル
+  list:
+    title:
+      installed: 導入済みプラグイン
+      discover: 見つかるプラグイン
+      sources: プラグインソース
+    meta:
+      installed: '{count} 件'
+      discover: '{count} 件の結果'
+      sources: '{count} 件のソース'
+    no_match_title: 一致するプラグインがありません
+    no_match_source_title: 一致するソースがありません
+    no_match_hint: '「{query}」に一致する結果はありません。'
+    clear_search: 検索をクリア
   detail:
+    about: 概要
     meta: 基本情報
     permissions: 権限
     installed: 導入済み
@@ -298,6 +318,21 @@ plugin_store:
     url: URL
     last_refresh: 最終更新
     trust: 信頼レベル
+  inspector:
+    title: 詳細
+    empty_title: プラグインを選択
+    empty_hint: 左の一覧から選ぶと、バージョン・権限・操作が表示されます。
+    empty_source_title: ソースを選択
+    empty_source_hint: 左の一覧から選ぶと、URL・信頼レベル・更新操作が表示されます。
+    add_source_title: ソースを追加
+    add_source_hint: Git リポジトリの URL に対応しています。追加後に索引を更新します。
+    url: URL
+    url_placeholder: https://example.com/plugins.git
+    no_permissions: 追加の権限はありません
+    no_previous: 戻せるバージョンがありません
+  compliance:
+    verified: 検証済み
+    community: コミュニティ
   installed:
     filter: プラグインを絞り込む…
     update: 更新
@@ -305,6 +340,8 @@ plugin_store:
     enable: 有効化
     disable: 無効化
     remove: 削除
+    empty_title: プラグインがありません
+    empty_hint: 「見つける」から選んでインストールすると、ここで有効化や更新ができます。
     empty: まだ何も入っていません。「見つける」へ
     select_hint: プラグインを選択して詳細を表示
     detail_title: プラグインの詳細
@@ -316,38 +353,50 @@ plugin_store:
     enabled: 有効
     disabled: 無効
   discover:
-    placeholder: 名前・ID・概要を検索…
+    placeholder: 名前・概要・作者で検索…
     search: 検索
     refresh_sources: ソースを更新
+    empty_title: 見つかるプラグインがありません
+    empty_hint: ソースを追加するか有効にしてから、もう一度お試しください。
     empty: インストール可能なプラグインがありません
     install: インストール
     permissions: '{count} 件の権限'
   sources:
-    placeholder: Git リポジトリの URL
+    placeholder: ソースを検索…
     add: 追加
     detail_title: ソースの詳細
     refresh_all: すべて更新
     refresh: 再読み込み
     remove: 削除
+    empty_title: ソースが設定されていません
+    empty_hint: Git リポジトリの URL を追加すると、コミュニティのプラグインを探せます。
     empty: ソースが設定されていません
     official: 公式
-    user: ユーザー
-    confirm_remove: 'ソース {id} を削除しますか？導入済みプラグインは残ります。'
-    added: 'ソース {id} を追加しました'
+    user: コミュニティ
+    url_required: リポジトリの URL を入力してください。
+    confirm_remove: 'ソース「{name}」を削除しますか？導入済みプラグインは残ります。'
+    added: ソースを追加しました。
   status:
     action_done: 完了
-    action_failed: '操作に失敗しました: {error}'
-    installing: '{id} をインストールしています…'
-    updating: '{id} を更新しています…'
-    rolling_back: '{id} をロールバックしています…'
-    removing: '{id} を削除しています…'
-    adding_source: ソースを追加しています…
-    removing_source: ソースを削除しています…
-    install_done: '{count} 個のプラグインをインストールしました'
-    up_to_date: 最新バージョンです
-    update_done: 'v{version} に更新しました'
-    refreshing: ソースを更新しています…
+    action_failed: 操作を完了できませんでした。もう一度お試しください。
+    failed: 操作を完了できませんでした。もう一度お試しください。
+    installing: プラグインをインストール中…
+    updating: プラグインを更新中…
+    rolling_back: ロールバック中…
+    removing: アンインストール中…
+    adding_source: ソースを追加中…
+    removing_source: ソースを削除中…
+    install_done: '「{name}」をインストールしました'
+    up_to_date: '「{name}」は最新です'
+    update_done: '「{name}」を v{version} に更新しました'
+    rollback_done: '「{name}」を v{version} に戻しました'
+    remove_done: '「{name}」をアンインストールしました'
+    enabled_done: '「{name}」を有効にしました'
+    disabled_done: '「{name}」を無効にしました'
+    source_refreshed: ソースを更新しました
+    list_refreshed: プラグイン一覧を更新しました
+    refreshing: ソースを更新中…
     refresh_done: ソースを更新しました
   confirm:
-    remove: このプラグインを削除しますか？データディレクトリは既定で保持されます。
+    remove: '「{name}」をアンインストールしますか？設定とデータフォルダーは保持されます。'
     install: '{id} v{version} をインストールしますか？権限: {permissions}'

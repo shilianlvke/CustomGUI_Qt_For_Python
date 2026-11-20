@@ -1,283 +1,206 @@
-"""三段工作区面板：已安装 / 发现 / 源，统一 DataView + 工具栏。"""
+"""插件管理的工作区面板：列表面板、检查器面板与页内活动条。
+
+列表与检查器都放在 ``CCard`` 上：卡片底色/描边由全局样式表维护，页面只
+负责头部、空态与内容重排；这样主题切换不需要重建控件树，也不会在玻璃
+背景上留下实色补丁。
+"""
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any
+from PySide6.QtCore import QRectF, Qt, QTimer
+from PySide6.QtGui import QColor, QPainter, QPen
+from PySide6.QtWidgets import QHBoxLayout, QSizePolicy, QVBoxLayout, QWidget
 
-from PySide6.QtCore import QTimer
-from PySide6.QtWidgets import QHBoxLayout, QVBoxLayout, QWidget
+from sllkgui.appcore import get_design_tokens
+from sllkgui.guicore import CCard, CHDiv, CScrollArea, CText
 
-from sllkgui.guicore import (
-    CButton,
-    CDataView,
-    CInputText,
-    CSelectButton,
-)
+from .entries import StoreRow, label
+from .theme import BUSY_OBJECT, text_role
 
-from .dialogs import _PluginDetailDialog, _SourceDetailDialog
-from .entries import _build_entry
-
-if TYPE_CHECKING:  # pragma: no cover - 仅类型检查，避免与 page.py 循环导入
-    from .page import StorePage
+_SPINNER_SIZE = 12
+_SPINNER_INTERVAL = 16
+_BODY_MAX_WIDTH = 760
 
 
-class _StorePanel(QWidget):
-    """DataView 面板基类：统一工具栏、视图切换与数据视图。"""
+class _Spinner(QWidget):
+    """12px 旋转弧：只用令牌强调色，主题切换后下一次重绘即生效。"""
 
-    def __init__(self, page: StorePage, empty_text: str, parent=None) -> None:
+    def __init__(self, parent=None) -> None:
         super().__init__(parent)
-        self.page = page
-        self.ctx = page.ctx
-        self._view_mode = "list"
-        self.data_view = CDataView(
-            [],
-            self._template,
-            layout="list",
-            columns=2,
-            empty_text=empty_text,
-            parent=self,
-        )
-        self._build()
-        self.refresh()
+        self.setFixedSize(_SPINNER_SIZE, _SPINNER_SIZE)
+        self._angle = 0
+        self._timer = QTimer(self)
+        self._timer.setInterval(_SPINNER_INTERVAL)
+        self._timer.timeout.connect(self._tick)
 
-    def _build(self) -> None:  # pragma: no cover - 子类实现
-        raise NotImplementedError
+    def _tick(self) -> None:
+        self._angle = (self._angle + 6) % 360
+        self.update()
 
-    def _template(self, record: dict[str, Any]) -> QWidget:  # pragma: no cover - 子类实现
-        raise NotImplementedError
+    def showEvent(self, event):  # noqa: N802 - 覆写 Qt 命名
+        self._timer.start()
+        super().showEvent(event)
 
-    def refresh(self) -> None:  # pragma: no cover - 子类实现
-        raise NotImplementedError
+    def hideEvent(self, event):  # noqa: N802 - 覆写 Qt 命名
+        self._timer.stop()
+        super().hideEvent(event)
 
-    def _manager(self):
-        return self.page._manager()
-
-    def _sources(self):
-        return self.page._sources()
-
-    def _add_view_toggle(self, toolbar: QHBoxLayout) -> None:
-        options = [self.ctx.text("view.grid", "网格"), self.ctx.text("view.list", "列表")]
-        self.view_toggle = CSelectButton(options, index=1, size="sm")
-        self.view_toggle.setFixedWidth(120)
-        self.view_toggle.selectionChanged.connect(self._on_view_index)
-        toolbar.addWidget(self.view_toggle)
-
-    def _on_view_index(self, index: int) -> None:
-        self._view_mode = "grid" if index == 0 else "list"
-        self.data_view.set_layout(self._view_mode)
+    def paintEvent(self, event):  # noqa: N802 - 覆写 Qt 命名
+        painter = QPainter(self)
+        painter.setRenderHint(QPainter.RenderHint.Antialiasing)
+        pen = QPen(QColor(get_design_tokens().colors.accent), 2)
+        pen.setCapStyle(Qt.PenCapStyle.RoundCap)
+        painter.setPen(pen)
+        rect = QRectF(self.rect()).adjusted(1, 1, -1, -1)
+        painter.drawArc(rect, -self._angle * 16, 270 * 16)
+        painter.end()
 
 
-class _InstalledPanel(_StorePanel):
-    """已安装：过滤 + DataView；条目开关直接启停，详情承载其余操作。"""
+class BusyStrip(QWidget):
+    """页内活动条：替代整页禁用，让用户仍能看见列表与当前选择。"""
 
-    def __init__(self, page: StorePage, parent=None) -> None:
-        self._rows: list[dict[str, Any]] = []
-        super().__init__(page, page.ctx.text("installed.empty", "还没有安装插件，去「发现」看看"), parent)
+    def __init__(self, parent=None) -> None:
+        super().__init__(parent)
+        self.setObjectName(BUSY_OBJECT)
+        self.setFixedHeight(30)
+        self.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed)
+        row = QHBoxLayout(self)
+        row.setContentsMargins(10, 0, 10, 0)
+        row.setSpacing(8)
+        row.addWidget(_Spinner(self))
+        self._text = CText("", pixel_size=10)
+        text_role(self._text, "body")
+        row.addWidget(self._text, 1)
+        self.hide()
 
-    def _build(self) -> None:
-        root = QVBoxLayout(self)
-        root.setContentsMargins(0, 0, 0, 0)
-        root.setSpacing(10)
+    def set_text(self, text: str) -> None:
+        self._text.setText(text)
 
-        toolbar = QHBoxLayout()
-        toolbar.setSpacing(8)
-        self.filter = CInputText(placeholder=self.ctx.text("installed.filter", "过滤插件…"), icon="icon_search")
-        self.filter.setFixedWidth(240)
-        toolbar.addWidget(self.filter)
-        toolbar.addStretch(1)
-        self._add_view_toggle(toolbar)
-        root.addLayout(toolbar)
-        root.addWidget(self.data_view, 1)
+    def start(self, text: str) -> None:
+        self._text.setText(text)
+        self.show()
 
-        self.filter.textChanged.connect(self._apply_filter)
-        self.data_view.itemClicked.connect(self._open_detail)
-
-    def _template(self, record: dict[str, Any]) -> QWidget:
-        return _build_entry(record, self._view_mode, "installed", self.ctx, self._on_toggle)
-
-    def _on_toggle(self, plugin_id: str, enabled: bool) -> None:
-        self.page._set_plugin_enabled(plugin_id, enabled)
-
-    def _apply_filter(self) -> None:
-        needle = self.filter.text().strip().lower()
-        rows = [
-            row
-            for row in self._rows
-            if not needle or needle in f"{row.get('id')} {row.get('name')} {row.get('source')}".lower()
-        ]
-        self.data_view.set_rows(rows)
-
-    def refresh(self) -> None:
-        manager = self._manager()
-        self._rows = list(manager.installed_rows()) if manager is not None else []
-        self._apply_filter()
-
-    def _open_detail(self, record: dict[str, Any]) -> None:
-        _PluginDetailDialog(self.page, record, installed=True).open()
+    def stop(self) -> None:
+        self.hide()
 
 
-class _DiscoverPanel(_StorePanel):
-    """发现：搜索结果（含已安装）与安装/启停详情。"""
+class _Panel(CCard):
+    """卡片 + 40px 头部 + 发丝线 + 内容区的通用面板。"""
 
-    def __init__(self, page: StorePage, parent=None) -> None:
-        super().__init__(page, page.ctx.text("discover.empty", "没有匹配的可安装插件"), parent)
+    def __init__(self, parent=None) -> None:
+        # CCard 的构造参数是 size 而不是 parent；加入页面布局时由 Qt 重新挂父级。
+        super().__init__()
+        self.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
+        outer = QVBoxLayout(self)
+        outer.setContentsMargins(14, 12, 14, 12)
+        outer.setSpacing(8)
 
-    def _build(self) -> None:
-        root = QVBoxLayout(self)
-        root.setContentsMargins(0, 0, 0, 0)
-        root.setSpacing(10)
+        head = QHBoxLayout()
+        head.setContentsMargins(0, 0, 0, 0)
+        head.setSpacing(8)
+        self._title = label("title", "", pixel_size=12, weight="semibold")
+        self._meta = label("muted", "", pixel_size=10)
+        head.addWidget(self._title)
+        head.addWidget(self._meta)
+        head.addStretch(1)
+        outer.addLayout(head)
+        outer.addWidget(CHDiv())
+        self._outer = outer
 
-        toolbar = QHBoxLayout()
-        toolbar.setSpacing(8)
-        self.query = CInputText(
-            placeholder=self.ctx.text("discover.placeholder", "搜索插件名称、ID 或简介…"),
-            icon="icon_search",
-        )
-        self.refresh_btn = CButton(
-            "",
-            icon="icon_refresh",
-            variant="text",
-            size="sm",
-            fixed_width=34,
-            icon_size=20,
-        )
-        self.refresh_btn.setToolTip(self.ctx.text("discover.refresh_sources", "刷新源"))
-        toolbar.addWidget(self.query, 1)
-        toolbar.addWidget(self.refresh_btn)
-        self._add_view_toggle(toolbar)
-        root.addLayout(toolbar)
-        root.addWidget(self.data_view, 1)
+    def set_titles(self, title: str, meta: str = "") -> None:
+        self._title.setText(title)
+        self._meta.setText(meta)
 
-        self._search_timer = QTimer(self)
-        self._search_timer.setSingleShot(True)
-        self._search_timer.setInterval(220)
-        self._search_timer.timeout.connect(self.search)
-        self.query.textChanged.connect(lambda: self._search_timer.start())
-        self.query.returnPressed.connect(self.search)
-        self.refresh_btn.clicked.connect(self._refresh_sources)
-        self.data_view.itemClicked.connect(self._open_detail)
 
-    def _template(self, record: dict[str, Any]) -> QWidget:
-        return _build_entry(record, self._view_mode, "discover", self.ctx, self._on_toggle)
+class ListPanel(_Panel):
+    """列表面板：固定 400px，滚动区承载行；空态由页面构建后传入。"""
 
-    def refresh(self) -> None:
-        self.search()
+    def __init__(self, parent=None) -> None:
+        super().__init__(parent)
+        self.setFixedWidth(400)
+        self._rows: list[StoreRow] = []
 
-    def search(self) -> None:
-        manager = self._manager()
-        if manager is None:
-            self.data_view.set_rows([])
-            self.page.update_discover_count(0)
-            return
-        needle = self.query.text().strip().lower()
-        installed = {str(row.get("id") or ""): row for row in manager.installed_rows()}
-        rows: list[dict[str, Any]] = []
-        seen: set[str] = set()
-        for row in manager.search(needle):
-            plugin_id = str(row.get("id") or "")
-            if plugin_id in seen:
+        self.scroll = CScrollArea()
+        self.scroll.setWidgetResizable(True)
+        self.body = QWidget()
+        self.body_layout = QVBoxLayout(self.body)
+        self.body_layout.setContentsMargins(0, 0, 0, 0)
+        self.body_layout.setSpacing(2)
+        self.body_layout.addStretch(1)
+        self.scroll.setWidget(self.body)
+        self._outer.addWidget(self.scroll, 1)
+
+    def rows(self) -> list[StoreRow]:
+        return list(self._rows)
+
+    def set_rows(self, rows: list[StoreRow]) -> None:
+        self._clear()
+        self._rows = list(rows)
+        for row in self._rows:
+            self.body_layout.insertWidget(self.body_layout.count() - 1, row)
+
+    def set_empty(self, widget: QWidget) -> None:
+        self._clear()
+        # 去掉 _clear 留下的尾部弹簧，让空态占满列表区域并垂直居中。
+        while self.body_layout.count():
+            item = self.body_layout.takeAt(0)
+            if item.widget() is None:
                 continue
-            seen.add(plugin_id)
-            current = installed.get(plugin_id)
-            row["installed"] = current is not None
-            row["enabled"] = bool(current.get("enabled")) if current is not None else False
-            row["installed_version"] = str(current.get("version") or "") if current is not None else ""
-            rows.append(row)
+            item.widget().deleteLater()
+        self.body_layout.addWidget(widget, 1)
 
-        # 已安装但源索引暂时没有的插件仍要出现在发现页，并标记「已安装」。
-        for plugin_id, current in installed.items():
-            if plugin_id in seen:
-                continue
-            name = str(current.get("name") or plugin_id)
-            summary = str(current.get("summary") or "")
-            if needle and needle not in f"{plugin_id} {name} {summary}".lower():
-                continue
-            rows.append(
-                {
-                    "id": plugin_id,
-                    "name": name,
-                    "summary": summary,
-                    "version": str(current.get("version") or "?"),
-                    "source": str(current.get("source") or ""),
-                    "permissions": list(current.get("permissions") or []),
-                    "compliance": current.get("compliance"),
-                    "repository": str(current.get("repository") or ""),
-                    "icon": str(current.get("icon") or ""),
-                    "installed": True,
-                    "enabled": bool(current.get("enabled")),
-                    "installed_version": str(current.get("version") or ""),
-                }
-            )
-        self.data_view.set_rows(rows)
-        self.page.update_discover_count(len(rows))
+    def set_busy(self, busy: bool) -> None:
+        for row in self._rows:
+            row.set_busy(busy)
 
-    def _on_toggle(self, plugin_id: str, enabled: bool) -> None:
-        self.page._set_plugin_enabled(plugin_id, enabled)
+    def set_selected(self, record_id: str) -> None:
+        for row in self._rows:
+            row.set_selected(str(row.record.get("id") or "") == str(record_id or ""))
 
-    def _open_detail(self, record: dict[str, Any]) -> None:
-        _PluginDetailDialog(self.page, record, installed=bool(record.get("installed"))).open()
-
-    def _refresh_sources(self) -> None:
-        self.page._refresh_sources()
+    def _clear(self) -> None:
+        while self.body_layout.count():
+            item = self.body_layout.takeAt(0)
+            widget = item.widget()
+            if widget is not None:
+                widget.hide()
+                widget.setParent(None)
+                widget.deleteLater()
+        self._rows = []
+        self.body_layout.addStretch(1)
 
 
-class _SourcesPanel(_StorePanel):
-    """源：添加输入 + DataView；开关控制源是否参与索引。"""
+class InspectorPanel(_Panel):
+    """检查器面板：内容最大 760px，避免宽屏下单列表单被拉得过散。"""
 
-    def __init__(self, page: StorePage, parent=None) -> None:
-        super().__init__(page, page.ctx.text("sources.empty", "还没有配置插件源"), parent)
+    def __init__(self, parent=None) -> None:
+        super().__init__(parent)
+        self.scroll = CScrollArea()
+        self.scroll.setWidgetResizable(True)
+        self.scroll.setAlignment(Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignTop)
+        self.body = QWidget()
+        self.body.setMaximumWidth(_BODY_MAX_WIDTH)
+        self.body_layout = QVBoxLayout(self.body)
+        self.body_layout.setContentsMargins(0, 0, 0, 0)
+        self.body_layout.setSpacing(12)
+        self.body_layout.addStretch(1)
+        self.scroll.setWidget(self.body)
+        self._outer.addWidget(self.scroll, 1)
 
-    def _build(self) -> None:
-        root = QVBoxLayout(self)
-        root.setContentsMargins(0, 0, 0, 0)
-        root.setSpacing(10)
+    def set_content(self, widget: QWidget) -> None:
+        self._clear()
+        self.body_layout.insertWidget(0, widget)
+        self.body_layout.setStretch(0, 0)
+        self.body_layout.setStretch(self.body_layout.count() - 1, 1)
 
-        toolbar = QHBoxLayout()
-        toolbar.setSpacing(8)
-        self.url = CInputText(placeholder=self.ctx.text("sources.placeholder", "Git 仓库地址"))
-        self.add_btn = CButton(self.ctx.text("sources.add", "添加"), size="sm")
-        toolbar.addWidget(self.url, 1)
-        toolbar.addWidget(self.add_btn)
-        self._add_view_toggle(toolbar)
-        root.addLayout(toolbar)
-        root.addWidget(self.data_view, 1)
-
-        self.add_btn.clicked.connect(self._add)
-        self.url.returnPressed.connect(self._add)
-        self.data_view.itemClicked.connect(self._open_detail)
-
-    def _template(self, record: dict[str, Any]) -> QWidget:
-        return _build_entry(record, self._view_mode, "source", self.ctx, self._on_toggle)
-
-    def refresh(self) -> None:
-        sources = self._sources()
-        rows = (
-            [
-                {
-                    "id": record.source_id,
-                    "url": record.url,
-                    "trust": record.trust,
-                    "enabled": record.enabled,
-                    "commit": record.commit,
-                    "last_refresh": record.last_refresh,
-                }
-                for record in sources.list()
-            ]
-            if sources is not None
-            else []
-        )
-        self.data_view.set_rows(rows)
-
-    def _add(self) -> None:
-        if self.page._add_source(self.url.text().strip()):
-            self.url.setText("")
-
-    def _on_toggle(self, source_id: str, enabled: bool) -> None:
-        self.page._set_source_enabled(source_id, enabled)
-
-    def _open_detail(self, record: dict[str, Any]) -> None:
-        _SourceDetailDialog(self.page, record).open()
+    def _clear(self) -> None:
+        while self.body_layout.count():
+            item = self.body_layout.takeAt(0)
+            widget = item.widget()
+            if widget is not None:
+                widget.hide()
+                widget.setParent(None)
+                widget.deleteLater()
+        self.body_layout.addStretch(1)
 
 
-# ----------------------------------------------------------------------
-# 页面
+__all__ = ["BusyStrip", "InspectorPanel", "ListPanel"]
