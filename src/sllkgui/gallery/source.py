@@ -25,7 +25,9 @@ from .defaults import (
     DEFAULT_SOURCE_TRUST,
     DEFAULT_SOURCE_URL,
     ENTRY_MANIFEST_NAME,
+    PLUGIN_API_VERSION,
     SOURCE_MANIFEST_NAME,
+    SUPPORTED_API,
 )
 from .errors import (
     PLUGIN_VERSION_INVALID,
@@ -224,8 +226,8 @@ def _parse_version(item: Any) -> VersionEntry:
     sha256 = _text(item, "manifest_sha256")
     if not _SHA256_RE.match(sha256):
         raise GalleryError(SOURCE_INVALID, f"非法 manifest_sha256: {sha256!r}")
-    api = item.get("api", 1)
-    if api != 1:
+    api = item.get("api", PLUGIN_API_VERSION)
+    if api not in SUPPORTED_API:
         raise GalleryError(SOURCE_INVALID, f"不支持的插件 API: {api!r}")
     sllkgui_spec = str(item.get("sllkgui") or "").strip()
     python_spec = str(item.get("python") or "").strip()

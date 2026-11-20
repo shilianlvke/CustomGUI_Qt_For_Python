@@ -35,7 +35,7 @@ def test_invalid_version_rejected(tmp_path: Path):
 
 def test_empty_surfaces_rejected(tmp_path: Path):
     text = """schema: 1
-api: 1
+api: 2
 id: com.example.empty
 name: Empty
 version: 1.0.0
@@ -50,7 +50,7 @@ surfaces: []
 
 def test_path_escape_rejected(tmp_path: Path):
     text = """schema: 1
-api: 1
+api: 2
 id: com.example.escape
 name: Escape
 version: 1.0.0
@@ -67,7 +67,7 @@ surfaces:
 
 def test_unknown_permission_rejected(tmp_path: Path):
     text = """schema: 1
-api: 1
+api: 2
 id: com.example.perm
 name: Perm
 version: 1.0.0
@@ -102,7 +102,7 @@ surfaces:
 
 def test_requires_unsatisfied(tmp_path: Path):
     text = """schema: 1
-api: 1
+api: 2
 id: com.example.req
 name: Req
 version: 1.0.0

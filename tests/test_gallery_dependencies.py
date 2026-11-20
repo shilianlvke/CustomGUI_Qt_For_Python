@@ -13,7 +13,7 @@ from sllkgui.gallery.registry import GalleryRegistry
 from sllkgui.gallery.store import GalleryStore
 
 MANIFEST_WITH_DEPS = f"""schema: 1
-api: 1
+api: 2
 id: com.example.dep
 name: Dep
 version: 1.0.0

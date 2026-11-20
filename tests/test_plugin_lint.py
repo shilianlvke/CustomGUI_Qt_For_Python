@@ -26,7 +26,7 @@ PLUGIN = Bad()
 """
 
 BAD_MANIFEST = """schema: 1
-api: 1
+api: 2
 id: com.example.bad
 name: Bad
 version: 1.0.0
@@ -123,7 +123,7 @@ def test_lint_flags_absolute_import_of_local_module(tmp_path):
     (root / "plugin.py").write_text("import helper\nfrom helper import VALUE\nimport os\n", encoding="utf-8")
     (root / "sllkgui-plugin.yml").write_text(
         """schema: 1
-api: 1
+api: 2
 id: com.example.abs
 name: Abs
 version: 1.0.0
@@ -150,7 +150,7 @@ def test_lint_allows_standard_library_absolute_import(tmp_path):
     (root / "plugin.py").write_text("import os\nimport json\nfrom pathlib import Path\n", encoding="utf-8")
     (root / "sllkgui-plugin.yml").write_text(
         """schema: 1
-api: 1
+api: 2
 id: com.example.std
 name: Std
 version: 1.0.0

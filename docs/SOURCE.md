@@ -55,7 +55,7 @@ versions:
     ref: v1.2.0
     commit: 0123456789abcdef0123456789abcdef01234567
     manifest_sha256: 9f2c...
-    api: 1
+    api: 2
     sllkgui: ">=3.0.0,<4.0.0"
     python: ">=3.12"
     permissions: [filesystem.write]

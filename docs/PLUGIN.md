@@ -31,7 +31,7 @@ sllkgui-notes/
 
 ```yaml
 schema: 1
-api: 1
+api: 2
 id: com.example.notes
 name: Notes
 version: 1.2.0

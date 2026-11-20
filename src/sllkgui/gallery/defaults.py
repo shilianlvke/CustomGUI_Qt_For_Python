@@ -7,8 +7,8 @@ SOURCE_MANIFEST_NAME = "source.yaml"
 ENTRY_MANIFEST_NAME = "entry.yaml"
 
 SUPPORTED_SCHEMA = frozenset({1})
-SUPPORTED_API = frozenset({1})
-PLUGIN_API_VERSION = 1
+SUPPORTED_API = frozenset({2})
+PLUGIN_API_VERSION = 2
 
 GALLERY_DIRNAME = "gallery"
 DEFAULT_SOURCE_ID = "official"

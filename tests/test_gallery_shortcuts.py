@@ -9,6 +9,7 @@ from gallery_helpers import MANIFEST, write_plugin
 
 from sllkgui.gallery.api import Permission
 from sllkgui.gallery.context import GalleryContextImpl
+from sllkgui.gallery.defaults import PLUGIN_API_VERSION
 from sllkgui.gallery.errors import GalleryError
 from sllkgui.gallery.manifest import PluginManifest
 from sllkgui.gallery.store import GalleryStore
@@ -48,7 +49,7 @@ def prepared(app):
 def _manifest(tmp_path: Path, permissions: tuple[Permission, ...]) -> PluginManifest:
     return PluginManifest(
         schema=1,
-        api=1,
+        api=PLUGIN_API_VERSION,
         plugin_id="com.example.keys",
         name="Keys",
         version="1.0.0",

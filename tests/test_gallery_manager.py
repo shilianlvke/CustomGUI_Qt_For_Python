@@ -13,6 +13,7 @@ from gallery_helpers import (
     write_source,
 )
 
+from sllkgui.gallery.defaults import PLUGIN_API_VERSION
 from sllkgui.gallery.manager import PluginManager
 from sllkgui.gallery.source import SourceManager
 from sllkgui.gallery.state import RegistryState, SourcesState
@@ -29,7 +30,7 @@ def _append_version(source_root: Path, plugin_repo: Path, *, version: str, ref: 
             "ref": ref,
             "commit": commit,
             "manifest_sha256": sha,
-            "api": 1,
+            "api": PLUGIN_API_VERSION,
             "sllkgui": SLLKGUI_REQUIREMENT,
             "python": ">=3.12",
             "permissions": ["filesystem.write"],

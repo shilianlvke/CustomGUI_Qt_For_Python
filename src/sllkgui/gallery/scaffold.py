@@ -7,7 +7,7 @@ from pathlib import Path
 from .errors import PLUGIN_ID_INVALID, GalleryError
 
 _PLUGIN_YML = """schema: 1
-api: 1
+api: 2
 
 id: {plugin_id}
 name: {name}
@@ -186,7 +186,7 @@ versions:
     ref: v0.1.0
     commit: 0000000000000000000000000000000000000000
     manifest_sha256: 0000000000000000000000000000000000000000000000000000000000000000
-    api: 1
+    api: 2
     sllkgui: ">=3.0.0,<4.0.0"
     python: ">=3.12"
     permissions:

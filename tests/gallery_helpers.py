@@ -9,6 +9,7 @@ from pathlib import Path
 import yaml
 
 from sllkgui._version import __version__ as BASE_VERSION
+from sllkgui.gallery.defaults import PLUGIN_API_VERSION
 
 #: 基座的当前主版本；插件清单要求 ``sllkgui >=<major>.0.0,<major+1>.0.0``
 _BASE_MAJOR = BASE_VERSION.split(".")[0]
@@ -32,7 +33,7 @@ class _ManifestFormatter(str):
 
 
 MANIFEST = _ManifestFormatter("""schema: 1
-api: 1
+api: 2
 id: {plugin_id}
 name: {name}
 version: {version}
@@ -180,7 +181,7 @@ def write_entry(
                 "ref": ref,
                 "commit": commit or git("rev-parse", "HEAD", cwd=plugin_repo),
                 "manifest_sha256": sha or manifest_sha256(plugin_repo),
-                "api": 1,
+                "api": PLUGIN_API_VERSION,
                 "sllkgui": SLLKGUI_REQUIREMENT,
                 "python": ">=3.12",
                 "permissions": ["filesystem.write"],
