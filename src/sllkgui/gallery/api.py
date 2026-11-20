@@ -325,6 +325,22 @@ class GalleryStorage(ABC):
     def path(self, key: str) -> Path: ...
 
 
+class GalleryEvents(ABC):
+    """插件级事件总线：按主题订阅 / 广播，订阅绑定 owner。
+
+    ``publish`` 携带 ``from`` 字段标记发布者 plugin_id。与 :meth:`GalleryContext.event`
+    的单向遥测不同，这里会真正分发给订阅者。
+    """
+
+    @abstractmethod
+    def subscribe(self, topic: str, callback: Callable[[str, Mapping[str, Any]], None]) -> Callable[[], None]:
+        """订阅主题；返回幂等退订闭包。"""
+
+    @abstractmethod
+    def publish(self, topic: str, payload: Mapping[str, Any] | None = None) -> None:
+        """广播主题事件。"""
+
+
 class GalleryContext(ABC):
     """插件运行上下文：所有基座能力都从这里进入。"""
 
@@ -404,6 +420,11 @@ class GalleryContext(ABC):
     def storage(self) -> GalleryStorage:
         """契约化 KV 存储：只能读写清单 ``data:`` 声明的键。"""
 
+    @property
+    @abstractmethod
+    def events(self) -> GalleryEvents:
+        """插件级事件总线：订阅主题与广播（与单向遥测 ``event`` 不同）。"""
+
 
 class Plugin(ABC):
     """插件基类。唯一合法入口是模块级 ``PLUGIN`` 实例。"""
@@ -435,6 +456,7 @@ class Plugin(ABC):
 
 __all__ = [
     "GalleryContext",
+    "GalleryEvents",
     "GallerySettings",
     "GalleryStorage",
     "GalleryShortcut",

@@ -14,9 +14,18 @@ from typing import Any
 
 from sllkgui.appcore import Language, Logger, get_theme_manager, record_event, track_timing
 
-from .api import GalleryContext, GallerySettings, GalleryShortcuts, GalleryStorage, GalleryTray, Permission
+from .api import (
+    GalleryContext,
+    GalleryEvents,
+    GallerySettings,
+    GalleryShortcuts,
+    GalleryStorage,
+    GalleryTray,
+    Permission,
+)
 from .defaults import MAX_EVENT_BYTES
 from .errors import PLUGIN_PERMISSION_DENIED, GalleryError
+from .events import EventHandle, PluginEventBus
 from .manifest import PluginManifest, ensure_within
 from .settings import PluginSettings
 from .shortcuts import ShortcutBridge
@@ -32,6 +41,19 @@ _LEVELS = {
     "critical": Logger.critical,
 }
 _TITLE_KEYS = ("zh_cn", "zh_tw", "en_us", "ja_jp")
+
+
+class _NoopEvents(GalleryEvents):
+    """未注入事件总线时的降级实现：订阅/广播都是安全空操作。"""
+
+    def subscribe(self, topic, callback):
+        return lambda: None
+
+    def publish(self, topic, payload=None):
+        pass
+
+
+_NOOP_EVENTS = _NoopEvents()
 
 
 def _flatten(data: Any, prefix: str = "") -> dict[str, str]:
@@ -75,6 +97,7 @@ class GalleryContextImpl(GalleryContext):
         error_reporter: Callable[[str, str, str], None] | None = None,
         tray: TrayService | None = None,
         shortcuts: Any | None = None,
+        events: PluginEventBus | None = None,
     ) -> None:
         self._manifest = manifest
         self._store = store
@@ -95,6 +118,7 @@ class GalleryContextImpl(GalleryContext):
         )
         self._settings = PluginSettings(manifest.plugin_id)
         self._storage = PluginStorage(manifest, self.data_dir)
+        self._event_handle: EventHandle | None = events.handle(manifest.plugin_id) if events else None
         self._record = None
         self._prefix = f"[plugin:{manifest.plugin_id}@{manifest.version}]"
         self._logger_name = f"sllkgui.plugin.{manifest.plugin_id}"
@@ -181,6 +205,19 @@ class GalleryContextImpl(GalleryContext):
     def storage(self) -> GalleryStorage:
         """契约化 KV 存储；键须在清单 ``data:`` 中声明。"""
         return self._storage
+
+    @property
+    def events(self) -> GalleryEvents:
+        """插件级事件总线；未注入时为安全空操作。"""
+        return self._event_handle if self._event_handle is not None else _NOOP_EVENTS
+
+    def clear_events(self) -> None:
+        """卸载时注销本插件的全部事件订阅。"""
+        if self._event_handle is not None:
+            try:
+                self._event_handle.clear()
+            except Exception as exc:  # noqa: BLE001 - 清理失败不影响卸载
+                Logger.debug(f"{self._prefix} 事件订阅清理失败: {exc}")
 
     def clear_settings(self) -> None:
         """卸载时移除页面与变更订阅（磁盘配置保留）。"""

@@ -29,6 +29,7 @@ from .context import GalleryContextImpl, _flatten
 from .defaults import MANIFEST_NAME
 from .dependencies import ensure_python_dependencies
 from .errors import PLUGIN_LOAD_FAILED, PLUGIN_SURFACE_IMPL_MISSING, GalleryError
+from .events import PluginEventBus
 from .manifest import PluginManifest, ensure_within, load_manifest
 from .registry import GalleryRegistry, PluginRecord, sanitize_route
 from .store import GalleryStore
@@ -227,6 +228,7 @@ def load_plugin(
     error_reporter: Callable[[str, str, str], None] | None = None,
     tray: TrayService | None = None,
     shortcuts: Any | None = None,
+    events: PluginEventBus | None = None,
 ) -> PluginRecord | None:
     """加载单个插件；失败只记录，不影响调用方。"""
     root = Path(path).resolve()
@@ -288,6 +290,7 @@ def load_plugin(
         error_reporter=error_reporter,
         tray=tray,
         shortcuts=shortcuts,
+        events=events,
     )
     record = PluginRecord(
         manifest=manifest,
@@ -322,6 +325,7 @@ def load_plugin(
         detail = f"{exc}: {hint}" if hint else str(exc)
         for name in {*module_names, *_modules_under(root)}:
             sys.modules.pop(name, None)
+        context.clear_events()
         context.clear_tray()
         context.clear_shortcuts()
         context.clear_settings()
@@ -331,6 +335,7 @@ def load_plugin(
     except Exception as exc:  # noqa: BLE001 - 单个插件失败必须隔离
         for name in {*module_names, *_modules_under(root)}:
             sys.modules.pop(name, None)
+        context.clear_events()
         context.clear_tray()
         context.clear_shortcuts()
         context.clear_settings()
@@ -345,6 +350,7 @@ def unload_plugin(record: PluginRecord) -> None:
     except Exception as exc:  # noqa: BLE001 - 卸载失败也要继续清理
         Logger.warning(f"插件卸载钩子失败: {record.plugin_id}: {exc}")
     if record.context is not None:
+        record.context.clear_events()
         record.context.clear_tray()
         # 快捷键先于模块清理：回调对象随条目一起释放，避免留下悬空引用
         record.context.clear_shortcuts()

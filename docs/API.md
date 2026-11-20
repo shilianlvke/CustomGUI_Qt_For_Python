@@ -193,7 +193,7 @@ available_languages()                # -> ("en_us", "ja_jp", "zh_cn", "zh_tw")
 
 ```python
 from sllkgui.plugin import (
-    Plugin, GalleryContext, GallerySettings, GalleryStorage, GalleryShortcut, GalleryShortcuts,
+    Plugin, GalleryContext, GalleryEvents, GallerySettings, GalleryStorage, GalleryShortcut, GalleryShortcuts,
     GalleryTray, Permission, PLUGIN_API_VERSION,
     Setting, SettingOption, SettingsAction, SettingsInfo, SettingsPage, SettingsSection,
     PluginError, ShortcutBinding, ShortcutConflict, TrayEntry, TrayGroup,

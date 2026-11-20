@@ -19,6 +19,7 @@ from sllkgui.appcore import Logger, record_event
 
 from .defaults import GALLERY_DIRNAME, SHOWCASE_DIRNAME
 from .errors import GalleryError
+from .events import PluginEventBus
 from .loader import discover_plugin_dirs, load_plugin, refresh_language_namespace, unload_all
 from .manager import PluginManager
 from .registry import GalleryRegistry, PluginRecord, set_current_registry
@@ -71,6 +72,7 @@ class GalleryRuntime:
         self.store = GalleryStore(self.gallery_dir)
         self.registry = GalleryRegistry()
         self.tray = TrayService()
+        self.events = PluginEventBus()
         self.registry_state: RegistryState = RegistryState(base_version=sllkgui.__version__)
         self.sources_state: SourcesState = SourcesState()
         self.sources: SourceManager | None = None
@@ -142,6 +144,7 @@ class GalleryRuntime:
                     error_reporter=self._report_error,
                     tray=self.tray,
                     shortcuts=self.shortcuts,
+                    events=self.events,
                 )
                 if record is not None:
                     self.records.append(record)
@@ -248,6 +251,7 @@ class GalleryRuntime:
             self._shortcuts = None
         if clear_registry:
             self.registry.clear()
+            self.events.clear()
             set_current_registry(None)
             set_current_runtime(None)
         Logger.info("Gallery 已关闭")

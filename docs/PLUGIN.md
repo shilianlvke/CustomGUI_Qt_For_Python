@@ -163,7 +163,8 @@ from . import helpers`）。若确实需要加载插件目录下的文件，用 
 | `text(key, default=None, **kwargs)` | 多语言文案，缺失回退 `en_us` |
 | `log(message, level="info")` | 基座日志，自动加插件前缀 |
 | `logger` | 标准库 `logging.Logger`，已桥接基座 |
-| `event(name, payload=None, level="info")` | 基座遥测 |
+| `event(name, payload=None, level="info")` | 基座遥测（单向上报，无订阅） |
+| `events` | 插件级事件总线：按主题订阅/广播，payload 带 `from` 来源（见下） |
 | `timing(name, payload=None)` | 上下文计时，自动记录 `duration_ms` |
 | `report_error(code, message, detail=None)` | 日志 + 遥测 + 非阻塞错误提示 |
 | `parent_window()` | Gallery 主窗口（对话框父级） |
@@ -205,6 +206,20 @@ class MyPlugin(Plugin):
     def on_surface_leave(self, surface_id: str) -> None:
         self._release_runtime()  # 必须幂等
 ```
+
+### 插件级事件总线
+
+`ctx.events` 提供真正的发布/订阅（与单向上报的 `ctx.event` 不同）。一个插件广播，其它插件订阅；
+payload 自动带 `from` 字段标记发布者。订阅返回幂等退订闭包，插件卸载或重载时基座自动注销其全部订阅。
+
+```python
+# 插件 A：广播
+ctx.events.publish("library.updated", {"id": "notes"})
+# 插件 B：订阅（on_load 中）
+unsub = ctx.events.subscribe("library.updated", lambda topic, payload: refresh(payload))
+```
+
+仅在本进程内分发，无跨进程协议（见「当前不支持的能力」）。
 
 ## 5. 托盘动作
 

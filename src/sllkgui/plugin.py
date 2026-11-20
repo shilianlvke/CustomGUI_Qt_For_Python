@@ -43,6 +43,7 @@ from .appcore.settings.schema import (
 from .gallery.api import (
     PLUGIN_API_VERSION,
     GalleryContext,
+    GalleryEvents,
     GallerySettings,
     GalleryShortcut,
     GalleryShortcuts,
@@ -60,6 +61,7 @@ from .gallery.errors import GalleryError as PluginError
 __all__ = [
     "PLUGIN_API_VERSION",
     "GalleryContext",
+    "GalleryEvents",
     "GallerySettings",
     "GalleryStorage",
     "GalleryShortcut",
