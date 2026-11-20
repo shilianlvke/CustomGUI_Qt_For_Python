@@ -419,6 +419,16 @@ class Plugin(ABC):
     def on_locale_changed(self, locale: str) -> None:  # noqa: B027 - 可选钩子
         """语言切换后调用；默认不处理。"""
 
+    def on_surface_enter(self, surface_id: str) -> None:  # noqa: B027 - 可选钩子
+        """导航进入本插件 Surface 后调用；默认不处理。
+
+        同一页重复打开不会重复触发；切走其它 Surface 或原生页时先调用
+        :meth:`on_surface_leave`，再对新页调用本方法。
+        """
+
+    def on_surface_leave(self, surface_id: str) -> None:  # noqa: B027 - 可选钩子
+        """离开 Surface（切走、切原生页或页面销毁）时调用；必须幂等。"""
+
     def on_unload(self) -> None:  # noqa: B027 - 可选钩子
         """Gallery 重载/退出前调用；必须幂等。"""
 

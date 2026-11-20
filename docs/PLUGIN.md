@@ -191,6 +191,21 @@ count = ctx.storage.get("notes_index", {}).get("count", 0)
 值落在 `ctx.data_dir/<key>.json`，由基座原子写（`.bak` 回退）。卸载（reload/shutdown）保留数据，
 显式删除插件时随 `purge` 一并清除；与 `settings` 的用户数据保留语义一致。
 
+### Surface 生命周期钩子
+
+`Plugin` 提供两个可选钩子，导航级成对触发：`on_surface_enter(surface_id)` 在进入 Surface 后调用，
+`on_surface_leave(surface_id)` 在切走、切到原生页或页面销毁前调用。同页重复打开不重复触发，
+重载时 `_clear_pages` 会先 leave 再由新页 enter。两者默认空实现，异常被隔离、不阻断导航。
+
+```python
+class MyPlugin(Plugin):
+    def on_surface_enter(self, surface_id: str) -> None:
+        self._ensure_runtime()  # 重资源在进入时启动
+
+    def on_surface_leave(self, surface_id: str) -> None:
+        self._release_runtime()  # 必须幂等
+```
+
 ## 5. 托盘动作
 
 插件只声明**语义**，菜单形态由基座按槽预算裁决（详见 `docs/TRAY.md`）：

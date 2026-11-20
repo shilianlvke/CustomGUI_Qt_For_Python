@@ -83,6 +83,9 @@ class GalleryWindow(QMainWindow):
         self.runtime = runtime
         self.gallery_registry = runtime.registry
         self._current_route = ""
+        #: 当前激活的插件 Surface 路由；空串表示当前在原生页或尚未进入任何 Surface。
+        #: 生命周期钩子只在这里依据路由变化成对触发（见 _notify_surface_leave/enter）。
+        self._active_route = ""
         self.setObjectName("GalleryWindow")
         self.setMouseTracking(True)
         self.ui = UiMainWindow()
@@ -154,6 +157,28 @@ class GalleryWindow(QMainWindow):
     # ------------------------------------------------------------------
     # 导航
     # ------------------------------------------------------------------
+    def _notify_surface_leave(self) -> None:
+        """对当前激活的 Surface 触发 leave（幂等），并清空激活态。"""
+        route = self._active_route
+        self._active_route = ""
+        if not route:
+            return
+        surface = self.gallery_registry.get(route)
+        if surface is None:
+            return
+        try:
+            surface.plugin.plugin.on_surface_leave(surface.surface_id)
+        except Exception as exc:  # noqa: BLE001 - 插件钩子失败不阻断导航
+            Logger.warning(f"插件 {surface.plugin_id} 的 on_surface_leave 失败: {exc}")
+
+    def _notify_surface_enter(self, surface: SurfaceRecord) -> None:
+        """对目标 Surface 触发 enter，并记为当前激活态。"""
+        self._active_route = surface.route
+        try:
+            surface.plugin.plugin.on_surface_enter(surface.surface_id)
+        except Exception as exc:  # noqa: BLE001 - 插件钩子失败不阻断导航
+            Logger.warning(f"插件 {surface.plugin_id} 的 on_surface_enter 失败: {exc}")
+
     def open_route(self, route: str) -> bool:
         surface = self.gallery_registry.get(route)
         if surface is None:
@@ -174,6 +199,9 @@ class GalleryWindow(QMainWindow):
         if page is None:
             self._notify_failure(surface.route, message="页面未生成，详情见日志")
             return False
+        # 导航级成对：目标与当前不同时先离开旧页；同页重复打开不触发任何钩子
+        if self._active_route and self._active_route != surface.route:
+            self._notify_surface_leave()
         previous = self.ui.left_menu.active_button_id()
         self.ui.left_menu.select_only_one(surface.button_id)
         MainFunctions.set_page(
@@ -185,6 +213,8 @@ class GalleryWindow(QMainWindow):
         )
         self.ui.title_bar.set_title(surface.display_title(Language.current()))
         self._current_route = route
+        if self._active_route != surface.route:
+            self._notify_surface_enter(surface)
         record_event(
             "surface.navigated",
             category="gallery",
@@ -229,6 +259,8 @@ class GalleryWindow(QMainWindow):
         page = self.ui.load_pages.pages.findChild(QWidget, native.page_object)
         if page is None:
             return False
+        # 切到原生页也离开当前插件 Surface
+        self._notify_surface_leave()
         previous = self.ui.left_menu.active_button_id()
         self.ui.left_menu.select_only_one(native.button_id)
         MainFunctions.set_page(
@@ -251,6 +283,8 @@ class GalleryWindow(QMainWindow):
         新运行时永远不会启动，页面和桌面小部件就会停在旧数据上。
         """
         pages = self.ui.load_pages.pages
+        # 销毁页面前先离开当前 Surface（重载会重建，必须成对）
+        self._notify_surface_leave()
         CPageTransition.cancel(pages)
         while pages.count():
             widget = pages.widget(0)
