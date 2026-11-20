@@ -21,7 +21,7 @@ version: 1.0.0
 description: storage test
 entry: plugin.py
 requires:
-  sllkgui: ">=3.0.0,<4.0.0"
+  sllkgui: ">=4.0.0,<5.0.0"
   python: ">=3.12"
 surfaces:
   - id: home

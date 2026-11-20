@@ -48,7 +48,7 @@ description: 通用便签
 license: MIT
 entry: plugin.py
 requires:
-  sllkgui: ">=3.0.0,<4.0.0"
+  sllkgui: ">=4.0.0,<5.0.0"
   python: ">=3.12"
 python_dependencies:
   - psutil>=6

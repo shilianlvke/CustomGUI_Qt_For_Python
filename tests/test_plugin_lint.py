@@ -129,7 +129,7 @@ name: Abs
 version: 1.0.0
 entry: plugin.py
 requires:
-  sllkgui: ">=3.0.0,<4.0.0"
+  sllkgui: ">=4.0.0,<5.0.0"
 surfaces:
   - id: home
     title: {en_us: Home}
@@ -156,7 +156,7 @@ name: Std
 version: 1.0.0
 entry: plugin.py
 requires:
-  sllkgui: ">=3.0.0,<4.0.0"
+  sllkgui: ">=4.0.0,<5.0.0"
 surfaces:
   - id: home
     title: {en_us: Home}
