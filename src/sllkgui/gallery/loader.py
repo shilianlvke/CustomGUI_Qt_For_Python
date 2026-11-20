@@ -123,9 +123,27 @@ def discover_plugin_dirs(roots: Iterable[Path]) -> list[Path]:
     return result
 
 
+def _canonical_module_name(root: Path, entry_path: Path) -> str | None:
+    """内置预览插件（``sllkgui/showcase/*``）的规范模块名，否则 ``None``。
+
+    内置预览插件若以随机别名导入，``page.py`` 会同时存在别名与规范名两份
+    ``sys.modules`` 条目，覆盖率归到别名下、全仓报告显示 0%（RV-11）。
+    只对随包分发的 showcase 用规范名，避免影响用户安装在任意路径的插件。
+    """
+    parts = root.parts
+    if "sllkgui" not in parts:
+        return None
+    base = parts[parts.index("sllkgui") :]
+    if len(base) < 2 or base[0] != "sllkgui" or base[1] != "showcase":
+        return None
+    package = ".".join(base)
+    return f"{package}.{entry_path.stem}"
+
+
 def _import_entry(root: Path, entry: str, plugin_id: str) -> tuple[ModuleType, list[str]]:
     entry_path = ensure_within(root, entry)
-    module_name = f"sllkgui_plugin_{sanitize_route(plugin_id)}_{uuid.uuid4().hex[:8]}"
+    canonical = _canonical_module_name(root, entry_path)
+    module_name = canonical or f"sllkgui_plugin_{sanitize_route(plugin_id)}_{uuid.uuid4().hex[:8]}"
     spec = importlib.util.spec_from_file_location(
         module_name,
         entry_path,
