@@ -39,10 +39,9 @@ uv run pytest --cov=sllkgui --cov-report=term-missing --cov-fail-under=70
 | 全部升级 | `uv lock --upgrade` |
 | 确认 lock 是否过期 | `uv lock --check`（不一致时退出码非 0） |
 
-两条流水线（`.workflow/QualityGate.yml`、`.workflow/ReleasePipeline.yml`）都先跑
-`uv lock --check`、再用 `uv sync --locked` 安装：`--locked` 在 lock 与 `pyproject.toml`
-不一致时**直接失败**，不会静默重新解析——否则「改了 pyproject 却忘了 `uv lock`」
-会悄悄通过门禁。
+质量门禁（`.workflow/QualityGate.yml`）先跑 `uv lock --check`、再用 `uv sync --locked`
+安装：`--locked` 在 lock 与 `pyproject.toml` 不一致时**直接失败**，不会静默重新解析
+——否则「改了 pyproject 却忘了 `uv lock`」会悄悄通过门禁。
 
 建议装上提交前门禁，把上面这些命令前移到本地：
 
@@ -53,9 +52,9 @@ uv run pre-commit install
 钩子见 `.pre-commit-config.yaml`：ruff lint、ruff format、mypy、文件卫生检查与一组
 快速冒烟用例。全部使用本地实现（`language: system`），不联网拉取第三方仓库。
 
-本地命令只便于自查，CI 的判定标准以 `.workflow/*.yml` 里的实际命令为准：向 `main` 提 PR
-（以及推送 `main`）会触发 `.workflow/QualityGate.yml`；打 `base-v*` tag 触发
-`.workflow/ReleasePipeline.yml`，发布侧复跑同一套门禁后才打包。两处命令若有调整，以文件为准同步本地。
+本地命令只便于自查，CI 的判定标准以 `.workflow/QualityGate.yml` 里的实际命令为准：
+向 `main` 提 PR 或推送 `main` 都会触发它。打 `base-v*` tag **不触发任何流水线**，
+只作为 Launcher 可选择的版本标识。门禁命令若有调整，以文件为准同步本地。
 
 窗口类测试统一走 `QT_QPA_PLATFORM=offscreen`（`tests/conftest.py` 已设置），
 本地与无头容器都不需要真实显示。`ruff` 的规则集在 `pyproject.toml` 的
@@ -139,46 +138,36 @@ uv run pre-commit install
 
 ## 发版
 
-改动基座代码后必须补一次补丁发布（`base-vX.Y.Z`），下游 py-rm 固定依赖 tag 而不是分支。
-
-一键发布（bump patch → 质量门禁 → 提交 → tag → 推送）：
-
-```powershell
-uv run python scripts/release_base.py --dry-run             # 预览
-uv run python scripts/release_base.py --message "fix: ..."   # 正式发布
-```
-
-版本号已经是目标值、只想补一个 tag 时（例如大版本号已改好）：
-
-```powershell
-uv run python scripts/release_base.py --tag-only             # 不改版本号，只跑门禁并打 tag
-```
-
-手工发布：
+用户侧只需要 Launcher：它从 Gitee 仓库拉取 `base-v*` tag 或 `main` 分支源码，
+自动完成 uv → Python → Git → 虚拟环境 → 依赖同步后启动，不依赖任何 Release 附件或安装包。
+因此**没有发布流水线**，发版就是「改版本号 + 打 tag + 推送」。
 
 ```powershell
 # 1. 改版本号（唯一一处）
-#    src/sllkgui/_version.py  ->  __version__ = "1.0.0"
+#    src/sllkgui/_version.py  ->  __version__ = "4.0.0"
+#    CHANGELOG.md 同步版本节；破坏性变更写入该节的「破坏性变更」表
 
-# 2. 构建与校验
-uv run python -m build --wheel
-uv run twine check dist/*.whl
+# 2. 本地门禁（与 QualityGate.yml 同一套）
+uv run ruff check src tests examples scripts
+uv run ruff format --check src tests examples scripts
+uv run mypy
+uv run pytest --cov=sllkgui --cov-report=term-missing --cov-fail-under=71 -rf
 
-# 3. 干净环境冒烟（务必做，别只看本机）
+# 3. 干净环境冒烟（验证「开箱即用」，别只看本机）
+uv build
 uv venv /tmp/smoke --python 3.12
-uv pip install --python /tmp/smoke/bin/python dist/sllkgui-1.0.0-py3-none-any.whl
+uv pip install --python /tmp/smoke/bin/python dist/sllkgui-*.whl
 /tmp/smoke/bin/sllkgui doctor
-# 需要验证插件能真正加载时，另跑 gallery 模式（会实际执行插件代码）：
+# 需要验证插件能真正加载时另跑（会实际执行插件代码）：
 /tmp/smoke/bin/sllkgui gallery
 
-# 4. 打 tag 并推送
-git tag base-v1.0.1
+# 4. 打 tag 并推送（tag 名为 base-v<版本号>，与 _version.py 保持一致）
+git tag base-v4.0.0
 git push origin main --tags
 ```
 
-第 3 步是唯一能验证「开箱即用」的环节。`sllkgui doctor` 里任一 `✗` 都不要发；
-它只读取路径与安装状态、**不执行插件代码**，因此验证插件加载要另跑
-`sllkgui gallery`（会真的导入并构建 Surface）。
-1.x 暂不发 PyPI，只走 wheel + tag。
+`sllkgui doctor` 里任一 `✗` 都不要发：它只读取路径与安装状态、**不执行插件代码**，
+验证插件加载要另跑 `sllkgui gallery`（会真的导入并构建 Surface）。
 
-`base-v*` 触发发布流水线；历史 `v*` tag 不再触发，保留但不使用。
+tag 推送后无需其它操作：Launcher 的「选择版本」会列出新 tag，用户选择即更新。
+历史 `v*` tag 保留但不被 Launcher 使用。

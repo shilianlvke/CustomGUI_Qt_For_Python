@@ -85,11 +85,11 @@
 | EXT-05 | S3 | 移除协议 v1（`PAGE` / `build_page` / `register_plugins`）兼容壳 | `guis/app_loader.py` `docs/PLUGIN.md` `ARCHITECTURE.md:222-224` | 下一个 major 版本 | 计划中 |
 | EXT-06 | S3 | 清理 `CLineEdit` / `CPushButton` 兼容壳与旧 `resource/` 布局 | `guicore/` `ARCHITECTURE.md:222-224` | 下一个 major 版本 | 已修复（3.0.0 删除 `CLineEdit` / `CPushButton` / `CShowCard` / `CPixmap`） |
 | EXT-07 | S3 | 清理遗留文档引用与 `appcore/tool/Net.py` 历史命名 | `docs/contributing.md:63` `81-82` | 下一次文档整理 | 计划中 |
-| EXT-08 | S4 | 统一 `v*` / `base-v*` tag 体系并清理历史 tag（需远端管理员、不可逆） | `.workflow/ReleasePipeline.yml` `CHANGELOG.md` | 发布流程重构 | 计划中 |
+| EXT-08 | S4 | 统一 `v*` / `base-v*` tag 体系并清理历史 tag（需远端管理员、不可逆） | `CHANGELOG.md` | 发布流程重构 | 作废（4.0.0 已移除发布流水线；tag 仅作 Launcher 版本标识） |
 | EXT-09 | S4 | MANUAL_QA 语言切换状态保留与排序选中项产品确认 | `docs/MANUAL_QA.md:452-453` | 产品确认结论 | 计划中 |
 | EXT-10 | S4 | MANUAL_QA 遗留视觉缺陷与 `paintEvent` 性能优化 | `docs/MANUAL_QA.md` `guicore/` | 视觉基线复核 | 计划中 |
 | EXT-11 | S4 | Win32 亚克力开关、Win10/RDP 回退、多显示器、高 DPI 人工验收矩阵 | `docs/MANUAL_QA.md:468-475` | Windows 真机发布前 | 计划中 |
-| EXT-12 | S4 | `appcore` 去 Qt 依赖 / 轻量 doctor、PyInstaller 冻结形态端到端验证、PyPI 发布路径 | `appcore/sysx/common/static_func.py` `src/sllkgui/window.py` `scripts/build_package.py` | 跨平台与正式发布 | 部分修复（3.0.0：`appcore` 已不 import PySide6，圆角位图下沉到 `guicore`，并加守卫测试；冻结形态与发布路径仍未做） |
+| EXT-12 | S4 | `appcore` 去 Qt 依赖 / 轻量 doctor（PyInstaller 冻结形态与 PyPI 路径已作废） | `appcore/sysx/common/static_func.py` `src/sllkgui/window.py` | 跨平台验证 | 部分修复（3.0.0：`appcore` 已不 import PySide6，圆角位图下沉到 `guicore`，并加守卫测试；4.0.0 起用户侧统一走 Launcher，冻结形态与 PyPI 路径不再做） |
 | EXT-13 | S1 | 契约化 KV 存储 `ctx.storage`（manifest 数据声明 + 删除时 purge） | `gallery/storage.py` `gallery/api.py` `gallery/manifest.py` `docs/PLUGIN.md` | 本轮实施 | 已修复 |
 | EXT-14 | S1 | Surface 导航生命周期钩子 `on_surface_enter/leave` | `gallery/api.py` `gallery/window.py` `docs/PLUGIN.md` | 本轮实施 | 已修复 |
 | EXT-15 | S2 | 插件级事件总线 `ctx.events`（owner 维度、卸载逐 owner 注销） | `gallery/events.py` `gallery/runtime.py` `gallery/loader.py` | 本轮实施 | 已修复 |
@@ -113,6 +113,11 @@
 优先级判据：能造成数据丢失或突破信任边界的先于功能缺陷；让质量信号可信先于增加更多测试；抽象重构放到正确性收敛之后。
 
 ## 6. 验收标准
+
+> 本节命令与验收项是 `1.0.0` 时期 FIX-01..FIX-12 的历史记录，**已被取代**：当前门禁见
+> `.workflow/QualityGate.yml`，发版见 `docs/contributing.md`「发版」（4.0.0 起只有 tag，
+> 无发布流水线）。其中 `twine` 校验、PyInstaller 冻结形态与「发布流水线触发」等条目随
+> 4.0.0 移除发布链路而作废；`scripts/wheel_smoke.py` 仍由 QualityGate 使用。
 
 **每批必跑**：`uv run ruff check src tests apps examples scripts`、`uv run mypy`、`uv run pytest --cov=sllkgui --cov-report=term-missing --cov-fail-under=70`、本批专项 pytest、`git status --porcelain`（前后各一次，须为空）、`git diff --check`。
 **收尾加验**：`uv build --wheel`、`uv run twine check dist/*.whl`、`uv run python scripts/wheel_smoke.py`、两条流水线命令集静态核对。
