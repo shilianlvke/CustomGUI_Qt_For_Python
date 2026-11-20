@@ -88,6 +88,35 @@ def test_plugin_and_source_detail_dialogs_open(qapp):
         host.deleteLater()
 
 
+def test_inline_inspector_replaces_modal_detail(qapp):
+    """点击条目应在工作区内嵌检查器展示详情，不再弹出模态对话框。"""
+    from sllkgui.guicore import CText
+    from sllkgui.guis.pages.plugin_store import build_plugin_store_page
+
+    host = QWidget()
+    page = build_plugin_store_page(host)
+    try:
+        record = {
+            "id": "com.example.demo",
+            "name": "Demo",
+            "summary": "demo plugin",
+            "version": "1.2.0",
+            "permissions": ["filesystem.write"],
+            "source": "test",
+        }
+        page.show_detail(record, kind="discover", installed=False)
+        assert page.inspector.record == record
+        assert page.inspector.kind == "discover"
+        labels = [label.text() for label in page.inspector.findChildren(CText)]
+        assert any("1.2.0" in text for text in labels)
+
+        page.inspector.clear()
+        assert page.inspector.record is None
+    finally:
+        page.deleteLater()
+        host.deleteLater()
+
+
 def test_legacy_widgets_module_is_removed():
     """自绘件已全部上移 guicore：包内不应再有 widgets 模块。"""
     assert importlib.util.find_spec("sllkgui.guis.pages.plugin_store.widgets") is None

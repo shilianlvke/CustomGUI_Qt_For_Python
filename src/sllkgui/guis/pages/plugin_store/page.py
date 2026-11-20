@@ -7,7 +7,7 @@ from typing import Any
 
 from PySide6.QtWidgets import QHBoxLayout, QStackedWidget, QVBoxLayout, QWidget
 
-from sllkgui.appcore import get_theme_manager
+from sllkgui.appcore import ColorPalette, get_theme_manager
 from sllkgui.guicore import (
     CConfirmDialog,
     CDialog,
@@ -23,6 +23,7 @@ from sllkgui.guicore import (
 )
 
 from .context import PageContext
+from .inspector import InlineInspector
 from .panels import _DiscoverPanel, _InstalledPanel, _SourcesPanel
 from .theme import _toast_offset
 
@@ -47,6 +48,7 @@ class StorePage(QWidget):
         self._build()
         self.switch_mode("installed")
         self.refresh_stats()
+        self._theme_changed()
         get_theme_manager().subscribe(self._theme_changed)
 
     # ------------------------------------------------------------------
@@ -82,13 +84,13 @@ class StorePage(QWidget):
         rail = QVBoxLayout()
         rail.setContentsMargins(10, 10, 10, 10)
         rail.setSpacing(4)
-        self.mode_nav = CSideNav(self._mode_groups(), item_height=58)
+        self.mode_nav = CSideNav(self._mode_groups(), item_height=46)
         self.mode_nav.itemClicked.connect(self.switch_mode)
         rail.addWidget(self.mode_nav)
         rail.addStretch(1)
         rail_host = CSurfacePanel(radius=8)
         rail_host.setLayout(rail)
-        rail_host.setFixedWidth(232)
+        rail_host.setFixedWidth(196)
         body.addWidget(rail_host)
 
         self.stack = QStackedWidget()
@@ -99,10 +101,13 @@ class StorePage(QWidget):
         self.stack.addWidget(self.discover_panel)
         self.stack.addWidget(self.sources_panel)
         workspace = CSurfacePanel(radius=8)
-        workspace_layout = QVBoxLayout(workspace)
-        workspace_layout.setContentsMargins(16, 14, 16, 14)
+        workspace_layout = QHBoxLayout(workspace)
+        workspace_layout.setContentsMargins(12, 12, 12, 12)
         workspace_layout.setSpacing(10)
-        workspace_layout.addWidget(self.stack)
+        workspace_layout.addWidget(self.stack, 1)
+        self.inspector = InlineInspector(self, workspace)
+        self.inspector.setFixedWidth(300)
+        workspace_layout.addWidget(self.inspector)
         body.addWidget(workspace, 1)
         root.addLayout(body, 1)
 
@@ -127,6 +132,10 @@ class StorePage(QWidget):
         else:
             self.sources_panel.refresh()
         self.refresh_stats()
+
+    def show_detail(self, record: dict[str, Any], *, kind: str, installed: bool = False) -> None:
+        """选中条目后在右侧检查器展示详情（取代旧模态详情对话框）。"""
+        self.inspector.show_record(record, kind=kind, installed=installed)
 
     # ------------------------------------------------------------------
     # 数据源
@@ -214,6 +223,7 @@ class StorePage(QWidget):
             single_shot(window, 120, window.reload_plugins)
 
     def _theme_changed(self) -> None:
+        self.setStyleSheet(f"background: {ColorPalette.custom_bg_one};")
         for widget in self.findChildren(QWidget):
             widget.update()
 
