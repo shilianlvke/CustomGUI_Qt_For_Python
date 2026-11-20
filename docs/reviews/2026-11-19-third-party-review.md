@@ -1,14 +1,13 @@
 # SllkGUI 第三方技术评审报告（3.0.0 整改后复核版）
 
-> 评审对象：`D:/PyPRG/SllkGuiPRG/SllkGui`，分支 `main`，HEAD `d56701f`，版本 `3.0.0`
+> 评审对象：`D:/PyPRG/SllkGuiPRG/SllkGui`，分支 `main`，版本 `3.0.0`
 > 原评审日期：2026-11-19（对象为 `2.7.0` / HEAD `3f36fd7`）
-> 本次复核：2026-11-19，逐条核对原报告 `RV-01`..`RV-14` 的整改是否真实落地。
+> 复核日期：2026-11-19，逐条核对原报告 `RV-01`..`RV-14` 的整改是否真实落地。
 > 方法：读当前代码 + 提交历史 + 本地执行 `pytest` / `ruff` / `mypy` / 定向覆盖率 + AST/grep 实测。
 >
-> **复核结论**：4 项已彻底关闭（`RV-01`、`RV-06`、`RV-10`、`RV-13`），
-> 8 项部分解决、仍有实质残余（`RV-02`、`RV-03`、`RV-04`、`RV-05`、`RV-07`、`RV-08`、`RV-11`、`RV-12`），
-> 2 项未解决（`RV-09`、`RV-14`）。因此原文的「全部处理完毕」不准确，本版据实重写。
-> 下文第 2 节是仍需处理的事项，第 3 节给出下一步行动；已关闭项只留一行结论与证据索引，不再展开。
+> **最终结论：14 项全部关闭。** 首次复核确认 RV-01/06/10/13 已解决、其余 10 项存在残余
+> （见 HEAD `fc2ba17` 的复核版）；随后按第 4 节行动计划逐项修复并提交（索引见下），
+> 二次验证全绿。第 2 节记录各项的最终处理结果，第 3 节记录已关闭项，第 4 节为行动计划存档。
 
 ---
 
@@ -18,10 +17,11 @@
 
 | 命令 | 结果 |
 | --- | --- |
-| `uv run pytest -q` | 全绿：**704 collected**，703 passed / 1 skipped（`tests/test_fonts.py:34` 的平台条件跳过） |
+| `uv run pytest -q` | 全绿：**717 collected**（其中 1 skipped：`tests/test_fonts.py:34` 的平台条件跳过） |
 | `uv run ruff check src tests examples scripts` | `All checks passed!` |
+| `uv run ruff format --check src tests examples scripts` | `367 files already formatted` |
 | `uv run mypy` | `Success: no issues found in 17 source files` |
-| `uv run pytest --cov=sllkgui --cov-report=term` | TOTAL 30,684 stmts / 7,743 missed / **71%**（阈值 70%） |
+| `uv run pytest --cov=sllkgui --cov-report=term --cov-fail-under=71` | TOTAL 30,723 stmts / 6,784 missed / **74%**（阈值 71%） |
 | `uv run python -c "import sys,sllkgui.appcore;..."` | `PySide6.QtGui` / `QtCore` 均为 `False`（appcore 已不拉 Qt） |
 | `uv run sllkgui plugin lint src/sllkgui/showcase/core_preview` | `ok: true`，0 error / 0 warning |
 | AST 统计 `len(guicore.__all__)` / `len(custom_ui.__all__)` | **159 / 105** |
@@ -32,10 +32,24 @@
 
 ---
 
-## 2. 仍需处理的事项
+## 2. 复核时仍未解决的事项（均已在后续逐项修复）
 
-> 级别沿用原定义：**P1** = 显著抬高改动成本 / 构成一致性风险；**P2** = 工程质量与体验债；
-> **P3** = 定位与生态问题，非缺陷。已随整改消解的 P0 不再列出。
+> 下表为**最终状态**：本节各小节保留的是首次复核时的诊断原文（标题中的「未解决 / 部分解决」
+> 是当时状态），以 `✅ 已解决` 行的提交为准。级别沿用原定义：P1 = 显著抬高改动成本 / 构成
+> 一致性风险；P2 = 工程质量与体验债；P3 = 定位与生态问题。
+
+| 项 | 最终状态 | 解决方式 | 提交 | 验收证据 |
+| --- | --- | --- | --- | --- |
+| RV-09 | ✅ 已解决 | `GalleryWindow` 在三个失败分支与启动期错误汇总弹 `CToast`，含目标 / 错误码 / 日志入口；桩窗口与 runtime/context 不加信号 | `b9089c6` | `tests/test_gallery_failure_visibility.py`（2 例）spy `CToast.show_message` 断言文案与错误码 |
+| RV-02 | ✅ 已解决 | 两处流水线阈值 70→71、注释校正、追加 `-rf` 失败清单；PR 模板加 CI 链接栏 | `a2fcd7e` | 全量覆盖率 74% ≥ 71 门禁；`-rf` 在失败时输出用例清单 |
+| RV-03 | ✅ 已解决 | `ARCHITECTURE.md` 分层表按 `ALLOWED_EDGES`/`EDGE_ALLOWLIST` 回写，注明守卫为唯一真相 | `8c93424` | `tests/test_architecture_boundaries.py` 全绿；表格逐行对齐守卫矩阵 |
+| RV-04 | ✅ 已解决 | `validate_plugin.py` 删除隐式 `sys.path.insert` 与 `--src`，改为安装 / `PYTHONPATH` 指引 | `3630bcf` | `grep sys.path.insert scripts/validate_plugin.py` 零命中；脚本仍正常校验示例插件 |
+| RV-05 | ✅ 已解决（方案 C） | controller/setup_main_window 改用 `KEY_THEME`/`STORAGE_THEME`；主题持久化经 `SettingsSession`，`_persisting_theme` 阻断重入 | `bcc7f74` | `tests/test_theme_persistence_single_source.py`（4 例）覆盖完整键、预览抑制、重入保护 |
+| RV-07 | ✅ 已解决 | 文档数字改为 159/105 并由一致性测试锁定；删除兼容壳残留死 QSS；顶层导出布局不变 | `8555e36` | `tests/test_public_api_consistency.py`（2 例）；全部 159/105 导出未减少 |
+| RV-08 | ✅ 已解决 | 清理 `API.md`/`MANUAL_QA.md`/`icons/README.md` 的 `apps/` 漂移；CHANGELOG 模块数 8→7；澄清 OS classifier | `db9640d` | `grep apps/ docs/` 仅剩两处明确标注「已删除」的历史说明；TOML 可解析 |
+| RV-11 | ✅ 已解决 | showcase 内置插件改用规范模块名，消除别名导致的覆盖率 0%；保留 pytest-qt 并新增 `qtbot.waitSignal` 交互断言 | `a668daa` | 全仓 showcase 各 `page.py` 达 77–100%；覆盖率由 71% 升至 74%；`tests/test_toast_interaction.py`（2 例）|
+| RV-12 | ✅ 已解决（按选定方案） | 维持 Linux 降级冒烟，在 workflow 与 README 写明「Win32 特化分支无 CI 覆盖」的边界 | `dde243d` | `test_cross_platform.py` 7 例全过；CI 与 README 口径一致 |
+| RV-14 | ✅ 已解决（按选定方案） | `PLUGIN.md` 新增「信任边界声明」专节；`SOURCE.md` 删除与代码不符的「非官方源确认提示」 | `8579c22` | `grep 非官方 docs/ src/` 仅剩本评审历史记录与准确的「没有额外提示」表述 |
 
 ### RV-09 · P1（原文 P1，本轮上调为首要）· 失败仍然静默，跨层鸭子类型未收敛 —— 未解决
 
@@ -236,10 +250,13 @@ dev 依赖已无 `black`；`scripts/rewrite_imports.py` 已删除。
 
 ---
 
-## 4. 下一步行动
+## 4. 行动计划存档（已全部执行）
 
-> 优先级与依赖关系基于上述事实；「依赖」列只写真实的前置关系，无前置则写「无」。
-> 验收标准均为可执行的检查，不引入新的架构设想。
+> 本节保留首次复核后制定的行动计划与验收标准；各行动项的完成情况见第 2 节最终状态表。
+> 提交顺序：`a2fcd7e` → `3630bcf` → `8c93424` → `b9089c6` → `bcc7f74` → `8555e36` →
+> `db9640d` → `a668daa` → `dde243d` → `8579c22`（每项独立验证后提交推送）。
+>
+> 优先级与依赖关系基于复核时的事实；「依赖」列只写真实的前置关系，无前置则写「无」。
 
 ### 执行顺序
 
@@ -291,7 +308,7 @@ dev 依赖已无 `black`；`scripts/rewrite_imports.py` 已删除。
 | --- | --- |
 | 全量测试 / ruff / mypy | `uv run pytest -q`；`uv run ruff check src tests examples scripts`；`uv run mypy` |
 | 覆盖率与基线 | `uv run pytest --cov=sllkgui --cov-report=term` |
-| showcase 归因异常 | `uv run pytest tests/test_showcase.py::test_showcase_pages_direct_build --cov=sllkgui.showcase.core_preview.surfaces.data --cov-report=term-missing -q` 对比 `uv run pytest tests/test_showcase.py --cov=sllkgui.showcase.core_preview.surfaces.data -q` |
+| showcase 归因（已修复） | `uv run pytest tests/test_showcase.py::test_showcase_loads_ten_surfaces --cov=sllkgui --cov-report=term-missing -q`：各 `page.py` 应为 77–100%；`tests/test_plugin_module_naming.py` 锁定规范名白名单 |
 | appcore 不拉 Qt | `uv run python -c "import sys,sllkgui.appcore; print('PySide6.QtGui' in sys.modules)"` |
 | 公开名数量 | `python -c "import ast,pathlib; ..."`（统计 `__all__` 长度） |
 | 分层依赖 | `python -m pytest tests/test_architecture_boundaries.py -q`；读 `ALLOWED_EDGES` |
