@@ -302,6 +302,29 @@ class GallerySettings(ABC):
         """
 
 
+class GalleryStorage(ABC):
+    """插件契约化 KV 存储：只能读写清单 ``data:`` 中声明的键。
+
+    值落在插件 ``data_dir/<key>.json``，由基座原子写；卸载保留磁盘数据，
+    删除插件（purge）时一并清除。未声明的键抛 ``PLUGIN_STORAGE_KEY_UNDECLARED``。
+    """
+
+    @abstractmethod
+    def get(self, key: str, default: Any = None) -> Any: ...
+
+    @abstractmethod
+    def set(self, key: str, value: Any) -> bool: ...
+
+    @abstractmethod
+    def delete(self, key: str) -> bool: ...
+
+    @abstractmethod
+    def keys(self) -> tuple[str, ...]: ...
+
+    @abstractmethod
+    def path(self, key: str) -> Path: ...
+
+
 class GalleryContext(ABC):
     """插件运行上下文：所有基座能力都从这里进入。"""
 
@@ -376,6 +399,11 @@ class GalleryContext(ABC):
     def settings(self) -> GallerySettings:
         """统一设置能力：声明页面、读取 / 写入本插件配置。"""
 
+    @property
+    @abstractmethod
+    def storage(self) -> GalleryStorage:
+        """契约化 KV 存储：只能读写清单 ``data:`` 声明的键。"""
+
 
 class Plugin(ABC):
     """插件基类。唯一合法入口是模块级 ``PLUGIN`` 实例。"""
@@ -398,6 +426,7 @@ class Plugin(ABC):
 __all__ = [
     "GalleryContext",
     "GallerySettings",
+    "GalleryStorage",
     "GalleryShortcut",
     "GalleryShortcuts",
     "GalleryTray",

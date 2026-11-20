@@ -262,6 +262,15 @@ def _check_manifest(root: Path, report: LintReport) -> None:
                     f"Surface {surface.surface_id} 的实现文件不存在: {surface.impl}",
                 )
             )
+    for spec in manifest.data:
+        if spec.path and not (root / spec.path).is_file():
+            report.errors.append(
+                LintIssue(
+                    "error",
+                    "DATA_TEMPLATE_NOT_FOUND",
+                    f"存储键 {spec.key} 的数据模板不存在: {spec.path}",
+                )
+            )
 
 
 def _check_telemetry(root: Path, report: LintReport) -> None:

@@ -35,6 +35,7 @@ from .errors import (
 )
 
 __all__ = [
+    "DataSpec",
     "DependencySpec",
     "PluginManifest",
     "SurfaceSpec",
@@ -75,6 +76,19 @@ class DependencySpec:
 
 
 @dataclass(frozen=True)
+class DataSpec:
+    """契约化存储的一个键声明。
+
+    ``key`` 是 ``ctx.storage`` 使用的短键；``path`` 可选，指向插件仓库内的
+    初始数据模板（由 lint 校验存在性），不填表示键存在但无初始内容。
+    """
+
+    key: str
+    path: str = ""
+    description: str = ""
+
+
+@dataclass(frozen=True)
 class PluginManifest:
     schema: int
     api: int
@@ -92,6 +106,7 @@ class PluginManifest:
     python_dependencies: tuple[str, ...] = ()
     surfaces: tuple[SurfaceSpec, ...] = ()
     dependencies: tuple[DependencySpec, ...] = ()
+    data: tuple[DataSpec, ...] = ()
     permissions: tuple[Permission, ...] = ()
     manifest_sha256: str = ""
     warnings: tuple[str, ...] = field(default_factory=tuple)
@@ -266,6 +281,35 @@ def _parse_python_dependencies(value: Any) -> tuple[str, ...]:
     return tuple(result)
 
 
+def _parse_data(value: Any, root: Path) -> tuple[DataSpec, ...]:
+    """解析 ``data:`` 契约化存储键声明。"""
+    if value is None:
+        return ()
+    if not isinstance(value, list):
+        raise GalleryError(PLUGIN_MANIFEST_INVALID, "data 必须是列表")
+    result: list[DataSpec] = []
+    for item in value:
+        if not isinstance(item, dict):
+            raise GalleryError(PLUGIN_MANIFEST_INVALID, "data 条目必须是映射")
+        key = str(item.get("key") or "").strip()
+        if not _ID_RE.match(key):
+            raise GalleryError(PLUGIN_MANIFEST_INVALID, f"非法 data 键: {key!r}")
+        if any(existing.key == key for existing in result):
+            raise GalleryError(PLUGIN_MANIFEST_INVALID, f"重复的 data 键: {key!r}")
+        path = str(item.get("path") or "").strip()
+        if path:
+            # 只做越界校验；存在性由 lint 的 DATA_TEMPLATE_NOT_FOUND 检查
+            ensure_within(root, path)
+        result.append(
+            DataSpec(
+                key=key,
+                path=path,
+                description=str(item.get("description") or "").strip(),
+            )
+        )
+    return tuple(result)
+
+
 def _parse_permissions(value: Any) -> tuple[Permission, ...]:
     if value is None:
         return ()
@@ -367,6 +411,7 @@ def load_manifest(path: Path, *, current_sllkgui: str | None = None) -> PluginMa
         python_dependencies=_parse_python_dependencies(data.get("python_dependencies")),
         surfaces=surfaces,
         dependencies=_parse_dependencies(data.get("dependencies")),
+        data=_parse_data(data.get("data"), root),
         permissions=_parse_permissions(data.get("permissions")),
         manifest_sha256=hashlib.sha256(raw.replace(b"\r\n", b"\n")).hexdigest(),
         warnings=tuple(warnings),

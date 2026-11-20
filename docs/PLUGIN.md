@@ -170,6 +170,26 @@ from . import helpers`）。若确实需要加载插件目录下的文件，用 
 | `tray` | 基座常驻托盘的分组动作：槽 + 次序 + 文案（形态由基座裁决，见 `docs/TRAY.md`） |
 | `shortcuts` | 基座快捷键表：注册/更新/注销、启停与冲突查询（见 `docs/SHORTCUTS.md`） |
 | `settings` | 统一设置：声明页面、读写本插件配置（见 `docs/SETTINGS.md`） |
+| `storage` | 契约化 KV 存储：读写清单 `data:` 声明的键，落 `data_dir`，删插件时清除 |
+
+### 契约化存储
+
+在清单声明键，运行时用 `ctx.storage` 读写；未声明的键抛 `PLUGIN_STORAGE_KEY_UNDECLARED`：
+
+```yaml
+data:
+  - key: notes_index        # ctx.storage.get("notes_index")
+    path: data/notes.json   # 可选：仓库内的初始模板，lint 校验存在性
+    description: 索引缓存
+```
+
+```python
+ctx.storage.set("notes_index", {"count": 1})
+count = ctx.storage.get("notes_index", {}).get("count", 0)
+```
+
+值落在 `ctx.data_dir/<key>.json`，由基座原子写（`.bak` 回退）。卸载（reload/shutdown）保留数据，
+显式删除插件时随 `purge` 一并清除；与 `settings` 的用户数据保留语义一致。
 
 ## 5. 托盘动作
 

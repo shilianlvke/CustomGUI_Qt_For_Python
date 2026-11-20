@@ -123,6 +123,7 @@ files = [
     "src/sllkgui/gallery/context.py",
     "src/sllkgui/gallery/errors.py",
     "src/sllkgui/gallery/manifest.py",
+    "src/sllkgui/gallery/storage.py",
     "src/sllkgui/appcore/settings",
     "src/sllkgui/appcore/user_settings.py",
     "src/sllkgui/guicore/callbacks.py",
