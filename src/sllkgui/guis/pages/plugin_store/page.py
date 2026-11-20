@@ -51,7 +51,7 @@ class _Stat(QWidget):
     def __init__(self, caption: str, parent=None) -> None:
         super().__init__(parent)
         column = QVBoxLayout(self)
-        column.setContentsMargins(0, 0, 0, 0)
+        column.setContentsMargins(14, 0, 14, 0)
         column.setSpacing(1)
         self.caption = label("muted", caption, pixel_size=9)
         self.value = label("title", "0", pixel_size=17, weight="semibold", mono=True)
@@ -145,7 +145,8 @@ class StorePage(QWidget):
         hero_row.addLayout(titles, 1)
 
         stats = QHBoxLayout()
-        stats.setContentsMargins(0, 0, 0, 0)
+        # 与标题块的下沿对齐：上方留 12px，避免统计值贴住页头边缘。
+        stats.setContentsMargins(0, 12, 0, 0)
         stats.setSpacing(0)
         self.stat_installed = _Stat(self.ctx.text("stats.installed", "已安装"))
         self.stat_enabled = _Stat(self.ctx.text("stats.enabled", "启用中"))
@@ -664,12 +665,11 @@ class StorePage(QWidget):
         if isinstance(previous, dict) and previous.get("version"):
             items.append((self.ctx.text("detail.previous", "上一版本"), f"v{previous.get('version')}", True))
         compliance = record.get("compliance")
-        if compliance not in (None, ""):
-            key = f"compliance.{compliance}"
+        if compliance == 1:
             items.append(
                 (
                     self.ctx.text("detail.compliance", "合规级别"),
-                    self.ctx.text(key, str(compliance)),
+                    self.ctx.text("compliance.verified", "已校验"),
                     False,
                 )
             )

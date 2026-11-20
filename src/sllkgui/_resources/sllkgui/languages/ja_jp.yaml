@@ -333,6 +333,16 @@ plugin_store:
   compliance:
     verified: 検証済み
     community: コミュニティ
+  permissions:
+    system:
+      info: システム情報の読み取り
+    filesystem:
+      read: ファイルの読み取り
+      write: ファイルへの書き込み
+    network: ネットワークへのアクセス
+    tray: トレイアイコンの作成
+    notifications: 通知の送信
+    shortcuts: ショートカットの登録
   installed:
     filter: プラグインを絞り込む…
     update: 更新

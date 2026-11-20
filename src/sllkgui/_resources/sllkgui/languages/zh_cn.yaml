@@ -333,6 +333,16 @@ plugin_store:
   compliance:
     verified: 已校验
     community: 社区维护
+  permissions:
+    system:
+      info: 读取系统信息
+    filesystem:
+      read: 读取文件
+      write: 写入文件
+    network: 访问网络
+    tray: 创建托盘图标
+    notifications: 发送通知
+    shortcuts: 注册快捷键
   installed:
     filter: 过滤插件…
     update: 更新

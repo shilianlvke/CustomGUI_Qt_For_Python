@@ -350,7 +350,8 @@ def permission_block(permissions: list[str], ctx: PageContext) -> QWidget:
     grid.setHorizontalSpacing(6)
     grid.setVerticalSpacing(6)
     for index, permission in enumerate(permissions):
-        grid.addWidget(chip(str(permission)), index // 3, index % 3)
+        label_text = ctx.text(f"permissions.{permission}", str(permission))
+        grid.addWidget(chip(label_text), index // 3, index % 3)
     grid.setColumnStretch(3, 1)
     column.addLayout(grid)
     return host

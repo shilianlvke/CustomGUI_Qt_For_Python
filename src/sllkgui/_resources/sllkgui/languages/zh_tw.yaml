@@ -333,6 +333,16 @@ plugin_store:
   compliance:
     verified: 已驗證
     community: 社群維護
+  permissions:
+    system:
+      info: 讀取系統資訊
+    filesystem:
+      read: 讀取檔案
+      write: 寫入檔案
+    network: 存取網路
+    tray: 建立系統匣圖示
+    notifications: 傳送通知
+    shortcuts: 註冊快速鍵
   installed:
     filter: 篩選外掛…
     update: 更新

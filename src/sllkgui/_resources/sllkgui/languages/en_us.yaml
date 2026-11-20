@@ -333,6 +333,16 @@ plugin_store:
   compliance:
     verified: Verified
     community: Community
+  permissions:
+    system:
+      info: Read system info
+    filesystem:
+      read: Read files
+      write: Write files
+    network: Access network
+    tray: Create tray icon
+    notifications: Send notifications
+    shortcuts: Register shortcuts
   installed:
     filter: Filter plugins…
     update: Update
