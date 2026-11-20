@@ -90,6 +90,13 @@
 | EXT-10 | S4 | MANUAL_QA 遗留视觉缺陷与 `paintEvent` 性能优化 | `docs/MANUAL_QA.md` `guicore/` | 视觉基线复核 | 计划中 |
 | EXT-11 | S4 | Win32 亚克力开关、Win10/RDP 回退、多显示器、高 DPI 人工验收矩阵 | `docs/MANUAL_QA.md:468-475` | Windows 真机发布前 | 计划中 |
 | EXT-12 | S4 | `appcore` 去 Qt 依赖 / 轻量 doctor、PyInstaller 冻结形态端到端验证、PyPI 发布路径 | `appcore/sysx/common/static_func.py` `src/sllkgui/window.py` `scripts/build_package.py` | 跨平台与正式发布 | 部分修复（3.0.0：`appcore` 已不 import PySide6，圆角位图下沉到 `guicore`，并加守卫测试；冻结形态与发布路径仍未做） |
+| EXT-13 | S1 | 契约化 KV 存储 `ctx.storage`（manifest 数据声明 + 删除时 purge） | `gallery/storage.py` `gallery/api.py` `gallery/manifest.py` `docs/PLUGIN.md` | 本轮排期 | 排期中 |
+| EXT-14 | S1 | Surface 导航生命周期钩子 `on_surface_enter/leave` | `gallery/api.py` `gallery/window.py` `docs/PLUGIN.md` | 本轮排期 | 排期中 |
+| EXT-15 | S2 | 插件级事件总线 `ctx.events`（owner 维度、卸载逐 owner 注销） | `gallery/events.py` `gallery/runtime.py` `gallery/loader.py` | 本轮排期 | 排期中 |
+| EXT-16 | S3 | 插件服务注册表 `ctx.services`（owner-token、复用 `dependencies` 表达消费关系） | `gallery/services.py` `gallery/runtime.py` `gallery/loader.py` | 本轮排期 | 排期中 |
+| EXT-17 | S4 | 导航拦截 / 装饰钩子（拦截路由跳转、贡献面包屑） | `gallery/window.py` `docs/PLUGIN.md` | 出现明确的"未保存时拦截离开"等诉求 | 计划中（本轮零代码，仅登记编号与触发条件） |
+
+> EXT-13..EXT-16 按 B2→B5 分批实施，完成后回填状态；EXT-01 与 EXT-17 本轮不实现，仅保留触发条件。
 
 ## 5. 优先级与顺序
 

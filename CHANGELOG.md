@@ -7,6 +7,24 @@ minor 与 patch 保持向后兼容。
 
 ---
 
+## 待发布（插件协议能力扩展）
+
+> 本节登记协议层破坏性变更与新增能力；正式版本号（major bump）在发版时统一决定，
+> 本轮不改 `src/sllkgui/_version.py`。
+
+### 破坏性变更
+
+| 变更 | 说明 | 迁移方式 |
+| --- | --- | --- |
+| 插件清单 `api: 1 → 2` | `PLUGIN_API_VERSION` 与 `SUPPORTED_API` 升到 2，只保留最新协议；`api: 1` 清单被拒，不做多版本兼容探测 | 把清单与源条目的 `api` 字段改为 `2` |
+
+### 新增
+
+- `ctx.storage`：契约化 KV 存储，键须在清单 `data:` 中声明，落插件 `data_dir`，删插件时随 `purge` 清除。
+- `on_surface_enter` / `on_surface_leave`：Surface 导航生命周期可选钩子，切页与页面销毁时成对触发。
+- `ctx.events`：插件级事件总线，按 owner 注销，卸载/重载后不留悬空回调。
+- `ctx.services`：进程内服务注册表，服务名默认为提供者的 `plugin_id`，消费关系复用 `dependencies`。
+
 ## 3.0.0（2026-11-19）
 
 基座自身的架构、逻辑与代码质量重构。本版**只面向基座作者**，插件作者无需改动既有

@@ -102,6 +102,7 @@ exclude_lines = [
 # 纳入范围 = 公开门面 + 插件协议 + 设置协议 + 用户配置存储：
 #   - sllkgui.plugin / sllkgui.window：插件与宿主作者的唯一入口
 #   - gallery.api / manifest / context / errors：插件协议本身
+#   - gallery.storage / events / services：插件协议新增能力（随实现批次加入 files）
 #   - appcore.settings：插件声明设置页用的 schema
 #   - appcore.user_settings / config.py：用户配置的读写契约
 #   - guicore.callbacks / task：插件可用的异步与回调工具
