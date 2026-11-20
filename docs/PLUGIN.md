@@ -165,6 +165,7 @@ from . import helpers`）。若确实需要加载插件目录下的文件，用 
 | `logger` | 标准库 `logging.Logger`，已桥接基座 |
 | `event(name, payload=None, level="info")` | 基座遥测（单向上报，无订阅） |
 | `events` | 插件级事件总线：按主题订阅/广播，payload 带 `from` 来源（见下） |
+| `services` | 进程内服务注册表：按 name 注册/解析服务，默认名是插件 ID（见下） |
 | `timing(name, payload=None)` | 上下文计时，自动记录 `duration_ms` |
 | `report_error(code, message, detail=None)` | 日志 + 遥测 + 非阻塞错误提示 |
 | `parent_window()` | Gallery 主窗口（对话框父级） |
@@ -220,6 +221,21 @@ unsub = ctx.events.subscribe("library.updated", lambda topic, payload: refresh(p
 ```
 
 仅在本进程内分发，无跨进程协议（见「当前不支持的能力」）。
+
+### 插件服务注册表
+
+`ctx.services` 让插件按名字提供服务，其它插件解析。服务名默认是提供者的 `plugin_id`，
+冒名（用别的 name 注册）与重名异主均被拒；消费关系用清单 `dependencies` 表达
+（基座据此决定加载顺序、阻止卸载被依赖的插件）。插件卸载或重载时基座自动注销其全部服务。
+
+```python
+# 插件 A（provider）：提供数据源
+ctx.services.register(DataStore(...))       # 名字默认为本插件 ID
+# 插件 B（consumer）：清单 dependencies 声明 provider 的 id
+store = ctx.services.get("com.example.provider")
+```
+
+仅在本进程内可见，无跨进程服务发现（见「当前不支持的能力」）。
 
 ## 5. 托盘动作
 

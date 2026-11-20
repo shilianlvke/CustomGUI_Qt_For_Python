@@ -32,6 +32,7 @@ from .errors import PLUGIN_LOAD_FAILED, PLUGIN_SURFACE_IMPL_MISSING, GalleryErro
 from .events import PluginEventBus
 from .manifest import PluginManifest, ensure_within, load_manifest
 from .registry import GalleryRegistry, PluginRecord, sanitize_route
+from .services import PluginServiceRegistry
 from .store import GalleryStore
 from .tray import TrayService
 
@@ -229,6 +230,7 @@ def load_plugin(
     tray: TrayService | None = None,
     shortcuts: Any | None = None,
     events: PluginEventBus | None = None,
+    services: PluginServiceRegistry | None = None,
 ) -> PluginRecord | None:
     """加载单个插件；失败只记录，不影响调用方。"""
     root = Path(path).resolve()
@@ -291,6 +293,7 @@ def load_plugin(
         tray=tray,
         shortcuts=shortcuts,
         events=events,
+        services=services,
     )
     record = PluginRecord(
         manifest=manifest,
@@ -326,6 +329,7 @@ def load_plugin(
         for name in {*module_names, *_modules_under(root)}:
             sys.modules.pop(name, None)
         context.clear_events()
+        context.clear_services()
         context.clear_tray()
         context.clear_shortcuts()
         context.clear_settings()
@@ -336,6 +340,7 @@ def load_plugin(
         for name in {*module_names, *_modules_under(root)}:
             sys.modules.pop(name, None)
         context.clear_events()
+        context.clear_services()
         context.clear_tray()
         context.clear_shortcuts()
         context.clear_settings()
@@ -351,6 +356,7 @@ def unload_plugin(record: PluginRecord) -> None:
         Logger.warning(f"插件卸载钩子失败: {record.plugin_id}: {exc}")
     if record.context is not None:
         record.context.clear_events()
+        record.context.clear_services()
         record.context.clear_tray()
         # 快捷键先于模块清理：回调对象随条目一起释放，避免留下悬空引用
         record.context.clear_shortcuts()

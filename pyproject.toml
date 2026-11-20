@@ -125,6 +125,7 @@ files = [
     "src/sllkgui/gallery/manifest.py",
     "src/sllkgui/gallery/storage.py",
     "src/sllkgui/gallery/events.py",
+    "src/sllkgui/gallery/services.py",
     "src/sllkgui/appcore/settings",
     "src/sllkgui/appcore/user_settings.py",
     "src/sllkgui/guicore/callbacks.py",

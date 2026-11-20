@@ -17,6 +17,7 @@ from sllkgui.appcore import Language, Logger, get_theme_manager, record_event, t
 from .api import (
     GalleryContext,
     GalleryEvents,
+    GalleryServices,
     GallerySettings,
     GalleryShortcuts,
     GalleryStorage,
@@ -27,6 +28,7 @@ from .defaults import MAX_EVENT_BYTES
 from .errors import PLUGIN_PERMISSION_DENIED, GalleryError
 from .events import EventHandle, PluginEventBus
 from .manifest import PluginManifest, ensure_within
+from .services import PluginServiceRegistry, ServiceHandle
 from .settings import PluginSettings
 from .shortcuts import ShortcutBridge
 from .storage import PluginStorage
@@ -54,6 +56,25 @@ class _NoopEvents(GalleryEvents):
 
 
 _NOOP_EVENTS = _NoopEvents()
+
+
+class _NoopServices(GalleryServices):
+    """未注入服务注册表时的降级实现。"""
+
+    def register(self, service, *, name=None):
+        return False
+
+    def get(self, name):
+        return None
+
+    def has(self, name):
+        return False
+
+    def unregister(self, name):
+        pass
+
+
+_NOOP_SERVICES = _NoopServices()
 
 
 def _flatten(data: Any, prefix: str = "") -> dict[str, str]:
@@ -98,6 +119,7 @@ class GalleryContextImpl(GalleryContext):
         tray: TrayService | None = None,
         shortcuts: Any | None = None,
         events: PluginEventBus | None = None,
+        services: PluginServiceRegistry | None = None,
     ) -> None:
         self._manifest = manifest
         self._store = store
@@ -119,6 +141,7 @@ class GalleryContextImpl(GalleryContext):
         self._settings = PluginSettings(manifest.plugin_id)
         self._storage = PluginStorage(manifest, self.data_dir)
         self._event_handle: EventHandle | None = events.handle(manifest.plugin_id) if events else None
+        self._service_handle: ServiceHandle | None = services.handle(manifest.plugin_id) if services else None
         self._record = None
         self._prefix = f"[plugin:{manifest.plugin_id}@{manifest.version}]"
         self._logger_name = f"sllkgui.plugin.{manifest.plugin_id}"
@@ -218,6 +241,19 @@ class GalleryContextImpl(GalleryContext):
                 self._event_handle.clear()
             except Exception as exc:  # noqa: BLE001 - 清理失败不影响卸载
                 Logger.debug(f"{self._prefix} 事件订阅清理失败: {exc}")
+
+    @property
+    def services(self) -> GalleryServices:
+        """进程内服务注册表；未注入时为安全空操作。"""
+        return self._service_handle if self._service_handle is not None else _NOOP_SERVICES
+
+    def clear_services(self) -> None:
+        """卸载时注销本插件注册的全部服务。"""
+        if self._service_handle is not None:
+            try:
+                self._service_handle.clear()
+            except Exception as exc:  # noqa: BLE001 - 清理失败不影响卸载
+                Logger.debug(f"{self._prefix} 服务清理失败: {exc}")
 
     def clear_settings(self) -> None:
         """卸载时移除页面与变更订阅（磁盘配置保留）。"""

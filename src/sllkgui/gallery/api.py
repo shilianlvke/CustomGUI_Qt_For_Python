@@ -341,6 +341,30 @@ class GalleryEvents(ABC):
         """广播主题事件。"""
 
 
+class GalleryServices(ABC):
+    """插件服务注册表：按 name 注册/解析本进程内的服务对象。
+
+    服务名默认是提供者的 plugin_id；冒名（用别的 name 注册）被拒。消费关系
+    用清单 ``dependencies`` 表达。仅本进程内可见，无跨进程协议。
+    """
+
+    @abstractmethod
+    def register(self, service: Any, *, name: str | None = None) -> bool:
+        """注册服务；名称缺省为 owner，重名异主返回 False。"""
+
+    @abstractmethod
+    def get(self, name: str) -> Any | None:
+        """解析服务；未注册返回 None。"""
+
+    @abstractmethod
+    def has(self, name: str) -> bool:
+        """服务是否已注册。"""
+
+    @abstractmethod
+    def unregister(self, name: str) -> None:
+        """注销自己注册的服务（非 owner 的调用无效）。"""
+
+
 class GalleryContext(ABC):
     """插件运行上下文：所有基座能力都从这里进入。"""
 
@@ -425,6 +449,11 @@ class GalleryContext(ABC):
     def events(self) -> GalleryEvents:
         """插件级事件总线：订阅主题与广播（与单向遥测 ``event`` 不同）。"""
 
+    @property
+    @abstractmethod
+    def services(self) -> GalleryServices:
+        """进程内服务注册表：按 name 注册/解析服务对象。"""
+
 
 class Plugin(ABC):
     """插件基类。唯一合法入口是模块级 ``PLUGIN`` 实例。"""
@@ -457,6 +486,7 @@ class Plugin(ABC):
 __all__ = [
     "GalleryContext",
     "GalleryEvents",
+    "GalleryServices",
     "GallerySettings",
     "GalleryStorage",
     "GalleryShortcut",

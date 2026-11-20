@@ -23,6 +23,7 @@ from .events import PluginEventBus
 from .loader import discover_plugin_dirs, load_plugin, refresh_language_namespace, unload_all
 from .manager import PluginManager
 from .registry import GalleryRegistry, PluginRecord, set_current_registry
+from .services import PluginServiceRegistry
 from .source import SourceManager
 from .state import RegistryState, SourcesState, load_registry, load_sources
 from .store import GalleryStore
@@ -73,6 +74,7 @@ class GalleryRuntime:
         self.registry = GalleryRegistry()
         self.tray = TrayService()
         self.events = PluginEventBus()
+        self.services = PluginServiceRegistry()
         self.registry_state: RegistryState = RegistryState(base_version=sllkgui.__version__)
         self.sources_state: SourcesState = SourcesState()
         self.sources: SourceManager | None = None
@@ -145,6 +147,7 @@ class GalleryRuntime:
                     tray=self.tray,
                     shortcuts=self.shortcuts,
                     events=self.events,
+                    services=self.services,
                 )
                 if record is not None:
                     self.records.append(record)
@@ -252,6 +255,7 @@ class GalleryRuntime:
         if clear_registry:
             self.registry.clear()
             self.events.clear()
+            self.services.clear()
             set_current_registry(None)
             set_current_runtime(None)
         Logger.info("Gallery 已关闭")
