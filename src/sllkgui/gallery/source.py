@@ -274,10 +274,7 @@ def _parse_entry(path: Path, source_id: str) -> PluginEntry:
             continue
         versions.append(_parse_version(item))
     if skipped:
-        Logger.warning(
-            f"源条目跳过 {skipped} 个不兼容版本: {plugin_id} "
-            f"(当前支持 api {sorted(SUPPORTED_API)})"
-        )
+        Logger.warning(f"源条目跳过 {skipped} 个不兼容版本: {plugin_id} (当前支持 api {sorted(SUPPORTED_API)})")
     if not versions:
         raise GalleryError(SOURCE_INVALID, f"{plugin_id} 没有兼容当前基座的版本记录")
     categories = data.get("categories") or []
