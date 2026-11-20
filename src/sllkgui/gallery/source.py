@@ -262,7 +262,24 @@ def _parse_entry(path: Path, source_id: str) -> PluginEntry:
     versions_raw = data.get("versions")
     if not isinstance(versions_raw, list) or not versions_raw:
         raise GalleryError(SOURCE_INVALID, f"{plugin_id} 没有版本记录")
-    versions = tuple(_parse_version(item) for item in versions_raw)
+    # 源条目常保留旧协议的历史版本。基座只支持当前 SUPPORTED_API，
+    # 但不能因为一条历史版本就丢弃整个插件条目——否则新版条目也装不上。
+    # 这里按版本过滤：不兼容的版本记录 warning 后跳过，其它版本照常索引。
+    versions: list[VersionEntry] = []
+    skipped = 0
+    for item in versions_raw:
+        raw_api = item.get("api", PLUGIN_API_VERSION) if isinstance(item, dict) else PLUGIN_API_VERSION
+        if raw_api not in SUPPORTED_API:
+            skipped += 1
+            continue
+        versions.append(_parse_version(item))
+    if skipped:
+        Logger.warning(
+            f"源条目跳过 {skipped} 个不兼容版本: {plugin_id} "
+            f"(当前支持 api {sorted(SUPPORTED_API)})"
+        )
+    if not versions:
+        raise GalleryError(SOURCE_INVALID, f"{plugin_id} 没有兼容当前基座的版本记录")
     categories = data.get("categories") or []
     if not isinstance(categories, list) or not categories:
         raise GalleryError(SOURCE_INVALID, f"{plugin_id} 缺少 categories")

@@ -51,6 +51,29 @@ def test_bad_entry_is_skipped(tmp_path: Path):
     assert "com.example.hello" in index.entries
 
 
+def test_legacy_api_versions_skipped_but_entry_kept(tmp_path: Path):
+    """条目含旧 api 版本时不应整条丢弃，兼容版本仍可被索引与安装。"""
+    import yaml
+
+    manager, _plugin, commit = _prepared_source(tmp_path)
+    root = manager.store.source_path("test")
+    entry_path = root / "plugins" / "com.example.hello" / "entry.yaml"
+    entry = yaml.safe_load(entry_path.read_text(encoding="utf-8"))
+    legacy = dict(entry["versions"][0])
+    legacy["version"] = "0.9.0"
+    legacy["ref"] = "v0.9.0"
+    legacy["api"] = 1
+    entry["versions"].append(legacy)
+    entry_path.write_text(yaml.safe_dump(entry, allow_unicode=True), encoding="utf-8")
+
+    manager.refresh("test")
+    index = manager.index()
+    assert "com.example.hello" in index.entries
+    versions = {item.version for item in index.entries["com.example.hello"][0].versions}
+    assert versions == {"1.0.0"}
+    assert index.entries["com.example.hello"][0].latest().version == "1.0.0"
+
+
 def test_source_info_and_remove(tmp_path: Path):
     manager, _plugin, _commit = _prepared_source(tmp_path)
     info = manager.info("test")
