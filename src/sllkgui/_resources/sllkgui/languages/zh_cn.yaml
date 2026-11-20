@@ -5,7 +5,7 @@ custom_ui:
   sys_author_email: 1352161062@qq.com
   sys_copyright: SllkGUI · 基于 PySide6 的开源 UI 基座
   sys_description: SllkGUI 是一个基于 PySide6 的通用 UI 基座，提供窗口框架、组件库、主题、语言与插件加载。
-  sys_license: MulanPSL-2.0
+  sys_license: MIT
   sys_github: https://gitee.com/shilianlvke/SllkGui
 PAGE: {}
 UI:

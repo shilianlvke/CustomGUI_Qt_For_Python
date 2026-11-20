@@ -77,7 +77,7 @@ def test_overlay_languages_have_no_brand_fields(language):
     custom_ui = data.get("custom_ui") or {}
     assert custom_ui.get("sys_name") == "SllkGUI"
     assert custom_ui.get("sys_author") == "shilianlvke"
-    assert custom_ui.get("sys_license") == "MulanPSL-2.0"
+    assert custom_ui.get("sys_license") == "MIT"
     # 不得出现应用名/应用专属文案
     blob = yaml.safe_dump(data, allow_unicode=True)
     for brand in ("PyCL2", "pycl2", "Minecraft", "启动器", "啟動器", "ランチャー"):

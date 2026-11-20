@@ -18,6 +18,7 @@ minor 与 patch 保持向后兼容。
 | 插件清单 `api: 1 → 2` | `PLUGIN_API_VERSION` 与 `SUPPORTED_API` 升到 2，只保留最新协议；`api: 1` 清单被拒，不做多版本兼容探测 | 把清单与源条目的 `api` 字段改为 `2` |
 | `requires.sllkgui` 区间改为 `>=4.0.0,<5.0.0` | 基座升到 4.0，旧的 `<4.0.0` 上界会被拒绝 | 把清单里的区间改成新值 |
 | 移除发布流水线与发布脚本 | 删除 `.workflow/ReleasePipeline.yml` 及 `publish_gitee_release.py` / `release_base.py` / `archive_dist.py` / `build_package.py`；dev 依赖去掉 `pyinstaller` / `twine` | 用户侧只需 Launcher（拉 `base-v*` tag 或 `main` 自行初始化启动）；贡献者发版改为「改版本号 + 打 tag + 推送」，见 `docs/contributing.md` |
+| 许可证由 MulanPSL-2.0 改为 MIT | `LICENSE`、包元数据、界面展示的 `sys_license` 与内置 showcase 清单同步为 MIT；版权声明保留为 `Copyright (c) 2026 shilianlvke` | 原 MulanPSL-2.0 下已分发的副本继续受原许可约束；新版本采用 MIT。MIT 不含 MulanPSL-2.0 的明确专利授权与专利报复条款，集成方如有专利顾虑请自行评估 |
 
 ### 新增
 

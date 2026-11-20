@@ -5,7 +5,7 @@ id: com.sllkgui.showcase.core_preview
 name: SllkGUI Core Preview
 version: 3.0.0
 description: 基座内置组件预览，仅在 sllkgui gallery 模式加载
-license: MulanPSL-2.0
+license: MIT
 entry: plugin.py
 
 requires:

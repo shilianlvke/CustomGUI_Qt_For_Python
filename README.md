@@ -47,4 +47,4 @@ CLI 还提供插件源与插件管理（`source` / `plugin` 子命令）、插�
 - [插件协议](docs/PLUGIN.md) · [设置系统](docs/SETTINGS.md) · [托盘](docs/TRAY.md) · [快捷键](docs/SHORTCUTS.md)
 - [更新日志](CHANGELOG.md) · [许可证](LICENSE)
 
-本项目使用 [MulanPSL-2.0](LICENSE) 许可证，欢迎通过 issue / PR 贡献。
+本项目使用 [MIT](LICENSE) 许可证，欢迎通过 issue / PR 贡献。

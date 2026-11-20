@@ -1,12 +1,12 @@
 # システム情報
-# 訳出元: SllkGUI 用語集（MulanPSL-2.0）、zh_cn.yaml とキーを 1 対 1 で対応
+# 訳出元: SllkGUI 用語集（MIT）、zh_cn.yaml とキーを 1 対 1 で対応
 custom_ui:
   sys_name: SllkGUI
   sys_author: shilianlvke
   sys_author_email: 1352161062@qq.com
   sys_copyright: SllkGUI · PySide6 ベースのオープンソース UI 基盤
   sys_description: SllkGUI は PySide6 ベースの汎用 UI 基盤です。ウィンドウシェル、コンポーネントライブラリ、テーマ、多言語、プラグイン読み込みを提供します。
-  sys_license: MulanPSL-2.0
+  sys_license: MIT
   sys_github: https://gitee.com/shilianlvke/SllkGui
 PAGE: {}
 UI:

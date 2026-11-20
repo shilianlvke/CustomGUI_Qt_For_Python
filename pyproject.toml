@@ -7,7 +7,7 @@ name = "sllkgui"
 dynamic = ["version"]
 description = "基于 PySide6 的开源 UI 基座：窗口框架、组件库、主题、语言与插件加载"
 readme = "README.md"
-license = "MulanPSL-2.0"
+license = "MIT"
 license-files = ["LICENSE"]
 requires-python = ">=3.12"
 authors = [{ name = "SllkGUI Contributors" }]
