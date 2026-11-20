@@ -38,9 +38,7 @@ dev = [
     "mypy>=1.13",
     "ruff>=0.11.2",
     "pre-commit>=3.8",
-    "pyinstaller>=6.22.3",
     "build>=1.2",
-    "twine>=5.1",
 ]
 
 [project.urls]
