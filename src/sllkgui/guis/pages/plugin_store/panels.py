@@ -14,6 +14,7 @@ from sllkgui.guicore import (
     CSelectButton,
 )
 
+from .dialogs import _PluginDetailDialog, _SourceDetailDialog
 from .entries import _build_entry
 
 if TYPE_CHECKING:  # pragma: no cover - 仅类型检查，避免与 page.py 循环导入
@@ -112,7 +113,7 @@ class _InstalledPanel(_StorePanel):
         self._apply_filter()
 
     def _open_detail(self, record: dict[str, Any]) -> None:
-        self.page.show_detail(record, kind="installed", installed=True)
+        _PluginDetailDialog(self.page, record, installed=True).open()
 
 
 class _DiscoverPanel(_StorePanel):
@@ -214,7 +215,7 @@ class _DiscoverPanel(_StorePanel):
         self.page._set_plugin_enabled(plugin_id, enabled)
 
     def _open_detail(self, record: dict[str, Any]) -> None:
-        self.page.show_detail(record, kind="discover", installed=bool(record.get("installed")))
+        _PluginDetailDialog(self.page, record, installed=bool(record.get("installed"))).open()
 
     def _refresh_sources(self) -> None:
         self.page._refresh_sources()
@@ -275,7 +276,7 @@ class _SourcesPanel(_StorePanel):
         self.page._set_source_enabled(source_id, enabled)
 
     def _open_detail(self, record: dict[str, Any]) -> None:
-        self.page.show_detail(record, kind="sources")
+        _SourceDetailDialog(self.page, record).open()
 
 
 # ----------------------------------------------------------------------
