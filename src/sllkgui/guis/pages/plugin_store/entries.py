@@ -60,8 +60,13 @@ def label(
 
 
 def elided(role: str, text: str, *, pixel_size: int, weight: str = "regular") -> CElidedLabel:
-    """单行省略文本；行内标题/简介用它，避免长 ID 把开关挤出去。"""
+    """单行省略文本；行内标题/简介用它，避免长 ID 把开关挤出去。
+
+    行内标签必须关闭文字选择：``QLabel`` 一旦接受鼠标选择就会吞掉点击，
+    导致整行无法被选中（检查器里的值仍保留可选择）。
+    """
     node = CElidedLabel(text)
+    node.setTextInteractionFlags(Qt.TextInteractionFlag.NoTextInteraction)
     font = QFont(node.font())
     font.setPixelSize(pixel_size)
     font.setWeight(QFont.Weight.Medium if weight == "medium" else QFont.Weight.Normal)

@@ -9,6 +9,8 @@ from types import SimpleNamespace
 os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
 
 import pytest
+from PySide6.QtCore import QPoint, Qt
+from PySide6.QtTest import QTest
 from PySide6.QtWidgets import QApplication, QWidget
 
 
@@ -169,6 +171,24 @@ def test_rows_and_inspector_follow_runtime(qapp):
     finally:
         page.deleteLater()
         host.deleteLater()
+
+
+def test_row_click_on_title_selects_row(qapp):
+    """行内标题不能吞掉点击：QLabel 关闭文字选择后整行仍可选。"""
+    from sllkgui.guis.pages.plugin_store.context import PageContext
+    from sllkgui.guis.pages.plugin_store.entries import StoreRow
+
+    row = StoreRow(
+        {"id": "com.example.one", "name": "One", "summary": "First plugin", "version": "1.0.0", "installed": True},
+        "installed",
+        PageContext(lambda: None),
+    )
+    row.show()
+    clicked: list[dict] = []
+    row.clicked.connect(clicked.append)
+    QTest.mouseClick(row, Qt.MouseButton.LeftButton, pos=QPoint(100, 20))
+    assert clicked and clicked[0]["id"] == "com.example.one"
+    row.deleteLater()
 
 
 def test_retranslate_keeps_mode(qapp):
