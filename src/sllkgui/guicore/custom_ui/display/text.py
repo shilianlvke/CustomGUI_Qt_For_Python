@@ -74,9 +74,18 @@ class CText(QLabel):
     # ------------------------------------------------------------------
     @classmethod
     def with_role(cls, role: str, text: str = "", parent: QWidget | None = None, **kwargs) -> CText:
-        """按语义角色构造：``eyebrow / title / section / entry / body / muted / value / metric``。"""
+        """按语义角色构造：``eyebrow / title / section / entry / body / muted / value / metric``。
+
+        角色提供字号/字重/等宽的默认值，调用方可显式覆盖其中任意一项；
+        不能把默认值和覆盖值一起作为关键字参数传给构造函数，否则 ``TypeError``。
+        """
         pixel_size, weight, mono = _ROLES.get(role, _ROLES["body"])
-        return cls(text, weight=weight, mono=mono, parent=parent, pixel_size=pixel_size, **kwargs)
+        options = {
+            "pixel_size": kwargs.pop("pixel_size", pixel_size),
+            "weight": kwargs.pop("weight", weight),
+            "mono": kwargs.pop("mono", mono),
+        }
+        return cls(text, parent=parent, **options, **kwargs)
 
     def _apply_font(self) -> None:
         font = QFont(self.font())

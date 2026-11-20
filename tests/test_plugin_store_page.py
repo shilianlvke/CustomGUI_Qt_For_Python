@@ -55,6 +55,39 @@ def test_mode_badges_follow_counts(qapp):
         host.deleteLater()
 
 
+def test_plugin_and_source_detail_dialogs_open(qapp):
+    """点击插件/源条目后详情对话框应能构造并打开（历史 bug: mono 重复传参）。"""
+    from sllkgui.guis.pages.plugin_store import build_plugin_store_page
+    from sllkgui.guis.pages.plugin_store.dialogs import _PluginDetailDialog, _SourceDetailDialog
+
+    host = QWidget()
+    page = build_plugin_store_page(host)
+    page.resize(1120, 720)
+    page.show()
+    try:
+        record = {
+            "id": "com.example.x",
+            "name": "X",
+            "summary": "test",
+            "version": "1.0.0",
+            "permissions": ["filesystem.write"],
+            "categories": ["tools"],
+            "commit": "0123456789abcdef",
+        }
+        plugin_dialog = _PluginDetailDialog(page, record, installed=False)
+        plugin_dialog.open()
+        assert plugin_dialog.dialog.isVisible()
+
+        source_dialog = _SourceDetailDialog(
+            page, {"id": "test", "url": "https://example.com/source.git", "trust": "user", "enabled": True}
+        )
+        source_dialog.open()
+        assert source_dialog.dialog.isVisible()
+    finally:
+        page.deleteLater()
+        host.deleteLater()
+
+
 def test_legacy_widgets_module_is_removed():
     """自绘件已全部上移 guicore：包内不应再有 widgets 模块。"""
     assert importlib.util.find_spec("sllkgui.guis.pages.plugin_store.widgets") is None
