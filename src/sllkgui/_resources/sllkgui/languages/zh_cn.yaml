@@ -67,6 +67,7 @@ UI:
   ui_SettingsNavEmpty: "没有匹配的设置页"
   ui_SettingsNavBase: "基座设置"
   ui_SettingsNavPlugins: "插件设置"
+  ui_SettingsDraftPruned: "插件更新后，部分未保存的设置项已失效并被丢弃。"
   ui_SettingsNoPlugins: "暂无已安装插件"
   ui_SettingsNoPluginsHint: "安装插件后，其设置页会自动出现在这里。"
   ui_SettingsUndeclared: "未声明"
@@ -318,6 +319,9 @@ plugin_store:
     url: 地址
     last_refresh: 最近刷新
     trust: 信任级别
+    reload_history: 最近重载
+    reload_ok: 成功
+    reload_failed: 失败
   inspector:
     title: 详情
     empty_title: 选择一个插件
@@ -403,6 +407,7 @@ plugin_store:
     remove_done: '已卸载「{name}」'
     enabled_done: '已启用「{name}」'
     disabled_done: '已停用「{name}」'
+    dependents_disabled: '（同时停用 {count} 个依赖插件）'
     source_refreshed: 来源已刷新
     list_refreshed: 插件列表已刷新
     refreshing: 正在刷新来源…

@@ -190,3 +190,55 @@ def test_plugin_icon_empty_when_entry_has_none(tmp_path: Path):
     manager.install("com.example.hello", source_id="test")
     assert manager.search("hello")[0]["icon"] == ""
     assert manager.installed_rows()[0]["icon"] == ""
+
+
+def test_disable_provider_disables_dependents(tmp_path: Path):
+    from sllkgui.gallery.state import InstalledPlugin
+
+    _plugin, _source, _sources, manager, _store = _setup(tmp_path)
+    manager.state.plugins["com.example.core"] = InstalledPlugin(
+        plugin_id="com.example.core", version="1.0.0", path="plugins/com.example.core"
+    )
+    manager.state.plugins["com.example.user"] = InstalledPlugin(
+        plugin_id="com.example.user",
+        version="1.0.0",
+        path="plugins/com.example.user",
+        dependencies={"com.example.core": ">=1.0.0"},
+    )
+    result = manager.set_enabled("com.example.core", False)
+    assert result["enabled"] is False
+    assert result["disabled_dependents"] == ["com.example.user"]
+    assert manager.state.plugins["com.example.user"].enabled is False
+
+
+def test_hot_update_with_native_extension_requires_restart(tmp_path: Path):
+    from sllkgui.gallery.errors import GalleryError
+
+    plugin, source, sources, manager, store = _setup(tmp_path)
+    manager.install("com.example.hello", source_id="test")
+    old = manager.state.plugins["com.example.hello"]
+
+    write_plugin(plugin, version="1.1.0")
+    (plugin / "native.pyd").write_bytes(b"not-a-real-extension")
+    commit = init_repo(plugin, tag="v1.1.0")
+    write_entry(
+        source,
+        plugin,
+        source_id="test",
+        version="1.1.0",
+        ref="v1.1.0",
+        commit=commit,
+        sha=manifest_sha256(plugin),
+    )
+    git("add", "-A", cwd=source)
+    git("commit", "-q", "-m", "native", cwd=source)
+    sources.refresh("test")
+
+    try:
+        manager.update("com.example.hello", hot_reload=True)
+    except GalleryError as exc:
+        assert exc.code == "PLUGIN_RESTART_REQUIRED"
+    else:  # pragma: no cover
+        raise AssertionError("native hot update must require restart")
+    assert manager.state.plugins["com.example.hello"].version == old.version
+    assert store.plugin_path("com.example.hello").is_dir()

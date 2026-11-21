@@ -63,6 +63,41 @@ def session(registry, store) -> SettingsSession:
     return SettingsSession(registry, store)
 
 
+def test_session_prunes_removed_plugin_keys(registry, store):
+    """插件重载后删掉的设置键不能留下无法保存的草稿。"""
+    namespace = plugin_namespace("com.example.hot")
+    page = SettingsPage(
+        page_id="hot",
+        title="Hot",
+        sections=(
+            SettingsSection(
+                "A",
+                (
+                    Setting.switch("keep", True, "Keep"),
+                    Setting.switch("drop", True, "Drop"),
+                ),
+            ),
+        ),
+    )
+    registry.register(page, namespace=namespace)
+    session = SettingsSession(registry, store)
+    session.set(f"{namespace}.drop", False)
+    assert session.is_dirty()
+
+    registry.unregister_namespace(namespace)
+    registry.register(
+        SettingsPage(
+            page_id="hot",
+            title="Hot",
+            sections=(SettingsSection("A", (Setting.switch("keep", True, "Keep"),)),),
+        ),
+        namespace=namespace,
+    )
+    removed = session.prune_namespace(namespace)
+    assert removed == (f"{namespace}.drop",)
+    assert not session.is_dirty()
+
+
 def test_core_pages_are_namespaced(registry):
     pages = registry.pages("core")
     assert [page.page_id for page in pages] == ["appearance", "interface", "window"]

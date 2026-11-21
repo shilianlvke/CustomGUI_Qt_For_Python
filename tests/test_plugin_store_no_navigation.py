@@ -50,13 +50,14 @@ class _Manager:
     def search(self, query: str = "", source_id: str = ""):
         return []
 
-    def set_enabled(self, plugin_id: str, enabled: bool) -> None:
+    def set_enabled(self, plugin_id: str, enabled: bool) -> dict:
         self.enabled_calls.append((plugin_id, enabled))
+        return {"id": plugin_id, "enabled": enabled, "disabled_dependents": []}
 
-    def update(self, plugin_id: str):
+    def update(self, plugin_id: str, **kwargs):
         return {"id": plugin_id, "updated": True, "version": "1.1.0"}
 
-    def rollback(self, plugin_id: str):
+    def rollback(self, plugin_id: str, **kwargs):
         return {"id": plugin_id, "version": "0.9.0"}
 
     def remove(self, plugin_id: str):
@@ -102,6 +103,17 @@ class _Window(QWidget):
         self.reload_calls.append(native_page)
 
 
+class _SelectiveWindow(_Window):
+    """支持选择性重载的宿主：记录单插件刷新请求。"""
+
+    def __init__(self) -> None:
+        super().__init__()
+        self.selective_calls: list[tuple[str, str, bool]] = []
+
+    def reload_plugin_in_place(self, plugin_id: str, *, reason: str = "manual", load: bool = True) -> None:
+        self.selective_calls.append((plugin_id, reason, load))
+
+
 def _page(window: QWidget):
     from sllkgui.guis.pages.plugin_store import build_plugin_store_page
 
@@ -117,10 +129,10 @@ def _drain(qapp) -> None:
     from PySide6.QtCore import QDeadlineTimer, QEventLoop
 
     loop = QEventLoop()
-    QDeadlineTimer(300)
+    QDeadlineTimer(600)
     from PySide6.QtCore import QTimer
 
-    QTimer.singleShot(200, loop.quit)
+    QTimer.singleShot(400, loop.quit)
     loop.exec()
 
 
@@ -270,6 +282,64 @@ def test_switch_mode_still_clears_search(qapp):
         page.switch_mode("sources")
         assert page.query == ""
         assert page.search.text() == ""
+    finally:
+        page.deleteLater()
+        window.deleteLater()
+
+
+def test_selective_host_gets_plugin_id_and_load_flag(qapp):
+    """宿主实现 reload_plugin_in_place 时，不再走全量重载。"""
+    window = _SelectiveWindow()
+    page = _page(window)
+    try:
+        page._set_plugin_enabled("com.example.p1", True)
+        page._set_plugin_enabled("com.example.p2", False)
+        _drain(qapp)
+        assert set(window.selective_calls) == {
+            ("com.example.p1", "enable", True),
+            ("com.example.p2", "disable", False),
+        }
+        assert window.reload_calls == []
+    finally:
+        page.deleteLater()
+        window.deleteLater()
+
+
+def test_selective_host_update_and_rollback(qapp):
+    window = _SelectiveWindow()
+    page = _page(window)
+    try:
+        page._update_plugin("com.example.p0")
+        _drain(qapp)
+        page._busy = False
+        page._rollback_plugin("com.example.p0")
+        _drain(qapp)
+        assert window.selective_calls == [
+            ("com.example.p0", "update", True),
+            ("com.example.p0", "rollback", True),
+        ]
+        assert window.reload_calls == []
+    finally:
+        page.deleteLater()
+        window.deleteLater()
+
+
+def test_selective_host_install_and_remove(qapp, monkeypatch):
+    from sllkgui.guicore import CConfirmDialog
+
+    monkeypatch.setattr(CConfirmDialog, "ask", staticmethod(lambda *args, **kwargs: True))
+    window = _SelectiveWindow()
+    page = _page(window)
+    try:
+        page._install_plugin({"id": "com.example.two", "name": "Two", "source": "official"})
+        _drain(qapp)
+        page._remove_plugin("com.example.one")
+        _drain(qapp)
+        assert window.selective_calls == [
+            ("com.example.two", "install", True),
+            ("com.example.one", "remove", False),
+        ]
+        assert window.reload_calls == []
     finally:
         page.deleteLater()
         window.deleteLater()

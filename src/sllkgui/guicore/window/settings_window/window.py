@@ -32,6 +32,7 @@ from sllkgui import __version__
 from sllkgui.appcore import (
     AppSettings,
     Language,
+    Logger,
     SettingsSession,
     ensure_core_pages,
     get_design_tokens,
@@ -41,6 +42,7 @@ from sllkgui.appcore import (
 
 from ...acrylic import apply_acrylic
 from ...custom_ui.close_button import CCloseButton
+from ...custom_ui.feedback.toast import CToast
 from ...custom_ui.line_edit.input_text import CInputText
 from ...custom_ui.overlay.confirm import CConfirmDialog
 from ...custom_ui.panels.settings import CEditActionBar
@@ -527,6 +529,22 @@ class CSettingsWindow(QDialog):
             page = entry.get("schema_page")
             if page is None or page.namespace != namespace:
                 continue
+            # 插件可能已经删除/改名了设置页或设置键；必须用注册表里的新声明
+            # 重建，否则 SchemaPage 会按旧键名读取 session，直接抛 SettingsError。
+            updated = next(
+                (
+                    candidate
+                    for candidate in self._session.registry.pages(namespace)
+                    if candidate.page_id == page.page_id
+                ),
+                None,
+            )
+            if updated is None:
+                self._session.prune_namespace(namespace)
+                continue
+            self._schema_pages.pop(page.full_key("__page__"), None)
+            page = updated
+            entry["schema_page"] = page
             old_widget = entry["widget"]
             index = self.stack.indexOf(old_widget)
             scroll_value = 0
@@ -550,6 +568,19 @@ class CSettingsWindow(QDialog):
             entry["view"] = view
             entry["title"] = page.display_title()
             entry["hint"] = page.display_hint()
+            removed = self._session.prune_namespace(namespace)
+            if removed:
+                Logger.warning(f"插件更新后清理失效设置草稿: {namespace}: {', '.join(removed)}")
+                CToast.show_message(
+                    self,
+                    Language.resolve_key(
+                        "language.UI.ui_SettingsDraftPruned",
+                        "插件更新后，部分未保存的设置项已失效并被丢弃。",
+                    ),
+                    Language.resolve_key("language.UI.ui_Settings", "设置"),
+                    "warn",
+                    life=5000,
+                )
             if item_id == self._current_entry:
                 self.stack.setCurrentWidget(new_widget)
                 self.page_title.setText(entry["title"])

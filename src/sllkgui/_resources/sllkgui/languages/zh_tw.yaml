@@ -68,6 +68,7 @@ UI:
   ui_SettingsNavEmpty: "沒有符合的設定頁"
   ui_SettingsNavBase: "基座設定"
   ui_SettingsNavPlugins: "外掛程式設定"
+  ui_SettingsDraftPruned: "外掛更新後，部分未儲存的設定項目已失效並被捨棄。"
   ui_SettingsNoPlugins: "尚無已安裝外掛程式"
   ui_SettingsNoPluginsHint: "安裝外掛程式後，其設定頁會自動出現在這裡。"
   ui_SettingsUndeclared: "未宣告"
@@ -318,6 +319,9 @@ plugin_store:
     url: 位址
     last_refresh: 最近重新整理
     trust: 信任級別
+    reload_history: 最近重載
+    reload_ok: 成功
+    reload_failed: 失敗
   inspector:
     title: 詳情
     empty_title: 選擇一個外掛
@@ -403,6 +407,7 @@ plugin_store:
     remove_done: '已解除安裝「{name}」'
     enabled_done: '已啟用「{name}」'
     disabled_done: '已停用「{name}」'
+    dependents_disabled: '（同時停用 {count} 個相依外掛）'
     source_refreshed: 來源已重新整理
     list_refreshed: 外掛清單已重新整理
     refreshing: 正在重新整理來源…

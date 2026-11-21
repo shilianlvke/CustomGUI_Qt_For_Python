@@ -11,8 +11,9 @@ from PySide6.QtGui import QPixmapCache
 from PySide6.QtWidgets import QLabel, QMainWindow, QVBoxLayout, QWidget
 
 from sllkgui.appcore import AppSettings, Language, Logger, PathFactory, record_event
+from sllkgui.gallery.loader import discover_plugin_dirs
 from sllkgui.gallery.registry import SurfaceRecord
-from sllkgui.gallery.runtime import GalleryRuntime
+from sllkgui.gallery.runtime import GalleryRuntime, ReloadResult
 from sllkgui.guicore import CPageTransition, CToast
 from sllkgui.guis.windows.main_window.builtin_shortcuts import (
     install_builtin_shortcuts,
@@ -92,6 +93,9 @@ class GalleryWindow(QMainWindow):
         self.ui.setup_ui(self)
         runtime.set_navigation(self.open_route, lambda: self)
         self._force_close = False
+        #: 选择性重载期间暂存的 Surface 状态：route -> save_state() 返回值
+        self._surface_state_cache: dict[str, object] = {}
+        self._dev_watcher = None
         try:
             Language.subscribe(self._refresh_tray_texts)
         except Exception as exc:  # noqa: BLE001 - 托盘文案刷新失败不阻断启动
@@ -103,6 +107,7 @@ class GalleryWindow(QMainWindow):
         runtime.attach_window(self)
         # 内置快捷键与插件共用同一张表：此处注册后，插件条目只要不撞序列即可共存
         self._builtin_shortcuts = install_builtin_shortcuts(self, self.controller)
+        self._start_dev_watch()
         title = "SllkGUI Gallery" if runtime.mode == "gallery" else "SllkGUI"
         self.setWindowTitle(title)
         self.ui.title_bar.set_title(title)
@@ -179,7 +184,7 @@ class GalleryWindow(QMainWindow):
         except Exception as exc:  # noqa: BLE001 - 插件钩子失败不阻断导航
             Logger.warning(f"插件 {surface.plugin_id} 的 on_surface_enter 失败: {exc}")
 
-    def open_route(self, route: str) -> bool:
+    def open_route(self, route: str, *, animate: bool = True) -> bool:
         surface = self.gallery_registry.get(route)
         if surface is None:
             Logger.warning(f"路由不存在: {route}")
@@ -199,6 +204,7 @@ class GalleryWindow(QMainWindow):
         if page is None:
             self._notify_failure(surface.route, message="页面未生成，详情见日志")
             return False
+        self._restore_surface_state(page, surface.route)
         # 导航级成对：目标与当前不同时先离开旧页；同页重复打开不触发任何钩子
         if self._active_route and self._active_route != surface.route:
             self._notify_surface_leave()
@@ -207,6 +213,7 @@ class GalleryWindow(QMainWindow):
         MainFunctions.set_page(
             self,
             page,
+            animate=animate,
             menu=self.ui.left_menu,
             button_id=surface.button_id,
             previous_button_id=previous,
@@ -229,6 +236,244 @@ class GalleryWindow(QMainWindow):
         return self._current_route
 
     # ------------------------------------------------------------------
+    # 选择性重载
+    # ------------------------------------------------------------------
+    def _save_surface_state(self, page: QWidget, route: str) -> None:
+        saver = getattr(page, "save_state", None)
+        if not callable(saver):
+            return
+        try:
+            self._surface_state_cache[route] = saver()
+        except Exception as exc:  # noqa: BLE001 - 页面状态保存失败不阻断重载
+            Logger.warning(f"Surface 状态保存失败 {route}: {exc}")
+
+    def _restore_surface_state(self, page: QWidget, route: str) -> None:
+        if route not in self._surface_state_cache:
+            return
+        state = self._surface_state_cache.pop(route)
+        restorer = getattr(page, "restore_state", None)
+        if not callable(restorer):
+            return
+        try:
+            restorer(state)
+        except Exception as exc:  # noqa: BLE001 - 页面状态恢复失败不阻断导航
+            Logger.warning(f"Surface 状态恢复失败 {route}: {exc}")
+
+    def _remove_pages_for_plugins(self, plugin_ids: set[str]) -> int:
+        """只移除目标插件（及其依赖者）已构建的页面，保留其它页面。"""
+        targets: dict[str, str] = {}
+        for plugin_id in plugin_ids:
+            for surface in self.gallery_registry.menu_surface_of_plugin(plugin_id):
+                targets[surface.page_object] = surface.route
+        if not targets:
+            return 0
+        pages = self.ui.load_pages.pages
+        if self._active_route and self._active_route in targets.values():
+            self._notify_surface_leave()
+        removed = 0
+        canceled = False
+        for index in range(pages.count() - 1, -1, -1):
+            widget = pages.widget(index)
+            route = targets.get(widget.objectName())
+            if route is None:
+                continue
+            if not canceled:
+                CPageTransition.cancel(pages)
+                canceled = True
+            self._save_surface_state(widget, route)
+            pages.removeWidget(widget)
+            widget.hide()
+            widget.setParent(None)
+            widget.deleteLater()
+            removed += 1
+        return removed
+
+    def _sync_left_menu(self) -> None:
+        items = get_menu_items("LeftMenu", self)
+        sync = getattr(self.ui.left_menu, "sync_menus", None)
+        if callable(sync):
+            sync(items)
+            return
+        self.ui.left_menu.clear_menus()
+        self.ui.left_menu.add_menus(items)
+
+    def _notify_settings_pages(self, plugin_ids: set[str]) -> None:
+        """让打开中的设置窗口重建受影响插件的设置页（未打开时为空操作）。"""
+        try:
+            from sllkgui.appcore import plugin_namespace, settings_page_bus
+
+            bus = settings_page_bus()
+            for plugin_id in plugin_ids:
+                bus.notify(plugin_namespace(plugin_id))
+        except Exception as exc:  # noqa: BLE001 - 设置页刷新失败不影响重载
+            Logger.debug(f"设置页刷新失败: {exc}")
+
+    def _page_exists(self, page_object: str) -> bool:
+        return self.ui.load_pages.pages.findChild(QWidget, page_object) is not None
+
+    def _restore_after_selective_reload(self, route: str, native: NativePage | None) -> bool:
+        """恢复当前页面；返回是否**新建**了页面（用于诊断计数）。"""
+        if route:
+            surface = self.gallery_registry.get(route)
+            if surface is not None:
+                existed = self._page_exists(surface.page_object)
+                if self.open_route(route, animate=False):
+                    return not existed
+        if native is not None:
+            existed = self._page_exists(native.page_object)
+            if self._open_native_page(native, animate=False):
+                return not existed
+        target = self.runtime.default_route()
+        surface = self.gallery_registry.get(target) if target else None
+        if surface is not None:
+            existed = self._page_exists(surface.page_object)
+            if self.open_route(target, animate=False):
+                return not existed
+        for item in NATIVE_PAGES:
+            existed = self._page_exists(item.page_object)
+            if self._open_native_page(item, animate=False):
+                return not existed
+        self._show_empty_state()
+        return True
+
+    def reload_plugin_in_place(
+        self,
+        plugin_id: str,
+        *,
+        reason: str = "manual",
+        load: bool = True,
+    ) -> ReloadResult:
+        """只刷新目标插件及其反向依赖者，不重建未受影响页面。
+
+        ``load=False`` 用于停用/卸载：只卸载运行时并移除页面，不再加载。
+        当前页面属于目标插件时，会先触发 ``on_surface_leave`` 并安全回退；
+        不属于目标插件时，页面实例、滚动与表单状态保持不变。
+        """
+        current_route = self._current_route
+        native = self._current_native_page() if not self._active_route else None
+        if self.runtime.is_reloading():
+            busy = ReloadResult(
+                ok=False,
+                targets=[plugin_id],
+                code="PLUGIN_RELOAD_IN_PROGRESS",
+                message="已有插件重载正在进行",
+            )
+            self._notify_failure(plugin_id, code=busy.code, message=busy.message)
+            return busy
+        manager = getattr(self.runtime, "manager", None)
+        installed = getattr(getattr(manager, "state", None), "plugins", {}).get(plugin_id) if manager else None
+        if load and installed is not None and not installed.enabled:
+            # 已安装但被停用的插件只更新文件/状态，不重新加载。
+            load = False
+        if load:
+            check = self.runtime.preflight_reload([plugin_id], reason=reason)
+            if not check.ok:
+                self._notify_failure(
+                    plugin_id,
+                    code=check.code or None,
+                    message=check.message or "插件预检失败，详情见日志",
+                )
+                return check
+            affected = set(check.affected)
+        else:
+            affected = self.runtime.affected_plugins([plugin_id])
+        pages_destroyed = self._remove_pages_for_plugins(affected)
+        if reason == "remove":
+            prefix = f"{plugin_id}/"
+            for route in [key for key in self._surface_state_cache if key.startswith(prefix)]:
+                self._surface_state_cache.pop(route, None)
+        if load:
+            result = self.runtime.reload_plugins([plugin_id], reason=reason)
+        else:
+            result = self.runtime.unload_plugins([plugin_id], reason=reason)
+        result.pages_destroyed = pages_destroyed
+        self.gallery_registry = self.runtime.registry
+        self._sync_left_menu()
+        self._notify_settings_pages(affected)
+        result.pages_built = 1 if self._restore_after_selective_reload(current_route, native) else 0
+
+        if result.ok:
+            return result
+
+        self._notify_failure(
+            plugin_id,
+            code=result.code or None,
+            message=result.message or "插件重载失败，详情见日志",
+        )
+        manager = getattr(self.runtime, "manager", None)
+        if manager is not None and reason in {"update", "rollback"}:
+            try:
+                manager.rollback(plugin_id, hot_reload=True)
+                again = self.runtime.reload_plugins(sorted(affected), reason="rollback")
+                self.gallery_registry = self.runtime.registry
+                self._sync_left_menu()
+                self._notify_settings_pages(affected)
+                self._restore_after_selective_reload(current_route, native)
+                result.rollback = "files" if again.ok else "failed"
+                if again.ok:
+                    result.message = f"{result.message}；已回滚到上一版本"
+            except Exception as exc:  # noqa: BLE001 - 回滚失败保留原始错误
+                result.rollback = "failed"
+                Logger.warning(f"插件回滚失败 {plugin_id}: {exc}")
+        elif manager is not None and reason in {"enable", "install"}:
+            try:
+                manager.set_enabled(plugin_id, False)
+            except Exception as exc:  # noqa: BLE001 - 状态回写失败不覆盖原始错误
+                Logger.warning(f"插件失败后禁用状态回写失败 {plugin_id}: {exc}")
+        return result
+
+    # ------------------------------------------------------------------
+    # 开发插件文件监听（--watch）
+    # ------------------------------------------------------------------
+    def _start_dev_watch(self) -> None:
+        if not getattr(self.runtime, "watch", False):
+            return
+        roots = discover_plugin_dirs(self.runtime.plugin_dirs)
+        if not roots:
+            Logger.warning("--watch 已开启，但 --plugin-dir 下没有发现插件目录")
+            return
+        try:
+            from .dev_watch import DevPluginWatcher
+
+            watcher = DevPluginWatcher(roots, parent=self)
+            watcher.changed.connect(self._on_dev_plugin_changed)
+            watcher.start()
+            self._dev_watcher = watcher
+            Logger.info(f"开发插件文件监听已启动: {len(roots)} 个目录")
+        except Exception as exc:  # noqa: BLE001 - 监听失败不应阻断窗口
+            Logger.warning(f"开发插件文件监听启动失败: {exc}")
+
+    def _stop_dev_watch(self) -> None:
+        watcher = self._dev_watcher
+        self._dev_watcher = None
+        if watcher is not None:
+            try:
+                watcher.stop()
+                watcher.deleteLater()
+            except Exception as exc:  # noqa: BLE001 - 退出路径不阻断
+                Logger.debug(f"开发插件监听停止失败: {exc}")
+
+    def _on_dev_plugin_changed(self, root: str) -> None:
+        target = Path(root).resolve()
+        record = next(
+            (item for item in self.runtime.records if Path(item.path).resolve() == target),
+            None,
+        )
+        if record is None:
+            Logger.warning(f"开发目录变化未匹配到已加载插件: {root}")
+            return
+        if self.runtime.is_reloading():
+            QTimer.singleShot(300, lambda value=root: self._on_dev_plugin_changed(value))
+            return
+        result = self.reload_plugin_in_place(record.plugin_id, reason="dev-watch")
+        if not result.ok:
+            self._notify_failure(
+                record.plugin_id,
+                code=result.code or None,
+                message=result.message or "开发插件重载失败，详情见日志",
+            )
+
+    # ------------------------------------------------------------------
     # 重载
     # ------------------------------------------------------------------
     def reload_plugins(self, native_page: str = "") -> None:
@@ -243,12 +488,17 @@ class GalleryWindow(QMainWindow):
         # 原生页不在路由里：优先用调用方指定的，其次用重载前菜单实际停留的那一页。
         # 后者让忘记传参的调用点也不会把用户弹离原生页。
         native = native_page_for(native_page) if native_page else self._current_native_page()
+        getattr(self, "_surface_state_cache", {}).clear()
         self._clear_pages()
         self.runtime.reload()
         self.gallery_registry = self.runtime.registry
         self._current_route = ""
-        self.ui.left_menu.clear_menus()
-        self.ui.left_menu.add_menus(get_menu_items("LeftMenu", self))
+        sync = getattr(self, "_sync_left_menu", None)
+        if callable(sync):
+            sync()
+        else:  # 测试桩/旧宿主：回退到全量菜单重建
+            self.ui.left_menu.clear_menus()
+            self.ui.left_menu.add_menus(get_menu_items("LeftMenu", self))
         if native is not None:
             # 原地停留：只重建这一张原生页，菜单高亮与标题保持指向它
             if self._open_native_page(native):
@@ -275,13 +525,13 @@ class GalleryWindow(QMainWindow):
         """重载插件并停留在指定原生页（插件管理页专用）。"""
         self.reload_plugins(native_page=page_object)
 
-    def _open_default_native_page(self) -> bool:
+    def _open_default_native_page(self, *, animate: bool = True) -> bool:
         for native in NATIVE_PAGES:
-            if self._open_native_page(native):
+            if self._open_native_page(native, animate=animate):
                 return True
         return False
 
-    def _open_native_page(self, native: NativePage) -> bool:
+    def _open_native_page(self, native: NativePage, *, animate: bool = True) -> bool:
         if not ensure_registered_page(self, native.page_object):
             return False
         page = self.ui.load_pages.pages.findChild(QWidget, native.page_object)
@@ -294,6 +544,7 @@ class GalleryWindow(QMainWindow):
         MainFunctions.set_page(
             self,
             page,
+            animate=animate,
             menu=self.ui.left_menu,
             button_id=native.button_id,
             previous_button_id=previous,
@@ -394,6 +645,7 @@ class GalleryWindow(QMainWindow):
             Logger.debug(f"Gallery 主题订阅清理失败: {exc}")
         # 内置快捷键绑定在本窗口上：先显式注销，再让运行时整体收尾
         uninstall_builtin_shortcuts()
+        self._stop_dev_watch()
         try:
             self.runtime.shutdown()
         except Exception as exc:  # noqa: BLE001 - 关闭失败不应阻塞退出
@@ -451,6 +703,7 @@ def load_run(
     interactive: bool = True,
     index_url: str = "",
     check_tools: bool = False,
+    watch: bool = False,
 ) -> GalleryWindow:
     runtime = GalleryRuntime(
         "run",
@@ -463,6 +716,7 @@ def load_run(
         interactive=interactive,
         index_url=index_url,
         check_tools=check_tools,
+        watch=watch,
     )
     return _run_window(runtime, route)
 

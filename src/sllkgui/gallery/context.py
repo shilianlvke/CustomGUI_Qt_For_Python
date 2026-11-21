@@ -95,6 +95,9 @@ class _BridgeHandler(logging.Handler):
         super().__init__()
         self._prefix = prefix
 
+    def set_prefix(self, prefix: str) -> None:
+        self._prefix = prefix
+
     def emit(self, record: logging.LogRecord) -> None:
         try:
             message = f"{self._prefix} {record.getMessage()}"
@@ -148,9 +151,7 @@ class GalleryContextImpl(GalleryContext):
         self._logger = logging.getLogger(self._logger_name)
         self._logger.setLevel(logging.DEBUG)
         self._logger.propagate = False
-        if not getattr(self._logger, "_sllkgui_bridged", False):
-            self._logger.addHandler(_BridgeHandler(self._prefix))
-            self._logger._sllkgui_bridged = True  # type: ignore[attr-defined]
+        self._bind_logger()
 
     # ------------------------------------------------------------------
     # 元数据
@@ -307,6 +308,32 @@ class GalleryContextImpl(GalleryContext):
     @property
     def logger(self) -> logging.Logger:
         return self._logger
+
+    def _bind_logger(self) -> None:
+        """复用同一 logger，但把 handler 前缀更新为当前版本。
+
+        插件更新后 logger 名称不变（``sllkgui.plugin.<id>``）；如果沿用旧
+        handler，日志会一直显示旧版本号。这里优先更新已有 handler，没有
+        才新建。
+        """
+        for handler in self._logger.handlers:
+            if isinstance(handler, _BridgeHandler):
+                handler.set_prefix(self._prefix)
+                self._logger._sllkgui_bridged = True  # type: ignore[attr-defined]
+                return
+        self._logger.addHandler(_BridgeHandler(self._prefix))
+        self._logger._sllkgui_bridged = True  # type: ignore[attr-defined]
+
+    def clear_logger(self) -> None:
+        """卸载时摘掉日志桥，避免旧版本 handler 残留。"""
+        for handler in list(self._logger.handlers):
+            if isinstance(handler, _BridgeHandler):
+                self._logger.removeHandler(handler)
+        if getattr(self._logger, "_sllkgui_bridged", False):
+            try:
+                delattr(self._logger, "_sllkgui_bridged")
+            except AttributeError:  # pragma: no cover - 防御式
+                pass
 
     def event(
         self,

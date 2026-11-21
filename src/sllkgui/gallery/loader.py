@@ -13,6 +13,7 @@ from __future__ import annotations
 
 import importlib.util
 import os
+import shutil
 import sys
 import uuid
 from collections.abc import Callable, Iterable
@@ -39,6 +40,41 @@ from .tray import TrayService
 #: plugin_id -> locale -> flatten(key -> text)
 _LANG: dict[str, dict[str, dict[str, str]]] = {}
 _PROVIDER_REGISTERED = False
+
+#: 原生扩展后缀：这些文件在进程内无法安全卸载/替换
+_NATIVE_SUFFIXES = frozenset({".pyd", ".so", ".dll", ".dylib"})
+
+
+def has_native_extensions(root: Path) -> bool:
+    """插件目录是否包含原生扩展。
+
+    纯 Python 插件可以在同一进程内重新导入；``.pyd`` / ``.so`` / ``.dll``
+    一旦被加载就无法可靠卸载（Windows 上文件还会被锁定），因此更新这类
+    插件必须重启进程，而不是热替换。
+    """
+    try:
+        return any(
+            path.is_file() and path.suffix.lower() in _NATIVE_SUFFIXES
+            for path in Path(root).rglob("*")
+        )
+    except OSError as exc:
+        Logger.debug(f"原生扩展扫描失败 {root}: {exc}")
+        return False
+
+
+def prepare_plugin_reload(root: Path) -> None:
+    """热重载前清掉插件目录内的字节码缓存并刷新导入缓存。
+
+    Python 的 ``.pyc`` 只按源文件 mtime + size 判断是否过期；如果插件更新
+    恰好保留了这两个值（例如归档工具恢复时间戳），旧字节码会被继续使用。
+    删除插件目录内的 ``__pycache__`` 是最小且安全的修复。
+    """
+    root = Path(root)
+    for cache in list(root.rglob("__pycache__")):
+        if cache.is_dir():
+            shutil.rmtree(cache, ignore_errors=True)
+    importlib.invalidate_caches()
+
 
 
 def _relative_import_hint(exc: ModuleNotFoundError, root: Path) -> str:
@@ -92,14 +128,19 @@ def load_language_data(root: Path, plugin_id: str) -> dict[str, dict[str, str]]:
     return data
 
 
-def refresh_language_namespace() -> None:
-    """把所有插件语言表注入 ``Language.app.<plugin_id>``（在窗口创建前调用）。"""
+def refresh_language_namespace(*, force: bool = False) -> None:
+    """把所有插件语言表注入 ``Language.app.<plugin_id>``（在窗口创建前调用）。
+
+    ``force=True`` 用于选择性重载：插件语言文件或 Surface 标题变化时，
+    基座语言包本身没有变化，``Language.apply`` 会按签名早退，必须强制
+    重新收集 App 语言提供者。
+    """
     _ensure_provider()
     if not _LANG:
         return
     try:
         current = Language.current()
-        Language.apply(current)
+        Language.apply(current, force=force)
     except Exception as exc:  # noqa: BLE001 - 语言注入失败不应阻断启动
         Logger.debug(f"插件语言命名空间刷新失败: {exc}")
 
@@ -214,12 +255,36 @@ def _verify_surface_impls(manifest: PluginManifest, root: Path) -> None:
         )
 
 
+def preflight_plugin(path: Path, *, check_dependencies: bool = True) -> PluginManifest:
+    """不执行插件代码的加载前检查：清单 + Surface 实现 + Python 依赖存在性。
+
+    选择性重载在卸载旧实例之前调用它；坏清单/缺失实现/缺失依赖直接返回
+    错误，旧实例继续运行，避免“先卸再发现新版本根本装不起来”。
+    """
+    root = Path(path).resolve()
+    manifest = load_manifest(root)
+    _verify_surface_impls(manifest, root)
+    if check_dependencies and manifest.python_dependencies:
+        from .dependencies import missing_packages
+        from .errors import PYTHON_DEPENDENCY_MISSING
+
+        missing = missing_packages(manifest.python_dependencies)
+        if missing:
+            raise GalleryError(
+                PYTHON_DEPENDENCY_MISSING,
+                f"缺少 Python 依赖: {', '.join(missing)}",
+                manifest.plugin_id,
+            )
+    return manifest
+
+
 def load_plugin(
     path: Path,
     store: GalleryStore,
     registry: GalleryRegistry,
     *,
     is_core: bool = False,
+    replace: bool = False,
     compliance: int = 1,
     install_missing_deps: bool = False,
     interactive: bool = False,
@@ -232,8 +297,14 @@ def load_plugin(
     events: PluginEventBus | None = None,
     services: PluginServiceRegistry | None = None,
 ) -> PluginRecord | None:
-    """加载单个插件；失败只记录，不影响调用方。"""
+    """加载单个插件；失败只记录，不影响调用方。
+
+    ``replace=True`` 用于热重载：允许同 id 记录存在（调用方通常已先移除
+    旧记录），并清理插件目录内的字节码缓存，确保更新后的源码真正生效。
+    """
     root = Path(path).resolve()
+    if replace:
+        prepare_plugin_reload(root)
     try:
         manifest = load_manifest(root)
     except GalleryError as exc:
@@ -241,7 +312,7 @@ def load_plugin(
         Logger.warning(f"插件清单无效，已跳过: {root.name}: {exc}")
         return None
 
-    if any(item.plugin_id == manifest.plugin_id for item in registry.plugins()):
+    if not replace and any(item.plugin_id == manifest.plugin_id for item in registry.plugins()):
         registry._errors.append({"plugin_id": manifest.plugin_id, "code": "PLUGIN_ALREADY_INSTALLED"})
         Logger.warning(f"插件重复，已跳过: {manifest.plugin_id}")
         return None
@@ -333,6 +404,7 @@ def load_plugin(
         context.clear_tray()
         context.clear_shortcuts()
         context.clear_settings()
+        context.clear_logger()
         registry._errors.append({"plugin_id": manifest.plugin_id, "code": PLUGIN_LOAD_FAILED, "detail": detail})
         Logger.error(f"插件加载失败: {manifest.plugin_id}: {detail}")
         return None
@@ -344,6 +416,7 @@ def load_plugin(
         context.clear_tray()
         context.clear_shortcuts()
         context.clear_settings()
+        context.clear_logger()
         registry._errors.append({"plugin_id": manifest.plugin_id, "code": PLUGIN_LOAD_FAILED, "detail": str(exc)})
         Logger.exception(f"插件加载失败: {manifest.plugin_id}: {exc}")
         return None
@@ -362,6 +435,8 @@ def unload_plugin(record: PluginRecord) -> None:
         record.context.clear_shortcuts()
         # 设置页与磁盘配置分离：只撤注册，用户改过的值保留
         record.context.clear_settings()
+        # 日志 handler 绑定旧版本前缀；清掉后下次加载会重新挂新的
+        record.context.clear_logger()
     for name in {*(getattr(record, "_module_names", []) or []), *_modules_under(record.path)}:
         sys.modules.pop(name, None)
     _LANG.pop(record.plugin_id, None)
@@ -375,8 +450,11 @@ def unload_all(records: Iterable[PluginRecord]) -> None:
 
 __all__ = [
     "discover_plugin_dirs",
+    "has_native_extensions",
     "load_language_data",
     "load_plugin",
+    "preflight_plugin",
+    "prepare_plugin_reload",
     "refresh_language_namespace",
     "unload_all",
     "unload_plugin",

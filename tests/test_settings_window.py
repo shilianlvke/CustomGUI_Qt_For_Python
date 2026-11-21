@@ -25,6 +25,7 @@ from sllkgui.appcore import (
     SettingsStore,
     ensure_core_pages,
     get_app_context,
+    plugin_namespace,
     settings_page_bus,
 )
 from sllkgui.gallery.settings import PluginSettings
@@ -258,6 +259,37 @@ def test_action_row_runs_command_and_info_refreshes(prepared):
 
     view.refresh_info()
     assert info_row.value() == "1 次"
+
+
+def test_plugin_refresh_prunes_removed_draft_keys(prepared):
+    """插件更新删掉设置键时，旧草稿必须被清理，不能让保存路径踩空。"""
+    window, session, _core, _store = prepared
+    item_id = "plugin::com.example.window::desktop"
+    assert window.show_page(item_id)
+    namespace = plugin_namespace("com.example.window")
+    key = f"{namespace}.columns"
+    session.set(key, 8)
+    assert key in session.dirty_keys()
+
+    registry = session.registry
+    registry.unregister_namespace(namespace)
+    registry.register(
+        SettingsPage(
+            page_id="desktop",
+            title="桌面整理",
+            sections=(
+                SettingsSection(
+                    "behavior",
+                    (Setting.switch("auto_refresh", True, "自动刷新"),),
+                ),
+            ),
+        ),
+        namespace=namespace,
+        replace=True,
+    )
+    window._rebuild_plugin_page(namespace)
+    QApplication.processEvents()
+    assert key not in session.dirty_keys()
 
 
 def test_plugin_refresh_rebuilds_page_and_keeps_draft(prepared):

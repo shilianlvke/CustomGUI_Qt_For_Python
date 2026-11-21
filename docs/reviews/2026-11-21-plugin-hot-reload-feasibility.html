@@ -1,0 +1,2306 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>SllkGui 插件热重载可行性评估</title>
+<style>
+  :root {
+    --ink: #15171b;
+    --ink-soft: #252a31;
+    --paper: #f3efe6;
+    --paper-deep: #e8e1d4;
+    --paper-bright: #fbf8f1;
+    --line: rgba(21, 23, 27, 0.16);
+    --line-strong: rgba(21, 23, 27, 0.38);
+    --orange: #c64f28;
+    --orange-bright: #e36a3a;
+    --green: #2d6a4f;
+    --amber: #9a6412;
+    --red: #9f2f2f;
+    --blue: #24517a;
+    --muted: #6d6a62;
+    --mono: "Cascadia Mono", "JetBrains Mono", "Consolas", monospace;
+    --display: "Bahnschrift", "DIN Alternate", "Segoe UI Variable Display", "Aptos Display", sans-serif;
+    --body: "Aptos", "Segoe UI Variable Text", "Segoe UI", "Microsoft YaHei UI", sans-serif;
+    --shadow: 5px 5px 0 rgba(21, 23, 27, 0.09);
+    --rail-width: 304px;
+  }
+
+  * { box-sizing: border-box; }
+
+  html { scroll-behavior: smooth; }
+
+  body {
+    margin: 0;
+    color: var(--ink);
+    font-family: var(--body);
+    font-size: 16px;
+    line-height: 1.72;
+    background:
+      radial-gradient(circle at 82% 4%, rgba(198, 79, 40, 0.09), transparent 32rem),
+      radial-gradient(circle at 12% 88%, rgba(36, 81, 122, 0.08), transparent 30rem),
+      repeating-linear-gradient(0deg, transparent 0 31px, rgba(21, 23, 27, 0.035) 31px 32px),
+      repeating-linear-gradient(90deg, transparent 0 31px, rgba(21, 23, 27, 0.035) 31px 32px),
+      var(--paper);
+    background-attachment: fixed;
+  }
+
+  ::selection { background: var(--orange); color: var(--paper-bright); }
+
+  a { color: var(--blue); text-decoration-thickness: 1px; text-underline-offset: 3px; }
+  a:hover { color: var(--orange); }
+
+  code, .mono { font-family: var(--mono); font-size: 0.86em; }
+
+  code {
+    background: rgba(21, 23, 27, 0.06);
+    border: 1px solid rgba(21, 23, 27, 0.08);
+    padding: 0.08em 0.34em;
+    border-radius: 2px;
+  }
+
+  .skip {
+    position: absolute;
+    left: 12px;
+    top: -60px;
+    z-index: 100;
+    background: var(--ink);
+    color: var(--paper-bright);
+    padding: 10px 16px;
+    font-family: var(--mono);
+    font-size: 12px;
+    text-decoration: none;
+  }
+  .skip:focus { top: 12px; }
+
+  .progress {
+    position: fixed;
+    inset: 0 auto auto 0;
+    height: 3px;
+    width: 0;
+    background: var(--orange);
+    z-index: 60;
+  }
+
+  .app {
+    display: grid;
+    grid-template-columns: var(--rail-width) minmax(0, 1fr);
+    min-height: 100vh;
+  }
+
+  /* ---------- Rail ---------- */
+  .rail {
+    position: sticky;
+    top: 0;
+    height: 100vh;
+    overflow-y: auto;
+    background:
+      linear-gradient(160deg, rgba(255,255,255,0.05), transparent 42%),
+      var(--ink);
+    color: var(--paper);
+    border-right: 1px solid rgba(0, 0, 0, 0.35);
+    padding: 26px 22px 22px;
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+  }
+
+  .brand {
+    font-family: var(--mono);
+    font-size: 10px;
+    letter-spacing: 0.2em;
+    color: rgba(243, 239, 230, 0.62);
+    text-transform: uppercase;
+  }
+
+  .rail h1 {
+    margin: 10px 0 0;
+    font-family: var(--display);
+    font-weight: 600;
+    font-size: 34px;
+    line-height: 1.02;
+    letter-spacing: -0.01em;
+  }
+
+  .stamp {
+    margin-top: 18px;
+    display: inline-block;
+    border: 2px solid var(--orange-bright);
+    color: var(--orange-bright);
+    padding: 8px 11px 6px;
+    font-family: var(--mono);
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 0.16em;
+    line-height: 1.25;
+    transform: rotate(-2.5deg);
+    box-shadow: 3px 3px 0 rgba(227, 106, 58, 0.18);
+  }
+
+  .rail-meta {
+    margin: 16px 0 0;
+    font-family: var(--mono);
+    font-size: 11px;
+    line-height: 1.7;
+    color: rgba(243, 239, 230, 0.58);
+  }
+
+  .rail-note {
+    margin: 12px 0 0;
+    font-size: 12px;
+    line-height: 1.6;
+    color: rgba(243, 239, 230, 0.72);
+    border-left: 2px solid rgba(227, 106, 58, 0.7);
+    padding-left: 10px;
+  }
+
+  .rail-nav { display: flex; flex-direction: column; gap: 2px; }
+
+  .rail-nav a {
+    display: grid;
+    grid-template-columns: 26px 1fr;
+    gap: 8px;
+    align-items: baseline;
+    color: rgba(243, 239, 230, 0.66);
+    text-decoration: none;
+    font-size: 12.5px;
+    line-height: 1.35;
+    padding: 7px 8px;
+    border-left: 2px solid transparent;
+    transition: color 160ms ease, background 160ms ease, border-color 160ms ease;
+  }
+
+  .rail-nav a .n {
+    font-family: var(--mono);
+    font-size: 10px;
+    color: rgba(243, 239, 230, 0.36);
+  }
+
+  .rail-nav a:hover,
+  .rail-nav a[aria-current="true"] {
+    color: var(--paper-bright);
+    background: rgba(255, 255, 255, 0.055);
+    border-left-color: var(--orange-bright);
+  }
+
+  .rail-nav a[aria-current="true"] .n { color: var(--orange-bright); }
+
+  .rail-foot {
+    margin-top: auto;
+    padding-top: 16px;
+    border-top: 1px solid rgba(243, 239, 230, 0.14);
+    font-family: var(--mono);
+    font-size: 10px;
+    line-height: 1.7;
+    color: rgba(243, 239, 230, 0.42);
+  }
+
+  /* ---------- Main ---------- */
+  main { min-width: 0; padding: 58px clamp(24px, 5vw, 72px) 96px; }
+
+  .wrap { max-width: 1120px; margin: 0 auto; }
+
+  .hero { padding-bottom: 40px; border-bottom: 1px solid var(--line-strong); }
+
+  .eyebrow {
+    font-family: var(--mono);
+    font-size: 11px;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--orange);
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .eyebrow::before {
+    content: "";
+    width: 34px;
+    height: 1px;
+    background: var(--orange);
+  }
+
+  .hero h2 {
+    margin: 15px 0 14px;
+    font-family: var(--display);
+    font-weight: 600;
+    font-size: clamp(38px, 5.2vw, 68px);
+    line-height: 0.98;
+    letter-spacing: -0.025em;
+    max-width: 920px;
+  }
+
+  .hero h2 em {
+    font-style: normal;
+    color: var(--orange);
+  }
+
+  .lede {
+    max-width: 840px;
+    margin: 0;
+    font-size: 18px;
+    line-height: 1.75;
+    color: var(--ink-soft);
+  }
+
+  .impl-note {
+    display: inline-flex;
+    flex-wrap: wrap;
+    gap: 8px 14px;
+    align-items: center;
+    margin-top: 18px;
+    padding: 8px 11px;
+    border: 1px solid var(--green);
+    background: rgba(45, 106, 79, 0.07);
+    font-family: var(--mono);
+    font-size: 10px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--green);
+  }
+
+  .hero-grid {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 12px;
+    margin-top: 28px;
+  }
+
+  .metric {
+    background: var(--ink);
+    color: var(--paper);
+    padding: 15px 15px 13px;
+    border: 1px solid rgba(0,0,0,0.35);
+    box-shadow: var(--shadow);
+    min-height: 124px;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .metric::after {
+    content: attr(data-index);
+    position: absolute;
+    right: 8px;
+    top: 4px;
+    font-family: var(--mono);
+    font-size: 28px;
+    color: rgba(243, 239, 230, 0.08);
+    line-height: 1;
+  }
+
+  .metric .k {
+    font-family: var(--mono);
+    font-size: 10px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: rgba(243, 239, 230, 0.58);
+  }
+
+  .metric strong {
+    font-family: var(--display);
+    font-size: 32px;
+    line-height: 1;
+    font-weight: 600;
+    color: var(--orange-bright);
+  }
+
+  .metric strong span {
+    font-size: 14px;
+    color: rgba(243, 239, 230, 0.72);
+    margin-left: 2px;
+  }
+
+  .metric small {
+    font-size: 11px;
+    line-height: 1.45;
+    color: rgba(243, 239, 230, 0.62);
+  }
+
+  section { padding-top: 58px; scroll-margin-top: 24px; }
+
+  .sec-head {
+    display: grid;
+    grid-template-columns: 72px minmax(0, 1fr);
+    gap: 16px;
+    align-items: start;
+    margin-bottom: 24px;
+  }
+
+  .sec-no {
+    font-family: var(--mono);
+    font-size: 12px;
+    color: var(--orange);
+    padding-top: 8px;
+    border-top: 2px solid var(--orange);
+    letter-spacing: 0.08em;
+  }
+
+  .sec-head h3 {
+    margin: 0;
+    font-family: var(--display);
+    font-weight: 600;
+    font-size: clamp(26px, 3.1vw, 38px);
+    line-height: 1.06;
+    letter-spacing: -0.015em;
+  }
+
+  .sec-head p {
+    margin: 7px 0 0;
+    color: var(--muted);
+    font-size: 14px;
+    max-width: 820px;
+  }
+
+  h4 {
+    margin: 30px 0 10px;
+    font-family: var(--display);
+    font-size: 20px;
+    font-weight: 600;
+    letter-spacing: -0.005em;
+  }
+
+  p { margin: 0 0 12px; }
+
+  .cols { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 18px; }
+  .cols-3 { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px; }
+  .cols > *, .cols-3 > * { min-width: 0; }
+
+  .card {
+    background: var(--paper-bright);
+    border: 1px solid var(--line-strong);
+    box-shadow: var(--shadow);
+    padding: 18px 18px 16px;
+  }
+
+  .card.dark {
+    background: var(--ink);
+    color: var(--paper);
+    border-color: rgba(0,0,0,0.42);
+  }
+  .card.dark h4, .card.dark p { color: var(--paper); }
+  .card.dark .muted { color: rgba(243, 239, 230, 0.62); }
+
+  .card.warn { border-left: 4px solid var(--orange); }
+  .card.good { border-left: 4px solid var(--green); }
+  .card.bad { border-left: 4px solid var(--red); }
+
+  .kicker {
+    font-family: var(--mono);
+    font-size: 10px;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--orange);
+    margin-bottom: 6px;
+  }
+
+  .verdict {
+    display: grid;
+    grid-template-columns: 1.05fr 1.4fr;
+    gap: 18px;
+    align-items: stretch;
+  }
+
+  .verdict-main {
+    background:
+      linear-gradient(135deg, rgba(227,106,58,0.17), transparent 52%),
+      var(--ink);
+    color: var(--paper);
+    border: 1px solid rgba(0,0,0,0.4);
+    box-shadow: var(--shadow);
+    padding: 24px;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .verdict-main::before {
+    content: "ASSESSMENT";
+    position: absolute;
+    right: -22px;
+    top: 22px;
+    transform: rotate(90deg);
+    font-family: var(--mono);
+    font-size: 10px;
+    letter-spacing: 0.3em;
+    color: rgba(243, 239, 230, 0.16);
+  }
+
+  .verdict-main .big {
+    font-family: var(--display);
+    font-size: 54px;
+    line-height: 0.94;
+    color: var(--orange-bright);
+    letter-spacing: -0.02em;
+    margin: 8px 0 12px;
+  }
+
+  .verdict-main p { color: rgba(243, 239, 230, 0.82); font-size: 14px; }
+
+  .verdict-list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+  }
+
+  .verdict-list li {
+    display: grid;
+    grid-template-columns: 84px minmax(0, 1fr);
+    gap: 12px;
+    padding: 10px 0;
+    border-bottom: 1px dashed var(--line);
+    font-size: 13.5px;
+    line-height: 1.55;
+  }
+  .verdict-list li:last-child { border-bottom: 0; }
+
+  .verdict-list .tag {
+    font-family: var(--mono);
+    font-size: 10px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    padding-top: 2px;
+  }
+
+  .tag.yes { color: var(--green); }
+  .tag.partial { color: var(--amber); }
+  .tag.no { color: var(--red); }
+
+  /* ---------- Tables ---------- */
+  .table-wrap {
+    overflow-x: auto;
+    min-width: 0;
+    border: 1px solid var(--line-strong);
+    background: var(--paper-bright);
+    box-shadow: var(--shadow);
+  }
+
+  table { width: 100%; border-collapse: collapse; font-size: 13px; line-height: 1.55; }
+  th, td { padding: 10px 12px; text-align: left; vertical-align: top; border-bottom: 1px solid var(--line); }
+  th {
+    background: var(--ink);
+    color: var(--paper);
+    font-family: var(--mono);
+    font-size: 10px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    font-weight: 600;
+    white-space: nowrap;
+  }
+  tr:last-child td { border-bottom: 0; }
+  tbody tr:hover { background: rgba(198, 79, 40, 0.045); }
+  td.num { font-family: var(--mono); white-space: nowrap; }
+  td.tight { white-space: nowrap; }
+
+  .chip {
+    display: inline-block;
+    font-family: var(--mono);
+    font-size: 10px;
+    line-height: 1.25;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    border: 1px solid currentColor;
+    padding: 2px 6px 1px;
+    white-space: nowrap;
+  }
+  .chip.green { color: var(--green); }
+  .chip.amber { color: var(--amber); }
+  .chip.red { color: var(--red); }
+  .chip.blue { color: var(--blue); }
+  .chip.ink { color: var(--ink); }
+  .chip.fill-green { background: var(--green); color: var(--paper-bright); border-color: var(--green); }
+  .chip.fill-amber { background: var(--amber); color: var(--paper-bright); border-color: var(--amber); }
+  .chip.fill-red { background: var(--red); color: var(--paper-bright); border-color: var(--red); }
+
+  /* ---------- Callouts ---------- */
+  .callout {
+    border: 1px solid var(--line-strong);
+    border-left: 4px solid var(--orange);
+    background: rgba(198, 79, 40, 0.055);
+    padding: 14px 16px;
+    margin: 16px 0;
+    font-size: 13.5px;
+  }
+  .callout strong { font-family: var(--display); }
+  .callout .label {
+    display: block;
+    font-family: var(--mono);
+    font-size: 10px;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--orange);
+    margin-bottom: 4px;
+  }
+  .callout.good { border-left-color: var(--green); background: rgba(45, 106, 79, 0.06); }
+  .callout.good .label { color: var(--green); }
+  .callout.bad { border-left-color: var(--red); background: rgba(159, 47, 47, 0.06); }
+  .callout.bad .label { color: var(--red); }
+
+  /* ---------- Lists ---------- */
+  .steps { list-style: none; margin: 0; padding: 0; counter-reset: step; }
+  .steps li {
+    counter-increment: step;
+    display: grid;
+    grid-template-columns: 38px minmax(0, 1fr);
+    gap: 12px;
+    padding: 10px 0;
+    border-bottom: 1px dashed var(--line);
+    font-size: 13.5px;
+  }
+  .steps li:last-child { border-bottom: 0; }
+  .steps li::before {
+    content: counter(step, decimal-leading-zero);
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--orange);
+    border-top: 1px solid var(--orange);
+    padding-top: 3px;
+  }
+  .steps strong { font-family: var(--display); font-size: 15px; }
+
+  .checklist { list-style: none; margin: 0; padding: 0; }
+  .checklist li {
+    display: grid;
+    grid-template-columns: 18px minmax(0, 1fr);
+    gap: 9px;
+    padding: 7px 0;
+    font-size: 13.5px;
+    border-bottom: 1px dashed var(--line);
+  }
+  .checklist li:last-child { border-bottom: 0; }
+  .checklist li::before {
+    content: "";
+    width: 11px;
+    height: 11px;
+    border: 1px solid var(--line-strong);
+    margin-top: 4px;
+    background: var(--paper);
+  }
+
+  /* ---------- Diagrams ---------- */
+  .diagram {
+    border: 1px solid var(--line-strong);
+    background: var(--paper-bright);
+    box-shadow: var(--shadow);
+    padding: 12px;
+    overflow-x: auto;
+    min-width: 0;
+  }
+  .diagram svg { display: block; width: 100%; height: auto; min-width: 680px; }
+  .diagram-caption {
+    font-family: var(--mono);
+    font-size: 10px;
+    letter-spacing: 0.06em;
+    color: var(--muted);
+    padding: 8px 4px 0;
+    display: flex;
+    justify-content: space-between;
+    gap: 12px;
+    flex-wrap: wrap;
+  }
+
+  /* ---------- Risk ---------- */
+  .risk-toolbar { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin: 14px 0 10px; }
+  .risk-toolbar button {
+    font-family: var(--mono);
+    font-size: 10px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    padding: 5px 9px;
+    border: 1px solid var(--line-strong);
+    background: var(--paper-bright);
+    color: var(--ink);
+    cursor: pointer;
+  }
+  .risk-toolbar button[aria-pressed="true"] { background: var(--ink); color: var(--paper); border-color: var(--ink); }
+  .risk-toolbar .count { font-family: var(--mono); font-size: 10px; color: var(--muted); margin-left: auto; }
+  tr.risk-row[hidden] { display: none; }
+
+  .risk-grid {
+    display: grid;
+    grid-template-columns: 88px repeat(5, minmax(0, 1fr));
+    min-width: 0;
+    overflow-x: auto;
+    border: 1px solid var(--line-strong);
+    background: var(--paper-bright);
+    box-shadow: var(--shadow);
+    font-size: 11px;
+  }
+  .risk-grid > div {
+    border-right: 1px solid var(--line);
+    border-bottom: 1px solid var(--line);
+    min-height: 46px;
+    padding: 6px;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+    align-content: flex-start;
+  }
+  .risk-grid > div:nth-child(6n) { border-right: 0; }
+  .risk-grid .axis {
+    background: var(--ink);
+    color: var(--paper);
+    font-family: var(--mono);
+    font-size: 9px;
+    letter-spacing: 0.08em;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+  }
+  .risk-grid .cell-l1 { background: rgba(45, 106, 79, 0.06); }
+  .risk-grid .cell-l2 { background: rgba(45, 106, 79, 0.04); }
+  .risk-grid .cell-l3 { background: rgba(154, 100, 18, 0.07); }
+  .risk-grid .cell-l4 { background: rgba(198, 79, 40, 0.09); }
+  .risk-grid .cell-l5 { background: rgba(159, 47, 47, 0.13); }
+  .risk-id {
+    font-family: var(--mono);
+    font-size: 9px;
+    border: 1px solid currentColor;
+    padding: 1px 4px;
+    white-space: nowrap;
+  }
+
+  /* ---------- Tabs ---------- */
+  .tabs { display: flex; flex-wrap: wrap; gap: 0; border-bottom: 1px solid var(--line-strong); margin: 14px 0 0; }
+  .tabs button {
+    font-family: var(--mono);
+    font-size: 11px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    padding: 9px 14px;
+    border: 1px solid transparent;
+    border-bottom: 2px solid transparent;
+    background: transparent;
+    color: var(--muted);
+    cursor: pointer;
+  }
+  .tabs button[aria-selected="true"] {
+    color: var(--ink);
+    border-bottom-color: var(--orange);
+    background: rgba(198, 79, 40, 0.05);
+  }
+  .tab-panel[hidden] { display: none; }
+  .tab-panel { padding-top: 16px; }
+
+  /* ---------- Perf bars ---------- */
+  .bars { display: flex; flex-direction: column; gap: 12px; }
+  .bar-row { display: grid; grid-template-columns: 210px minmax(0, 1fr) 92px; gap: 10px; align-items: center; font-size: 12px; }
+  .bar-track { height: 18px; background: rgba(21,23,27,0.08); border: 1px solid var(--line); position: relative; overflow: hidden; }
+  .bar-fill { height: 100%; background: var(--ink); }
+  .bar-fill.orange { background: var(--orange); }
+  .bar-fill.green { background: var(--green); }
+  .bar-value { font-family: var(--mono); font-size: 11px; text-align: right; white-space: nowrap; }
+
+  /* ---------- Evidence links ---------- */
+  .evidence { font-size: 12px; line-height: 1.6; }
+  .evidence a { word-break: break-all; }
+  .evidence td:first-child { white-space: nowrap; font-family: var(--mono); font-size: 10px; color: var(--orange); }
+
+  .small { font-size: 12px; color: var(--muted); }
+  .muted { color: var(--muted); }
+  .mt-0 { margin-top: 0; }
+  .mt-16 { margin-top: 16px; }
+  .mb-0 { margin-bottom: 0; }
+
+  .footer {
+    margin-top: 64px;
+    padding-top: 18px;
+    border-top: 1px solid var(--line-strong);
+    display: flex;
+    justify-content: space-between;
+    gap: 18px;
+    flex-wrap: wrap;
+    font-family: var(--mono);
+    font-size: 10px;
+    letter-spacing: 0.06em;
+    color: var(--muted);
+  }
+
+  .sr-only {
+    position: absolute;
+    width: 1px; height: 1px;
+    padding: 0; margin: -1px;
+    overflow: hidden; clip: rect(0,0,0,0);
+    white-space: nowrap; border: 0;
+  }
+
+  a:focus-visible, button:focus-visible {
+    outline: 2px solid var(--orange);
+    outline-offset: 2px;
+  }
+
+  @media (max-width: 1050px) {
+    :root { --rail-width: 260px; }
+    .hero-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .verdict { grid-template-columns: 1fr; }
+    .cols-3 { grid-template-columns: 1fr 1fr; }
+  }
+
+  @media (max-width: 820px) {
+    .app { grid-template-columns: 1fr; }
+    .rail {
+      position: relative;
+      height: auto;
+      padding: 20px 18px 16px;
+      gap: 16px;
+    }
+    .rail h1 { font-size: 30px; }
+    .rail-nav {
+      flex-direction: row;
+      overflow-x: auto;
+      padding-bottom: 4px;
+      gap: 4px;
+    }
+    .rail-nav a { min-width: 150px; border-left: 0; border-bottom: 2px solid transparent; }
+    .rail-nav a[aria-current="true"] { border-left-color: transparent; border-bottom-color: var(--orange-bright); }
+    .rail-foot { display: none; }
+    main { padding: 34px 18px 64px; }
+    .sec-head { grid-template-columns: 52px minmax(0,1fr); gap: 10px; }
+    .cols, .cols-3 { grid-template-columns: 1fr; }
+    .hero-grid { grid-template-columns: 1fr 1fr; }
+    .bar-row { grid-template-columns: 1fr; gap: 4px; }
+    .bar-value { text-align: left; }
+    .risk-grid { grid-template-columns: 66px repeat(5, minmax(64px, 1fr)); overflow-x: auto; }
+  }
+
+  @media (max-width: 520px) {
+    .hero-grid { grid-template-columns: 1fr; }
+    .metric { min-height: 96px; }
+    .verdict-list li { grid-template-columns: 1fr; gap: 2px; }
+  }
+
+  @media print {
+    body { background: #fff; }
+    .rail, .progress, .risk-toolbar, .tabs { display: none !important; }
+    .app { display: block; }
+    main { padding: 0; }
+    .wrap { max-width: none; }
+    section { break-inside: avoid; }
+    .card, .table-wrap, .diagram { box-shadow: none; }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    html { scroll-behavior: auto; }
+    * { animation-duration: 0.001ms !important; transition-duration: 0.001ms !important; }
+  }
+
+  /* Page-load reveal */
+  @keyframes rise {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+  .hero, section { animation: rise 420ms ease both; }
+  section:nth-of-type(2) { animation-delay: 40ms; }
+  section:nth-of-type(3) { animation-delay: 80ms; }
+</style>
+</head>
+<body>
+<a class="skip" href="#main">跳到正文</a>
+<div class="progress" id="progress" aria-hidden="true"></div>
+
+<div class="app">
+  <aside class="rail" aria-label="报告导航">
+    <div>
+      <div class="brand">SLLKGUI / PLATFORM NOTE</div>
+      <h1>插件热重载<br>可行性评估</h1>
+      <div class="stamp">CONDITIONAL<br>GO</div>
+      <p class="rail-meta">评估对象：SllkGui 4.x 基座<br>插件 API：v2<br>日期：2026-11-21</p>
+      <p class="rail-note">证据来自本地代码审计与 offscreen Qt 基准测试；不包含外部联网资料。</p>
+    </div>
+
+    <nav class="rail-nav" aria-label="章节目录">
+      <a href="#verdict"><span class="n">01</span><span>结论先行</span></a>
+      <a href="#baseline"><span class="n">02</span><span>现状基线</span></a>
+      <a href="#feasibility"><span class="n">03</span><span>可行性矩阵</span></a>
+      <a href="#scope"><span class="n">04</span><span>改动范围</span></a>
+      <a href="#lifecycle"><span class="n">05</span><span>插件生命周期</span></a>
+      <a href="#state"><span class="n">06</span><span>状态保持</span></a>
+      <a href="#risk"><span class="n">07</span><span>风险登记</span></a>
+      <a href="#release"><span class="n">08</span><span>资源释放</span></a>
+      <a href="#rollback"><span class="n">09</span><span>异常回滚</span></a>
+      <a href="#performance"><span class="n">10</span><span>性能影响</span></a>
+      <a href="#boundary"><span class="n">11</span><span>实施边界</span></a>
+      <a href="#acceptance"><span class="n">12</span><span>验收标准</span></a>
+      <a href="#evidence"><span class="n">13</span><span>证据索引</span></a>
+    </nav>
+
+    <div class="rail-foot">
+      <div>CONFIDENCE: HIGH / CODE</div>
+      <div>CONFIDENCE: MED / PERF</div>
+      <div>NO EXTERNAL SOURCES</div>
+    </div>
+  </aside>
+
+  <main id="main">
+    <div class="wrap">
+
+      <header class="hero">
+        <div class="eyebrow">Architecture assessment / plugin runtime</div>
+        <h2>从“全量重建”走向<br><em>按插件刷新</em></h2>
+        <p class="lede">
+          结论是<strong>有条件可行</strong>。基座已经具备按插件卸载/加载、按 owner 清理能力句柄、按路由懒构建页面的基础；
+          把“启停/更新后重建所有页面”改成“只刷新目标插件及其依赖子图”在工程上成立。
+          但“受影响插件页面内部状态无损”“原生扩展与插件自建线程的热替换”“更新失败自动回滚”不能由现有 API 直接保证，
+          应明确排除、降级或新增契约。
+        </p>
+
+        <div class="impl-note">
+          <span>IMPLEMENTED · MVP + PHASE 2</span>
+          <span>20 插件选择性重载 29.5ms / 全量 373.0ms</span>
+          <span>2026-11-21</span>
+        </div>
+
+        <div class="hero-grid">
+          <div class="metric" data-index="01">
+            <div class="k">单插件 / 20 插件</div>
+            <strong>29.5<span>ms</span></strong>
+            <small>实现后选择性重载中位数；全量 373.0ms，约 7.9%</small>
+          </div>
+          <div class="metric" data-index="02">
+            <div class="k">窗口全量重载</div>
+            <strong>181.0<span>ms</span></strong>
+            <small>Showcase 10 Surface；runtime-only 94.3ms，页面/菜单约 86.7ms</small>
+          </div>
+          <div class="metric" data-index="03">
+            <div class="k">核心改动</div>
+            <strong>6<span>模块</span></strong>
+            <small>runtime / loader / window / manager / registry / 插件管理页</small>
+          </div>
+          <div class="metric" data-index="04">
+            <div class="k">综合风险</div>
+            <strong>中<span>级</span></strong>
+            <small>回滚、原生扩展锁定、线程/定时器释放是硬边界</small>
+          </div>
+        </div>
+      </header>
+
+      <!-- 01 -->
+      <section id="verdict" aria-labelledby="verdict-title">
+        <div class="sec-head">
+          <div class="sec-no">01</div>
+          <div>
+            <h3 id="verdict-title">结论先行</h3>
+            <p>把目标拆成“能力刷新”和“页面状态无损”两条线，可行性结论不同；前者可以进入 MVP，后者需要新增插件契约。</p>
+          </div>
+        </div>
+
+        <div class="verdict">
+          <div class="verdict-main">
+            <div class="kicker" style="color: rgba(243,239,230,.58)">Verdict</div>
+            <div class="big">CONDITIONAL<br>GO</div>
+            <p>
+              建议以“选择性插件重载 + 保留未受影响页面”为 MVP，保留全量重载作为回退路径；
+              不承诺受影响插件页面内部状态无损，不承诺原生扩展热替换，不承诺插件自建线程的强制回收。
+            </p>
+            <p style="margin-bottom:0;color:rgba(243,239,230,.58);font-family:var(--mono);font-size:10px;letter-spacing:.08em">
+              SCOPE: ENABLE / DISABLE / UPDATE / ROLLBACK / REMOVE
+            </p>
+          </div>
+
+          <div class="card">
+            <div class="kicker">可以做到 / 需要条件 / 不要承诺</div>
+            <ul class="verdict-list">
+              <li>
+                <span class="tag yes">可以做到</span>
+                <span>只卸载/加载目标插件及其反向依赖者；未受影响插件的 <code>on_load</code> / <code>on_unload</code> 不被调用。</span>
+              </li>
+              <li>
+                <span class="tag yes">可以做到</span>
+                <span>保留未受影响页面实例、滚动位置与表单状态；插件管理原生页不再被销毁。</span>
+              </li>
+              <li>
+                <span class="tag yes">可以做到</span>
+                <span>按 owner 清理托盘、快捷键、事件订阅、服务、设置页与模块缓存；这些能力已有现成句柄。</span>
+              </li>
+              <li>
+                <span class="tag partial">需要条件</span>
+                <span>受影响页面会被重建；页面内部状态需要插件在 <code>on_surface_leave</code> 写入 <code>ctx.settings</code> / <code>ctx.storage</code>，或新增 surface 状态协议。</span>
+              </li>
+              <li>
+                <span class="tag partial">需要条件</span>
+                <span>更新失败自动回滚需要事务化文件替换、旧版本重载与状态恢复；现有 manager 只归档旧版本，没有恢复路径。</span>
+              </li>
+              <li>
+                <span class="tag no">不要承诺</span>
+                <span>原生扩展（<code>.pyd</code> / <code>.so</code> / <code>.dll</code>）热替换、插件自建线程/定时器的强制回收、进程隔离。</span>
+              </li>
+            </ul>
+          </div>
+        </div>
+
+        <div class="callout good">
+          <span class="label">为什么现在具备条件</span>
+          <strong>加载器本来就是按插件工作的。</strong>
+          <code>load_plugin()</code> / <code>unload_plugin()</code> 已经按唯一模块名导入、按插件根目录兜底清理 <code>sys.modules</code>，
+          托盘、快捷键、事件、服务、设置都以 <code>plugin_id</code> 为 owner 清理；页面按 <code>plugin_id/surface_id</code> 派生 objectName 并懒构建。
+          真正欠缺的不是“能不能卸载一个插件”，而是“窗口层不要顺手把所有页面和所有插件都重建”。
+        </div>
+      </section>
+
+      <!-- 02 -->
+      <section id="baseline" aria-labelledby="baseline-title">
+        <div class="sec-head">
+          <div class="sec-no">02</div>
+          <div>
+            <h3 id="baseline-title">现状基线</h3>
+            <p>当前一次启停/更新，实际执行的是“全量卸载 → 全量导入 → 全量页面销毁 → 菜单重建”。</p>
+          </div>
+        </div>
+
+        <h4 class="mt-0">当前重载链路</h4>
+        <ol class="steps">
+          <li>
+            <div><strong>插件管理页写入状态并请求重载</strong><br>
+              <code>_set_plugin_enabled()</code> 先改 <code>registry.json</code>，再由 <code>schedule_reload()</code> 延迟 120ms 调 <code>reload_plugins(page_object)</code>。
+              <span class="small">（plugin_store/page.py:962-980、1242-1257）</span>
+            </div>
+          </li>
+          <li>
+            <div><strong>窗口销毁所有已构建页面</strong><br>
+              <code>_clear_pages()</code> 对页面栈做 <code>removeWidget → hide → setParent(None) → deleteLater</code>，包括插件管理这个原生页。
+              <span class="small">（gallery/window.py:306-323）</span>
+            </div>
+          </li>
+          <li>
+            <div><strong>运行时全量重载</strong><br>
+              <code>runtime.reload()</code> → <code>shutdown(clear_registry=False, dispose_tray=False)</code> → <code>unload_all(records)</code> → 清空 records → 重新读取 registry → <code>bootstrap()</code> 重新加载全部插件。
+              <span class="small">（gallery/runtime.py:233-244）</span>
+            </div>
+          </li>
+          <li>
+            <div><strong>菜单与页面重新装配</strong><br>
+              <code>left_menu.clear_menus()</code> + <code>add_menus(get_menu_items(...))</code>；再按原生页/原路由/默认路由重新打开页面。
+              <span class="small">（gallery/window.py:246-263；guicore/window/left_menu/menu.py:94-147）</span>
+            </div>
+          </li>
+        </ol>
+
+        <div class="diagram">
+          <svg viewBox="0 0 980 470" role="img" aria-labelledby="arch-svg-title arch-svg-desc">
+            <title id="arch-svg-title">当前全量重载与建议选择性重载的路径对比</title>
+            <desc id="arch-svg-desc">当前路径销毁所有页面并重载所有插件；建议路径只销毁目标插件页面并重载目标及其依赖者。</desc>
+            <defs>
+              <marker id="arch-arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+                <path d="M 0 0 L 10 5 L 0 10 z" fill="#15171b"/>
+              </marker>
+              <marker id="arch-arrow-red" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+                <path d="M 0 0 L 10 5 L 0 10 z" fill="#9f2f2f"/>
+              </marker>
+              <marker id="arch-arrow-orange" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+                <path d="M 0 0 L 10 5 L 0 10 z" fill="#c64f28"/>
+              </marker>
+            </defs>
+            <rect width="980" height="470" fill="#fbf8f1"/>
+
+            <!-- window -->
+            <rect x="30" y="24" width="920" height="66" fill="#15171b"/>
+            <text x="50" y="50" font-family="Bahnschrift, Segoe UI, sans-serif" font-size="17" font-weight="600" fill="#f3efe6">GalleryWindow</text>
+            <text x="50" y="70" font-family="Cascadia Mono, Consolas, monospace" font-size="10" fill="#a8a49a">左菜单 · 页面栈 · 标题栏 · 当前路由</text>
+
+            <!-- current path -->
+            <rect x="30" y="118" width="450" height="218" fill="#f3efe6" stroke="#9f2f2f" stroke-width="1.6"/>
+            <text x="48" y="143" font-family="Cascadia Mono, Consolas, monospace" font-size="10" letter-spacing="1.2" fill="#9f2f2f">CURRENT / 全量重载</text>
+            <rect x="48" y="156" width="180" height="38" fill="#fbf8f1" stroke="#15171b" stroke-width="1.2"/>
+            <text x="138" y="180" text-anchor="middle" font-family="Cascadia Mono, Consolas, monospace" font-size="10" fill="#15171b">reload_plugins()</text>
+            <path d="M 228 175 L 262 175" stroke="#9f2f2f" stroke-width="1.5" fill="none" marker-end="url(#arch-arrow-red)"/>
+            <rect x="262" y="156" width="198" height="38" fill="#fbf8f1" stroke="#9f2f2f" stroke-width="1.2"/>
+            <text x="361" y="174" text-anchor="middle" font-family="Cascadia Mono, Consolas, monospace" font-size="9" fill="#9f2f2f">_clear_pages()</text>
+            <text x="361" y="187" text-anchor="middle" font-family="Cascadia Mono, Consolas, monospace" font-size="8" fill="#6d6a62">销毁 A / B / C 全部页面</text>
+            <path d="M 361 194 L 361 214" stroke="#9f2f2f" stroke-width="1.5" fill="none" marker-end="url(#arch-arrow-red)"/>
+            <rect x="262" y="214" width="198" height="38" fill="#fbf8f1" stroke="#9f2f2f" stroke-width="1.2"/>
+            <text x="361" y="232" text-anchor="middle" font-family="Cascadia Mono, Consolas, monospace" font-size="9" fill="#9f2f2f">runtime.reload()</text>
+            <text x="361" y="245" text-anchor="middle" font-family="Cascadia Mono, Consolas, monospace" font-size="8" fill="#6d6a62">unload all + bootstrap all</text>
+            <text x="48" y="286" font-family="Cascadia Mono, Consolas, monospace" font-size="9" fill="#6d6a62">结果：A/B/C 插件全部重载</text>
+            <text x="48" y="302" font-family="Cascadia Mono, Consolas, monospace" font-size="9" fill="#6d6a62">A/B/C 页面全部重建 · 状态丢失</text>
+            <rect x="48" y="312" width="432" height="12" fill="rgba(159,47,47,.12)" stroke="none"/>
+
+            <!-- proposed path -->
+            <rect x="500" y="118" width="450" height="218" fill="#f3efe6" stroke="#c64f28" stroke-width="1.8"/>
+            <text x="518" y="143" font-family="Cascadia Mono, Consolas, monospace" font-size="10" letter-spacing="1.2" fill="#c64f28">PROPOSED / 选择性重载</text>
+            <rect x="518" y="156" width="198" height="38" fill="#fbf8f1" stroke="#c64f28" stroke-width="1.2"/>
+            <text x="617" y="174" text-anchor="middle" font-family="Cascadia Mono, Consolas, monospace" font-size="9" fill="#c64f28">reload_plugin_in_place(A)</text>
+            <text x="617" y="187" text-anchor="middle" font-family="Cascadia Mono, Consolas, monospace" font-size="8" fill="#6d6a62">当前路由不属于 A 时不动页面</text>
+            <path d="M 716 175 L 748 175" stroke="#c64f28" stroke-width="1.6" fill="none" marker-end="url(#arch-arrow-orange)"/>
+            <rect x="748" y="156" width="184" height="38" fill="#fbf8f1" stroke="#c64f28" stroke-width="1.2"/>
+            <text x="840" y="174" text-anchor="middle" font-family="Cascadia Mono, Consolas, monospace" font-size="9" fill="#c64f28">只销毁 page_A</text>
+            <text x="840" y="187" text-anchor="middle" font-family="Cascadia Mono, Consolas, monospace" font-size="8" fill="#6d6a62">B / C 页面实例保留</text>
+            <path d="M 840 194 L 840 214" stroke="#c64f28" stroke-width="1.6" fill="none" marker-end="url(#arch-arrow-orange)"/>
+            <rect x="748" y="214" width="184" height="38" fill="#fbf8f1" stroke="#c64f28" stroke-width="1.2"/>
+            <text x="840" y="232" text-anchor="middle" font-family="Cascadia Mono, Consolas, monospace" font-size="9" fill="#c64f28">reload_plugins([A])</text>
+            <text x="840" y="245" text-anchor="middle" font-family="Cascadia Mono, Consolas, monospace" font-size="8" fill="#6d6a62">A + 反向依赖者</text>
+            <text x="518" y="286" font-family="Cascadia Mono, Consolas, monospace" font-size="9" fill="#6d6a62">结果：只重载 A（及依赖 A 的插件）</text>
+            <text x="518" y="302" font-family="Cascadia Mono, Consolas, monospace" font-size="9" fill="#6d6a62">B/C 页面实例、滚动、表单状态保留</text>
+            <rect x="518" y="312" width="414" height="12" fill="rgba(198,79,40,.10)" stroke="none"/>
+
+            <!-- bottom capability strip -->
+            <rect x="30" y="366" width="920" height="68" fill="#15171b"/>
+            <text x="48" y="390" font-family="Cascadia Mono, Consolas, monospace" font-size="9" letter-spacing="1" fill="#e36a3a">SHARED CAPABILITY LAYER</text>
+            <text x="48" y="410" font-family="Cascadia Mono, Consolas, monospace" font-size="9" fill="#f3efe6">GalleryLoader · GalleryRegistry · PluginManager · TrayService · ShortcutRegistry</text>
+            <text x="48" y="425" font-family="Cascadia Mono, Consolas, monospace" font-size="9" fill="#f3efe6">PluginEventBus · PluginServiceRegistry · SettingsRegistry · Language</text>
+
+            <!-- plugin cards -->
+            <g font-family="Cascadia Mono, Consolas, monospace" font-size="8">
+              <rect x="60" y="358" width="74" height="0" fill="none"/>
+              <rect x="500" y="342" width="76" height="18" fill="#2d6a4f"/>
+              <text x="538" y="355" text-anchor="middle" fill="#fbf8f1">B 页面保留</text>
+              <rect x="586" y="342" width="76" height="18" fill="#2d6a4f"/>
+              <text x="624" y="355" text-anchor="middle" fill="#fbf8f1">C 页面保留</text>
+              <rect x="672" y="342" width="76" height="18" fill="#9f2f2f"/>
+              <text x="710" y="355" text-anchor="middle" fill="#fbf8f1">A 页面重建</text>
+            </g>
+          </svg>
+          <div class="diagram-caption">
+            <span>图 1 · 当前全量路径与建议选择性路径的差异；共享能力层按 owner 清理，不需要整体销毁。</span>
+            <span>页面实例保留是 MVP 的核心收益</span>
+          </div>
+        </div>
+
+        <h4>已有可复用能力</h4>
+        <div class="table-wrap">
+          <table>
+            <caption class="sr-only">已有可复用能力</caption>
+            <thead>
+              <tr><th>能力</th><th>现有机制</th><th>对选择性重载的价值</th></tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>按插件导入/卸载</td>
+                <td><code>load_plugin()</code> / <code>unload_plugin()</code>；入口使用唯一模块名，<code>_modules_under()</code> 按插件根目录兜底清理惰性子模块。</td>
+                <td>不必为“只换一个插件”重写加载器；现有模块缓存清理就是为更新设计的。</td>
+              </tr>
+              <tr>
+                <td>按 owner 清理能力</td>
+                <td>托盘 <code>remove_plugin</code>、快捷键 <code>unregister_owner</code>、事件/服务 <code>clear_owner</code>、设置 <code>unregister_namespace</code>。</td>
+                <td>不会误删其它插件的条目；卸载目标插件后重新加载即可恢复。</td>
+              </tr>
+              <tr>
+                <td>按路由懒构建页面</td>
+                <td><code>ensure_registered_page()</code> 首次导航才构建；页面 objectName 由路由派生（<code>page_&lt;route&gt;</code>）。</td>
+                <td>可以精确定位并移除目标插件的页面，而不触碰其它页面。</td>
+              </tr>
+              <tr>
+                <td>注册表按插件增删</td>
+                <td><code>GalleryRegistry.add/remove</code> 按 <code>plugin_id</code> 增删插件与 Surface 路由。</td>
+                <td>可以在不 <code>registry.clear()</code> 的情况下替换单个插件。</td>
+              </tr>
+              <tr>
+                <td>设置页按命名空间重建</td>
+                <td>设置窗口订阅 <code>settings_page_bus</code>，按 <code>plugin.&lt;id&gt;</code> 重建页面并保留草稿/滚动。</td>
+                <td>插件更新后通知对应命名空间即可，不必重建设置窗口。</td>
+              </tr>
+              <tr>
+                <td>插件管理页状态暂存</td>
+                <td>页面重建前把模式/搜索词/选中项/滚动位置挂到窗口属性，新页面构建时取回。</td>
+                <td>选择性重载后原生页根本不销毁，这段逻辑可降级为回退路径。</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <h4>实测基线</h4>
+        <div class="table-wrap">
+          <table>
+            <caption class="sr-only">当前重载性能实测</caption>
+            <thead>
+              <tr><th>场景</th><th>测量口径</th><th>中位数</th><th>说明</th></tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>Showcase 10 Surface</td>
+                <td><code>window.reload_plugins()</code>，warm cache，offscreen Qt</td>
+                <td class="num">181.0 ms</td>
+                <td>包含全部页面销毁、runtime 全量卸载/加载、菜单重建、当前页重建。</td>
+              </tr>
+              <tr>
+                <td>Showcase 10 Surface</td>
+                <td><code>runtime.reload()</code>，不含窗口页面/菜单</td>
+                <td class="num">94.3 ms</td>
+                <td>说明页面与菜单装配约占 86.7ms；这部分正是“未受影响时可省掉”的成本。</td>
+              </tr>
+              <tr>
+                <td>20 个最小插件</td>
+                <td>全量 <code>unload_all + load_all</code>，不含 UI</td>
+                <td class="num">220.54 ms</td>
+                <td>全量成本随插件数增长。</td>
+              </tr>
+              <tr>
+                <td>20 个最小插件</td>
+                <td>单插件 <code>unload + registry.remove + load</code></td>
+                <td class="num">11.65 ms</td>
+                <td>约为全量的 5.3%；不含页面重建与菜单重建。</td>
+              </tr>
+              <tr>
+                <td>20 个最小插件（实现后）</td>
+                <td><code>runtime.reload_plugin()</code></td>
+                <td class="num">29.5 ms</td>
+                <td>包含预检、依赖闭包、模块清理与强制语言刷新；全量 373.0ms，约 7.9%。</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        <p class="small">
+          环境：Windows，项目虚拟环境 Python 3.12，<code>QT_QPA_PLATFORM=offscreen</code>，warm cache；
+          数字用于判断相对量级，不是跨机器 SLO。复现命令见第 13 节。
+        </p>
+      </section>
+
+      <!-- 03 -->
+      <section id="feasibility" aria-labelledby="feasibility-title">
+        <div class="sec-head">
+          <div class="sec-no">03</div>
+          <div>
+            <h3 id="feasibility-title">可行性矩阵</h3>
+            <p>按用户提出的八个维度拆开判定；结论不是单一“能/不能”，而是分层的“可直接做 / 需新增契约 / 不建议承诺”。</p>
+          </div>
+        </div>
+
+        <div class="table-wrap">
+          <table>
+            <caption class="sr-only">八个维度的可行性判定</caption>
+            <thead>
+              <tr><th>维度</th><th>判定</th><th>关键依据</th><th>前置条件</th></tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>改动范围</td>
+                <td><span class="chip green">中等 / 可控</span></td>
+                <td>加载器、注册表、能力句柄已经按插件工作；主要新增窗口层的“选择性失效”和运行时事务编排。</td>
+                <td>不修改插件 API v2；不引入进程隔离。</td>
+              </tr>
+              <tr>
+                <td>插件生命周期</td>
+                <td><span class="chip green">可定义</span></td>
+                <td>现有 <code>on_load → surfaces → on_locale_changed → on_surface_enter/leave → on_unload</code> 已覆盖卸载/加载；可增加内部重载状态机。</td>
+                <td>明确卸载顺序：依赖者先卸，提供者先装。</td>
+              </tr>
+              <tr>
+                <td>状态保持</td>
+                <td><span class="chip amber">部分可行</span></td>
+                <td>未受影响页面可原样保留；受影响页面没有通用状态序列化协议，只能重建。</td>
+                <td>插件把视图状态写入 settings/storage，或新增可选 surface 状态协议。</td>
+              </tr>
+              <tr>
+                <td>兼容性</td>
+                <td><span class="chip green">高</span></td>
+                <td>API v2 不变；清单 schema 不变；现有插件无需改代码即可享受“只刷新自己”。</td>
+                <td>新增错误码与内部接口；文档同步。</td>
+              </tr>
+              <tr>
+                <td>稳定性</td>
+                <td><span class="chip amber">中等</span></td>
+                <td>模块缓存清理已有；但插件线程/定时器、Qt 信号、原生扩展锁定不可强制治理。</td>
+                <td>插件规范约束 + 重复重载测试 + 失败隔离。</td>
+              </tr>
+              <tr>
+                <td>资源释放</td>
+                <td><span class="chip amber">中等</span></td>
+                <td>托盘/快捷键/事件/服务/设置都有 owner 清理；页面用 <code>deleteLater</code>；模块可清。</td>
+                <td>释放顺序固定；插件 <code>on_unload</code> 必须幂等并停止自建资源。</td>
+              </tr>
+              <tr>
+                <td>异常回滚</td>
+                <td><span class="chip amber">中高复杂度</span></td>
+                <td>manager 有 staging/history，但 <code>_promote()</code> 在“旧目录已移走、新目录放置失败”时没有恢复动作。</td>
+                <td>事务化 promote + 旧版本重载 + 状态回写；数据迁移不回滚。</td>
+              </tr>
+              <tr>
+                <td>性能影响</td>
+                <td><span class="chip green">高收益</span></td>
+                <td>20 插件实测单插件重载 11.65ms，全量 220.54ms；未受影响页面不再重建。</td>
+                <td>菜单/托盘仍是 O(N) 重建，插件数很大时需再优化。</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div class="cols mt-16">
+          <div class="card good">
+            <div class="kicker">推荐结论</div>
+            <p class="mb-0">
+              以“<strong>按插件选择性重载</strong>”进入 MVP；把“页面状态无损”和“原生扩展热替换”明确排除在第一版承诺之外。
+              全量重载保留为 <code>force_full=True</code> 的回退路径，任何事务无法收敛时回到已知可用状态。
+            </p>
+          </div>
+          <div class="card warn">
+            <div class="kicker">不推荐的做法</div>
+            <p class="mb-0">
+              直接在 <code>reload_plugins()</code> 里按 <code>plugin_id</code> 过滤后继续调用 <code>runtime.reload()</code>：
+              它仍会重建所有页面、重读整个 registry，并把未受影响的插件也卸载重载，等于没有解决问题。
+            </p>
+          </div>
+        </div>
+      </section>
+
+      <!-- 04 -->
+      <section id="scope" aria-labelledby="scope-title">
+        <div class="sec-head">
+          <div class="sec-no">04</div>
+          <div>
+            <h3 id="scope-title">改动范围</h3>
+            <p>核心改动集中在 <code>gallery</code> 组合层与插件管理页；<code>guis</code> 只做页面失效与菜单重建，不反向依赖 <code>gallery</code>。</p>
+          </div>
+        </div>
+
+        <h4 class="mt-0">必须改（MVP）</h4>
+        <div class="table-wrap">
+          <table>
+            <caption class="sr-only">MVP 必须改动的文件与职责</caption>
+            <thead>
+              <tr><th>文件 / 层</th><th>建议改动</th><th>目的</th><th>风险</th></tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><a href="file:///D:/ReworkPRG/SllkGuiPRG/SllkGui/src/sllkgui/gallery/runtime.py#L233-L244">gallery/runtime.py</a></td>
+                <td>新增 <code>reload_plugin(plugin_id, reason)</code> / <code>reload_plugins(ids, reason)</code>；计算反向依赖闭包；单飞锁；结果对象。</td>
+                <td>把“全量重载”变成“选择性事务”，但不碰 Qt 页面。</td>
+                <td><span class="chip amber">中</span></td>
+              </tr>
+              <tr>
+                <td><a href="file:///D:/ReworkPRG/SllkGuiPRG/SllkGui/src/sllkgui/gallery/loader.py#L217-L368">gallery/loader.py</a></td>
+                <td><code>load_plugin(..., replace=False)</code>；显式清理同 id 旧记录；预检清单/依赖/Surface impl；<code>importlib.invalidate_caches()</code>。</td>
+                <td>允许替换单个插件，避免 <code>PLUGIN_ALREADY_INSTALLED</code> 拦截。</td>
+                <td><span class="chip amber">中</span></td>
+              </tr>
+              <tr>
+                <td><a href="file:///D:/ReworkPRG/SllkGuiPRG/SllkGui/src/sllkgui/gallery/registry.py#L87-L131">gallery/registry.py</a></td>
+                <td>增加按插件清理错误；明确 <code>replace</code> 时先移除旧 Surface 再注册新 Surface。</td>
+                <td>避免旧错误残留、旧路由命中。</td>
+                <td><span class="chip green">低</span></td>
+              </tr>
+              <tr>
+                <td><a href="file:///D:/ReworkPRG/SllkGuiPRG/SllkGui/src/sllkgui/gallery/window.py#L234-L323">gallery/window.py</a></td>
+                <td>新增 <code>reload_plugin_in_place(plugin_id, reason)</code>；只销毁目标插件页面；保留其它页面；菜单重建后恢复当前路由。</td>
+                <td>真正实现“页面整体不重建”。</td>
+                <td><span class="chip amber">中</span></td>
+              </tr>
+              <tr>
+                <td><a href="file:///D:/ReworkPRG/SllkGuiPRG/SllkGui/src/sllkgui/gallery/manager.py#L429-L616">gallery/manager.py</a></td>
+                <td><code>set_enabled</code> 返回受影响依赖者；<code>update/rollback/remove</code> 暴露事务钩子；<code>remove(force)</code> 返回被禁用依赖者。</td>
+                <td>让运行时知道“这次操作还要动谁”。</td>
+                <td><span class="chip amber">中高</span></td>
+              </tr>
+              <tr>
+                <td><a href="file:///D:/ReworkPRG/SllkGuiPRG/SllkGui/src/sllkgui/guis/pages/plugin_store/page.py#L962-L980">guis/pages/plugin_store/page.py</a></td>
+                <td>启停/更新/回滚/卸载改调 <code>reload_plugin_in_place(plugin_id)</code>；仅在全量回退时保留 stash。</td>
+                <td>插件管理页不再被销毁，用户停留与滚动位置天然保留。</td>
+                <td><span class="chip green">低</span></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <h4>建议改（稳定性与可观测性）</h4>
+        <div class="cols">
+          <div class="card">
+            <div class="kicker">生命周期细节</div>
+            <ul class="checklist">
+              <li>插件上下文日志 handler 的版本前缀在更新后仍是旧版本，需要在卸载或加载时更新/替换。</li>
+              <li><code>refresh_language_namespace()</code> 依赖 <code>Language.apply()</code>，但后者只按基座语言内容做签名早退；插件语言表变化不会自动生效。</li>
+              <li>设置窗口已支持按命名空间重建并保留草稿，选择性重载后需要主动 <code>settings_page_bus().notify()</code>。</li>
+              <li>新增错误码：<code>PLUGIN_RELOAD_IN_PROGRESS</code>、<code>PLUGIN_RELOAD_FAILED</code>、<code>PLUGIN_RESTART_REQUIRED</code>。</li>
+            </ul>
+          </div>
+          <div class="card">
+            <div class="kicker">菜单与托盘</div>
+            <ul class="checklist">
+              <li>左菜单目前只有 <code>clear_menus()</code> 全量清空；MVP 可以直接重建菜单（不重建页面），成本可控。</li>
+              <li>若插件数量很大或菜单闪烁不可接受，再给 <code>CLeftMenu</code> 增加按 button_id 的 remove/add。</li>
+              <li>托盘已有 <code>remove_plugin(plugin_id)</code>，无需销毁托盘图标；重载后按新插件动作重建菜单。</li>
+              <li>快捷键 <code>unregister_owner</code> 已按插件清理；新插件重新注册即可。</li>
+            </ul>
+          </div>
+        </div>
+
+        <h4>不改 / 不引入</h4>
+        <div class="table-wrap">
+          <table>
+            <caption class="sr-only">不改动范围</caption>
+            <thead>
+              <tr><th>项</th><th>决定</th><th>理由</th></tr>
+            </thead>
+            <tbody>
+              <tr><td>插件 API v2</td><td><span class="chip green">保持不变</span></td><td>基础选择性重载不需要插件改代码；新增能力做成可选接口或后续 API v3。</td></tr>
+              <tr><td>清单 schema</td><td><span class="chip green">保持不变</span></td><td><code>surfaces</code> / <code>dependencies</code> / <code>data</code> 已足够描述重载所需信息。</td></tr>
+              <tr><td>进程隔离 / 沙箱</td><td><span class="chip red">不做</span></td><td><code>EXT-01</code> 仍是中期规划；热重载不应把进程隔离一起引入。</td></tr>
+              <tr><td>原生扩展热替换</td><td><span class="chip red">不做</span></td><td>Windows 上 <code>.pyd</code>/<code>.dll</code> 加载后无法安全替换；应检测并返回 <code>RESTART_REQUIRED</code>。</td></tr>
+              <tr><td>插件数据迁移回滚</td><td><span class="chip red">不做</span></td><td>数据 schema 属于插件自身；基座只保证文件与运行时状态回滚。</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- 05 -->
+      <section id="lifecycle" aria-labelledby="lifecycle-title">
+        <div class="sec-head">
+          <div class="sec-no">05</div>
+          <div>
+            <h3 id="lifecycle-title">插件生命周期</h3>
+            <p>重载不是一个新的插件协议，而是基座内部的“卸载旧实例 → 替换文件/状态 → 加载新实例”事务。</p>
+          </div>
+        </div>
+
+        <div class="diagram">
+          <svg viewBox="0 0 980 430" role="img" aria-labelledby="lifecycle-svg-title lifecycle-svg-desc">
+            <title id="lifecycle-svg-title">插件热重载生命周期状态机</title>
+            <desc id="lifecycle-svg-desc">从禁用、预检、卸载、发布、加载、激活到失败与回滚的状态流转。</desc>
+            <defs>
+              <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+                <path d="M 0 0 L 10 5 L 0 10 z" fill="#15171b"/>
+              </marker>
+              <marker id="arrow-orange" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+                <path d="M 0 0 L 10 5 L 0 10 z" fill="#c64f28"/>
+              </marker>
+              <marker id="arrow-red" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+                <path d="M 0 0 L 10 5 L 0 10 z" fill="#9f2f2f"/>
+              </marker>
+            </defs>
+            <rect width="980" height="430" fill="#fbf8f1"/>
+            <g font-family="Cascadia Mono, Consolas, monospace" font-size="11" fill="#15171b">
+              <!-- states -->
+              <g>
+                <rect x="32" y="52" width="138" height="54" fill="#e8e1d4" stroke="#15171b" stroke-width="1.5"/>
+                <text x="101" y="76" text-anchor="middle" font-weight="700">DISABLED</text>
+                <text x="101" y="93" text-anchor="middle" font-size="9" fill="#6d6a62">未加载 / 已停用</text>
+              </g>
+              <g>
+                <rect x="214" y="52" width="138" height="54" fill="#fbf8f1" stroke="#15171b" stroke-width="1.5"/>
+                <text x="283" y="76" text-anchor="middle" font-weight="700">PREFLIGHT</text>
+                <text x="283" y="93" text-anchor="middle" font-size="9" fill="#6d6a62">清单 / 依赖 / impl</text>
+              </g>
+              <g>
+                <rect x="396" y="52" width="138" height="54" fill="#fbf8f1" stroke="#15171b" stroke-width="1.5"/>
+                <text x="465" y="76" text-anchor="middle" font-weight="700">UNLOADING</text>
+                <text x="465" y="93" text-anchor="middle" font-size="9" fill="#6d6a62">依赖者 → 目标</text>
+              </g>
+              <g>
+                <rect x="578" y="52" width="138" height="54" fill="#fbf8f1" stroke="#15171b" stroke-width="1.5"/>
+                <text x="647" y="76" text-anchor="middle" font-weight="700">PUBLISHING</text>
+                <text x="647" y="93" text-anchor="middle" font-size="9" fill="#6d6a62">history / staging</text>
+              </g>
+              <g>
+                <rect x="760" y="52" width="138" height="54" fill="#fbf8f1" stroke="#15171b" stroke-width="1.5"/>
+                <text x="829" y="76" text-anchor="middle" font-weight="700">LOADING</text>
+                <text x="829" y="93" text-anchor="middle" font-size="9" fill="#6d6a62">提供者 → 依赖者</text>
+              </g>
+
+              <g>
+                <rect x="760" y="196" width="138" height="54" fill="#2d6a4f" stroke="#15171b" stroke-width="1.5"/>
+                <text x="829" y="220" text-anchor="middle" fill="#fbf8f1" font-weight="700">ACTIVE</text>
+                <text x="829" y="237" text-anchor="middle" font-size="9" fill="#dcefe5">页面可导航</text>
+              </g>
+              <g>
+                <rect x="396" y="196" width="138" height="54" fill="#9a6412" stroke="#15171b" stroke-width="1.5"/>
+                <text x="465" y="220" text-anchor="middle" fill="#fbf8f1" font-weight="700">RELOADING</text>
+                <text x="465" y="237" text-anchor="middle" font-size="9" fill="#f6e9cf">已有实例再更新</text>
+              </g>
+              <g>
+                <rect x="396" y="320" width="138" height="54" fill="#9f2f2f" stroke="#15171b" stroke-width="1.5"/>
+                <text x="465" y="344" text-anchor="middle" fill="#fbf8f1" font-weight="700">FAILED</text>
+                <text x="465" y="361" text-anchor="middle" font-size="9" fill="#f2dcdc">隔离 / 提示 / 不可用</text>
+              </g>
+              <g>
+                <rect x="214" y="320" width="138" height="54" fill="#fbf8f1" stroke="#c64f28" stroke-width="2"/>
+                <text x="283" y="344" text-anchor="middle" font-weight="700" fill="#c64f28">ROLLED_BACK</text>
+                <text x="283" y="361" text-anchor="middle" font-size="9" fill="#6d6a62">旧文件 / 旧状态</text>
+              </g>
+
+              <!-- arrows -->
+              <g stroke="#15171b" stroke-width="1.4" fill="none" marker-end="url(#arrow)">
+                <path d="M 170 79 L 214 79"/>
+                <path d="M 352 79 L 396 79"/>
+                <path d="M 534 79 L 578 79"/>
+                <path d="M 716 79 L 760 79"/>
+                <path d="M 829 106 L 829 196"/>
+                <path d="M 760 223 L 534 223"/>
+                <path d="M 396 223 L 352 79" stroke-dasharray="5 4"/>
+                <path d="M 465 250 L 465 320"/>
+                <path d="M 760 236 C 690 290, 620 320, 534 340" stroke-dasharray="5 4" marker-end="url(#arrow-red)"/>
+                <path d="M 396 347 L 352 347"/>
+              </g>
+
+              <g stroke="#c64f28" stroke-width="1.8" fill="none" marker-end="url(#arrow-orange)">
+                <path d="M 534 340 C 470 300, 470 280, 465 250"/>
+              </g>
+
+              <!-- labels -->
+              <g font-size="9" fill="#6d6a62">
+                <text x="176" y="70">enable</text>
+                <text x="356" y="70">disable/update</text>
+                <text x="538" y="70">swap files</text>
+                <text x="722" y="70">module purge</text>
+                <text x="838" y="154">on_load OK</text>
+                <text x="540" y="214">on_unload</text>
+                <text x="470" y="292">load / page fail</text>
+                <text x="548" y="318">rollback</text>
+                <text x="300" y="338">restore old</text>
+              </g>
+
+              <!-- transaction annotation -->
+              <g>
+                <rect x="590" y="320" width="308" height="72" fill="#f3efe6" stroke="#c64f28" stroke-width="1.2"/>
+                <text x="604" y="340" font-size="10" fill="#c64f28" font-weight="700">TRANSACTION BOUNDARY</text>
+                <text x="604" y="358" font-size="9" fill="#15171b">预检失败：不卸载、不动文件</text>
+                <text x="604" y="373" font-size="9" fill="#15171b">加载失败：回滚文件 + 旧实例重载</text>
+                <text x="604" y="388" font-size="9" fill="#15171b">依赖失败：隔离依赖者，不推翻提供者</text>
+              </g>
+            </g>
+          </svg>
+          <div class="diagram-caption">
+            <span>图 2 · 建议的重载状态机；橙色为回滚路径，红色为失败隔离。</span>
+            <span>内部状态，不进入插件 API</span>
+          </div>
+        </div>
+
+        <h4>推荐事务顺序</h4>
+        <ol class="steps">
+          <li><div><strong>计算受影响集合</strong><br>目标插件 + 所有直接/间接依赖它的插件（反向依赖闭包）。卸载顺序为依赖者优先，加载顺序为提供者优先。</div></li>
+          <li><div><strong>预检新版本</strong><br>读取新清单、校验 API/依赖/Surface impl 存在性；不执行插件代码。预检失败直接返回，旧实例继续运行。</div></li>
+          <li><div><strong>离开当前 Surface</strong><br>如果当前页面属于受影响集合，先调用 <code>on_surface_leave(surface_id)</code>，再销毁该插件页面；其它页面不动。</div></li>
+          <li><div><strong>卸载依赖者与目标</strong><br><code>on_unload()</code> → <code>clear_shortcuts</code> → <code>clear_tray</code> → <code>clear_events</code> → <code>clear_services</code> → <code>clear_settings</code> → 清模块缓存。</div></li>
+          <li><div><strong>替换文件（仅更新/回滚）</strong><br>旧版本先进入 history；新版本从 staging 放入插件目录；清理插件内 <code>__pycache__</code>；<code>importlib.invalidate_caches()</code>。</div></li>
+          <li><div><strong>按顺序加载</strong><br>提供者先加载，依赖者后加载；每个插件失败时先清理它已注册的部分句柄，再决定整体回滚或隔离。</div></li>
+          <li><div><strong>刷新派生能力</strong><br>强制刷新插件语言命名空间；重建左菜单；重建托盘菜单；通知设置页命名空间；保留当前路由或回退。</div></li>
+          <li><div><strong>记录结果</strong><br>写 <code>plugin.reload</code> 遥测：原因、目标、受影响数量、页面销毁/构建数、耗时、是否回滚。</div></li>
+        </ol>
+
+        <div class="callout bad">
+          <span class="label">现有代码的一个关键缺口</span>
+          <strong>运行时加载顺序没有按依赖拓扑排序。</strong>
+          <code>bootstrap()</code> 按 <code>_run_roots()</code> 返回顺序加载（开发目录优先，然后 registry 记录顺序），并没有使用 resolver 的拓扑结果。
+          如果依赖者在 <code>on_load</code> 中解析 <code>ctx.services</code>，提供者可能尚未加载。选择性重载必须显式按拓扑顺序卸载/加载，否则会把已有的隐性顺序问题放大。
+        </div>
+      </section>
+
+      <!-- 06 -->
+      <section id="state" aria-labelledby="state-title">
+        <div class="sec-head">
+          <div class="sec-no">06</div>
+          <div>
+            <h3 id="state-title">状态保持</h3>
+            <p>“避免页面整体重建”可以做到；“所有状态都不丢”不能。需要把状态分成基座状态、未受影响页面、受影响页面三层来承诺。</p>
+          </div>
+        </div>
+
+        <div class="table-wrap">
+          <table>
+            <caption class="sr-only">不同对象在选择性重载下的状态保持能力</caption>
+            <thead>
+              <tr><th>对象</th><th>当前全量重载</th><th>选择性重载目标</th><th>实现方式 / 边界</th></tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>插件管理原生页</td>
+                <td>被销毁，重建后靠 stash 恢复模式/搜索/选中/滚动</td>
+                <td><span class="chip fill-green">完全保留</span></td>
+                <td>不再调用 <code>_clear_pages()</code>；页面实例、滚动、输入焦点都不变。</td>
+              </tr>
+              <tr>
+                <td>未受影响插件页面</td>
+                <td>被销毁并重建，内部状态丢失</td>
+                <td><span class="chip fill-green">完全保留</span></td>
+                <td>只移除目标插件对应的 <code>page_&lt;route&gt;</code>；其它页面不 <code>setParent(None)</code>。</td>
+              </tr>
+              <tr>
+                <td>受影响插件页面</td>
+                <td>销毁并重建</td>
+                <td><span class="chip fill-amber">重建，状态尽力保留</span></td>
+                <td>没有通用 QWidget 状态序列化；插件应在 <code>on_surface_leave</code> 把草稿写入 settings/storage，在新页面构建时恢复。</td>
+              </tr>
+              <tr>
+                <td>设置窗口中的插件页</td>
+                <td>设置窗口通常不参与重载；插件页可能指向旧注册表</td>
+                <td><span class="chip fill-green">可原地刷新</span></td>
+                <td><code>settings_page_bus().notify(plugin.&lt;id&gt;)</code>；现有 <code>_rebuild_plugin_page()</code> 保留草稿与滚动。</td>
+              </tr>
+              <tr>
+                <td>插件数据 / 设置 / 存储</td>
+                <td>磁盘保留，unload 不删除</td>
+                <td><span class="chip fill-green">保留</span></td>
+                <td><code>data_dir</code>、<code>settings/plugins/&lt;id&gt;.yaml</code>、<code>ctx.storage</code> 的语义不变；删除插件才 purge。</td>
+              </tr>
+              <tr>
+                <td>托盘 / 快捷键</td>
+                <td>全量清理后重建</td>
+                <td><span class="chip fill-green">按 owner 刷新</span></td>
+                <td>目标插件条目移除并重新注册；其它插件条目保留。用户看到的顺序/形态由基座重新裁决。</td>
+              </tr>
+              <tr>
+                <td>当前路由 / 标题</td>
+                <td>重载后按原路由/默认路由重建</td>
+                <td><span class="chip fill-green">保持不变或安全回退</span></td>
+                <td>当前页面不受影响则不动；受影响则在新插件加载后重新打开同路由；路由消失则回退默认/原生页。</td>
+              </tr>
+              <tr>
+                <td>窗口几何 / 主题 / 语言</td>
+                <td>通常不受影响</td>
+                <td><span class="chip fill-green">不动</span></td>
+                <td>选择性重载不触碰窗口状态；语言命名空间单独刷新。</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div class="cols mt-16">
+          <div class="card warn">
+            <div class="kicker">已确认的语言刷新缺口</div>
+            <p>
+              <code>Language.apply()</code> 的早退签名只包含基座语言内容；插件语言表变化时，即使调用
+              <code>refresh_language_namespace()</code>，<code>Language.app</code> 也不会重新注入。
+              本地验证：把插件语言从 <code>1</code> 改成 <code>2</code> 后再次刷新，读到的仍是 <code>1</code>。
+            </p>
+            <p class="small mb-0">影响：更新插件后，菜单标题/插件内文案可能保持旧值，直到用户切换一次语言。</p>
+          </div>
+          <div class="card warn">
+            <div class="kicker">已确认的日志前缀缺口</div>
+            <p>
+              <code>GalleryContextImpl</code> 用 <code>sllkgui.plugin.&lt;id&gt;</code> 复用同一个 logger，并靠
+              <code>_sllkgui_bridged</code> 防止重复挂 handler。插件从 v1 更新到 v2 后，旧 handler 的
+              <code>[plugin:id@v1]</code> 前缀仍然存在，新上下文不会替换它。
+            </p>
+            <p class="small mb-0">影响：热重载后的日志版本号可能错误，排障时容易误判当前运行版本。</p>
+          </div>
+        </div>
+      </section>
+
+      <!-- 07 -->
+      <section id="risk" aria-labelledby="risk-title">
+        <div class="sec-head">
+          <div class="sec-no">07</div>
+          <div>
+            <h3 id="risk-title">风险登记</h3>
+            <p>按“发生概率 × 影响”排序；P0 是上线前必须闭环的项，P1 需要明确降级策略，P2 可接受。</p>
+          </div>
+        </div>
+
+        <div class="risk-toolbar" role="group" aria-label="风险等级筛选">
+          <button type="button" data-risk-filter="all" aria-pressed="true">ALL</button>
+          <button type="button" data-risk-filter="p0" aria-pressed="false">P0</button>
+          <button type="button" data-risk-filter="p1" aria-pressed="false">P1</button>
+          <button type="button" data-risk-filter="p2" aria-pressed="false">P2</button>
+          <span class="count" id="risk-count">12 risks</span>
+        </div>
+
+        <div class="table-wrap">
+          <table aria-describedby="risk-count">
+            <caption class="sr-only">风险登记表</caption>
+            <thead>
+              <tr><th>ID</th><th>风险</th><th>概率</th><th>影响</th><th>触发点</th><th>缓解</th></tr>
+            </thead>
+            <tbody>
+              <tr class="risk-row" data-severity="p0">
+                <td class="num">R-01</td>
+                <td>原生扩展文件被占用，更新时无法移动/替换</td>
+                <td><span class="chip amber">中</span></td>
+                <td><span class="chip red">高</span></td>
+                <td><code>store.move_to_history()</code> 在 Windows 上遇到 <code>.pyd</code>/<code>.dll</code> 锁定</td>
+                <td>预检检测扩展模块 → <code>RESTART_REQUIRED</code>；不承诺热更新；必要时回退全量重启。</td>
+              </tr>
+              <tr class="risk-row" data-severity="p0">
+                <td class="num">R-02</td>
+                <td>旧插件线程/定时器未停止，回调命中已销毁控件</td>
+                <td><span class="chip amber">中</span></td>
+                <td><span class="chip red">高</span></td>
+                <td><code>on_unload</code> 未停 <code>QTimer</code>/<code>QThread</code>，或信号仍连接旧对象</td>
+                <td>把“停止自建资源”写入插件规范；重复重载测试；失败隔离；开发模式泄漏检测。</td>
+              </tr>
+              <tr class="risk-row" data-severity="p0">
+                <td class="num">R-03</td>
+                <td>依赖者缓存旧服务实例，提供者更新后状态不一致</td>
+                <td><span class="chip amber">中</span></td>
+                <td><span class="chip amber">中高</span></td>
+                <td>依赖者在 <code>on_load</code> 取到旧 <code>ctx.services.get()</code> 结果</td>
+                <td>重载反向依赖闭包；提供者先加载、依赖者后加载；服务解析失败时显式报错。</td>
+              </tr>
+              <tr class="risk-row" data-severity="p0">
+                <td class="num">R-04</td>
+                <td>更新流程先替换文件、后卸载旧插件，旧代码读到半新文件</td>
+                <td><span class="chip amber">中</span></td>
+                <td><span class="chip red">高</span></td>
+                <td><code>PluginManager.update()</code> 在后台线程完成 <code>_promote()</code>，之后才由 UI 触发重载</td>
+                <td>事务化：先停旧实例，再 promote；或 staging 完成后由主线程统一提交。</td>
+              </tr>
+              <tr class="risk-row" data-severity="p1">
+                <td class="num">R-05</td>
+                <td>插件语言表变化不生效，菜单/页面文案陈旧</td>
+                <td><span class="chip red">高</span></td>
+                <td><span class="chip amber">中</span></td>
+                <td><code>Language.apply()</code> 按基座语言签名早退（已实测复现）</td>
+                <td>增加强制刷新入口：重置签名或直接重注入 <code>Language.app</code>；重载后调用。</td>
+              </tr>
+              <tr class="risk-row" data-severity="p1">
+                <td class="num">R-06</td>
+                <td>日志前缀仍显示旧版本</td>
+                <td><span class="chip red">高</span></td>
+                <td><span class="chip green">低</span></td>
+                <td><code>_sllkgui_bridged</code> 阻止新 handler，旧 handler 的 prefix 不变</td>
+                <td>卸载时移除 handler，或让新上下文更新 prefix；加断言测试。</td>
+              </tr>
+              <tr class="risk-row" data-severity="p1">
+                <td class="num">R-07</td>
+                <td>旧页面未从对象树移除，<code>findChild</code> 命中旧页面</td>
+                <td><span class="chip amber">中</span></td>
+                <td><span class="chip amber">中</span></td>
+                <td><code>ensure_registered_page()</code> 幂等返回已存在控件</td>
+                <td>只移除目标插件页面，并先 <code>setParent(None)</code> 再 <code>deleteLater</code>；断言页面身份变化。</td>
+              </tr>
+              <tr class="risk-row" data-severity="p1">
+                <td class="num">R-08</td>
+                <td>更新失败后 registry 仍指向新版本，启动时反复失败</td>
+                <td><span class="chip amber">中</span></td>
+                <td><span class="chip amber">中高</span></td>
+                <td>manager 先写状态，load 失败只记录 error</td>
+                <td>加载成功后再提交状态；失败回滚 <code>InstalledPlugin</code> 与目录；启动时跳过坏插件并提示。</td>
+              </tr>
+              <tr class="risk-row" data-severity="p1">
+                <td class="num">R-09</td>
+                <td>依赖顺序未拓扑化，提供者尚未加载</td>
+                <td><span class="chip amber">中</span></td>
+                <td><span class="chip amber">中高</span></td>
+                <td><code>bootstrap()</code> 按 roots 顺序加载，未按 <code>dependencies</code> 排序</td>
+                <td>选择性重载显式拓扑排序；顺带修正启动加载顺序；加服务解析测试。</td>
+              </tr>
+              <tr class="risk-row" data-severity="p1">
+                <td class="num">R-10</td>
+                <td>菜单全量重建导致闪烁或当前按钮丢失</td>
+                <td><span class="chip amber">中</span></td>
+                <td><span class="chip green">低</span></td>
+                <td><code>left_menu.clear_menus()</code> + <code>add_menus()</code></td>
+                <td>重建后按 route 恢复 active；插件多时再做增量 remove/add。</td>
+              </tr>
+              <tr class="risk-row" data-severity="p1">
+                <td class="num">R-11</td>
+                <td>重载期间并发触发托盘/快捷键/页面构建，状态撕裂</td>
+                <td><span class="chip amber">中</span></td>
+                <td><span class="chip amber">中</span></td>
+                <td>托盘回调、快捷键、导航都可能在主线程事件循环中进入</td>
+                <td>运行时单飞锁；重载期间禁用目标动作；重复请求返回 <code>PLUGIN_RELOAD_IN_PROGRESS</code>。</td>
+              </tr>
+              <tr class="risk-row" data-severity="p2">
+                <td class="num">R-12</td>
+                <td><code>_promote()</code> 失败时旧目录已在 history、目标目录缺失</td>
+                <td><span class="chip green">低</span></td>
+                <td><span class="chip red">高</span></td>
+                <td>旧目录移走后 <code>place_staging()</code> 抛错</td>
+                <td>事务化 promote：失败立即把 history 目录移回；状态不变；记录 <code>PLUGIN_RELOAD_FAILED</code>。</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <h4>风险矩阵</h4>
+        <div class="risk-grid" role="table" aria-label="风险概率与影响矩阵">
+          <div class="axis">影响 ↑<br>概率 →</div>
+          <div class="axis">极低</div><div class="axis">低</div><div class="axis">中</div><div class="axis">高</div><div class="axis">极高</div>
+
+          <div class="axis">极高</div>
+          <div class="cell-l5"></div><div class="cell-l5"></div><div class="cell-l5"></div><div class="cell-l5"></div><div class="cell-l5"></div>
+          <div class="axis">高</div>
+          <div class="cell-l4"></div><div class="cell-l2"><span class="risk-id" style="color:var(--amber)">R-02</span></div><div class="cell-l3"><span class="risk-id" style="color:var(--amber)">R-03</span></div><div class="cell-l4"><span class="risk-id" style="color:var(--red)">R-01</span></div><div class="cell-l4"></div>
+          <div class="axis">中</div>
+          <div class="cell-l2"><span class="risk-id" style="color:var(--amber)">R-06</span></div><div class="cell-l2"></div><div class="cell-l3"><span class="risk-id" style="color:var(--amber)">R-07</span><span class="risk-id" style="color:var(--amber)">R-11</span></div><div class="cell-l4"><span class="risk-id" style="color:var(--red)">R-04</span><span class="risk-id" style="color:var(--amber)">R-05</span></div><div class="cell-l4"></div>
+          <div class="axis">低</div>
+          <div class="cell-l2"></div><div class="cell-l2"><span class="risk-id" style="color:var(--amber)">R-10</span></div><div class="cell-l3"><span class="risk-id" style="color:var(--amber)">R-08</span><span class="risk-id" style="color:var(--amber)">R-09</span></div><div class="cell-l3"><span class="risk-id" style="color:var(--red)">R-12</span></div><div class="cell-l3"></div>
+          <div class="axis">极低</div>
+          <div class="cell-l1"></div><div class="cell-l1"></div><div class="cell-l2"></div><div class="cell-l2"></div><div class="cell-l2"></div>
+        </div>
+        <p class="small">
+          矩阵为定性分级，不是概率统计；R-01/R-02/R-03/R-04 是 MVP 的上线前门禁项。
+        </p>
+      </section>
+
+      <!-- 08 -->
+      <section id="release" aria-labelledby="release-title">
+        <div class="sec-head">
+          <div class="sec-no">08</div>
+          <div>
+            <h3 id="release-title">资源释放</h3>
+            <p>选择性重载的频率远高于全量重载，资源释放必须“可验证”，不能只依赖插件自觉。</p>
+          </div>
+        </div>
+
+        <div class="table-wrap">
+          <table>
+            <caption class="sr-only">资源释放清单</caption>
+            <thead>
+              <tr><th>资源</th><th>现有清理入口</th><th>选择性重载中的动作</th><th>验证方式</th></tr>
+            </thead>
+            <tbody>
+              <tr><td>Surface 页面 QWidget</td><td><code>_clear_pages()</code> 当前全量</td><td>只移除目标路由页面；<code>hide → setParent(None) → deleteLater</code></td><td>页面对象身份变化；旧对象 <code>destroyed</code> 信号在事件循环后触发</td></tr>
+              <tr><td>Surface 生命周期</td><td><code>on_surface_leave()</code></td><td>销毁页面前调用；当前页属于受影响集合时才调用</td><td>enter/leave 成对计数</td></tr>
+              <tr><td>插件实例</td><td><code>on_unload()</code></td><td>依赖者先卸、目标后卸；异常只记录不阻断清理</td><td>插件自定义事件 <code>*.unloaded</code></td></tr>
+              <tr><td>托盘动作</td><td><code>clear_tray()</code> → <code>remove_plugin()</code></td><td>按 plugin_id 移除；保留基座托盘图标</td><td><code>TrayService.action_count(plugin_id)</code> 归零</td></tr>
+              <tr><td>快捷键</td><td><code>clear_shortcuts()</code> → <code>unregister_owner()</code></td><td>按 owner 注销，回调对象一起释放</td><td><code>bindings()</code> 不再包含该插件</td></tr>
+              <tr><td>事件订阅</td><td><code>clear_events()</code> → <code>clear_owner()</code></td><td>只清本插件订阅；其它插件订阅保留</td><td>总线内部 owner 计数；广播不命中旧回调</td></tr>
+              <tr><td>服务</td><td><code>clear_services()</code> → <code>clear_owner()</code></td><td>只清本插件注册的服务</td><td><code>services.get(name)</code> 不再返回旧对象</td></tr>
+              <tr><td>设置页</td><td><code>clear_settings()</code> → <code>unregister_namespace()</code></td><td>撤页面与变更订阅，磁盘配置保留</td><td>设置窗口导航不再出现旧页；新页注册成功</td></tr>
+              <tr><td>语言表</td><td><code>_LANG.pop(plugin_id)</code></td><td>卸载时移除；加载时重新注入</td><td>菜单标题取到新语言的键</td></tr>
+              <tr><td>模块缓存</td><td><code>_modules_under(root)</code> + 唯一模块名</td><td>清 <code>sys.modules</code>；<code>importlib.invalidate_caches()</code></td><td>旧模块名不存在；新代码值生效</td></tr>
+              <tr><td>日志 handler</td><td>目前无清理</td><td>更新 prefix 或移除旧 handler</td><td>日志首行版本号等于新版本</td></tr>
+              <tr><td>Qt 图标/位图缓存</td><td>无针对性清理</td><td>不全局 <code>QPixmapCache.clear()</code>；必要时按路径移除</td><td>同路径新图标能刷新</td></tr>
+              <tr><td>插件自建线程/定时器</td><td>无强制机制</td><td>规范要求 <code>on_unload</code> 停止并 <code>deleteLater</code></td><td>重复重载测试 + 插件自检事件</td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div class="callout">
+          <span class="label">释放顺序</span>
+          <strong>leave → 页面移除 → on_unload → 能力句柄 → 模块。</strong>
+          这个顺序与当前全量重载一致（<code>_clear_pages()</code> 先 leave/销毁页面，再 <code>unload_all()</code>）。
+          不要先清模块再调 <code>on_unload</code>，否则插件自己的方法可能已经无法解析。
+        </div>
+
+        <div class="callout bad">
+          <span class="label">不能保证的部分</span>
+          <strong>旧插件创建的 QObject 若仍被外部信号、线程或全局单例引用，基座无法强制回收。</strong>
+          这属于插件契约边界：规范已要求 <code>QTimer</code>/<code>QThread</code>/<code>QObject</code> 在
+          <code>on_unload</code> 中停止并 <code>deleteLater()</code>，但运行期没有可靠的全进程对象枚举手段。
+          因此“重复重载 N 次不泄漏”应作为验收项，而不是仅靠代码审查。
+        </div>
+      </section>
+
+      <!-- 09 -->
+      <section id="rollback" aria-labelledby="rollback-title">
+        <div class="sec-head">
+          <div class="sec-no">09</div>
+          <div>
+            <h3 id="rollback-title">异常回滚</h3>
+            <p>回滚分为“文件回滚”“运行时回滚”“状态回滚”“数据回滚”四层；基座只应承诺前三层。</p>
+          </div>
+        </div>
+
+        <div class="table-wrap">
+          <table>
+            <caption class="sr-only">失败点与回滚动作</caption>
+            <thead>
+              <tr><th>失败点</th><th>已发生的副作用</th><th>回滚动作</th><th>用户可见结果</th></tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>预检失败（清单/依赖/impl）</td>
+                <td>无；旧实例仍在运行</td>
+                <td>不卸载、不动文件；记录错误</td>
+                <td>提示错误码；旧页面继续可用</td>
+              </tr>
+              <tr>
+                <td><code>on_unload</code> 抛错</td>
+                <td>部分能力可能已清理</td>
+                <td>继续清理剩余句柄；记录 warning；目标标记为不可用</td>
+                <td>插件被卸载；若无法恢复，提示“需重启/重新启用”</td>
+              </tr>
+              <tr>
+                <td>文件 promote 失败</td>
+                <td>旧目录可能已在 history，目标目录缺失</td>
+                <td>把 history 目录移回 <code>plugins/&lt;id&gt;</code>；恢复原 <code>InstalledPlugin</code></td>
+                <td>旧版本继续运行；错误提示；registry 不变</td>
+              </tr>
+              <tr>
+                <td>新版本 <code>on_load</code> / import 失败</td>
+                <td>旧实例已卸载；新文件已就位</td>
+                <td>清理新实例半注册句柄；新目录移入 trash/history；旧目录移回；重新加载旧版本</td>
+                <td>旧版本恢复运行；错误提示；版本号回退</td>
+              </tr>
+              <tr>
+                <td>新版本加载成功、依赖者加载失败</td>
+                <td>提供者已升级；依赖者不可用</td>
+                <td>隔离失败依赖者并禁用；提供者保留新版本；提示用户可回滚提供者</td>
+                <td>主插件可用；依赖功能暂时不可用</td>
+              </tr>
+              <tr>
+                <td>Surface 构建失败</td>
+                <td>插件已加载，页面未生成</td>
+                <td>不回滚插件；移除失败页面；提示错误码</td>
+                <td>插件其它 Surface 可用；当前页显示错误提示/空状态</td>
+              </tr>
+              <tr>
+                <td>旧版本重载也失败</td>
+                <td>旧代码/旧文件不可用</td>
+                <td>禁用插件；保留目录与错误详情；启动时跳过</td>
+                <td>插件不可用；用户可重装/回滚/查看日志</td>
+              </tr>
+              <tr>
+                <td>数据迁移失败</td>
+                <td>插件数据可能已被新版本改写</td>
+                <td><strong>不自动回滚数据</strong>；插件负责 schema 版本与备份</td>
+                <td>提示插件数据迁移失败；建议从备份恢复</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <h4>事务模型</h4>
+        <div class="cols">
+          <div class="card">
+            <div class="kicker">两阶段提交</div>
+            <ol class="steps">
+              <li><div><strong>Prepare</strong><br>下载/校验到 staging；读取新清单；验证依赖与 Surface impl；不执行插件代码。</div></li>
+              <li><div><strong>Quiesce</strong><br>离开当前 Surface；卸载依赖者与目标；清理句柄与模块。</div></li>
+              <li><div><strong>Commit</strong><br>promote 文件；加载新插件；刷新语言/菜单/托盘/设置。</div></li>
+              <li><div><strong>Compensate</strong><br>任一步失败：按相反顺序恢复文件、重新加载旧版本、恢复 registry 状态。</div></li>
+            </ol>
+          </div>
+          <div class="card warn">
+            <div class="kicker">必须先修的现有缺口</div>
+            <p>
+              <code>_promote()</code> 先 <code>move_to_history()</code> 再 <code>place_staging()</code>；
+              如果放置失败，没有把旧目录移回的分支。当前调用方只能看到异常，registry 仍可能指向新版本。
+            </p>
+            <p class="mb-0">
+              建议在 <code>GalleryStore</code> 或 <code>PluginManager</code> 增加
+              <code>promote_transaction()</code>：返回 undo 闭包，失败时执行；并把“状态写入 registry.json”延后到加载成功之后。
+            </p>
+          </div>
+        </div>
+
+        <div class="callout">
+          <span class="label">数据回滚边界</span>
+          <strong>插件数据、用户设置、缓存不属于基座事务。</strong>
+          基座保留目录、不删除数据；更新失败时不会把数据回滚到旧 schema。插件必须在自己的数据中维护
+          <code>schema_version</code>、迁移失败可回退的备份；否则“运行时回滚成功”仍可能留下不可用的数据。
+        </div>
+      </section>
+
+      <!-- 10 -->
+      <section id="performance" aria-labelledby="performance-title">
+        <div class="sec-head">
+          <div class="sec-no">10</div>
+          <div>
+            <h3 id="performance-title">性能影响</h3>
+            <p>收益主要来自“不重导入未受影响插件”和“不重建未受影响页面”；菜单/托盘仍是 O(N) 重建。</p>
+          </div>
+        </div>
+
+        <h4 class="mt-0">实测对比</h4>
+        <div class="card">
+          <div class="bars" aria-label="重载耗时对比">
+            <div class="bar-row">
+              <div>20 插件 · 全量 runtime</div>
+              <div class="bar-track"><div class="bar-fill" style="width:100%"></div></div>
+              <div class="bar-value">220.54 ms</div>
+            </div>
+            <div class="bar-row">
+              <div>20 插件 · 单插件选择性</div>
+              <div class="bar-track"><div class="bar-fill green" style="width:5.3%"></div></div>
+              <div class="bar-value">11.65 ms</div>
+            </div>
+            <div class="bar-row">
+              <div>Showcase · 窗口全量</div>
+              <div class="bar-track"><div class="bar-fill orange" style="width:82.1%"></div></div>
+              <div class="bar-value">181.0 ms</div>
+            </div>
+            <div class="bar-row">
+              <div>Showcase · runtime-only</div>
+              <div class="bar-track"><div class="bar-fill" style="width:42.8%"></div></div>
+              <div class="bar-value">94.3 ms</div>
+            </div>
+          </div>
+          <p class="small mt-16 mb-0">
+            同一台 Windows 机器、warm cache、offscreen Qt；条形宽度按本组最大值归一化。
+            选择性数字不含页面/菜单重建；真实单插件重载会额外增加一次菜单重建，通常远小于全量页面重建。
+          </p>
+        </div>
+
+        <h4>成本模型</h4>
+        <div class="cols">
+          <div class="card">
+            <div class="kicker">全量重载</div>
+            <p class="mono" style="font-size:12px;line-height:1.8">
+              Σ unload(所有插件)<br>
+              + Σ import(所有插件)<br>
+              + 重建当前页面<br>
+              + 左菜单全量重建<br>
+              + 托盘全量重建
+            </p>
+          </div>
+          <div class="card">
+            <div class="kicker">选择性重载</div>
+            <p class="mono" style="font-size:12px;line-height:1.8">
+              preflight(目标)<br>
+              + unload(目标 + 反向依赖)<br>
+              + import(目标 + 反向依赖)<br>
+              + 仅当前路由受影响时重建页面<br>
+              + 左菜单/托盘 O(N) 重建
+            </p>
+          </div>
+        </div>
+
+        <h4 class="mt-16">建议的观测点</h4>
+        <div class="table-wrap">
+          <table>
+            <caption class="sr-only">重载遥测字段建议</caption>
+            <thead>
+              <tr><th>字段</th><th>类型</th><th>用途</th></tr>
+            </thead>
+            <tbody>
+              <tr><td><code>plugin.reload</code></td><td>事件名</td><td>统一入口，避免各调用点各发一套。</td></tr>
+              <tr><td><code>reason</code></td><td>enable / disable / update / rollback / remove / install / manual</td><td>区分用户动作与开发热重载。</td></tr>
+              <tr><td><code>targets</code></td><td>string[]</td><td>直接目标插件。</td></tr>
+              <tr><td><code>affected</code></td><td>string[]</td><td>包含反向依赖者；用于解释为什么动了别的插件。</td></tr>
+              <tr><td><code>pages_destroyed</code> / <code>pages_built</code></td><td>int</td><td>证明未受影响页面没有被重建。</td></tr>
+              <tr><td><code>duration_ms</code></td><td>float</td><td>与全量基线比较；可按插件维度聚合。</td></tr>
+              <tr><td><code>full_reload</code></td><td>bool</td><td>标记回退路径。</td></tr>
+              <tr><td><code>rollback</code></td><td>none / files / runtime / failed</td><td>区分回滚深度。</td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <h4>目标值（建议，不是当前实测）</h4>
+        <ul class="checklist">
+          <li>N ≥ 20 时，单插件选择性重载耗时 ≤ 全量重载的 30%；轻量插件无页面重建时 ≤ 50ms。</li>
+          <li>未受影响插件的 <code>on_load</code> / <code>on_unload</code> 调用次数必须为 0；未受影响页面实例身份不变。</li>
+          <li>页面销毁/构建数 ≤ 1；插件管理原生页构建数为 0。</li>
+          <li>连续 20 次启用/停用后，菜单按钮、托盘动作、快捷键、事件订阅数量回到基线，无重复项。</li>
+          <li>主线程单次同步段不超过 100ms；超过时给出忙碌提示或拆分步骤。</li>
+        </ul>
+      </section>
+
+      <!-- 11 -->
+      <section id="boundary" aria-labelledby="boundary-title">
+        <div class="sec-head">
+          <div class="sec-no">11</div>
+          <div>
+            <h3 id="boundary-title">推荐实施边界</h3>
+            <p>把“必须做”“可以晚点做”“明确不做”分开，避免第一版把回滚、状态协议和开发热重载全部混在一起。</p>
+          </div>
+        </div>
+
+        <div class="tabs" role="tablist" aria-label="实施边界">
+          <button type="button" role="tab" id="tab-mvp" aria-selected="true" aria-controls="panel-mvp" data-tab="mvp">MVP / P0</button>
+          <button type="button" role="tab" id="tab-phase2" aria-selected="false" aria-controls="panel-phase2" data-tab="phase2">二阶段 / P1</button>
+          <button type="button" role="tab" id="tab-out" aria-selected="false" aria-controls="panel-out" data-tab="out">不做 / 边界外</button>
+        </div>
+
+        <div class="tab-panel" id="panel-mvp" role="tabpanel" aria-labelledby="tab-mvp">
+          <div class="cols">
+            <div class="card good">
+              <div class="kicker">MVP 范围</div>
+              <ul class="checklist">
+                <li>单插件启用/停用/更新/回滚/卸载的选择性重载。</li>
+                <li>反向依赖闭包：提供者更新时自动重载依赖者。</li>
+                <li>只销毁目标插件页面；未受影响页面与插件管理页保留。</li>
+                <li>左菜单重建后恢复当前路由/按钮；路由消失时安全回退。</li>
+                <li>托盘/快捷键/事件/服务/设置按 owner 清理与重注册。</li>
+                <li>更新失败的文件回滚 + 旧版本重载（尽力而为）。</li>
+                <li>单飞锁与 <code>PLUGIN_RELOAD_IN_PROGRESS</code>。</li>
+                <li>全量重载回退开关 <code>force_full=True</code>。</li>
+                <li>原生扩展检测 → <code>RESTART_REQUIRED</code>。</li>
+              </ul>
+            </div>
+            <div class="card warn">
+              <div class="kicker">MVP 明确不承诺</div>
+              <ul class="checklist">
+                <li>受影响插件页面的内部状态无损。</li>
+                <li>插件自建线程/定时器的强制回收。</li>
+                <li>原生扩展热替换。</li>
+                <li>插件数据 schema 的自动回滚。</li>
+                <li>进程隔离/沙箱。</li>
+                <li>开发目录文件监听（放到二阶段）。</li>
+              </ul>
+            </div>
+          </div>
+
+          <h4>建议的接口形状</h4>
+          <pre class="mono" style="background:var(--ink);color:var(--paper);padding:16px;overflow:auto;border:1px solid rgba(0,0,0,.4);font-size:12px;line-height:1.7">class GalleryRuntime:
+    def reload_plugin(self, plugin_id: str, *, reason: str = "manual") -&gt; ReloadResult: ...
+    def reload_plugins(self, plugin_ids: list[str], *, reason: str = "manual",
+                       force_full: bool = False) -&gt; ReloadResult: ...
+
+class ReloadResult:
+    ok: bool
+    targets: list[str]
+    affected: list[str]          # 含反向依赖者
+    pages_destroyed: int
+    pages_built: int
+    rollback: str                # none / files / runtime / failed
+    code: str                    # 成功为空；失败为稳定错误码
+    message: str</pre>
+          <p class="small">
+            窗口层只负责页面与导航：<code>reload_plugin_in_place(plugin_id, reason)</code>。
+            runtime 不 import Qt，继续保持现有的分层边界。
+          </p>
+        </div>
+
+        <div class="tab-panel" id="panel-phase2" role="tabpanel" aria-labelledby="tab-phase2" hidden>
+          <div class="cols">
+            <div class="card">
+              <div class="kicker">二阶段可做</div>
+              <ul class="checklist">
+                <li>开发目录文件监听：<code>sllkgui run --plugin-dir ... --watch</code>，防抖后只重载目标开发插件。</li>
+                <li>不写 registry、不改变版本；失败只隔离开发插件，不影响已安装插件。</li>
+                <li>左菜单增量 remove/add，减少大量插件时的闪烁。</li>
+                <li>可选 Surface 状态协议：<code>on_surface_save_state() / on_surface_restore_state()</code>，用鸭子类型探测，不强制。</li>
+                <li>设置窗口在重载期间的草稿冲突提示。</li>
+                <li>重载历史与诊断面板（最近 N 次耗时、回滚、错误码）。</li>
+              </ul>
+            </div>
+            <div class="card">
+              <div class="kicker">触发条件</div>
+              <ul class="checklist">
+                <li>MVP 的选择性重载已稳定，且无重复菜单/托盘/快捷键回归。</li>
+                <li>开发插件数量或迭代频率足以证明 watcher 的收益。</li>
+                <li>出现“页面状态必须无损”的真实插件诉求，再设计状态协议。</li>
+                <li>插件数达到 50+，菜单重建出现可感知闪烁。</li>
+              </ul>
+            </div>
+          </div>
+        </div>
+
+        <div class="tab-panel" id="panel-out" role="tabpanel" aria-labelledby="tab-out" hidden>
+          <div class="table-wrap">
+            <table>
+              <caption class="sr-only">明确不做的能力</caption>
+              <thead>
+                <tr><th>能力</th><th>原因</th><th>替代方案</th></tr>
+              </thead>
+              <tbody>
+                <tr><td>原生扩展热替换</td><td>进程内无法卸载已加载的 <code>.pyd</code>/<code>.so</code>/<code>.dll</code>；Windows 文件锁定</td><td>检测后要求重启；或不支持该类插件热更新</td></tr>
+                <tr><td>插件线程/定时器强制回收</td><td>无可靠的全进程 QObject 枚举与强制终止手段</td><td>插件规范 + 重复重载测试 + 失败隔离</td></tr>
+                <tr><td>进程隔离 / 沙箱</td><td><code>EXT-01</code> 中期规划；与热重载不是同一问题</td><td>独立立项；IPC/服务发现另行设计</td></tr>
+                <tr><td>多版本 API 共存</td><td><code>SUPPORTED_API={2}</code>；旧版清单直接拒绝</td><td>插件升级清单 <code>api</code>；基座不做兼容探测</td></tr>
+                <tr><td>插件数据自动回滚</td><td>数据 schema 属于插件；基座不知道迁移语义</td><td>插件自建备份/版本；基座只保留目录</td></tr>
+                <tr><td>基座/主题/guicore 热替换</td><td>不在插件生命周期内；会破坏 Qt 对象与全局状态</td><td>重启应用或开发期重跑</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <!-- 12 -->
+      <section id="acceptance" aria-labelledby="acceptance-title">
+        <div class="sec-head">
+          <div class="sec-no">12</div>
+          <div>
+            <h3 id="acceptance-title">验收标准</h3>
+            <p>验收的核心不是“功能能跑”，而是“未受影响的插件和页面确实没被动过”，以及失败时能回到已知可用状态。</p>
+          </div>
+        </div>
+
+        <h4 class="mt-0">功能验收</h4>
+        <div class="table-wrap">
+          <table>
+            <caption class="sr-only">功能验收用例</caption>
+            <thead>
+              <tr><th>ID</th><th>场景</th><th>通过判据</th><th>测试类型</th></tr>
+            </thead>
+            <tbody>
+              <tr><td class="num">HR-01</td><td>两个插件 A/B，重载 A</td><td>B 的 <code>on_load</code>/<code>on_unload</code> 计数不变；B 页面对象身份不变</td><td>单元/集成</td></tr>
+              <tr><td class="num">HR-02</td><td>A 更新后重载</td><td>A 的 helper 模块读到新值；旧 <code>sys.modules</code> 条目不存在</td><td>单元</td></tr>
+              <tr><td class="num">HR-03</td><td>停用 A</td><td>A 的 Surface 路由、菜单按钮、托盘动作、快捷键、事件订阅、服务、设置页全部移除</td><td>集成</td></tr>
+              <tr><td class="num">HR-04</td><td>启用 A</td><td>只加载 A；其它插件计数不变；A 的菜单/托盘/快捷键恢复</td><td>集成</td></tr>
+              <tr><td class="num">HR-05</td><td>当前页面是 B，重载 A</td><td>B 页面实例不变；无页面过场；当前路由不变</td><td>窗口测试</td></tr>
+              <tr><td class="num">HR-06</td><td>当前页面是 A，停用 A</td><td>A 页面被移除；导航回退到默认/原生页；无空白页</td><td>窗口测试</td></tr>
+              <tr><td class="num">HR-07</td><td>A 提供 service，B 依赖 A；更新 A</td><td>B 也被重载；B 解析到新 service；无旧对象残留</td><td>集成</td></tr>
+              <tr><td class="num">HR-08</td><td>更新失败（新版本 import/on_load 抛错）</td><td>旧版本恢复；registry 版本回退；错误码可见；旧页面可用</td><td>故障注入</td></tr>
+              <tr><td class="num">HR-09</td><td>更新后菜单标题/插件语言变化</td><td>无需切换语言即可看到新标题/新文案</td><td>集成</td></tr>
+              <tr><td class="num">HR-10</td><td>更新前后日志版本号</td><td>新日志前缀为 <code>@新版本</code>，不残留旧版本</td><td>单元</td></tr>
+              <tr><td class="num">HR-11</td><td>原生扩展插件</td><td>返回 <code>RESTART_REQUIRED</code>；不尝试替换文件；旧版本继续可用</td><td>单元</td></tr>
+              <tr><td class="num">HR-12</td><td>重载进行中再次请求</td><td>返回 <code>PLUGIN_RELOAD_IN_PROGRESS</code>；无并发卸载/加载；状态不撕裂</td><td>并发测试</td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <h4>非功能验收</h4>
+        <div class="cols">
+          <div class="card">
+            <div class="kicker">性能与资源</div>
+            <ul class="checklist">
+              <li>N ≥ 20 时，单插件重载 ≤ 全量 30%；轻量插件无页面重建时 ≤ 50ms。</li>
+              <li>未受影响页面构建数为 0；插件管理页构建数为 0。</li>
+              <li>连续 20 次启停后，菜单/托盘/快捷键/事件订阅无重复，数量回到基线。</li>
+              <li>旧页面对象在事件循环后销毁；无持续增长的 QWidget 数量。</li>
+              <li>重载事件包含 <code>duration_ms</code> / <code>pages_destroyed</code> / <code>pages_built</code> / <code>rollback</code>。</li>
+            </ul>
+          </div>
+          <div class="card">
+            <div class="kicker">兼容与稳定性</div>
+            <ul class="checklist">
+              <li>API v2 插件无需修改即可被选择性重载。</li>
+              <li>全量重载回退可用；safe mode 行为不变。</li>
+              <li>依赖者/提供者顺序正确；服务解析不再拿到旧实例。</li>
+              <li>设置窗口在重载期间保持可用；插件页刷新且草稿不丢。</li>
+              <li>架构守卫仍通过：<code>guis</code> 不 import <code>gallery</code>；<code>gallery→guis</code> 仅限组合根。</li>
+            </ul>
+          </div>
+        </div>
+
+        <h4>人工验收</h4>
+        <ul class="checklist">
+          <li>插件管理页：启用/停用/更新/回滚/卸载后仍停留在本页，模式、搜索词、选中项、滚动位置不变。</li>
+          <li>打开插件 B 页面，更新插件 A：B 页面不闪、不重建、表单内容与滚动位置不变。</li>
+          <li>打开插件 A 页面，更新 A：页面重建，但 A 通过 settings/storage 恢复草稿；<code>on_surface_leave</code>/<code>enter</code> 各一次。</li>
+          <li>托盘菜单与快捷键在启停后即时反映；停用插件不再出现在托盘，重新启用后恢复。</li>
+          <li>设置窗口打开时更新插件：对应插件页刷新，未保存草稿保留，其它页不受影响。</li>
+          <li>制造坏版本：旧版本恢复运行；错误提示含插件 ID、错误码与日志入口；registry.json 与 UI 一致。</li>
+          <li>连续 20 次启用/停用同一插件：无重复菜单按钮、无重复托盘项、无重复快捷键、无内存持续增长。</li>
+        </ul>
+
+        <h4>质量门禁</h4>
+        <div class="callout good">
+          <span class="label">Definition of Done</span>
+          <strong>代码门禁：</strong><code>ruff check</code>、<code>mypy</code>、全量 <code>pytest</code>、覆盖率不低于当前基线、架构边界测试通过；
+          <strong>文档：</strong><code>docs/PLUGIN.md</code> 补“重载语义与插件责任”，<code>docs/ARCHITECTURE.md</code> 补选择性重载链路，
+          <code>CHANGELOG.md</code> 记录行为变化，<code>docs/MANUAL_QA.md</code> 增加人工用例；
+          <strong>验证：</strong>故障注入回滚演练至少一次，连续重载 20 次无泄漏回归。
+        </div>
+      </section>
+
+      <!-- 13 -->
+      <section id="evidence" aria-labelledby="evidence-title">
+        <div class="sec-head">
+          <div class="sec-no">13</div>
+          <div>
+            <h3 id="evidence-title">证据索引</h3>
+            <p>所有事实均来自本地代码与本地基准；没有外部联网来源。行号对应当前工作区文件。</p>
+          </div>
+        </div>
+
+        <div class="table-wrap">
+          <table class="evidence">
+            <caption class="sr-only">代码证据索引</caption>
+            <thead>
+              <tr><th>证据</th><th>位置</th><th>支撑结论</th></tr>
+            </thead>
+            <tbody>
+              <tr><td>E-01</td><td><a href="file:///D:/ReworkPRG/SllkGuiPRG/SllkGui/src/sllkgui/gallery/runtime.py#L233-L244">gallery/runtime.py:233-244</a></td><td>当前 <code>reload()</code> 是全量卸载 + 重新 bootstrap。</td></tr>
+              <tr><td>E-02</td><td><a href="file:///D:/ReworkPRG/SllkGuiPRG/SllkGui/src/sllkgui/gallery/runtime.py#L134-L185">gallery/runtime.py:134-185</a></td><td>启动加载顺序来自 roots，未按依赖拓扑排序。</td></tr>
+              <tr><td>E-03</td><td><a href="file:///D:/ReworkPRG/SllkGuiPRG/SllkGui/src/sllkgui/gallery/window.py#L234-L323">gallery/window.py:234-323</a></td><td><code>reload_plugins()</code> 清空全部页面并重建菜单。</td></tr>
+              <tr><td>E-04</td><td><a href="file:///D:/ReworkPRG/SllkGuiPRG/SllkGui/src/sllkgui/gallery/loader.py#L145-L368">gallery/loader.py:145-368</a></td><td>按插件导入/卸载、模块清理与 owner 句柄清理已存在。</td></tr>
+              <tr><td>E-05</td><td><a href="file:///D:/ReworkPRG/SllkGuiPRG/SllkGui/src/sllkgui/gallery/registry.py#L87-L131">gallery/registry.py:87-131</a></td><td>注册表支持按插件增删 Surface。</td></tr>
+              <tr><td>E-06</td><td><a href="file:///D:/ReworkPRG/SllkGuiPRG/SllkGui/src/sllkgui/guis/windows/main_window/registry.py#L56-L99">guis/.../registry.py:56-99</a></td><td>页面按需构建，objectName 由路由派生，可精确定位。</td></tr>
+              <tr><td>E-07</td><td><a href="file:///D:/ReworkPRG/SllkGuiPRG/SllkGui/src/sllkgui/guicore/window/left_menu/menu.py#L94-L147">guicore/.../left_menu/menu.py:94-147</a></td><td>菜单只有全量 clear/add，MVP 可直接重建菜单。</td></tr>
+              <tr><td>E-08</td><td><a href="file:///D:/ReworkPRG/SllkGuiPRG/SllkGui/src/sllkgui/guis/pages/plugin_store/page.py#L962-L980">guis/.../plugin_store/page.py:962-980</a> · <a href="file:///D:/ReworkPRG/SllkGuiPRG/SllkGui/src/sllkgui/guis/pages/plugin_store/page.py#L1242-L1308">1242-1308</a></td><td>启停后请求全量重载；页面重建前暂存 UI 状态。</td></tr>
+              <tr><td>E-09</td><td><a href="file:///D:/ReworkPRG/SllkGuiPRG/SllkGui/src/sllkgui/gallery/manager.py#L429-L616">gallery/manager.py:429-616</a></td><td>promote/update/rollback/remove/set_enabled 的现有语义与缺口。</td></tr>
+              <tr><td>E-10</td><td><a href="file:///D:/ReworkPRG/SllkGuiPRG/SllkGui/src/sllkgui/gallery/store.py#L189-L229">gallery/store.py:189-229</a></td><td>旧版本归档有复制/移入 trash 的回退，但扩展模块锁定仍可能失败。</td></tr>
+              <tr><td>E-11</td><td><a href="file:///D:/ReworkPRG/SllkGuiPRG/SllkGui/src/sllkgui/gallery/context.py#L146-L153">gallery/context.py:146-153</a> · <a href="file:///D:/ReworkPRG/SllkGuiPRG/SllkGui/src/sllkgui/gallery/context.py#L215-L283">215-283</a></td><td>日志 handler 复用；托盘/事件/服务/设置/快捷键清理入口。</td></tr>
+              <tr><td>E-12</td><td><a href="file:///D:/ReworkPRG/SllkGuiPRG/SllkGui/src/sllkgui/gallery/tray.py#L440-L452">gallery/tray.py:440-452</a> · <a href="file:///D:/ReworkPRG/SllkGuiPRG/SllkGui/src/sllkgui/gallery/shortcuts.py#L221-L224">shortcuts.py:221-224</a></td><td>托盘/快捷键按插件清理。</td></tr>
+              <tr><td>E-13</td><td><a href="file:///D:/ReworkPRG/SllkGuiPRG/SllkGui/src/sllkgui/gallery/events.py#L84-L97">gallery/events.py:84-97</a> · <a href="file:///D:/ReworkPRG/SllkGuiPRG/SllkGui/src/sllkgui/gallery/services.py#L77-L87">services.py:77-87</a></td><td>事件/服务按 owner 清理。</td></tr>
+              <tr><td>E-14</td><td><a href="file:///D:/ReworkPRG/SllkGuiPRG/SllkGui/src/sllkgui/gallery/settings.py#L130-L137">gallery/settings.py:130-137</a></td><td>设置页卸载时撤注册与订阅，磁盘配置保留。</td></tr>
+              <tr><td>E-15</td><td><a href="file:///D:/ReworkPRG/SllkGuiPRG/SllkGui/src/sllkgui/appcore/sysx/modules/language_module.py#L243-L269">language_module.py:243-269</a> · <a href="file:///D:/ReworkPRG/SllkGuiPRG/SllkGui/src/sllkgui/gallery/loader.py#L95-L104">loader.py:95-104</a></td><td>语言刷新存在签名早退，插件语言表变化不会自动生效（已实测复现）。</td></tr>
+              <tr><td>E-16</td><td><a href="file:///D:/ReworkPRG/SllkGuiPRG/SllkGui/src/sllkgui/guicore/window/settings_window/window.py#L516-L560">settings_window/window.py:516-560</a></td><td>设置页按命名空间重建并保留草稿/滚动。</td></tr>
+              <tr><td>E-17</td><td><a href="file:///D:/ReworkPRG/SllkGuiPRG/SllkGui/docs/PLUGIN.md">docs/PLUGIN.md</a> · <a href="file:///D:/ReworkPRG/SllkGuiPRG/SllkGui/docs/PLUGIN_STANDARD.md#L28-L39">PLUGIN_STANDARD.md:28-39</a></td><td>数据保留语义、Surface 钩子、线程/定时器清理规范。</td></tr>
+              <tr><td>E-18</td><td><a href="file:///D:/ReworkPRG/SllkGuiPRG/SllkGui/tests/test_showcase.py#L148-L179">tests/test_showcase.py:148-179</a> · <a href="file:///D:/ReworkPRG/SllkGuiPRG/SllkGui/tests/test_gallery_loader.py#L60-L90">tests/test_gallery_loader.py:60-90</a></td><td>现有全量重载与模块更新回归测试，可作为新测试的基线。</td></tr>
+              <tr><td>E-19</td><td><a href="file:///D:/ReworkPRG/SllkGuiPRG/SllkGui/tests/test_architecture_boundaries.py#L27-L38">tests/test_architecture_boundaries.py:27-38</a></td><td>分层依赖守卫；新增模块不得破坏 <code>gallery→guis</code> 白名单。</td></tr>
+              <tr><td>E-20</td><td><a href="file:///D:/ReworkPRG/SllkGuiPRG/SllkGui/docs/CHANGE_PLAN.md#L81-L97">docs/CHANGE_PLAN.md:81-97</a></td><td>进程隔离 <code>EXT-01</code>、导航拦截 <code>EXT-17</code> 等仍为规划项，不在本次范围。</td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <h4>基准复现</h4>
+        <div class="card">
+          <div class="kicker">环境</div>
+          <p class="small">
+            Windows；项目虚拟环境 Python 3.12；<code>QT_QPA_PLATFORM=offscreen</code>；warm cache；
+            使用仓库内 <code>tests/gallery_helpers.py</code> 生成最小插件。
+          </p>
+          <div class="kicker mt-16">命令</div>
+          <pre class="mono" style="background:var(--ink);color:var(--paper);padding:14px;overflow:auto;font-size:11px;line-height:1.7">$env:PYTHONPATH="D:\ReworkPRG\SllkGuiPRG\SllkGui\src"
+&amp; "D:\ReworkPRG\SllkGuiPRG\SllkGui\.venv\Scripts\python.exe" `
+  "C:\Users\13521\AppData\Local\Temp\bench_sllkgui_scale.py"</pre>
+          <p class="small mb-0">
+            脚本生成 20 个最小插件，分别测量全量卸载/加载与单插件卸载/加载；页面/菜单成本另用 Showcase 窗口测量。
+            报告中的数字是同一台机器的中位数，不作为跨机器承诺。
+          </p>
+        </div>
+
+        <div class="callout good">
+          <span class="label">置信度声明</span>
+          <strong>代码事实：高。</strong>所有关键路径均来自当前工作区文件与本地执行结果。
+          <strong>性能数字：中。</strong>只代表本机 warm cache 量级，需在 CI/目标硬件复测。
+          <strong>第三方插件行为：低。</strong>无法保证所有插件都正确实现 <code>on_unload</code>、线程停止与数据迁移；这应由插件规范与验收用例约束。
+        </div>
+      </section>
+
+      <footer class="footer">
+        <span>SLLKGUI / PLUGIN HOT RELOAD ASSESSMENT</span>
+        <span>2026-11-21 · LOCAL CODE + OFFSCREEN QT BENCHMARK</span>
+        <span>CONDITIONAL GO · NO EXTERNAL SOURCES</span>
+      </footer>
+    </div>
+  </main>
+</div>
+
+<script>
+  (() => {
+    const progress = document.getElementById('progress');
+    const navLinks = Array.from(document.querySelectorAll('.rail-nav a'));
+    const sections = navLinks
+      .map((link) => document.querySelector(link.getAttribute('href')))
+      .filter(Boolean);
+
+    const setProgress = () => {
+      const doc = document.documentElement;
+      const max = doc.scrollHeight - window.innerHeight;
+      const value = max > 0 ? (window.scrollY / max) * 100 : 0;
+      progress.style.width = Math.min(100, Math.max(0, value)) + '%';
+    };
+    window.addEventListener('scroll', setProgress, { passive: true });
+    window.addEventListener('resize', setProgress);
+    setProgress();
+
+    if ('IntersectionObserver' in window) {
+      const byId = new Map(navLinks.map((link) => [link.getAttribute('href').slice(1), link]));
+      const observer = new IntersectionObserver(
+        (entries) => {
+          const visible = entries
+            .filter((entry) => entry.isIntersecting)
+            .sort((a, b) => b.intersectionRatio - a.intersectionRatio)[0];
+          if (!visible) return;
+          navLinks.forEach((link) => link.removeAttribute('aria-current'));
+          const active = byId.get(visible.target.id);
+          if (active) active.setAttribute('aria-current', 'true');
+        },
+        { rootMargin: '-18% 0px -68% 0px', threshold: [0, 0.15, 0.4, 0.75] }
+      );
+      sections.forEach((section) => observer.observe(section));
+    }
+
+    const riskButtons = Array.from(document.querySelectorAll('[data-risk-filter]'));
+    const riskRows = Array.from(document.querySelectorAll('tr.risk-row'));
+    const riskCount = document.getElementById('risk-count');
+    riskButtons.forEach((button) => {
+      button.addEventListener('click', () => {
+        const filter = button.dataset.riskFilter;
+        riskButtons.forEach((item) => item.setAttribute('aria-pressed', String(item === button)));
+        let visible = 0;
+        riskRows.forEach((row) => {
+          const show = filter === 'all' || row.dataset.severity === filter;
+          row.hidden = !show;
+          if (show) visible += 1;
+        });
+        riskCount.textContent = visible + ' risk' + (visible === 1 ? '' : 's');
+      });
+    });
+
+    const tabs = Array.from(document.querySelectorAll('[role="tab"]'));
+    const panels = Array.from(document.querySelectorAll('[role="tabpanel"]'));
+    tabs.forEach((tab) => {
+      tab.addEventListener('click', () => {
+        const target = tab.dataset.tab;
+        tabs.forEach((item) => item.setAttribute('aria-selected', String(item === tab)));
+        panels.forEach((panel) => {
+          panel.hidden = panel.id !== 'panel-' + target;
+        });
+      });
+    });
+
+    tabs.forEach((tab, index) => {
+      tab.addEventListener('keydown', (event) => {
+        if (!['ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(event.key)) return;
+        event.preventDefault();
+        let next = index;
+        if (event.key === 'ArrowRight') next = (index + 1) % tabs.length;
+        if (event.key === 'ArrowLeft') next = (index - 1 + tabs.length) % tabs.length;
+        if (event.key === 'Home') next = 0;
+        if (event.key === 'End') next = tabs.length - 1;
+        tabs[next].focus();
+        tabs[next].click();
+      });
+    });
+  })();
+</script>
+</body>
+</html>

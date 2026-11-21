@@ -42,6 +42,8 @@ class CLeftMenu(QWidget):
         # 菜单按钮注册表：btn_id -> 按钮；语言键映射：btn_id -> (text_key, tooltip_key)
         self._menu_buttons: dict = {}
         self._menu_lang_keys: dict = {}
+        #: 底部布局中的按钮 id，用于增删后决定底部分隔线是否显示
+        self._bottom_button_ids: set[str] = set()
         # 获取父类
         self._parent = parent
         self._app_parent = app_parent
@@ -94,34 +96,98 @@ class CLeftMenu(QWidget):
     def add_menus(self, parameters):
         if parameters is not None:
             for parameter in parameters:
-                _btn_icon = PathFactory.resolve_svg(parameter["btn_icon"])
-                _btn_id = parameter["btn_id"]
-                _btn_text_key = parameter["btn_text"]
-                _btn_tooltip_key = parameter["btn_tooltip"]
-                _btn_fallback = parameter.get("btn_text_fallback")
-                _show_top = parameter["show_top"]
-                _is_active = parameter["is_active"]
+                self.add_menu(parameter)
 
-                self.menu = CLeftMenuButton(
-                    self._app_parent,
-                    text=self._resolve_text(_btn_text_key, _btn_fallback),
-                    btn_id=_btn_id,
-                    tooltip_text=self._resolve_text(_btn_tooltip_key, _btn_fallback),
-                    icon_path=_btn_icon,
-                    is_active=_is_active,
-                    font_family=self._font_family,
-                )
-                self.menu.clicked.connect(self.btn_clicked)
-                self.menu.released.connect(self.btn_released)
-                self._menu_buttons[_btn_id] = self.menu
-                self._menu_lang_keys[_btn_id] = (_btn_text_key, _btn_tooltip_key, _btn_fallback)
+    def _create_menu_button(self, parameter):
+        _btn_icon = PathFactory.resolve_svg(parameter["btn_icon"])
+        _btn_id = parameter["btn_id"]
+        _btn_text_key = parameter["btn_text"]
+        _btn_tooltip_key = parameter["btn_tooltip"]
+        _btn_fallback = parameter.get("btn_text_fallback")
+        _show_top = parameter["show_top"]
+        _is_active = parameter["is_active"]
 
-                # 添加到布局
-                if _show_top:
-                    self.top_layout.addWidget(self.menu)
-                else:
-                    self.div_bottom.show()
-                    self.bottom_layout.addWidget(self.menu)
+        button = CLeftMenuButton(
+            self._app_parent,
+            text=self._resolve_text(_btn_text_key, _btn_fallback),
+            btn_id=_btn_id,
+            tooltip_text=self._resolve_text(_btn_tooltip_key, _btn_fallback),
+            icon_path=_btn_icon,
+            is_active=_is_active,
+            font_family=self._font_family,
+        )
+        button.clicked.connect(self.btn_clicked)
+        button.released.connect(self.btn_released)
+        self._menu_buttons[_btn_id] = button
+        self._menu_lang_keys[_btn_id] = (_btn_text_key, _btn_tooltip_key, _btn_fallback)
+        if not _show_top:
+            self._bottom_button_ids.add(_btn_id)
+        self.menu = button
+        return button
+
+    def _attach_menu_button(self, parameter, button):
+        if parameter["show_top"]:
+            self.top_layout.addWidget(button)
+        else:
+            self.div_bottom.show()
+            self.bottom_layout.addWidget(button)
+
+    def add_menu(self, parameter):
+        button = self._create_menu_button(parameter)
+        self._attach_menu_button(parameter, button)
+        return button
+
+    def remove_menu(self, btn_id: str) -> bool:
+        """移除单个菜单按钮；保留其它按钮实例。"""
+        button = self._menu_buttons.pop(btn_id, None)
+        self._menu_lang_keys.pop(btn_id, None)
+        self._bottom_button_ids.discard(btn_id)
+        if button is None:
+            return False
+        self.top_layout.removeWidget(button)
+        self.bottom_layout.removeWidget(button)
+        button.hide()
+        button.setParent(None)
+        button.deleteLater()
+        if not self._bottom_button_ids:
+            self.div_bottom.hide()
+        return True
+
+    def sync_menus(self, parameters) -> None:
+        """按目标列表同步菜单：保留同 id 按钮实例，只增删/重排。
+
+        与 ``clear_menus + add_menus`` 相比，未变化的按钮不会被销毁，
+        因此焦点、悬停与动画状态不会闪断；页面栈完全不受影响。
+        """
+        desired = list(parameters or [])
+        desired_ids = {item["btn_id"] for item in desired}
+        for btn_id in list(self._menu_buttons):
+            if btn_id not in desired_ids:
+                self.remove_menu(btn_id)
+
+        for parameter in desired:
+            btn_id = parameter["btn_id"]
+            if btn_id not in self._menu_buttons:
+                self._create_menu_button(parameter)
+            self._menu_lang_keys[btn_id] = (
+                parameter["btn_text"],
+                parameter["btn_tooltip"],
+                parameter.get("btn_text_fallback"),
+            )
+
+        for button in self._menu_buttons.values():
+            self.top_layout.removeWidget(button)
+            self.bottom_layout.removeWidget(button)
+
+        top_ids = [item["btn_id"] for item in desired if item["show_top"]]
+        bottom_ids = [item["btn_id"] for item in desired if not item["show_top"]]
+        self._bottom_button_ids = set(bottom_ids)
+        for offset, btn_id in enumerate(top_ids):
+            self.top_layout.insertWidget(2 + offset, self._menu_buttons[btn_id])
+        for offset, btn_id in enumerate(bottom_ids):
+            self.bottom_layout.insertWidget(1 + offset, self._menu_buttons[btn_id])
+        self.div_bottom.setVisible(bool(bottom_ids))
+        self.apply_language()
 
     def apply_language(self, resolver=None):
         """语言切换后刷新全部菜单按钮文本与提示（订阅自动触发）。"""
@@ -139,11 +205,14 @@ class CLeftMenu(QWidget):
         """移除全部页面菜单按钮（插件重载后重建菜单用）。"""
         for button in self._menu_buttons.values():
             # 先 hide()：可见按钮 setParent(None) 后会变成顶层窗口并被自动显示。
+            self.top_layout.removeWidget(button)
+            self.bottom_layout.removeWidget(button)
             button.hide()
             button.setParent(None)
             button.deleteLater()
         self._menu_buttons.clear()
         self._menu_lang_keys.clear()
+        self._bottom_button_ids.clear()
         self.div_bottom.hide()
 
     def active_button_id(self):

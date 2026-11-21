@@ -20,6 +20,8 @@ Gallery 进程内，清单里的权限用于安装前知情同意，不是沙箱
 - **导航拦截 / 装饰钩子**（`EXT-17`）：`ctx.open_surface()` 只能发起跳转，无法拦截或装饰路由。触发条件：出现"未保存时拦截离开"等明确诉求。
 - **多版本 API 共存**：`SUPPORTED_API={2}`，旧版（v1）清单被拒；不做多版本兼容或能力探测。迁移方式：清单 `api` 改为 `2`。源仓库条目若仍保留旧协议的历史版本，索引时会按版本跳过（不会因此丢弃整个插件条目）。
 - **跨进程服务发现**：`ctx.services` 仅在本进程内按 `plugin_id` 注册与解析，无跨进程协议。
+- **原生扩展热替换**：插件目录含 `.pyd` / `.so` / `.dll` / `.dylib` 时，更新/回滚只返回 `PLUGIN_RESTART_REQUIRED`，不会在进程内替换；需要用户重启。
+- **受影响页面状态自动序列化**：基座不会尝试保存任意 `QWidget` 的内部状态；需要时由页面实现下文的 `save_state()` / `restore_state()`。
 
 ## 1. 仓库结构
 
@@ -207,6 +209,50 @@ class MyPlugin(Plugin):
     def on_surface_leave(self, surface_id: str) -> None:
         self._release_runtime()  # 必须幂等
 ```
+
+### 热重载与状态保持
+
+4.0 起，基座支持**按插件选择性重载**：启用、停用、更新、回滚、卸载时只卸载/加载目标插件及其反向依赖者，
+未受影响的插件与页面实例保持不变。插件管理页不再被销毁，用户停留在该页时不会跳页。
+
+规则：
+
+- 目标插件会被重新导入；旧实例的 `on_unload()` 先于模块清理调用，必须幂等并停止自建 `QTimer` / `QThread` / `QObject`。
+- 依赖目标插件的已加载插件会被一起重载（提供者先加载、依赖者先卸载）。停用提供者时，基座会同时停用已启用的依赖者。
+- 未受影响页面保持原实例、滚动与表单状态；受影响页面会被重建。
+- 受影响页面若需要恢复内部状态，可在返回的 `QWidget` 上实现两个可选方法（鸭子类型，不进入 `Plugin` 基类）：
+
+```python
+class NotesPage(QWidget):
+    def save_state(self):
+        return {"draft": self.editor.toPlainText()}
+
+    def restore_state(self, state) -> None:
+        self.editor.setPlainText(str((state or {}).get("draft", "")))
+```
+
+  基座在销毁受影响的页面前调用 `save_state()`，重建后调用 `restore_state(state)`。未实现这两个方法的页面仍会正常重建，只是内部状态由插件自行通过 `ctx.settings` / `ctx.storage` 持久化。
+- 更新/回滚失败时，基座会尝试把旧版本目录移回并重新加载；失败会保留错误码与日志。插件数据/schema 迁移不在基座回滚范围内。
+- 原生扩展（`.pyd` / `.so` / `.dll` / `.dylib`）无法安全热替换，更新/回滚返回 `PLUGIN_RESTART_REQUIRED`。
+- 插件语言表与菜单标题在重载后强制刷新，无需用户切换语言。
+- 日志中的插件版本前缀会随新上下文更新；卸载时旧 handler 会被摘除。
+
+本地开发时可用文件监听：
+
+```powershell
+uv run sllkgui run --plugin-dir ..\my-plugin --watch
+```
+
+`--watch` 只监听 `--plugin-dir` 下的开发插件目录，不写 registry、不改版本；文件变化后防抖重载目标插件。加载失败会显示错误并保持其它插件可用，下一次文件变化会再次尝试。
+
+选择性重载相关错误码：
+
+| 错误码 | 含义 |
+| --- | --- |
+| `PLUGIN_RELOAD_IN_PROGRESS` | 已有一次重载在进行，本次请求被拒绝 |
+| `PLUGIN_RELOAD_TARGET_MISSING` | 找不到目标插件目录 |
+| `PLUGIN_RELOAD_FAILED` | 新版本加载失败；窗口层会尝试回滚 |
+| `PLUGIN_RESTART_REQUIRED` | 插件含原生扩展，更新/回滚必须重启 |
 
 ### 插件级事件总线
 

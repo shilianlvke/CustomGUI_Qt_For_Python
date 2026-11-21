@@ -11,7 +11,7 @@ os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
 import pytest
 from PySide6.QtCore import QPoint, Qt
 from PySide6.QtTest import QTest
-from PySide6.QtWidgets import QApplication, QWidget
+from PySide6.QtWidgets import QApplication, QLabel, QWidget
 
 
 @pytest.fixture(scope="module")
@@ -60,14 +60,15 @@ class _Manager:
             }
         ]
 
-    def set_enabled(self, plugin_id: str, enabled: bool) -> None:
+    def set_enabled(self, plugin_id: str, enabled: bool) -> dict:
         self.enabled_calls.append((plugin_id, enabled))
+        return {"id": plugin_id, "enabled": enabled, "disabled_dependents": []}
 
-    def update(self, plugin_id: str):
+    def update(self, plugin_id: str, **kwargs):
         self.update_calls.append(plugin_id)
         return {"id": plugin_id, "updated": True, "version": "1.3.0"}
 
-    def rollback(self, plugin_id: str):
+    def rollback(self, plugin_id: str, **kwargs):
         return {"id": plugin_id, "version": "1.1.0"}
 
     def remove(self, plugin_id: str):
@@ -168,6 +169,34 @@ def test_rows_and_inspector_follow_runtime(qapp):
 
         page._set_plugin_enabled("com.example.one", False)
         assert host.runtime.manager.enabled_calls == [("com.example.one", False)]
+    finally:
+        page.deleteLater()
+        host.deleteLater()
+
+
+def test_inspector_shows_recent_reload_diagnostics(qapp):
+    host = QWidget()
+    host.runtime = SimpleNamespace(
+        manager=_Manager(),
+        sources=_Sources(),
+        recent_reloads=lambda limit=5: [
+            SimpleNamespace(
+                ok=True,
+                targets=["com.example.one"],
+                duration_ms=12.5,
+                rollback="none",
+                code="",
+            )
+        ],
+    )
+    page = _page(host)
+    try:
+        record = dict(page._manager().installed_rows()[0])
+        record["installed"] = True
+        record["installed_version"] = record["version"]
+        inspector = page._build_plugin_inspector(record)
+        labels = [item.text() for item in inspector.findChildren(QLabel)]
+        assert page.ctx.text("detail.reload_history", "最近重载") in labels
     finally:
         page.deleteLater()
         host.deleteLater()

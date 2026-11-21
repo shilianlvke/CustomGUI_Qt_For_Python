@@ -130,6 +130,26 @@ class GalleryRegistry:
             self._surfaces.pop(f"{plugin_id}/{surface_id}", None)
         record.surfaces.clear()
 
+    def replace(self, record: PluginRecord) -> None:
+        """用新实例替换同 id 插件；旧 Surface 与记录一起移除。"""
+        self.remove(record.plugin_id)
+        self.add(record)
+
+    def clear_errors(self, plugin_id: str = "") -> int:
+        """清除指定插件（或全部）的加载错误，返回移除条数。
+
+        选择性重载必须按插件清错误，否则一次失败会一直留在
+        ``runtime.errors()`` 里，重试成功后仍然显示旧错误。
+        """
+        if not plugin_id:
+            count = len(self._errors)
+            self._errors.clear()
+            return count
+        kept = [item for item in self._errors if item.get("plugin_id") != plugin_id]
+        removed = len(self._errors) - len(kept)
+        self._errors = kept
+        return removed
+
     def clear(self) -> None:
         self._plugins.clear()
         self._surfaces.clear()
@@ -144,6 +164,9 @@ class GalleryRegistry:
 
     def plugins(self) -> list[PluginRecord]:
         return list(self._plugins.values())
+
+    def get_plugin(self, plugin_id: str) -> PluginRecord | None:
+        return self._plugins.get(plugin_id)
 
     def routes(self) -> dict[str, SurfaceRecord]:
         return dict(self._surfaces)

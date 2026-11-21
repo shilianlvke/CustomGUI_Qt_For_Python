@@ -150,6 +150,7 @@ def _cmd_window(args: argparse.Namespace, mode: str) -> int:
             interactive=True,
             index_url=getattr(args, "index_url", "") or "",
             check_tools=True,
+            watch=bool(getattr(args, "watch", False)),
         )
     window.show()
     return int(app.exec())
@@ -428,6 +429,7 @@ def build_parser() -> argparse.ArgumentParser:
     run.add_argument("--data-dir", help="可写数据目录")
     run.add_argument("--gallery-dir", help="插件安装根目录")
     run.add_argument("--plugin-dir", action="append", help="本地开发插件目录（可重复）")
+    run.add_argument("--watch", action="store_true", help="监听 --plugin-dir 下的开发插件并自动热重载")
     run.add_argument("--safe-mode", action="store_true", help="只加载核心插件")
     run.add_argument("--allow-local", action="store_true", help="允许 file:// 插件源")
     run.add_argument("--index-url", help="Python 依赖镜像源（如 https://pypi.tuna.tsinghua.edu.cn/simple）")

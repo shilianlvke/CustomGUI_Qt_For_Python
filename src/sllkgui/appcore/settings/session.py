@@ -177,6 +177,28 @@ class SettingsSession:
         self._draft = dict(self._baseline)
         self._dirty.clear()
 
+    def prune_namespace(self, namespace: str) -> tuple[str, ...]:
+        """移除命名空间中已不存在于注册表的草稿键。
+
+        插件热重载后可能删掉或改名设置键；旧草稿如果继续保留，
+        ``save()`` 会在 ``self.spec(key)`` 上抛 ``SettingsError``。返回被
+        丢弃的完整键，便于设置窗口提示用户。
+        """
+        prefix = f"{namespace}."
+        valid = {
+            page.full_key(spec.key)
+            for page in self._registry.pages(namespace)
+            for spec in page.specs()
+        }
+        removed = tuple(
+            key for key in sorted(self._dirty) if key.startswith(prefix) and key not in valid
+        )
+        for key in removed:
+            self._dirty.discard(key)
+            self._draft.pop(key, None)
+            self._baseline.pop(key, None)
+        return removed
+
     # ------------------------------------------------------------------
     # 保存
     # ------------------------------------------------------------------

@@ -325,7 +325,23 @@ window = load_run(                              # 正式模式
     interactive=True,
     index_url="",
     check_tools=False,         # 启动时检测 uv / Git
+    watch=False,               # 监听 plugin_dirs 下的开发插件并热重载
 )
+```
+
+插件热重载入口：
+
+```python
+# 只刷新目标插件及其反向依赖者；未受影响页面保持实例
+result = window.reload_plugin_in_place("com.example.notes", reason="update")
+if not result.ok:
+    print(result.code, result.message)
+
+# 停用/卸载：只卸载，不重新加载
+window.reload_plugin_in_place("com.example.notes", reason="disable", load=False)
+
+# 全量重载回退（兼容旧行为）
+window.reload_plugins(native_page="page_native_plugin_store")
 ```
 
 窗口装配顺序（`sllkgui run` 与宿主 `main.py` 一致）：

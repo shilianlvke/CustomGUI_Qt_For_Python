@@ -240,12 +240,15 @@ class LanguageHandler:
                 self._current = AppSettings.language
             return self._current
 
-    def apply(self, language: str) -> str:
+    def apply(self, language: str, *, force: bool = False) -> str:
         """整体切换语言并通知订阅者，返回新语言名。
 
         幂等性按**内容签名**判断而不是仅比较语言名：语言文件在运行期被
         追加/修改（例如换主题时顺带补翻译）也能重新装载，避免"同名语言
         永远读的是首次加载的内容"。
+
+        ``force=True`` 跳过签名早退，强制重新收集 App 语言提供者。选择性
+        重载插件后，基座语言包通常没变，但插件语言表可能已变，必须强制。
         """
         if language not in LANGUAGE_OPTIONS:
             raise ValueError(f"不支持的语言: {language}（可选: {LANGUAGE_OPTIONS}）")
@@ -254,7 +257,7 @@ class LanguageHandler:
 
         data = AppLanguages[language].data
         signature = (language, len(data), _fingerprint(data))
-        if self._current == language and self._signature == signature:
+        if not force and self._current == language and self._signature == signature:
             return language
 
         self.replace(data)

@@ -67,6 +67,7 @@ UI:
   ui_SettingsNavEmpty: "No matching settings page"
   ui_SettingsNavBase: "Base settings"
   ui_SettingsNavPlugins: "Plugin settings"
+  ui_SettingsDraftPruned: "Some unsaved settings were discarded because the plugin changed."
   ui_SettingsNoPlugins: "No plugins installed"
   ui_SettingsNoPluginsHint: "Plugin settings appear here after installation."
   ui_SettingsUndeclared: "Not declared"
@@ -318,6 +319,9 @@ plugin_store:
     url: URL
     last_refresh: Last refresh
     trust: Trust level
+    reload_history: Recent reloads
+    reload_ok: OK
+    reload_failed: Failed
   inspector:
     title: Details
     empty_title: Select a plugin
@@ -403,6 +407,7 @@ plugin_store:
     remove_done: '“{name}” uninstalled'
     enabled_done: '“{name}” enabled'
     disabled_done: '“{name}” disabled'
+    dependents_disabled: ' ({count} dependent plugins disabled)'
     source_refreshed: Sources refreshed
     list_refreshed: Plugin list refreshed
     refreshing: Refreshing sources…

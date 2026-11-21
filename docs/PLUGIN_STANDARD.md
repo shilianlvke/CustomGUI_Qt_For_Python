@@ -43,6 +43,8 @@
 - 使用 `sllkgui.guicore` 组件与设计令牌；禁止硬编码颜色/字号/圆角。
 - Surface 返回 `QWidget`；禁止创建 `QApplication` / `QMainWindow`。
 - 所有用户可见文本走四语言资源；支持 DPI、键盘焦点与明暗主题。
+- 需要热重载后保留页面内部状态时，在 Surface 返回的 `QWidget` 上实现
+  `save_state()` / `restore_state(state)`；未实现时基座只保证页面重建，不保证内部状态。
 - 禁止修改全局样式表、字体、语言；禁止 monkey-patch 基座模块。
 - 托盘图标、悬停提示、菜单外壳与基座固定项由基座独占；插件只能注册带槽的
   文本动作与通知，不得自建托盘或替换图标（见 `docs/TRAY.md`）。

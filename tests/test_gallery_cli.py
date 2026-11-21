@@ -14,6 +14,8 @@ def test_parser_gallery_and_run():
     assert args.command == "gallery" and args.surface == "a/b"
     args = parser.parse_args(["run", "--plugin-dir", "x", "--plugin-dir", "y", "--safe-mode"])
     assert args.plugin_dir == ["x", "y"] and args.safe_mode is True
+    args = parser.parse_args(["run", "--plugin-dir", "x", "--watch"])
+    assert args.watch is True
 
 
 def test_plugin_lint_cli(tmp_path: Path, capsys):

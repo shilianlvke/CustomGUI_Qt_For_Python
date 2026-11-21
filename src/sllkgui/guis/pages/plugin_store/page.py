@@ -714,6 +714,24 @@ class StorePage(QWidget):
         column.addWidget(meta_grid(items))
 
         column.addWidget(permission_block(list(record.get("permissions") or []), self.ctx))
+
+        history = getattr(self.runtime, "recent_reloads", None)
+        if callable(history):
+            rows: list[tuple[str, str, bool]] = []
+            for item in history(8):
+                if plugin_id not in list(getattr(item, "targets", []) or []):
+                    continue
+                status = (
+                    self.ctx.text("detail.reload_ok", "成功")
+                    if getattr(item, "ok", False)
+                    else str(getattr(item, "code", "") or self.ctx.text("detail.reload_failed", "失败"))
+                )
+                duration = float(getattr(item, "duration_ms", 0.0) or 0.0)
+                rollback = str(getattr(item, "rollback", "none") or "none")
+                rows.append((status, f"{duration:.0f} ms · rollback={rollback}", True))
+            if rows:
+                column.addWidget(section_title(self.ctx.text("detail.reload_history", "最近重载")))
+                column.addWidget(meta_grid(rows[:3]))
         column.addStretch(1)
         return content
 
@@ -966,18 +984,25 @@ class StorePage(QWidget):
         if manager is None:
             return
         try:
-            manager.set_enabled(plugin_id, enabled)
+            result = manager.set_enabled(plugin_id, enabled) or {}
             name = self._name_of_plugin(plugin_id)
             message = (
                 self.ctx.text("status.enabled_done", "已启用「{name}」").format(name=name)
                 if enabled
                 else self.ctx.text("status.disabled_done", "已停用「{name}」").format(name=name)
             )
+            dependents = list(result.get("disabled_dependents") or [])
+            if dependents:
+                message += self.ctx.text(
+                    "status.dependents_disabled",
+                    "（同时停用 {count} 个依赖插件）",
+                ).format(count=len(dependents))
             self.set_status(message, "success")
         except Exception as exc:  # noqa: BLE001 - 页面必须保持可用
             self._fail("PLUGIN_STORE_TOGGLE_FAILED", f"切换插件状态失败: {exc}", exc)
+            return
         single_shot(self, 0, self.refresh_all)
-        self.schedule_reload()
+        self._reload_one(plugin_id, "enable" if enabled else "disable", load=enabled)
 
     def _update_plugin(self, plugin_id: str) -> None:
         manager = self._manager()
@@ -994,15 +1019,15 @@ class StorePage(QWidget):
             else:
                 message = self.ctx.text("status.up_to_date", "「{name}」已是最新版本").format(name=name)
             self.set_status(message, "success")
+            self._reload_one(plugin_id, "update")
 
         self._run_async(
             name="plugin_store.update",
-            fn=lambda: manager.update(plugin_id),
+            fn=lambda: manager.update(plugin_id, hot_reload=True),
             busy_text=self.ctx.text("status.updating", "正在更新插件…"),
             success_message=None,
             error_code="PLUGIN_STORE_UPDATE_FAILED",
             on_done=done,
-            reload_plugins=True,
         )
 
     def _rollback_plugin(self, plugin_id: str) -> None:
@@ -1019,15 +1044,15 @@ class StorePage(QWidget):
                 ),
                 "success",
             )
+            self._reload_one(plugin_id, "rollback")
 
         self._run_async(
             name="plugin_store.rollback",
-            fn=lambda: manager.rollback(plugin_id),
+            fn=lambda: manager.rollback(plugin_id, hot_reload=True),
             busy_text=self.ctx.text("status.rolling_back", "正在回滚插件…"),
             success_message=None,
             error_code="PLUGIN_STORE_ROLLBACK_FAILED",
             on_done=done,
-            reload_plugins=True,
         )
 
     def _remove_plugin(self, plugin_id: str) -> None:
@@ -1051,6 +1076,7 @@ class StorePage(QWidget):
             if self._selection.get("installed") == plugin_id:
                 self._selection["installed"] = ""
             self.set_status(self.ctx.text("status.remove_done", "已卸载「{name}」").format(name=name), "success")
+            self._reload_one(plugin_id, "remove", load=False)
 
         self._run_async(
             name="plugin_store.remove",
@@ -1059,7 +1085,6 @@ class StorePage(QWidget):
             success_message=None,
             error_code="PLUGIN_STORE_REMOVE_FAILED",
             on_done=done,
-            reload_plugins=True,
         )
 
     def _install_plugin(self, record: dict[str, Any]) -> None:
@@ -1072,6 +1097,7 @@ class StorePage(QWidget):
         def done(_result: Any) -> None:
             self._selection["installed"] = plugin_id
             self.set_status(self.ctx.text("status.install_done", "已安装「{name}」").format(name=name), "success")
+            self._reload_one(plugin_id, "install")
 
         self._run_async(
             name="plugin_store.install",
@@ -1080,7 +1106,6 @@ class StorePage(QWidget):
             success_message=None,
             error_code="PLUGIN_STORE_INSTALL_FAILED",
             on_done=done,
-            reload_plugins=True,
         )
 
     def _name_of_plugin(self, plugin_id: str) -> str:
@@ -1239,12 +1264,29 @@ class StorePage(QWidget):
         for widget in self.findChildren(QWidget):
             widget.update()
 
-    def schedule_reload(self) -> None:
-        """重载插件运行时，但**停留在本页**并恢复界面状态。
+    def _reload_one(self, plugin_id: str, reason: str, *, load: bool = True) -> None:
+        """只刷新目标插件；宿主不支持时回退到全量重载。"""
+        window = self.ctx.parent_window()
+        if window is None:
+            return
+        reloader = getattr(window, "reload_plugin_in_place", None)
+        if callable(reloader):
+            def run() -> None:
+                reloader(plugin_id, reason=reason, load=load)
+                try:
+                    self.refresh_all()
+                except RuntimeError:  # 页面可能在回退全量重载时已销毁
+                    pass
 
-        页面控件会被 ``reload_plugins`` 重建（插件 Surface 必须重建），因此在
-        重建前把模式 / 搜索词 / 选中项记到窗口上，新页面构建时再取回；
-        否则用户每次启停插件都会被打回默认页签与默认选中。
+            single_shot(window, 80, run)
+            return
+        self.schedule_reload()
+
+    def schedule_reload(self) -> None:
+        """全量重载回退路径；停留在本页并恢复界面状态。
+
+        选择性重载可用时由 :meth:`_reload_one` 走 ``reload_plugin_in_place``；
+        本方法只保留给未实现选择性重载的宿主。
         """
         window = self.ctx.parent_window()
         if window is None:

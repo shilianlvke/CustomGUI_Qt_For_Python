@@ -68,6 +68,7 @@ UI:
   ui_SettingsNavEmpty: "一致する設定ページがありません"
   ui_SettingsNavBase: "ベース設定"
   ui_SettingsNavPlugins: "プラグイン設定"
+  ui_SettingsDraftPruned: "プラグイン更新により、未保存の設定の一部が無効になり破棄されました。"
   ui_SettingsNoPlugins: "インストール済みプラグインはありません"
   ui_SettingsNoPluginsHint: "プラグインをインストールすると、その設定ページがここに表示されます。"
   ui_SettingsUndeclared: "未宣言"
@@ -318,6 +319,9 @@ plugin_store:
     url: URL
     last_refresh: 最終更新
     trust: 信頼レベル
+    reload_history: 最近のリロード
+    reload_ok: 成功
+    reload_failed: 失敗
   inspector:
     title: 詳細
     empty_title: プラグインを選択
@@ -403,6 +407,7 @@ plugin_store:
     remove_done: '「{name}」をアンインストールしました'
     enabled_done: '「{name}」を有効にしました'
     disabled_done: '「{name}」を無効にしました'
+    dependents_disabled: '（依存プラグイン {count} 件も無効化）'
     source_refreshed: ソースを更新しました
     list_refreshed: プラグイン一覧を更新しました
     refreshing: ソースを更新中…

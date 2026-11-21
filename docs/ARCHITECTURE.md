@@ -46,6 +46,11 @@
 - 设置只有一套界面：独立设置窗口合并软件信息、外观、界面与插件页，取代旧的右侧抽屉。
 - 旧 App 协议（`AppPlugin` / `AppPage` / `apps/` / `plugins.yml`）已删除，不保留兼容层。
 - 插件代码在宿主进程内执行；权限声明用于知情同意，不是沙箱。
+- 插件重载是**按插件选择性刷新**：`GalleryRuntime.reload_plugins()` 只卸载/加载目标及其反向依赖者，
+  未受影响插件与页面实例保留；`GalleryWindow.reload_plugin_in_place()` 只失效目标页面并同步左菜单。
+  全量重载仍保留为 `force_full=True` 回退路径。
+- 选择性重载先做清单/依赖/Surface 实现预检，再卸载旧实例；更新失败尝试用 history 目录回滚。
+  原生扩展（`.pyd` / `.so` / `.dll`）不参与热替换，返回 `PLUGIN_RESTART_REQUIRED`。
 - 输入类能力（托盘、快捷键）由基座持有唯一实例，插件只注册条目：托盘走
   `ctx.tray`（声明槽与次序，形态与预算由基座裁决），快捷键走 `ctx.shortcuts`，
   两者都在卸载时由加载器统一清理。
