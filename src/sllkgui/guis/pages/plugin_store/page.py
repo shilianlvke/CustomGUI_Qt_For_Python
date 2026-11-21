@@ -94,10 +94,23 @@ class StorePage(QWidget):
         self._busy = False
         self._selection: dict[str, str] = {"installed": "", "discover": "", "sources": ""}
         self._counts = {"installed": 0, "discover": 0, "sources": 0}
+        #: 重建前的界面状态（由 :meth:`_restore_state` 填充）
+        self._restore_mode = ""
+        self._restore_scroll = 0
         self._build()
-        self.switch_mode("installed")
+        self._restore_state()
+        self._switch_mode(self._restore_mode or "installed", reset_query=False)
+        self._apply_restored_scroll()
         self.refresh_stats()
         get_theme_manager().subscribe(self._theme_changed)
+
+    def _apply_restored_scroll(self) -> None:
+        """列表重建后把滚动条放回原位置（延迟到布局完成再设值）。"""
+        if self._restore_scroll <= 0:
+            return
+        bar = self.list_panel.scroll.verticalScrollBar()
+        value = self._restore_scroll
+        single_shot(self, 0, lambda: bar.setValue(min(value, bar.maximum())))
 
     # ------------------------------------------------------------------
     # 构建
@@ -229,14 +242,24 @@ class StorePage(QWidget):
             self.switch_mode(self._MODE_SPECS[index][0])
 
     def switch_mode(self, mode: str) -> None:
+        self._switch_mode(mode, reset_query=True)
+
+    def _switch_mode(self, mode: str, *, reset_query: bool) -> None:
+        """切换页签；``reset_query=False`` 用于重建后恢复，保留用户搜索词。"""
         if mode not in {item[0] for item in self._MODE_SPECS}:
             return
         self.mode = mode
         self.add_source = False
-        self.query = ""
-        self.search.blockSignals(True)
-        self.search.clear()
-        self.search.blockSignals(False)
+        if reset_query:
+            self.query = ""
+            self.search.blockSignals(True)
+            self.search.clear()
+            self.search.blockSignals(False)
+        elif self.query:
+            # 恢复路径：把搜索框文字补回去（此时信号已断开，不会触发搜索）
+            self.search.blockSignals(True)
+            self.search.setText(self.query)
+            self.search.blockSignals(False)
         self.search.setPlaceholderText(
             {
                 "installed": self.ctx.text("installed.filter", "过滤插件…"),
@@ -1217,9 +1240,72 @@ class StorePage(QWidget):
             widget.update()
 
     def schedule_reload(self) -> None:
+        """重载插件运行时，但**停留在本页**并恢复界面状态。
+
+        页面控件会被 ``reload_plugins`` 重建（插件 Surface 必须重建），因此在
+        重建前把模式 / 搜索词 / 选中项记到窗口上，新页面构建时再取回；
+        否则用户每次启停插件都会被打回默认页签与默认选中。
+        """
         window = self.ctx.parent_window()
-        if window is not None and hasattr(window, "reload_plugins"):
-            single_shot(window, 120, window.reload_plugins)
+        if window is None:
+            return
+        self._stash_state(window)
+        reloader = getattr(window, "reload_plugins", None)
+        if not callable(reloader):
+            return
+        page_object = str(self.objectName() or "")
+        single_shot(window, 120, lambda: reloader(page_object))
+
+    # ------------------------------------------------------------------
+    # 界面状态存取（跨页面重建）
+    # ------------------------------------------------------------------
+    #: 记录在本页宿主窗口上的属性名
+    _STATE_ATTR = "_plugin_store_ui_state"
+
+    def _stash_state(self, window) -> None:
+        try:
+            setattr(
+                window,
+                self._STATE_ATTR,
+                {
+                    "mode": self.mode,
+                    "query": self.query,
+                    "selection": dict(self._selection),
+                    "list_scroll": self.list_panel.scroll.verticalScrollBar().value(),
+                },
+            )
+        except Exception as exc:  # noqa: BLE001 - 状态保存失败不能阻断重载
+            self.ctx.log(f"保存插件管理页状态失败: {exc}", "warning")
+
+    def _restore_state(self) -> None:
+        """取回上一次重建前保存的界面状态；没有则保持默认。"""
+        window = self.ctx.parent_window()
+        state = getattr(window, self._STATE_ATTR, None) if window is not None else None
+        if not isinstance(state, dict):
+            return
+        try:
+            if window is not None:
+                setattr(window, self._STATE_ATTR, None)
+            selection = state.get("selection")
+            if isinstance(selection, dict):
+                for mode in self._selection:
+                    value = str(selection.get(mode) or "")
+                    if value:
+                        self._selection[mode] = value
+            query = str(state.get("query") or "")
+            if query:
+                self.query = query
+                self.search.blockSignals(True)
+                self.search.setText(query)
+                self.search.blockSignals(False)
+            mode = str(state.get("mode") or "")
+            if mode in {item[0] for item in self._MODE_SPECS}:
+                self._restore_mode = mode
+            scroll = state.get("list_scroll")
+            if isinstance(scroll, int) and scroll > 0:
+                self._restore_scroll = scroll
+        except Exception as exc:  # noqa: BLE001 - 状态恢复失败退化为默认视图
+            self.ctx.log(f"恢复插件管理页状态失败: {exc}", "warning")
 
 
 __all__ = ["PageContext", "StorePage", "build_plugin_store_page"]

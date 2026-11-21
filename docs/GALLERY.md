@@ -43,6 +43,23 @@ run:      read registry -> installed -> plugin-dir -> registry -> window
 - `--surface plugin_id/surface_id` 直接打开指定页面。
 - `run --allow-local` 允许 `file://` 源（仅开发/测试）。
 
+### 3.1 插件管理页的页内操作约定
+
+启用、停用、安装、更新、回滚、卸载、刷新与来源操作都**必须在插件管理页内完成**：
+不得跳转到其它页面，也不得整页刷新。
+
+实现要点（改动时请保持）：
+
+- 会改变插件集合的操作结束后调用 `GalleryWindow.reload_plugins(native_page=...)`，
+  传入插件管理页自己的 `page_object`；该入口只重建这一张原生页并停留，不走
+  `default_route()`。未传参时 `reload_plugins` 还会按左侧菜单当前停留的原生页
+  自动判定，避免调用点遗漏导致跳页。
+- 页面重建前把模式、搜索词、选中项与列表滚动位置记在宿主窗口上
+  （`StorePage._stash_state`），新页面构建时一次性取回（`_restore_state`）。
+- 结果反馈走页内 busy 条 + `CToast`（挂在主窗口，页面重建不影响提示），
+  不弹独立窗口、不阻塞页面。
+- 纯读操作（如「刷新」按钮）只重读列表，**不得**调用 `reload_plugins`。
+
 ## 4. 命令
 
 ```text

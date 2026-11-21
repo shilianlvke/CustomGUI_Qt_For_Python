@@ -20,7 +20,7 @@ from sllkgui.guis.windows.main_window.builtin_shortcuts import (
 )
 from sllkgui.guis.windows.main_window.controller import MainWindowController
 from sllkgui.guis.windows.main_window.functions import MainFunctions
-from sllkgui.guis.windows.main_window.native_pages import NATIVE_PAGES, NativePage
+from sllkgui.guis.windows.main_window.native_pages import NATIVE_PAGES, NativePage, native_page_for
 from sllkgui.guis.windows.main_window.registry import (
     ensure_registered_page,
     get_default_page_object,
@@ -231,14 +231,28 @@ class GalleryWindow(QMainWindow):
     # ------------------------------------------------------------------
     # 重载
     # ------------------------------------------------------------------
-    def reload_plugins(self) -> None:
+    def reload_plugins(self, native_page: str = "") -> None:
+        """重载插件；``native_page`` 指定要停留的原生页面。
+
+        插件管理页在页内完成安装/更新/启停后调用本方法：传入它自己的
+        ``page_object`` 就会**原地重建并停留**在该页，不再跳到默认路由，
+        页面因此不会「点一下就闪到别处」。不传时保持原有语义：优先回到当前
+        路由，其次默认路由，最后原生页。
+        """
         current = self._current_route
+        # 原生页不在路由里：优先用调用方指定的，其次用重载前菜单实际停留的那一页。
+        # 后者让忘记传参的调用点也不会把用户弹离原生页。
+        native = native_page_for(native_page) if native_page else self._current_native_page()
         self._clear_pages()
         self.runtime.reload()
         self.gallery_registry = self.runtime.registry
         self._current_route = ""
         self.ui.left_menu.clear_menus()
         self.ui.left_menu.add_menus(get_menu_items("LeftMenu", self))
+        if native is not None:
+            # 原地停留：只重建这一张原生页，菜单高亮与标题保持指向它
+            if self._open_native_page(native):
+                return
         target = current if self.gallery_registry.get(current) else self.runtime.default_route()
         if target and self.open_route(target):
             return
@@ -246,6 +260,20 @@ class GalleryWindow(QMainWindow):
         # 不能把页面栈清空后停在空白背景上。
         if not self._open_default_native_page():
             self._show_empty_state()
+
+    def _current_native_page(self) -> NativePage | None:
+        """重载前左侧菜单停留的原生页；当前在插件 Surface 上时返回 ``None``。"""
+        if self._active_route:
+            return None
+        active = getattr(self.ui.left_menu, "active_button_id", None)
+        button_id = active() if callable(active) else None
+        if not button_id:
+            return None
+        return next((page for page in NATIVE_PAGES if page.button_id == button_id), None)
+
+    def reload_plugins_in_place(self, page_object: str) -> None:
+        """重载插件并停留在指定原生页（插件管理页专用）。"""
+        self.reload_plugins(native_page=page_object)
 
     def _open_default_native_page(self) -> bool:
         for native in NATIVE_PAGES:
