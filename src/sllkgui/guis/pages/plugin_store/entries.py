@@ -125,6 +125,22 @@ def section_title(text: str) -> QWidget:
 # ----------------------------------------------------------------------
 # 列表行
 # ----------------------------------------------------------------------
+def row_signature(record: dict[str, Any], mode: str) -> tuple[Any, ...]:
+    """行内除启停外的视觉指纹：指纹相同即可复用现有行，避免整表重建。"""
+    return (
+        mode,
+        str(record.get("id") or ""),
+        str(record.get("name") or ""),
+        str(record.get("summary") or record.get("url") or ""),
+        str(record.get("version") or ""),
+        bool(record.get("installed")),
+        bool(record.get("update_available")),
+        str(record.get("available_version") or ""),
+        str(record.get("trust") or ""),
+        str(record.get("icon") or ""),
+    )
+
+
 class StoreRow(QFrame):
     """插件/来源行：点击选中，右侧承载启停开关或「安装」按钮。"""
 
@@ -137,6 +153,10 @@ class StoreRow(QFrame):
         self.record = dict(record)
         self.mode = mode
         self.ctx = ctx
+        self.signature = row_signature(self.record, mode)
+        #: 文案版本；语言切换后由页面递增，让所有行重建文案
+        self.view_revision = 0
+        self._switch: CToggleSwitch | None = None
         self._selected = False
         self._hover = False
         self.setObjectName(ROW_OBJECT)
@@ -233,18 +253,38 @@ class StoreRow(QFrame):
 
     def _add_switch(self, row: QHBoxLayout, enabled: bool) -> None:
         switch = CToggleSwitch("", checked=enabled)
+        self._switch = switch
+        self._apply_switch_hint(switch, enabled)
+        switch.toggled.connect(lambda checked: self.toggled.emit(str(self.record.get("id") or ""), checked))
+        row.addWidget(switch, 0, Qt.AlignmentFlag.AlignVCenter)
+
+    def _apply_switch_hint(self, switch: CToggleSwitch, enabled: bool) -> None:
         switch.setToolTip(
             self.ctx.text("installed.enabled", "已启用") if enabled else self.ctx.text("installed.disabled", "已停用")
         )
         switch.setAccessibleName(
             self.ctx.text("installed.enable", "启用") if not enabled else self.ctx.text("installed.disable", "停用")
         )
-        switch.toggled.connect(lambda checked: self.toggled.emit(str(self.record.get("id") or ""), checked))
-        row.addWidget(switch, 0, Qt.AlignmentFlag.AlignVCenter)
 
     # ------------------------------------------------------------------
     # 状态
     # ------------------------------------------------------------------
+    def set_enabled_state(self, enabled: bool) -> None:
+        """原地同步启停态：只更新开关与记录，不重建行、不触发信号。"""
+        enabled = bool(enabled)
+        self.record["enabled"] = enabled
+        switch = self._switch
+        if switch is None:
+            return
+        if switch.isChecked() != enabled:
+            switch.set_checked_state(enabled)
+        self._apply_switch_hint(switch, enabled)
+
+    def sync_record(self, record: dict[str, Any]) -> None:
+        """指纹相同的行只同步数据与开关，保留行内控件身份。"""
+        self.record = dict(record)
+        self.set_enabled_state(bool(record.get("enabled", True)))
+
     def set_selected(self, selected: bool) -> None:
         selected = bool(selected)
         if selected == self._selected:
@@ -396,6 +436,7 @@ __all__ = [
     "label",
     "meta_grid",
     "permission_block",
+    "row_signature",
     "section_title",
     "update_dot",
     "version_chip",

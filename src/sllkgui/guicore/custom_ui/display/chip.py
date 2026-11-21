@@ -74,6 +74,14 @@ class CChip(QWidget):
         self.updateGeometry()
         self.update()
 
+    def set_tone(self, tone: str) -> None:
+        """原地切换强调/中性配色（状态片随启停变化时无需重建控件）。"""
+        tone = tone if tone in ("neutral", "accent") else "neutral"
+        if tone == self._tone:
+            return
+        self._tone = tone
+        self.update()
+
     def set_removable(self, removable: bool) -> None:
         self._removable = removable
         self.setMouseTracking(removable)

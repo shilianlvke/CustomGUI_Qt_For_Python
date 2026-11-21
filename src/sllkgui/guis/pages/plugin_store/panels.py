@@ -12,7 +12,7 @@ from PySide6.QtGui import QColor, QPainter, QPen
 from PySide6.QtWidgets import QHBoxLayout, QSizePolicy, QVBoxLayout, QWidget
 
 from sllkgui.appcore import get_design_tokens
-from sllkgui.guicore import CCard, CHDiv, CScrollArea, CText
+from sllkgui.guicore import CCard, CHDiv, CScrollArea, CText, single_shot
 
 from .entries import StoreRow, label
 from .theme import BUSY_OBJECT, text_role
@@ -108,8 +108,10 @@ class _Panel(CCard):
         self._outer = outer
 
     def set_titles(self, title: str, meta: str = "") -> None:
-        self._title.setText(title)
-        self._meta.setText(meta)
+        if title != self._title.text():
+            self._title.setText(title)
+        if meta != self._meta.text():
+            self._meta.setText(meta)
 
 
 class ListPanel(_Panel):
@@ -119,6 +121,7 @@ class ListPanel(_Panel):
         super().__init__(parent)
         self.setFixedWidth(400)
         self._rows: list[StoreRow] = []
+        self._empty: QWidget | None = None
 
         self.scroll = CScrollArea()
         self.scroll.setWidgetResizable(True)
@@ -139,6 +142,24 @@ class ListPanel(_Panel):
         for row in self._rows:
             self.body_layout.insertWidget(self.body_layout.count() - 1, row)
 
+    def sync_rows(self, rows: list[StoreRow]) -> None:
+        """按给定顺序复用行：移除消失的行、插入新行，其余行保持原对象。
+
+        只改变差集，滚动位置与未变化行都不会被重置。
+        """
+        if self._empty is not None:
+            self._detach(self._empty)
+            self._empty = None
+        keep = {id(row) for row in rows}
+        for row in list(self._rows):
+            if id(row) not in keep:
+                self._detach(row)
+        self._rows = list(rows)
+        for index, row in enumerate(self._rows):
+            if self.body_layout.indexOf(row) != index:
+                self.body_layout.insertWidget(index, row)
+        self._ensure_trailing_stretch()
+
     def set_empty(self, widget: QWidget) -> None:
         self._clear()
         # 去掉 _clear 留下的尾部弹簧，让空态占满列表区域并垂直居中。
@@ -147,6 +168,7 @@ class ListPanel(_Panel):
             if item.widget() is None:
                 continue
             item.widget().deleteLater()
+        self._empty = widget
         self.body_layout.addWidget(widget, 1)
 
     def set_busy(self, busy: bool) -> None:
@@ -157,7 +179,19 @@ class ListPanel(_Panel):
         for row in self._rows:
             row.set_selected(str(row.record.get("id") or "") == str(record_id or ""))
 
+    def _ensure_trailing_stretch(self) -> None:
+        layout = self.body_layout
+        if layout.count() == 0 or layout.itemAt(layout.count() - 1).widget() is not None:
+            layout.addStretch(1)
+
+    def _detach(self, widget: QWidget) -> None:
+        self.body_layout.removeWidget(widget)
+        widget.hide()
+        widget.setParent(None)
+        widget.deleteLater()
+
     def _clear(self) -> None:
+        self._empty = None
         while self.body_layout.count():
             item = self.body_layout.takeAt(0)
             widget = item.widget()
@@ -174,6 +208,7 @@ class InspectorPanel(_Panel):
 
     def __init__(self, parent=None) -> None:
         super().__init__(parent)
+        self._content: QWidget | None = None
         self.scroll = CScrollArea()
         self.scroll.setWidgetResizable(True)
         self.scroll.setAlignment(Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignTop)
@@ -186,21 +221,36 @@ class InspectorPanel(_Panel):
         self.scroll.setWidget(self.body)
         self._outer.addWidget(self.scroll, 1)
 
-    def set_content(self, widget: QWidget) -> None:
-        self._clear()
-        self.body_layout.insertWidget(0, widget)
-        self.body_layout.setStretch(0, 0)
-        self.body_layout.setStretch(self.body_layout.count() - 1, 1)
+    def content(self) -> QWidget | None:
+        return self._content
 
-    def _clear(self) -> None:
-        while self.body_layout.count():
-            item = self.body_layout.takeAt(0)
-            widget = item.widget()
-            if widget is not None:
-                widget.hide()
-                widget.setParent(None)
-                widget.deleteLater()
-        self.body_layout.addStretch(1)
+    def set_content(self, widget: QWidget) -> None:
+        """替换详情内容：先挂新内容再移除旧内容，避免中间出现空白帧。
+
+        替换期间关闭滚动区的刷新，并在同一轮内恢复滚动位置；未变化的
+        内容（同一对象）直接跳过。
+        """
+        if widget is self._content:
+            return
+        bar = self.scroll.verticalScrollBar()
+        previous = bar.value()
+        old = self._content
+        self.scroll.setUpdatesEnabled(False)
+        try:
+            self.body_layout.insertWidget(0, widget)
+            self.body_layout.setStretch(0, 0)
+            self.body_layout.setStretch(self.body_layout.count() - 1, 1)
+            if old is not None:
+                self.body_layout.removeWidget(old)
+                old.hide()
+                old.setParent(None)
+                old.deleteLater()
+            self._content = widget
+            bar.setValue(min(previous, bar.maximum()))
+        finally:
+            self.scroll.setUpdatesEnabled(True)
+        if previous > 0:
+            single_shot(self, 0, lambda: bar.setValue(min(previous, bar.maximum())))
 
 
 __all__ = ["BusyStrip", "InspectorPanel", "ListPanel"]

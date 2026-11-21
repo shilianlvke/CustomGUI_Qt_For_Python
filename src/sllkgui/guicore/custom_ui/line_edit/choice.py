@@ -213,6 +213,17 @@ class CToggleSwitch(_ChoiceBase):
             self._progress = 1.0 if checked else 0.0
             self.update()
 
+    def set_checked_state(self, checked: bool) -> None:
+        """无信号同步选中态，并立即把滑块放到目标位置（用于失败回退等）。"""
+        blocked = self.blockSignals(True)
+        try:
+            self.setChecked(checked)
+        finally:
+            self.blockSignals(blocked)
+        self._animation.stop()
+        self._progress = 1.0 if checked else 0.0
+        self.update()
+
     def _paint_box(self, painter: QPainter, palette: dict) -> None:
         track = self._track_rect()
         accent = QColor(palette["focus_border"])

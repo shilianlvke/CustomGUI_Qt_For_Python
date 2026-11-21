@@ -60,7 +60,8 @@ def _window_shell():
         left_menu=SimpleNamespace(
             clear_menus=lambda: None,
             add_menus=lambda items: None,
-        )
+        ),
+        load_pages=SimpleNamespace(pages=SimpleNamespace(currentWidget=lambda: None)),
     )
     opened: list[str] = []
     window._clear_pages = lambda: None
@@ -75,6 +76,7 @@ def _window_shell():
     window._open_native_page = _open_native
     window._opened = opened
     window._active_route = ""
+    window._current_native = None
     # 绑定真实实现
     window.reload_plugins = GalleryWindow.reload_plugins.__get__(window)
     window.reload_plugins_in_place = GalleryWindow.reload_plugins_in_place.__get__(window)

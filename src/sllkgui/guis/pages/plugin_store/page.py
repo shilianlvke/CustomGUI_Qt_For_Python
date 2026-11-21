@@ -15,6 +15,7 @@ from PySide6.QtWidgets import QFrame, QHBoxLayout, QVBoxLayout, QWidget
 from sllkgui.appcore import get_theme_manager
 from sllkgui.guicore import (
     CButton,
+    CChip,
     CConfirmDialog,
     CIconTile,
     CInputText,
@@ -33,6 +34,7 @@ from .entries import (
     label,
     meta_grid,
     permission_block,
+    row_signature,
     section_title,
     version_chip,
 )
@@ -94,6 +96,20 @@ class StorePage(QWidget):
         self._busy = False
         self._selection: dict[str, str] = {"installed": "", "discover": "", "sources": ""}
         self._counts = {"installed": 0, "discover": 0, "sources": 0}
+        #: 文案版本：语言切换时递增，让行/详情按新文案重建一次
+        self._view_revision = 0
+        #: 当前详情的内容指纹与可原地更新的控件引用
+        self._inspector_key: tuple[Any, ...] | None = None
+        self._inspector_item_id = ""
+        self._inspector_state_chip: CChip | None = None
+        self._inspector_toggle_button: CButton | None = None
+        self._inspector_enabled_state: bool | None = None
+        self._inspector_buttons: list[tuple[CButton, bool]] = []
+        self._inspector_history_host: QWidget | None = None
+        self._inspector_history_layout: QVBoxLayout | None = None
+        self._inspector_history_key: tuple[Any, ...] | None = None
+        #: 当前列表空态对应的模式/搜索词，避免重复重建空态控件
+        self._empty_list_key: tuple[Any, ...] | None = None
         #: 重建前的界面状态（由 :meth:`_restore_state` 填充）
         self._restore_mode = ""
         self._restore_scroll = 0
@@ -447,20 +463,40 @@ class StorePage(QWidget):
             meta = self.ctx.text(meta_key, "共 {count} 个来源").format(count=len(rows))
         self.list_panel.set_titles(title, meta)
 
+        if not rows:
+            empty_key = (self.mode, self.query.strip(), self._view_revision)
+            if empty_key != self._empty_list_key:
+                self.list_panel.set_empty(self._empty_widget())
+                self._empty_list_key = empty_key
+            self.list_panel.set_busy(self._busy)
+            return
+        self._empty_list_key = None
+
+        existing = {str(row.record.get("id") or ""): row for row in self.list_panel.rows()}
         widgets: list[StoreRow] = []
         for record in rows:
-            row = StoreRow(record, self.mode, self.ctx, self.list_panel)
-            row.clicked.connect(self._on_row_clicked)
-            row.toggled.connect(self._on_row_toggled)
-            row.install_requested.connect(self._install_plugin)
+            record_id = str(record.get("id") or "")
+            signature = row_signature(record, self.mode)
+            row = existing.get(record_id)
+            if row is not None and row.signature == signature and row.view_revision == self._view_revision:
+                # 行内视觉未变：只同步数据与开关，保留控件身份与滚动位置。
+                row.sync_record(record)
+            else:
+                # 只替换受影响的那一行，其余行继续复用。
+                row = self._create_row(record, signature)
             widgets.append(row)
-
-        if widgets:
-            self.list_panel.set_rows(widgets)
-            self.list_panel.set_selected(self._selection.get(self.mode, ""))
-        else:
-            self.list_panel.set_empty(self._empty_widget())
+        self.list_panel.sync_rows(widgets)
+        self.list_panel.set_selected(self._selection.get(self.mode, ""))
         self.list_panel.set_busy(self._busy)
+
+    def _create_row(self, record: dict[str, Any], signature: tuple[Any, ...]) -> StoreRow:
+        row = StoreRow(record, self.mode, self.ctx, self.list_panel)
+        row.signature = signature
+        row.view_revision = self._view_revision
+        row.clicked.connect(self._on_row_clicked)
+        row.toggled.connect(self._on_row_toggled)
+        row.install_requested.connect(self._install_plugin)
+        return row
 
     def _empty_widget(self) -> QWidget:
         if self.query.strip():
@@ -502,7 +538,12 @@ class StorePage(QWidget):
     def _refresh_inspector(self) -> None:
         if self.mode == "sources" and self.add_source:
             self.inspector_panel.set_titles(self.ctx.text("inspector.add_source_title", "添加来源"), "")
-            self.inspector_panel.set_content(self._build_add_source())
+            key = ("add_source", self._view_revision)
+            if key != self._inspector_key:
+                self._inspector_item_id = ""
+                self._reset_inspector_refs()
+                self.inspector_panel.set_content(self._build_add_source())
+                self._inspector_key = key
             return
 
         record = self._selected_record()
@@ -518,12 +559,21 @@ class StorePage(QWidget):
                 hint = self.ctx.text("inspector.empty_hint", "在左侧选择插件，右侧会显示版本、权限与可用操作。")
                 icon = "icon_store"
             self.inspector_panel.set_titles(self.ctx.text("inspector.title", "详情"), "")
-            self.inspector_panel.set_content(empty_state(icon, title, hint))
+            key = ("empty", self.mode, self._view_revision)
+            if key != self._inspector_key:
+                self._inspector_item_id = ""
+                self._reset_inspector_refs()
+                self.inspector_panel.set_content(empty_state(icon, title, hint))
+                self._inspector_key = key
             return
 
         if self.mode == "sources":
             self.inspector_panel.set_titles(self.ctx.text("inspector.title", "详情"), "")
-            self.inspector_panel.set_content(self._build_source_inspector(record))
+            self._sync_selected_inspector(
+                ("source", self._view_revision, self._freeze_record(record)),
+                record,
+                self._build_source_inspector,
+            )
             return
 
         source_id = str(record.get("source") or "")
@@ -531,7 +581,48 @@ class StorePage(QWidget):
             self.ctx.text("inspector.title", "详情"),
             self._source_name(source_id) if source_id else "",
         )
-        self.inspector_panel.set_content(self._build_plugin_inspector(record))
+        self._sync_selected_inspector(
+            ("plugin", self._view_revision, self._freeze_record(record)),
+            record,
+            self._build_plugin_inspector,
+        )
+
+    def _sync_selected_inspector(
+        self,
+        key: tuple[Any, ...],
+        record: dict[str, Any],
+        builder: Callable[[dict[str, Any]], QWidget],
+    ) -> None:
+        """内容指纹未变时只同步启停态与重载历史；变化时才替换详情内容。"""
+        item_id = str(record.get("id") or "")
+        if key == self._inspector_key:
+            self._sync_inspector_enabled(bool(record.get("enabled", True)))
+            if self.mode != "sources":
+                self._sync_inspector_history(item_id)
+            return
+        self._reset_inspector_refs()
+        self.inspector_panel.set_content(builder(record))
+        self._inspector_key = key
+        self._inspector_item_id = item_id
+        self._sync_inspector_enabled(bool(record.get("enabled", True)))
+        self._apply_busy_to_inspector()
+
+    @classmethod
+    def _freeze_record(cls, record: dict[str, Any]) -> tuple[Any, ...]:
+        """把详情数据压成可比较的指纹；``enabled`` 由局部更新处理，故排除。"""
+        return tuple(
+            sorted((str(key), cls._freeze(value)) for key, value in record.items() if key != "enabled")
+        )
+
+    @classmethod
+    def _freeze(cls, value: Any) -> Any:
+        if isinstance(value, dict):
+            return tuple(sorted((str(key), cls._freeze(item)) for key, item in value.items()))
+        if isinstance(value, (list, tuple)):
+            return tuple(cls._freeze(item) for item in value)
+        if isinstance(value, (str, int, float, bool)) or value is None:
+            return value
+        return repr(value)
 
     def _selected_record(self) -> dict[str, Any] | None:
         selected = str(self._selection.get(self.mode) or "")
@@ -561,6 +652,8 @@ class StorePage(QWidget):
         if tooltip:
             button.setToolTip(tooltip)
         button.clicked.connect(callback)
+        # 记录「空闲时是否可用」，忙碌态变化时只改按钮状态，不重建详情。
+        self._inspector_buttons.append((button, bool(enabled)))
         return button
 
     def _build_plugin_inspector(self, record: dict[str, Any]) -> QWidget:
@@ -568,6 +661,7 @@ class StorePage(QWidget):
         enabled = bool(record.get("enabled"))
         version = str(record.get("installed_version") or record.get("version") or "?")
         plugin_id = str(record.get("id") or "")
+        self._reset_inspector_refs()
 
         content = QWidget()
         column = QVBoxLayout(content)
@@ -575,7 +669,7 @@ class StorePage(QWidget):
         column.setSpacing(12)
 
         chips = [version_chip(f"v{version}")]
-        chips.append(
+        state_chip = (
             chip(
                 self.ctx.text("installed.enabled", "已启用")
                 if enabled
@@ -585,6 +679,9 @@ class StorePage(QWidget):
             if installed
             else chip(self.ctx.text("detail.not_installed", "未安装"))
         )
+        chips.append(state_chip)
+        if installed:
+            self._inspector_state_chip = state_chip
         if record.get("update_available"):
             chips.append(
                 chip(
@@ -615,17 +712,17 @@ class StorePage(QWidget):
                     callback=lambda: self._remove_plugin(plugin_id),
                 )
             )
-            actions.addWidget(
-                self._action_button(
-                    self.ctx.text("installed.disable", "停用")
-                    if enabled
-                    else self.ctx.text("installed.enable", "启用"),
-                    severity="warn",
-                    variant="outlined",
-                    icon="icon_close" if enabled else "icon_check",
-                    callback=lambda: self._set_plugin_enabled(plugin_id, not enabled),
-                )
+            toggle = self._action_button(
+                self.ctx.text("installed.disable", "停用")
+                if enabled
+                else self.ctx.text("installed.enable", "启用"),
+                severity="warn",
+                variant="outlined",
+                icon="icon_close" if enabled else "icon_check",
+                callback=lambda: self._toggle_plugin(plugin_id),
             )
+            self._inspector_toggle_button = toggle
+            actions.addWidget(toggle)
             actions.addWidget(
                 self._action_button(
                     self.ctx.text("installed.rollback", "回滚"),
@@ -715,48 +812,98 @@ class StorePage(QWidget):
 
         column.addWidget(permission_block(list(record.get("permissions") or []), self.ctx))
 
-        history = getattr(self.runtime, "recent_reloads", None)
-        if callable(history):
-            rows: list[tuple[str, str, bool]] = []
-            for item in history(8):
-                if plugin_id not in list(getattr(item, "targets", []) or []):
-                    continue
-                status = (
-                    self.ctx.text("detail.reload_ok", "成功")
-                    if getattr(item, "ok", False)
-                    else str(getattr(item, "code", "") or self.ctx.text("detail.reload_failed", "失败"))
-                )
-                duration = float(getattr(item, "duration_ms", 0.0) or 0.0)
-                rollback = str(getattr(item, "rollback", "none") or "none")
-                rows.append((status, f"{duration:.0f} ms · rollback={rollback}", True))
-            if rows:
-                column.addWidget(section_title(self.ctx.text("detail.reload_history", "最近重载")))
-                column.addWidget(meta_grid(rows[:3]))
+        # 最近重载单独放在一个宿主里：重载完成后只更新这一小块。
+        history_host = QWidget()
+        history_layout = QVBoxLayout(history_host)
+        history_layout.setContentsMargins(0, 0, 0, 0)
+        history_layout.setSpacing(12)
+        self._inspector_history_host = history_host
+        self._inspector_history_layout = history_layout
+        column.addWidget(history_host)
+        self._fill_inspector_history(plugin_id)
+
         column.addStretch(1)
         return content
+
+    def _reload_history_rows(self, plugin_id: str) -> list[tuple[str, str, bool]]:
+        history = getattr(self.runtime, "recent_reloads", None)
+        if not callable(history):
+            return []
+        rows: list[tuple[str, str, bool]] = []
+        try:
+            entries = history(8)
+        except Exception:  # noqa: BLE001 - 诊断信息缺失不影响详情展示
+            return []
+        for item in entries:
+            if plugin_id not in list(getattr(item, "targets", []) or []):
+                continue
+            status = (
+                self.ctx.text("detail.reload_ok", "成功")
+                if getattr(item, "ok", False)
+                else str(getattr(item, "code", "") or self.ctx.text("detail.reload_failed", "失败"))
+            )
+            duration = float(getattr(item, "duration_ms", 0.0) or 0.0)
+            rollback = str(getattr(item, "rollback", "none") or "none")
+            rows.append((status, f"{duration:.0f} ms · rollback={rollback}", True))
+        return rows
+
+    def _fill_inspector_history(self, plugin_id: str) -> None:
+        """重填「最近重载」区块；内容未变时保持原控件。"""
+        layout = self._inspector_history_layout
+        host = self._inspector_history_host
+        if layout is None or host is None:
+            return
+        rows = self._reload_history_rows(plugin_id)
+        key = tuple(rows)
+        if key == self._inspector_history_key:
+            return
+        while layout.count():
+            item = layout.takeAt(0)
+            widget = item.widget()
+            if widget is not None:
+                widget.hide()
+                widget.setParent(None)
+                widget.deleteLater()
+        if rows:
+            layout.addWidget(section_title(self.ctx.text("detail.reload_history", "最近重载")))
+            layout.addWidget(meta_grid(rows[:3]))
+        host.setVisible(bool(rows))
+        self._inspector_history_key = key
+
+    def _sync_inspector_history(self, plugin_id: str) -> None:
+        if str(self._inspector_item_id or "") != str(plugin_id or ""):
+            return
+        try:
+            self._fill_inspector_history(plugin_id)
+        except RuntimeError:  # 详情已随页面销毁
+            self._inspector_history_host = None
+            self._inspector_history_layout = None
 
     def _build_source_inspector(self, record: dict[str, Any]) -> QWidget:
         trust = str(record.get("trust") or "user")
         official = trust == "official"
         enabled = bool(record.get("enabled"))
         source_id = str(record.get("id") or "")
+        self._reset_inspector_refs()
 
         content = QWidget()
         column = QVBoxLayout(content)
         column.setContentsMargins(0, 0, 0, 0)
         column.setSpacing(12)
 
+        state_chip = chip(
+            self.ctx.text("installed.enabled", "已启用")
+            if enabled
+            else self.ctx.text("installed.disabled", "已停用"),
+            accent=enabled,
+        )
+        self._inspector_state_chip = state_chip
         chips = [
             chip(
                 self.ctx.text("sources.official", "官方") if official else self.ctx.text("sources.user", "用户"),
                 accent=official,
             ),
-            chip(
-                self.ctx.text("installed.enabled", "已启用")
-                if enabled
-                else self.ctx.text("installed.disabled", "已停用"),
-                accent=enabled,
-            ),
+            state_chip,
         ]
         column.addWidget(hero(record, chips, icon_name="icon_database"))
 
@@ -813,6 +960,7 @@ class StorePage(QWidget):
         return content
 
     def _build_add_source(self) -> QWidget:
+        self._reset_inspector_refs()
         content = QWidget()
         column = QVBoxLayout(content)
         column.setContentsMargins(0, 0, 0, 0)
@@ -858,6 +1006,7 @@ class StorePage(QWidget):
         )
         add_button.setEnabled(not self._busy)
         add_button.clicked.connect(self._submit_source)
+        self._inspector_buttons.append((add_button, True))
         cancel = CButton(
             self.ctx.text("action.cancel", "取消"),
             severity="secondary",
@@ -912,7 +1061,87 @@ class StorePage(QWidget):
         self.list_panel.set_busy(busy)
         for button in (self.refresh_button, self.refresh_sources_button, self.add_source_button):
             button.setEnabled(not busy)
-        self._refresh_inspector()
+        # 忙碌只改变按钮可用性，详情内容与滚动位置保持不变。
+        self._apply_busy_to_inspector()
+
+    # ------------------------------------------------------------------
+    # 详情局部同步
+    # ------------------------------------------------------------------
+    def _reset_inspector_refs(self) -> None:
+        self._inspector_buttons = []
+        self._inspector_state_chip = None
+        self._inspector_toggle_button = None
+        self._inspector_enabled_state = None
+        self._inspector_history_host = None
+        self._inspector_history_layout = None
+        self._inspector_history_key = None
+
+    def _apply_busy_to_inspector(self) -> None:
+        for button, idle_enabled in self._inspector_buttons:
+            try:
+                button.setEnabled(bool(idle_enabled) and not self._busy)
+            except RuntimeError:  # 按钮已随旧详情销毁
+                continue
+
+    def _sync_inspector_enabled(self, enabled: bool) -> None:
+        """只更新详情里的状态片与启停按钮，不重建详情。"""
+        enabled = bool(enabled)
+        if self._inspector_enabled_state == enabled:
+            return
+        self._inspector_enabled_state = enabled
+        state_chip = self._inspector_state_chip
+        if state_chip is not None:
+            try:
+                text = (
+                    self.ctx.text("installed.enabled", "已启用")
+                    if enabled
+                    else self.ctx.text("installed.disabled", "已停用")
+                )
+                if state_chip.text() != text:
+                    state_chip.set_text(text)
+                state_chip.set_tone("accent" if enabled else "neutral")
+            except RuntimeError:
+                self._inspector_state_chip = None
+        toggle = self._inspector_toggle_button
+        if toggle is not None:
+            try:
+                text = (
+                    self.ctx.text("installed.disable", "停用")
+                    if enabled
+                    else self.ctx.text("installed.enable", "启用")
+                )
+                if toggle.text() != text:
+                    toggle.setText(text)
+                toggle.set_icon("icon_close" if enabled else "icon_check")
+            except RuntimeError:
+                self._inspector_toggle_button = None
+
+    def _sync_item_state(self, item_id: str, enabled: bool) -> None:
+        """同步某个插件/来源的启停态：目标行开关 + 当前详情状态片。"""
+        for row in self.list_panel.rows():
+            if str(row.record.get("id") or "") == str(item_id):
+                row.set_enabled_state(enabled)
+                break
+        if str(self._inspector_item_id or "") == str(item_id):
+            self._sync_inspector_enabled(enabled)
+
+    def _plugin_enabled(self, plugin_id: str) -> bool | None:
+        """读取插件的真实启停态；读取失败返回 ``None``。"""
+        manager = self._manager()
+        if manager is None:
+            return None
+        try:
+            for row in manager.installed_rows():
+                if str(row.get("id") or "") == str(plugin_id):
+                    return bool(row.get("enabled"))
+        except Exception:  # noqa: BLE001 - 读不到时保持界面现状
+            return None
+        return None
+
+    def _toggle_plugin(self, plugin_id: str) -> None:
+        record = self._selected_record()
+        enabled = bool(record.get("enabled")) if record is not None else False
+        self._set_plugin_enabled(plugin_id, not enabled)
 
     def set_status(self, message: str, level: str = "info") -> None:
         if not message:
@@ -985,23 +1214,30 @@ class StorePage(QWidget):
             return
         try:
             result = manager.set_enabled(plugin_id, enabled) or {}
-            name = self._name_of_plugin(plugin_id)
-            message = (
-                self.ctx.text("status.enabled_done", "已启用「{name}」").format(name=name)
-                if enabled
-                else self.ctx.text("status.disabled_done", "已停用「{name}」").format(name=name)
-            )
-            dependents = list(result.get("disabled_dependents") or [])
-            if dependents:
-                message += self.ctx.text(
-                    "status.dependents_disabled",
-                    "（同时停用 {count} 个依赖插件）",
-                ).format(count=len(dependents))
-            self.set_status(message, "success")
         except Exception as exc:  # noqa: BLE001 - 页面必须保持可用
             self._fail("PLUGIN_STORE_TOGGLE_FAILED", f"切换插件状态失败: {exc}", exc)
+            # 失败时把开关拨回真实状态，不刷新整页。
+            actual = self._plugin_enabled(plugin_id)
+            self._sync_item_state(plugin_id, not enabled if actual is None else actual)
             return
-        single_shot(self, 0, self.refresh_all)
+
+        self._sync_item_state(plugin_id, enabled)
+        for dependent in result.get("disabled_dependents") or []:
+            self._sync_item_state(str(dependent), False)
+        self.refresh_stats()
+        name = self._name_of_plugin(plugin_id)
+        message = (
+            self.ctx.text("status.enabled_done", "已启用「{name}」").format(name=name)
+            if enabled
+            else self.ctx.text("status.disabled_done", "已停用「{name}」").format(name=name)
+        )
+        dependents = list(result.get("disabled_dependents") or [])
+        if dependents:
+            message += self.ctx.text(
+                "status.dependents_disabled",
+                "（同时停用 {count} 个依赖插件）",
+            ).format(count=len(dependents))
+        self.set_status(message, "success")
         self._reload_one(plugin_id, "enable" if enabled else "disable", load=enabled)
 
     def _update_plugin(self, plugin_id: str) -> None:
@@ -1229,10 +1465,13 @@ class StorePage(QWidget):
             return
         try:
             sources.set_enabled(source_id, enabled)
-            self.set_status(self.ctx.text("status.action_done", "操作完成"), "success")
         except Exception as exc:  # noqa: BLE001
             self._fail("PLUGIN_STORE_SOURCE_TOGGLE_FAILED", f"切换源状态失败: {exc}", exc)
-        single_shot(self, 0, self.refresh_all)
+            self._sync_item_state(source_id, not enabled)
+            return
+        self._sync_item_state(source_id, enabled)
+        self.refresh_stats()
+        self.set_status(self.ctx.text("status.action_done", "操作完成"), "success")
 
     # ------------------------------------------------------------------
     # 语言 / 主题
@@ -1257,6 +1496,8 @@ class StorePage(QWidget):
         )
         self.mode_tabs.set_options(self._mode_labels(), index=self._mode_index(), emit=False)
         self._sync_actions()
+        # 文案变了：递增版本让行与详情重建一次，其余状态保持不变。
+        self._view_revision += 1
         self.refresh_all()
 
     def _theme_changed(self) -> None:
@@ -1272,9 +1513,21 @@ class StorePage(QWidget):
         reloader = getattr(window, "reload_plugin_in_place", None)
         if callable(reloader):
             def run() -> None:
-                reloader(plugin_id, reason=reason, load=load)
                 try:
-                    self.refresh_all()
+                    result = reloader(plugin_id, reason=reason, load=load)
+                except Exception as exc:  # noqa: BLE001 - 重载失败由运行时记录，页面保持原样
+                    self.ctx.log(f"选择性重载失败: {exc}", "warning")
+                    return
+                try:
+                    # 重载只影响诊断区块与启停态，不重建列表/详情。
+                    actual = self._plugin_enabled(plugin_id)
+                    if actual is not None:
+                        self._sync_item_state(plugin_id, actual)
+                    if not getattr(result, "ok", True):
+                        # 运行时可能已回滚版本：按数据差异原地同步一次。
+                        self.refresh_all()
+                    self._sync_inspector_history(plugin_id)
+                    self.refresh_stats()
                 except RuntimeError:  # 页面可能在回退全量重载时已销毁
                     pass
 
