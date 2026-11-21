@@ -162,7 +162,14 @@ function Get-State([bool]$Force){
 # ---------------------------------------------------------------------------
 # 共享状态
 # ---------------------------------------------------------------------------
-$Shared = [hashtable]::Synchronized(@{ phase = 'idle'; error = ''; current = ''; updateRef = ''; startedAt = $null; finishedAt = $null; cancel = $false })
+$Shared = [hashtable]::Synchronized(@{
+  phase = 'idle'; error = ''; current = ''; updateRef = ''
+  startedAt = $null; finishedAt = $null; cancel = $false
+  #: 强制同步丢弃的本地改动（路径列表）与数量，供摘要与日志审计
+  discarded = @(); discardedCount = 0
+  #: 最近一次同步/更新的结果摘要：ref/from/to/changed/discarded/forced
+  syncSummary = $null
+})
 $Steps = [hashtable]::Synchronized(@{})
 $Queue = [System.Collections.Concurrent.ConcurrentQueue[object]]::new()
 $LogLines = [System.Collections.ArrayList]::new()
@@ -271,6 +278,21 @@ $script:VersionCache = $null
 $script:VersionCacheAt = [DateTime]::MinValue
 $script:LocalHead = ''
 $script:LocalHeadAt = [DateTime]::MinValue
+#: 本地改动统计缓存（git status 有开销，短时缓存即可）
+$script:LocalDirty = [pscustomobject]@{ ok = $false; dirty = 0; tracked = 0; untracked = 0; detached = $false; sample = @() }
+$script:LocalDirtyAt = [DateTime]::MinValue
+
+function Refresh-LocalDirty {
+  <#
+    刷新本地改动统计；5 秒内复用上次结果，避免 Build-State 轮询把 git 打满。
+    Reset 为 $true 时强制重新统计（更新前后、页面显式刷新时使用）。
+  #>
+  param([bool]$Reset = $false)
+  if(-not $Reset -and ((Get-Date) - $script:LocalDirtyAt).TotalSeconds -lt 5){ return $script:LocalDirty }
+  $script:LocalDirty = Get-LocalDirty
+  $script:LocalDirtyAt = Get-Date
+  return $script:LocalDirty
+}
 
 function Get-RefVersionKey([string]$name){
   $parts = @(0,0,0,0)
@@ -388,6 +410,39 @@ function Save-RefRecord([string]$ref,[string]$sha){
   } catch { }
 }
 
+function Get-LocalDirty {
+  <#
+    统计基座源码树的本地改动，供强制同步前提示。
+    返回 @{ ok; dirty; tracked; untracked; detached; sample }
+    未拉取源码或 git 不可用时 ok=$false，调用方按"无改动"处理。
+  #>
+  $result = [pscustomobject]@{ ok = $false; dirty = 0; tracked = 0; untracked = 0; detached = $false; sample = @() }
+  if(-not (Test-Path -LiteralPath (Join-Path $BaseDir '.git'))){ return $result }
+  $git = Resolve-Tool 'git' $GitLocal
+  if(-not $git){ return $result }
+  $prev = $ErrorActionPreference
+  $ErrorActionPreference = 'Continue'
+  try {
+    $lines = @(& $git -C $BaseDir status --porcelain --untracked-files=normal 2>$null)
+    $result.ok = $true
+    $result.dirty = @($lines).Count
+    foreach($line in @($lines)){
+      $text = ([string]$line)
+      if($text -match '^\?\?'){ $result.untracked = $result.untracked + 1 }
+      elseif($text.Trim().Length -gt 0){ $result.tracked = $result.tracked + 1 }
+    }
+    $result.sample = @($lines | ForEach-Object { ([string]$_).Trim() } | Select-Object -First 20)
+    # 游离 HEAD（tag 版本）没有分支可快进，只能整体对齐
+    $branch = @(& $git -C $BaseDir rev-parse --abbrev-ref HEAD 2>$null)
+    if(@($branch).Count -gt 0 -and ([string]$branch[0]).Trim() -eq 'HEAD'){ $result.detached = $true }
+  } catch {
+    $result.ok = $false
+  } finally {
+    $ErrorActionPreference = $prev
+  }
+  return $result
+}
+
 function Get-VersionState([bool]$Refresh,[bool]$CacheOnly){
   $localSha = Get-LocalHead
   if($CacheOnly -and -not $script:VersionCache){
@@ -438,6 +493,9 @@ function Get-VersionState([bool]$Refresh,[bool]$CacheOnly){
     latest = $(if($latest){ $latest.name } else { '' })
     latestSha = $(if($latest){ $latest.sha } else { '' })
     updateAvailable = $updateAvailable
+    #: 已位于 main、但远端 main 已有新提交或本地有改动 —— 需要同步而不是"切版本"
+    mainSha = $(if($remote.ok){ [string]$remote.mainSha } else { '' })
+    mainAhead = [bool]($remote.ok -and $remote.mainSha -and $localSha -and $remote.mainSha -ne $localSha)
     error = [string]$remote.error
     versions = @($versions)
   }
@@ -449,6 +507,8 @@ function Build-State {
   $baseProc = Get-BaseProcess
   $running = ($baseProc.pid -gt 0)
   $phase = [string]$Shared.phase
+  # 本地改动只在源码已就绪且当前没在跑更新时统计，避免与 git 操作打架
+  if($envState.ready -and $phase -ne 'update'){ [void](Refresh-LocalDirty) }
   if($running){ $phase = 'running' }
   elseif($phase -eq 'idle' -and $envState.ready){ $phase = 'done' }
   $elapsed = 0
@@ -493,10 +553,18 @@ function Build-State {
       sha = [string]$ver.short
       latest = [string]$ver.latest
       updateAvailable = [bool]$ver.updateAvailable
+      mainAhead = [bool]$ver.mainAhead
+      mainSha = [string]$ver.mainSha
+      #: 本地未提交改动，强制同步会把它们丢弃；dirty 为 0 时前端不展示警告
+      dirty = [int]$script:LocalDirty.dirty
+      dirtyTracked = [int]$script:LocalDirty.tracked
+      dirtyUntracked = [int]$script:LocalDirty.untracked
+      detached = [bool]$script:LocalDirty.detached
     }
     update = [pscustomobject]@{
       active = [bool]($Shared.phase -eq 'update')
       ref = [string]$Shared.updateRef
+      summary = $Shared.syncSummary
     }
   }
 }
@@ -863,6 +931,8 @@ $UpdateScript = {
   $git = $ctx.GitPath
   $uv = $ctx.UvPath
   $pypi = $ctx.Pypi
+  #: 强制同步：丢弃本地改动与游离提交，直接对齐远端
+  $force = [bool]$ctx.Force
   $switched = $false
   $oldSha = ''
 
@@ -912,18 +982,43 @@ $UpdateScript = {
   }
 
   try {
-    Log 'sys' ('准备更新到 ' + $ref)
+    Log 'sys' ('准备更新到 ' + $ref + $(if($force){ '（强制同步，本地改动将被丢弃）' } else { '' }))
     $oldSha = Get-Tip $base
     $prev = $ErrorActionPreference
     $ErrorActionPreference = 'Continue'
-    try { $dirty = @(& $git -C $base status --porcelain --untracked-files=no 2>$null) } finally { $ErrorActionPreference = $prev }
-    if(@($dirty).Count -gt 0){ throw '工作区存在本地改动，已取消更新' }
+    try {
+      # --untracked-files=normal：强制同步需要连新增文件一起清掉，否则 reset 后仍脏
+      $dirty = @(& $git -C $base status --porcelain --untracked-files=normal 2>$null)
+    } finally { $ErrorActionPreference = $prev }
+    if(@($dirty).Count -gt 0){
+      if(-not $force){ throw ('工作区存在本地改动（' + @($dirty).Count + ' 项），已取消更新；如需丢弃这些改动请使用强制同步') }
+      # 记录将要丢弃的内容，供完成摘要与日志审计
+      $shared.discarded = @($dirty | ForEach-Object { ([string]$_).Trim() } | Select-Object -First 200)
+      $shared.discardedCount = @($dirty).Count
+      Log 'warn' ('检测到 ' + @($dirty).Count + ' 项本地改动，强制同步将丢弃它们：')
+      foreach($d in @($dirty | Select-Object -First 40)){ Log 'warn' ('  ' + ([string]$d).Trim()) }
+      if(@($dirty).Count -gt 40){ Log 'warn' ('  … 其余 ' + (@($dirty).Count - 40) + ' 项见更新摘要') }
+    } else {
+      $shared.discarded = @()
+      $shared.discardedCount = 0
+    }
 
     if($ref -eq 'main'){
       Run-Git @('-C', $base, 'fetch', '--depth', '1', 'origin', 'main')
-      Run-Git @('-C', $base, 'checkout', '-f', '-B', 'main', 'FETCH_HEAD')
+      if($force){
+        # 强制对齐：清掉工作区与未跟踪文件，再硬重置到远端 main，丢弃本地提交
+        Run-Git @('-C', $base, 'reset', '--hard')
+        Run-Git @('-C', $base, 'clean', '-f', '-d')
+        Run-Git @('-C', $base, 'checkout', '-f', '-B', 'main', 'FETCH_HEAD')
+      } else {
+        Run-Git @('-C', $base, 'checkout', '-f', '-B', 'main', 'FETCH_HEAD')
+      }
     } else {
       Run-Git @('-C', $base, 'fetch', '--depth', '1', 'origin', 'tag', $ref)
+      if($force){
+        Run-Git @('-C', $base, 'reset', '--hard')
+        Run-Git @('-C', $base, 'clean', '-f', '-d')
+      }
       Run-Git @('-C', $base, 'checkout', '-f', '--detach', 'FETCH_HEAD')
     }
     $switched = $true
@@ -943,6 +1038,15 @@ $UpdateScript = {
 
     $rec = [pscustomobject]@{ ref = $ref; sha = $newSha; at = (Get-Date).ToString('s') }
     [IO.File]::WriteAllText((Join-Path $ctx.Runtime 'base-ref.json'), ($rec | ConvertTo-Json -Compress), (New-Object System.Text.UTF8Encoding($false)))
+    # 完成摘要：切换前后的提交与丢弃项，供前端展示
+    $shared.syncSummary = [pscustomobject]@{
+      ref = $ref
+      from = $oldSha
+      to = [string]$newSha
+      changed = [bool]($oldSha -and $newSha -and $oldSha -ne $newSha)
+      discarded = [int]$shared.discardedCount
+      forced = $force
+    }
     Log 'ok' ('已更新到 ' + $ref)
     $shared.phase = 'done'
   } catch {
@@ -969,7 +1073,7 @@ $UpdateScript = {
   }
 }
 
-function Start-Update([string]$ref){
+function Start-Update([string]$ref, [bool]$force = $false){
   $profile = Get-MirrorProfile $Config.mirror
   $ctx = @{
     Shared = $Shared
@@ -977,6 +1081,7 @@ function Start-Update([string]$ref){
     Base = $BaseDir
     Runtime = $Runtime
     Ref = $ref
+    Force = [bool]$force
     Pypi = $profile.pypi
     UvPath = (Resolve-Tool 'uv' $UvLocal)
     GitPath = (Resolve-Tool 'git' $GitLocal)
@@ -1006,6 +1111,9 @@ function Complete-UpdateIfDone {
   $script:VersionCache = $null
   $script:LocalHead = ''
   $script:LocalHeadAt = [DateTime]::MinValue
+  # 同步会改变工作区，必须重新统计改动，否则前端还显示旧的"N 项未提交"
+  $script:LocalDirtyAt = [DateTime]::MinValue
+  try { [void](Refresh-LocalDirty $true) } catch { }
 }
 
 function Start-BaseApp {
@@ -1232,6 +1340,85 @@ function Handle-Request($stream,$req){
     '/api/versions' {
       $refresh = [bool]($query -match 'refresh=1')
       Send-Json $stream (Get-VersionState $refresh $false)
+      return
+    }
+    '/api/dirty' {
+      # 本地改动预览：前端在同步前用它告诉用户"将丢弃哪些内容"
+      Send-Json $stream (Refresh-LocalDirty $true)
+      return
+    }
+    '/api/sync' {
+      <#
+        同步当前分支到远端最新（main → origin/main）。
+        与 /api/update 的区别：这里不切换版本，只把「当前所处的 ref」对齐到远端最新，
+        并允许 force=true 丢弃本地改动与本地提交（硬重置 + 清理未跟踪文件）。
+      #>
+      $body = $null
+      if($req.body){ try { $body = $req.body | ConvertFrom-Json } catch { } }
+      $ref = ''
+      if($body -and $body.ref){ $ref = [string]$body.ref }
+      $force = $false
+      if($body -and $body.force){ $force = [bool]$body.force }
+      if(-not $ref){ $ref = 'main' }
+      if($ref -notmatch '^[A-Za-z0-9][A-Za-z0-9._\-]*$'){
+        Send-Json $stream ([pscustomobject]@{ ok = $false; error = '分支名不合法' })
+        return
+      }
+      if($Shared.phase -eq 'setup' -or $Shared.phase -eq 'update'){
+        Send-Json $stream ([pscustomobject]@{ ok = $false; error = '启动器正忙，请稍后再试' })
+        return
+      }
+      if($script:Handle -and -not $script:Handle.IsCompleted){
+        Send-Json $stream ([pscustomobject]@{ ok = $false; error = '启动器正忙，请稍后再试' })
+        return
+      }
+      if(Test-AppRunning){
+        Send-Json $stream ([pscustomobject]@{ ok = $false; error = '基座正在运行，请先关闭基座再同步' })
+        return
+      }
+      if(-not (Test-Path -LiteralPath (Join-Path $BaseDir '.git'))){
+        Send-Json $stream ([pscustomobject]@{ ok = $false; error = '尚未拉取源码，请先完成初始化' })
+        return
+      }
+      $dirty = Refresh-LocalDirty $true
+      if(-not $dirty.ok){
+        Send-Json $stream ([pscustomobject]@{ ok = $false; error = '无法读取本地改动状态（git 不可用？）' })
+        return
+      }
+      if($dirty.dirty -gt 0 -and -not $force){
+        # 不带 force 且有本地改动：拒绝并给出可操作提示，绝不静默丢代码
+        Send-Json $stream ([pscustomobject]@{
+          ok = $false
+          needForce = $true
+          dirty = [int]$dirty.dirty
+          tracked = [int]$dirty.tracked
+          untracked = [int]$dirty.untracked
+          sample = @($dirty.sample)
+          error = ('本地有 ' + $dirty.dirty + ' 项未提交改动；勾选「强制同步」会丢弃它们')
+        })
+        return
+      }
+      $Shared.phase = 'update'
+      $Shared.cancel = $false
+      $Shared.updateRef = $ref
+      $Shared.error = ''
+      $Shared.current = ''
+      $Shared.discarded = @()
+      $Shared.discardedCount = 0
+      $Shared.syncSummary = $null
+      $Shared.startedAt = Get-Date
+      $Shared.finishedAt = $null
+      $script:StateCache = $null
+      try {
+        Start-Update $ref $force
+      } catch {
+        $Shared.phase = 'error'
+        $Shared.error = $_.Exception.Message
+        $Shared.finishedAt = Get-Date
+        Send-Json $stream ([pscustomobject]@{ ok = $false; error = $Shared.error })
+        return
+      }
+      Send-Json $stream ([pscustomobject]@{ ok = $true; ref = $ref; force = $force; dirty = [int]$dirty.dirty })
       return
     }
     '/api/update' {
@@ -1598,6 +1785,20 @@ body[data-phase="error"] h1{color:var(--red)}
 .m-refresh{background:transparent;border:0;color:var(--dim2);font-family:var(--fm);font-size:10px;cursor:pointer;padding:0}
 .m-refresh:hover{color:var(--accent)}
 .m-current{font-size:12px;color:var(--dim)}
+.m-sync{border:1px solid var(--line);padding:10px 12px;margin:8px 0 10px;display:flex;flex-direction:column;gap:8px;background:var(--surface2,transparent)}
+.m-sync-row{display:flex;align-items:center;gap:12px;justify-content:space-between}
+.m-sync-text{display:flex;flex-direction:column;gap:2px;min-width:0}
+.m-sync-text strong{font-size:12.5px;font-weight:600}
+.m-sync-text span{font-size:11px;color:var(--dim)}
+.m-sync-row .btn{flex:none;white-space:nowrap}
+.m-force{display:flex;align-items:center;gap:8px;font-size:11.5px;color:var(--warn);cursor:pointer;line-height:1.5}
+.m-force input{margin:0;flex:none;accent-color:var(--warn)}
+.m-force b{font-weight:600}
+.m-warn{border-left:2px solid var(--warn);padding:6px 0 6px 9px;font-size:11px;color:var(--warn);line-height:1.7;word-break:break-all}
+.m-warn ul{margin:4px 0 0;padding-left:16px}
+.m-warn li{list-style:disc}
+.m-ok{border-left:2px solid var(--accent);padding:6px 0 6px 9px;font-size:11.5px;line-height:1.7;color:var(--text)}
+.m-ok b{color:var(--accent)}
 .m-list{display:flex;flex-direction:column;border:1px solid var(--line);max-height:320px;overflow:auto}
 .vrow{display:grid;grid-template-columns:14px 1fr auto;align-items:center;gap:10px;padding:11px 12px;background:transparent;border:0;border-bottom:1px solid rgba(223,230,223,.05);color:var(--txt);font-family:var(--fb);font-size:13px;text-align:left;cursor:pointer;transition:background .16s}
 .vrow:last-child{border-bottom:0}
@@ -1774,6 +1975,20 @@ body[data-phase="setup"] .live,body[data-phase="running"] .live,body[data-phase=
         <button type="button" class="m-refresh" id="vRefresh">刷新列表</button>
       </div>
       <div class="m-current" id="vCurrent">当前版本 —</div>
+      <div class="m-sync" id="vSyncBox">
+        <div class="m-sync-row">
+          <div class="m-sync-text">
+            <strong>同步到最新 main</strong>
+            <span id="vSyncHint">把源码对齐到 origin/main 的最新提交</span>
+          </div>
+          <button type="button" class="btn primary" id="vSync">立即同步</button>
+        </div>
+        <label class="m-force" id="vForceRow" hidden>
+          <input type="checkbox" id="vForce">
+          <span>强制同步：<b>丢弃我的本地改动</b>（不可撤销）</span>
+        </label>
+        <div class="m-warn" id="vDirty" hidden></div>
+      </div>
       <div class="m-list" id="vList"></div>
       <div class="m-note" id="vNote" hidden></div>
     </div>
@@ -1887,8 +2102,10 @@ body[data-phase="setup"] .live,body[data-phase="running"] .live,body[data-phase=
     el('vModal').hidden = false;
     el('vRepo').textContent = (state && state.repo) || '';
     el('vNote').hidden = true;
+    el('vForce').checked = false;
     if(versions){ renderVersionList(versions); }
     loadVersions(!versions);
+    refreshDirty();
     setTimeout(function(){ el('vClose').focus(); }, 30);
   }
 
@@ -1953,7 +2170,12 @@ body[data-phase="setup"] .live,body[data-phase="running"] .live,body[data-phase=
       note.textContent = blocked;
     } else if(vSelected === 'main'){
       note.hidden = false;
-      note.textContent = 'main 为开发分支，内容随时变化，可能不稳定；需要稳定版本请选择 tag。';
+      // main 是活动分支：给出「代码是否已落后远端」的明确判断
+      if(v.mainAhead){
+        note.textContent = '远端 main 有新提交（' + (v.mainSha ? v.mainSha.slice(0,7) : '') + '），点上方「立即同步」即可对齐。';
+      } else {
+        note.textContent = 'main 为开发分支，内容随时变化，可能不稳定；需要稳定版本请选择 tag。';
+      }
     } else {
       note.hidden = true;
       note.textContent = '';
@@ -1980,6 +2202,135 @@ body[data-phase="setup"] .live,body[data-phase="running"] .live,body[data-phase=
       vBusy = false;
       el('vApply').disabled = false;
     });
+  }
+
+  // ------------------------------------------------------------------
+  // 同步到最新 main
+  // ------------------------------------------------------------------
+  var dirtyState = null;
+  var syncBusy = false;
+
+  function refreshDirty(){
+    return api('/api/dirty').then(function(d){
+      dirtyState = d;
+      renderSyncBox();
+      return d;
+    }).catch(function(){
+      dirtyState = null;
+      renderSyncBox();
+      return null;
+    });
+  }
+
+  function dirtSummary(d){
+    if(!d || !d.dirty) return '';
+    var parts = [];
+    if(d.tracked) parts.push(d.tracked + ' 项已跟踪修改');
+    if(d.untracked) parts.push(d.untracked + ' 项新增未跟踪文件');
+    return parts.join('，');
+  }
+
+  function renderSyncBox(){
+    var d = dirtyState;
+    var dirty = d && d.dirty > 0;
+    var force = el('vForce').checked;
+    el('vForceRow').hidden = !dirty;
+    var box = el('vDirty');
+    if(dirty){
+      box.hidden = false;
+      var list = (d.sample || []).slice(0, 8).map(function(x){ return '<li>' + esc(x) + '</li>'; }).join('');
+      var more = d.dirty > 8 ? '<li>… 其余 ' + (d.dirty - 8) + ' 项</li>' : '';
+      box.className = 'm-warn';
+      box.innerHTML = '检测到 <b>' + d.dirty + '</b> 项本地改动' +
+        (dirtSummary(d) ? '（' + esc(dirtSummary(d)) + '）' : '') +
+        '。同步会丢弃这些改动' + (d.untracked ? '，包括新增文件' : '') + '：' +
+        '<ul>' + list + more + '</ul>';
+      el('vSyncHint').textContent = '当前有本地改动，勾选下方「强制同步」后才能继续';
+    } else if(d && d.ok){
+      box.hidden = true;
+      el('vSyncHint').textContent = '把源码对齐到 origin/main 的最新提交';
+    } else {
+      box.hidden = true;
+      el('vSyncHint').textContent = '把源码对齐到 origin/main 的最新提交';
+    }
+    var blocked = updateBlockReason();
+    el('vSync').disabled = syncBusy || !!blocked || (dirty && !force);
+    el('vSync').textContent = syncBusy ? '同步中…' : '立即同步';
+  }
+
+  function showSyncResult(summary){
+    var box = el('vDirty');
+    box.hidden = false;
+    box.className = 'm-ok';
+    var lines = [];
+    var fromSha = summary.from ? summary.from.slice(0, 7) : '—';
+    var toSha = summary.to ? summary.to.slice(0, 7) : '—';
+    if(summary.changed){
+      lines.push('已同步到 <b>' + esc(summary.ref || 'main') + '</b> · ' + esc(fromSha) + ' → <b>' + esc(toSha) + '</b>');
+    } else {
+      lines.push('已是最新（<b>' + esc(toSha) + '</b>），没有代码变化');
+    }
+    if(summary.discarded > 0){
+      lines.push('已丢弃 <b>' + summary.discarded + '</b> 项本地改动');
+    }
+    box.innerHTML = lines.join('<br>');
+  }
+
+  function syncToMain(){
+    if(syncBusy){ return; }
+    var force = el('vForce').checked;
+    var dirty = dirtyState && dirtyState.dirty > 0;
+    if(dirty && !force){ renderSyncBox(); return; }
+    if(dirty && force){
+      var n = dirtyState.dirty;
+      if(!window.confirm('强制同步将丢弃本地 ' + n + ' 项改动（含新增文件），且不可撤销。确定继续？')){ return; }
+    }
+    syncBusy = true;
+    vBusy = true;
+    renderSyncBox();
+    el('vApply').disabled = true;
+    el('vNote').hidden = true;
+    api('/api/sync', { ref: 'main', force: force }).then(function(r){
+      if(r && r.ok){
+        // 同步在后台跑：立刻关闭弹窗，进度与结果都在页面上跟踪
+        syncBusy = false;
+        vBusy = false;
+        closeVersions();
+        pollSync();
+        return;
+      }
+      syncBusy = false;
+      vBusy = false;
+      var note = el('vNote');
+      note.hidden = false;
+      note.textContent = (r && r.error) || '同步失败';
+      if(r && r.needForce){
+        // 后端要求强制：直接勾上，并刷新改动清单
+        el('vForce').checked = true;
+        refreshDirty();
+      }
+      renderSyncBox();
+    }).catch(function(){
+      syncBusy = false;
+      vBusy = false;
+      renderSyncBox();
+    });
+  }
+
+  function pollSync(){
+    // 常规轮询（800ms）已在跑，这里只补一个更密的短轮询，结束后自动让位于常规轮询。
+    // 弹窗关闭后用户仍能通过页面上的进度条与日志看到同步过程与结果。
+    var timer = setInterval(function(){
+      api('/api/state').then(function(s){
+        state = s;
+        render(s);
+        if(s.phase !== 'update'){
+          clearInterval(timer);
+          tickLogs();
+          refreshDirty();
+        }
+      }).catch(function(){ clearInterval(timer); });
+    }, 700);
   }
 
   function render(s){
@@ -2059,7 +2410,13 @@ body[data-phase="setup"] .live,body[data-phase="running"] .live,body[data-phase=
       el('ptime').textContent = mmss(s.elapsed);
     }
 
-    if(lastPhase === 'update' && s.phase !== 'update'){ loadVersions(false); }
+    if(lastPhase === 'update' && s.phase !== 'update'){
+      loadVersions(false);
+      refreshDirty();
+      // 同步/更新刚结束：把摘要显示在版本栏下方，用户关掉弹窗也能看到结果
+      var sum = s.update && s.update.summary;
+      if(sum){ showSyncResult(sum); }
+    }
     lastPhase = s.phase;
   }
 
@@ -2191,7 +2548,9 @@ body[data-phase="setup"] .live,body[data-phase="running"] .live,body[data-phase=
     el('vCancel').addEventListener('click', closeVersions);
     el('vMask').addEventListener('click', closeVersions);
     el('vApply').addEventListener('click', applyUpdate);
-    el('vRefresh').addEventListener('click', function(){ loadVersions(true); });
+    el('vRefresh').addEventListener('click', function(){ loadVersions(true); refreshDirty(); });
+    el('vSync').addEventListener('click', syncToMain);
+    el('vForce').addEventListener('change', renderSyncBox);
     document.addEventListener('keydown', function(e){
       if(e.key === 'Escape' && !el('vModal').hidden){ closeVersions(); }
     });
