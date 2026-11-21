@@ -1,0 +1,1212 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<link rel="icon" type="image/x-icon" href="/favicon.ico">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="color-scheme" content="dark">
+<title>SllkGui 启动器</title>
+<style nonce="__NONCE__">
+:root{
+  --bg:#121619;--panel:#171c1f;--panel2:#0d1113;--line:#262b2d;--line2:#333739;
+  --txt:#dfe6df;--title:#f4f7f3;--dim:#98a59b;--dim2:#6f7b73;
+  --accent:#a3e57f;--accent2:#b7ee99;--accent-soft:rgba(163,229,127,.12);
+  --warn:#f2c65a;--mint:#6fd08c;--red:#ff8f87;--blue:#9db7a9;
+  --fd:"Bahnschrift","DIN Alternate","Segoe UI Variable Display","Microsoft YaHei UI",sans-serif;
+  --fb:"Segoe UI Variable","Microsoft YaHei UI","PingFang SC","Segoe UI",sans-serif;
+  --fm:"Cascadia Mono","Cascadia Code",Consolas,"SF Mono",Menlo,monospace;
+}
+*{box-sizing:border-box}
+html,body{height:100%}
+body{margin:0;background:var(--bg);color:var(--txt);font-family:var(--fb);font-size:14px;
+  -webkit-font-smoothing:antialiased;overflow:hidden}
+body::after{content:"";position:fixed;inset:0;pointer-events:none;z-index:0;
+  background:radial-gradient(620px 380px at 78% -12%,rgba(163,229,127,.07),transparent 70%),
+             radial-gradient(720px 460px at 4% 108%,rgba(157,183,169,.05),transparent 70%)}
+.grid{position:fixed;inset:0;pointer-events:none;z-index:0;
+  background-image:linear-gradient(to right,rgba(223,230,223,.03) 1px,transparent 1px),
+                   linear-gradient(to bottom,rgba(223,230,223,.03) 1px,transparent 1px);
+  background-size:56px 56px;
+  -webkit-mask-image:radial-gradient(ellipse 92% 72% at 62% -8%,#000 0%,transparent 76%);
+  mask-image:radial-gradient(ellipse 92% 72% at 62% -8%,#000 0%,transparent 76%)}
+::selection{background:rgba(163,229,127,.26)}
+.shell{position:relative;z-index:1;height:100vh;max-width:1280px;margin:0 auto;
+  padding:20px 26px 12px;display:flex;flex-direction:column;gap:13px;overflow:hidden}
+/* ---------- top ---------- */
+.top{display:flex;align-items:center;justify-content:space-between;gap:18px;min-height:34px}
+.brand{display:flex;align-items:center;gap:10px;font-family:var(--fd);letter-spacing:.14em;font-size:14px}
+.brand .kiwi{width:20px;height:20px;display:block;object-fit:contain}
+.brand .name{font-weight:600}
+.top-right{display:flex;align-items:center;gap:12px}
+.mirror-label{font-size:11.5px;color:var(--dim2)}
+.mirror{position:relative;display:flex;border:1px solid var(--line2);padding:2px;background:var(--panel2)}
+.mirror button{position:relative;z-index:2;border:0;background:transparent;color:var(--dim);
+  font-family:var(--fb);font-size:12px;padding:6px 13px;cursor:pointer;transition:color .18s}
+.mirror button.on{color:#10140f;font-weight:600}
+.mirror .thumb{position:absolute;z-index:1;top:2px;bottom:2px;left:2px;width:calc(50% - 2px);
+  background:var(--accent);transition:transform .26s cubic-bezier(.4,.8,.2,1)}
+.mirror[data-m="global"] .thumb{transform:translateX(100%)}
+.mirror[data-m="gallery"] .thumb{transform:translateX(100%)}
+.mirror button:disabled{opacity:.42;cursor:not-allowed}
+.mirror button:focus-visible{outline:2px solid var(--accent2);outline-offset:3px}
+.saved{font-family:var(--fm);font-size:10px;color:var(--mint);opacity:0;transition:opacity .3s;min-width:44px}
+.saved.show{opacity:1}
+.saved.bad{color:var(--red)}
+/* ---------- layout ---------- */
+main{display:grid;grid-template-columns:308px minmax(0,1fr);gap:13px;flex:1;min-height:0}
+.panel{position:relative;background:var(--panel);border:1px solid var(--line)}
+.panel::before,.panel::after{content:"";position:absolute;width:6px;height:6px;border:1px solid var(--line2)}
+.panel::before{top:-1px;left:-1px;border-right:0;border-bottom:0}
+.panel::after{bottom:-1px;right:-1px;border-left:0;border-top:0}
+.panel-head{display:flex;align-items:center;justify-content:space-between;
+  padding:12px 16px;border-bottom:1px solid var(--line);font-size:12px;color:var(--dim)}
+.panel-head .count{font-family:var(--fm);font-size:10.5px;color:var(--accent)}
+/* ---------- rail ---------- */
+.rail{display:flex;flex-direction:column;min-height:0}
+.steps{list-style:none;margin:0;padding:6px 0;flex:1;overflow:auto;position:relative}
+.steps::before{content:"";position:absolute;left:23px;top:20px;bottom:20px;width:1px;
+  background:linear-gradient(var(--line2),var(--line))}
+.step{position:relative;display:grid;grid-template-columns:8px 22px 1fr auto;align-items:center;
+  gap:10px;padding:13px 16px 13px 20px;transition:background .2s}
+.step .dot{width:7px;height:7px;transform:rotate(45deg);background:var(--panel);
+  border:1px solid var(--line2);justify-self:center;transition:all .2s}
+.step .idx{font-family:var(--fm);font-size:9.5px;color:var(--dim2)}
+.step .lbl{font-size:13px;color:var(--dim);transition:color .2s}
+.step .note{font-family:var(--fm);font-size:10px;color:var(--dim2);max-width:104px;
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap;text-align:right}
+.step[data-s="ok"] .dot{background:var(--mint);border-color:var(--mint)}
+.step[data-s="ok"] .lbl{color:var(--txt)}
+.step[data-s="ok"] .note{color:var(--mint);opacity:.75}
+.step[data-s="active"]{background:linear-gradient(90deg,rgba(163,229,127,.09),transparent 78%)}
+.step[data-s="active"] .dot{background:var(--accent);border-color:var(--accent);
+  box-shadow:0 0 0 4px rgba(163,229,127,.14);animation:pulse 1.7s ease-in-out infinite}
+.step[data-s="active"] .lbl{color:var(--accent)}
+.step[data-s="active"] .note{color:var(--accent)}
+.step[data-s="fail"] .dot{background:var(--red);border-color:var(--red)}
+.step[data-s="fail"] .lbl,.step[data-s="fail"] .note{color:var(--red)}
+/* ---------- stage ---------- */
+.stage{display:flex;flex-direction:column;gap:13px;min-height:0;overflow:hidden}
+.hero{padding:26px 28px 22px;display:flex;flex-direction:column}
+h1{margin:0 0 10px;font-family:var(--fd);font-size:56px;line-height:.94;font-weight:600;
+  letter-spacing:-.015em;color:var(--txt);transition:color .3s}
+body[data-phase="setup"] h1{color:var(--accent)}
+body[data-phase="update"] h1{color:var(--accent)}
+body[data-phase="running"] h1{color:var(--mint)}
+body[data-phase="error"] h1{color:var(--red)}
+.desc{margin:0;font-size:13px;line-height:1.7;color:var(--dim);max-width:66ch;min-height:44px}
+.actions{display:flex;gap:9px;margin-top:16px;flex-wrap:wrap}
+.btn{height:40px;padding:0 18px;border:1px solid var(--line2);background:transparent;color:var(--txt);
+  font-family:var(--fb);font-size:13px;letter-spacing:.02em;cursor:pointer;display:inline-flex;
+  align-items:center;gap:9px;transition:background .18s,border-color .18s,color .18s,transform .12s}
+.btn:hover{background:#20272a;border-color:var(--dim2)}
+.btn:active{transform:translateY(1px)}
+.btn:disabled{opacity:.45;cursor:not-allowed}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:#10140f;font-weight:600;min-width:132px;justify-content:center}
+.btn.primary:hover{background:var(--accent2);border-color:var(--accent2)}
+.btn.primary .arw{width:14px;height:14px;stroke:currentColor;stroke-width:1.8;fill:none;transition:transform .2s}
+.btn.primary:hover .arw{transform:translateX(3px)}
+.btn.ghost{color:var(--dim);font-size:12.5px}
+.btn.ghost:hover{color:var(--txt)}
+.btn:focus-visible{outline:2px solid var(--accent2);outline-offset:2px}
+/* progress */
+.progress{margin-top:18px}
+.ptrack{height:2px;background:var(--panel2);position:relative;overflow:hidden}
+.ptrack i{display:block;height:100%;width:0;background:linear-gradient(90deg,var(--accent),var(--accent2));
+  transition:width .45s cubic-bezier(.4,.8,.2,1)}
+.ptrack i::after{content:"";position:absolute;top:0;bottom:0;width:90px;
+  background:linear-gradient(90deg,transparent,rgba(255,255,255,.55),transparent);animation:sheen 1.9s linear infinite}
+.pmeta{display:flex;justify-content:space-between;margin-top:8px;font-family:var(--fm);
+  font-size:10px;color:var(--dim2);letter-spacing:.06em}
+/* facts */
+.facts{display:grid;grid-template-columns:repeat(7,1fr);gap:1px;background:var(--line);
+  border:1px solid var(--line)}
+.fact{background:var(--panel);padding:10px 13px;display:flex;flex-direction:column;gap:6px;min-width:0}
+.fact .fk{font-family:var(--fm);font-size:9px;letter-spacing:.16em;color:var(--dim2);text-transform:uppercase}
+.fact .fv{font-family:var(--fm);font-size:11.5px;color:var(--dim);overflow:hidden;
+  text-overflow:ellipsis;white-space:nowrap}
+.fact[data-s="ok"] .fv{color:var(--txt)}
+.fact[data-s="fail"] .fv{color:var(--red)}
+.fact[data-s="active"] .fv{color:var(--accent)}
+/* ---------- version ---------- */
+.version{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:0 16px;height:46px;flex:0 0 auto}
+.v-info{display:flex;align-items:center;gap:9px;min-width:0}
+.v-k{font-family:var(--fm);font-size:9px;letter-spacing:.18em;color:var(--dim2)}
+.v-ref{font-family:var(--fm);font-size:12px;color:var(--txt);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.v-sha{font-family:var(--fm);font-size:10px;color:var(--dim2)}
+.v-flag{font-size:9.5px;letter-spacing:.08em;padding:2px 6px;border:1px solid transparent;white-space:nowrap}
+.v-flag.warn{color:var(--warn);border-color:rgba(242,198,90,.35);background:rgba(242,198,90,.12)}
+.v-flag.new{color:var(--accent);border-color:rgba(163,229,127,.32);background:var(--accent-soft)}
+.v-right{display:flex;align-items:center;gap:12px;min-width:0}
+.v-latest{font-family:var(--fm);font-size:10px;color:var(--dim2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:220px}
+.v-open{background:transparent;border:1px solid var(--line2);color:var(--dim);font-family:var(--fb);font-size:11.5px;padding:5px 11px;cursor:pointer;transition:color .18s,border-color .18s}
+.v-open:hover{color:var(--txt);border-color:var(--dim2)}
+.v-open:disabled{opacity:.4;cursor:not-allowed}
+.v-open:focus-visible,.m-close:focus-visible,.m-refresh:focus-visible,.mini:focus-visible,.seg button:focus-visible{outline:2px solid var(--accent2);outline-offset:2px}
+/* ---------- env bar ---------- */
+.envbar{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:0 16px;height:42px;flex:0 0 auto;border:1px solid var(--line);background:var(--panel)}
+.env-left,.env-right{display:flex;align-items:center;gap:10px;min-width:0}
+.env-id{font-family:var(--fm);font-size:11px;color:var(--txt);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.env-chip{font-family:var(--fm);font-size:9px;padding:2px 6px;border:1px solid var(--line2);color:var(--dim);white-space:nowrap}
+.env-dot{width:6px;height:6px;border-radius:50%;background:var(--dim2);flex:none}
+.env-dot.ok{background:var(--mint)}.env-dot.warn{background:var(--warn)}.env-dot.fail{background:var(--red)}
+.env-health{font-size:11px;color:var(--dim);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.env-disk{font-family:var(--fm);font-size:10px;color:var(--dim2);white-space:nowrap}
+/* ---------- settings ---------- */
+.set-row{display:flex;align-items:center;justify-content:space-between;gap:14px;padding:10px 0;border-bottom:1px solid var(--line)}
+.set-row:last-of-type{border-bottom:0}
+.set-label{display:flex;flex-direction:column;gap:2px;min-width:0}
+.set-label strong{font-size:12.5px;font-weight:600}
+.set-label span{font-size:10.5px;color:var(--dim)}
+.seg{display:flex;border:1px solid var(--line2);padding:2px;background:var(--panel2);flex:none}
+.seg button{border:0;background:transparent;color:var(--dim);font-family:var(--fb);font-size:11.5px;padding:6px 10px;cursor:pointer;white-space:nowrap}
+.seg button.on{background:var(--accent);color:#10140f;font-weight:600}
+.set-check{display:flex;align-items:center;gap:8px;font-size:12px;color:var(--dim);padding:8px 0;cursor:pointer}
+.set-check input{accent-color:var(--accent);margin:0;flex:none}
+.set-actions{display:flex;gap:8px;flex-wrap:wrap;margin:12px 0 4px}
+.set-actions .btn{height:34px;font-size:11.5px}
+.set-info{font-family:var(--fm);font-size:10px;color:var(--dim2);line-height:1.7;word-break:break-all}
+.pmeta #pbytes{color:var(--accent);font-size:9.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+/* ---------- modal ---------- */
+.modal{position:fixed;inset:0;z-index:20;display:flex;align-items:center;justify-content:center}
+.modal[hidden]{display:none}
+.modal-mask{position:absolute;inset:0;background:rgba(13,17,19,.66)}
+.modal-card{position:relative;width:min(560px,calc(100vw - 48px));max-height:min(640px,calc(100vh - 96px));background:var(--panel);border:1px solid var(--line2);box-shadow:0 24px 60px rgba(0,0,0,.55);display:flex;flex-direction:column;animation:pop .18s ease both}
+.m-head{display:flex;align-items:center;justify-content:space-between;padding:15px 18px;border-bottom:1px solid var(--line)}
+.m-title{font-family:var(--fd);font-size:15px;letter-spacing:.04em;color:var(--title)}
+.m-close{background:transparent;border:0;color:var(--dim2);font-size:20px;line-height:1;cursor:pointer;padding:0 2px}
+.m-close:hover{color:var(--txt)}
+.m-body{padding:14px 18px 6px;overflow:auto;display:flex;flex-direction:column;gap:10px;min-height:0}
+.m-meta{display:flex;align-items:center;justify-content:space-between;gap:12px}
+.m-repo{font-family:var(--fm);font-size:10px;color:var(--dim2);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.m-refresh{background:transparent;border:0;color:var(--dim2);font-family:var(--fm);font-size:10px;cursor:pointer;padding:0}
+.m-refresh:hover{color:var(--accent)}
+.m-current{font-size:12px;color:var(--dim)}
+.m-sync{border:1px solid var(--line);padding:10px 12px;margin:8px 0 10px;display:flex;flex-direction:column;gap:8px;background:var(--surface2,transparent)}
+.m-sync-row{display:flex;align-items:center;gap:12px;justify-content:space-between}
+.m-sync-text{display:flex;flex-direction:column;gap:2px;min-width:0}
+.m-sync-text strong{font-size:12.5px;font-weight:600}
+.m-sync-text span{font-size:11px;color:var(--dim)}
+.m-sync-row .btn{flex:none;white-space:nowrap}
+.m-force{display:flex;align-items:center;gap:8px;font-size:11.5px;color:var(--warn);cursor:pointer;line-height:1.5}
+.m-force input{margin:0;flex:none;accent-color:var(--warn)}
+.m-force b{font-weight:600}
+.m-warn{border-left:2px solid var(--warn);padding:6px 0 6px 9px;font-size:11px;color:var(--warn);line-height:1.7;word-break:break-all}
+.m-warn ul{margin:4px 0 0;padding-left:16px}
+.m-warn li{list-style:disc}
+.m-ok{border-left:2px solid var(--accent);padding:6px 0 6px 9px;font-size:11.5px;line-height:1.7;color:var(--text)}
+.m-ok b{color:var(--accent)}
+.m-list{display:flex;flex-direction:column;border:1px solid var(--line);max-height:320px;overflow:auto}
+.vrow{display:grid;grid-template-columns:14px 1fr auto;align-items:center;gap:10px;padding:11px 12px;background:transparent;border:0;border-bottom:1px solid rgba(223,230,223,.05);color:var(--txt);font-family:var(--fb);font-size:13px;text-align:left;cursor:pointer;transition:background .16s}
+.vrow:last-child{border-bottom:0}
+.vrow:hover{background:#20272a}
+.vrow[aria-pressed="true"]{background:var(--accent-soft);box-shadow:inset 2px 0 0 var(--accent)}
+.radio{width:9px;height:9px;border:1px solid var(--line2);border-radius:50%;justify-self:center}
+.vrow[aria-pressed="true"] .radio{border-color:var(--accent);background:var(--accent);box-shadow:0 0 0 3px rgba(163,229,127,.14)}
+.vlabel{display:flex;align-items:center;gap:8px;min-width:0;font-family:var(--fm);font-size:12px}
+.vlabel>span:first-child{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.vdev{font-family:var(--fm);font-size:9px;letter-spacing:.1em;color:var(--warn);border:1px solid rgba(242,198,90,.35);background:rgba(242,198,90,.12);padding:1px 5px;font-style:normal}
+.vsha2{font-family:var(--fm);font-size:10px;color:var(--dim2)}
+.vchips{display:flex;align-items:center;gap:6px}
+.chip{font-family:var(--fm);font-size:9px;letter-spacing:.06em;padding:1px 5px;border:1px solid var(--line2);color:var(--dim2);white-space:nowrap}
+.chip.cur{color:var(--accent);border-color:rgba(163,229,127,.32)}
+.chip.latest{color:var(--mint);border-color:rgba(111,208,140,.30)}
+.m-note{font-size:11.5px;color:var(--warn);padding:2px 0 8px;line-height:1.6}
+.m-foot{display:flex;justify-content:flex-end;gap:9px;padding:12px 18px 16px;border-top:1px solid var(--line)}
+.m-foot .btn{height:36px;font-size:12.5px}
+.busy{color:var(--dim2);font-family:var(--fm);font-size:11px;padding:16px;text-align:center}
+/* console */
+.console{flex:1 1 0;min-height:0;display:flex;flex-direction:column;overflow:hidden}
+.console .panel-head{padding:10px 15px}
+.chead-right{display:flex;align-items:center;gap:12px;font-family:var(--fm);font-size:10px;color:var(--dim2)}
+.live{width:5px;height:5px;border-radius:50%;background:var(--dim2);display:inline-block;margin-left:7px;
+  vertical-align:middle;transition:background .2s}
+body[data-phase="setup"] .live,body[data-phase="running"] .live,body[data-phase="update"] .live{background:var(--accent);
+  animation:pulse 1.4s infinite}
+.mini{background:transparent;border:0;color:var(--dim2);font-family:var(--fm);font-size:10px;
+  cursor:pointer;padding:2px 0;letter-spacing:.08em}
+.mini:hover{color:var(--accent)}
+.log{flex:1 1 auto;min-height:0;overflow-y:auto;overscroll-behavior:contain;padding:8px 0;font-family:var(--fm);font-size:11.5px;line-height:1.72}
+.ln{display:grid;grid-template-columns:58px 42px 1fr;gap:10px;padding:1px 15px;
+  animation:slidein .22s ease both}
+.ln .t{color:#66736a}
+.ln .lv{font-size:9.5px;letter-spacing:.1em;color:var(--dim2);padding-top:2px}
+.ln .m{color:#c3cec6;white-space:pre-wrap;word-break:break-all}
+.ln[data-lv="cmd"] .lv{color:var(--blue)}
+.ln[data-lv="cmd"] .m{color:#b9cbbf}
+.ln.app{grid-template-columns:1fr}
+.ln.app .m{color:#b9c6d1}
+.ln[data-lv="net"] .lv{color:var(--blue)}
+.ln[data-lv="ok"] .lv,.ln[data-lv="ok"] .m{color:var(--mint)}
+.ln[data-lv="warn"] .lv,.ln[data-lv="warn"] .m{color:var(--warn)}
+.ln[data-lv="err"] .lv,.ln[data-lv="err"] .m{color:var(--red)}
+.ln[data-lv="sys"] .m{color:var(--dim)}
+.empty{position:absolute;inset:41px 0 0;display:flex;align-items:center;justify-content:center;
+  font-family:var(--fm);font-size:11px;color:var(--dim2);letter-spacing:.06em;pointer-events:none}
+.empty.hide{display:none}
+/* scrollbar */
+.log::-webkit-scrollbar,.steps::-webkit-scrollbar{width:8px}
+.log::-webkit-scrollbar-thumb,.steps::-webkit-scrollbar-thumb{background:#2a3236;border:2px solid var(--panel)}
+.log::-webkit-scrollbar-track,.steps::-webkit-scrollbar-track{background:transparent}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.42}}
+@keyframes sheen{0%{transform:translateX(-100px)}100%{transform:translateX(700px)}}
+@keyframes slidein{from{opacity:0;transform:translateY(3px)}to{opacity:1;transform:none}}
+@keyframes pop{from{opacity:0;transform:translateY(6px) scale(.99)}to{opacity:1;transform:none}}
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+@media (max-width:1080px){
+  body{overflow:auto}
+  .shell{height:auto;min-height:100vh;padding:16px;overflow:visible}
+  main{grid-template-columns:1fr}
+  .rail{order:2;max-height:none}
+  .facts{grid-template-columns:repeat(4,1fr)}
+  h1{font-size:44px}
+  .envbar{height:auto;padding:10px 14px;flex-wrap:wrap;gap:6px 12px}
+  .env-right{flex-wrap:wrap}
+  .stage{overflow:visible}
+  .console{height:300px;flex:0 0 auto;min-height:0}
+}
+@media (max-height:720px){
+  body{overflow:auto}
+  .shell{height:auto;min-height:100vh;overflow:visible}
+  .stage{overflow:visible}
+  .console{height:260px;flex:0 0 auto;min-height:0}
+}
+@media (max-height:780px) and (min-width:1081px){
+  h1{font-size:46px}
+  .hero{padding:18px 22px 16px}
+  .desc{min-height:0}
+  .console{min-height:0}
+  .envbar{height:36px}
+}
+</style>
+</head>
+<body data-phase="idle">
+<div class="grid" aria-hidden="true"></div>
+<div class="shell">
+  <header class="top">
+    <div class="brand">
+      <img class="kiwi" src="/mihoutao.svg" alt="">
+      <span class="name">SLLKGUI</span>
+    </div>
+    <div class="top-right">
+      <span class="saved" id="saved">已保存</span>
+      <span class="saved" id="modeMsg"></span>
+      <button type="button" class="v-open" id="settingsOpen">设置</button>
+      <span class="mirror-label">模式</span>
+      <div class="mirror mode" id="mode" data-m="run" role="group" aria-label="运行模式">
+        <span class="thumb" aria-hidden="true"></span>
+        <button type="button" data-md="run" class="on">正式</button>
+        <button type="button" data-md="gallery">预览</button>
+      </div>
+      <span class="mirror-label">镜像源</span>
+      <div class="mirror" id="mirror" data-m="cn" role="group" aria-label="镜像源">
+        <span class="thumb" aria-hidden="true"></span>
+        <button type="button" data-m="cn" class="on">国内镜像</button>
+        <button type="button" data-m="global">官方源</button>
+      </div>
+    </div>
+  </header>
+
+  <main>
+    <aside class="panel rail">
+      <div class="panel-head"><span>初始化链路</span><span class="count" id="railCount">0 / 7</span></div>
+      <ol class="steps" id="steps"></ol>
+    </aside>
+
+    <section class="stage">
+      <div class="panel hero">
+        <h1 id="word">检测中</h1>
+        <p class="desc" id="desc">正在读取本机环境…</p>
+        <div class="actions">
+          <button type="button" class="btn primary" id="primary"><span id="primaryText">开始初始化</span>
+            <svg class="arw" viewBox="0 0 16 16" aria-hidden="true"><path d="M2 8h11M9 4l4 4-4 4"/></svg>
+          </button>
+          <button type="button" class="btn ghost" id="stopApp" hidden>关闭基座</button>
+          <button type="button" class="btn ghost" id="ghostLogs">打开日志目录</button>
+          <button type="button" class="btn ghost" id="diag">诊断</button>
+          <button type="button" class="btn ghost" id="ghostExit">退出启动器</button>
+        </div>
+        <div class="progress" id="progress" hidden>
+          <div class="ptrack"><i id="pbar"></i></div>
+          <div class="pmeta"><span id="pstage">准备中</span><span id="pbytes"></span><span id="ptime">00:00</span></div>
+        </div>
+      </div>
+
+      <div class="facts" id="facts"></div>
+
+      <div class="panel envbar" id="envbar">
+        <div class="env-left">
+          <span class="v-k">环境</span>
+          <span class="env-id" id="envId">未初始化</span>
+          <span class="env-chip" id="envProfile">—</span>
+        </div>
+        <div class="env-right">
+          <span class="env-dot" id="envDot"></span>
+          <span class="env-health" id="envHealth">—</span>
+          <span class="env-disk" id="envDisk"></span>
+          <span class="v-sha" id="launcherVer"></span>
+        </div>
+      </div>
+
+      <div class="panel version" id="versionBar">
+        <div class="v-info">
+          <span class="v-k">版本</span>
+          <span class="v-ref" id="vRef">—</span>
+          <span class="v-sha" id="vSha"></span>
+          <span class="v-flag" id="vFlag" hidden></span>
+        </div>
+        <div class="v-right">
+          <span class="v-latest" id="vLatest"></span>
+          <button type="button" class="v-open" id="vOpen">选择版本</button>
+        </div>
+      </div>
+
+      <div class="panel console">
+        <div class="panel-head">
+          <span><span id="logTitle">实时日志</span><i class="live" aria-hidden="true"></i></span>
+          <span class="chead-right"><span id="logCount">0</span><button type="button" class="mini" id="logBottom">最新</button><button type="button" class="mini" id="clearLog">清空</button></span>
+        </div>
+        <div class="log" id="log" role="log" aria-live="polite"></div>
+        <div class="empty" id="logEmpty">等待开始 · 初始化日志将在此实时输出</div>
+      </div>
+    </section>
+  </main>
+</div>
+
+<div class="modal" id="vModal" hidden>
+  <div class="modal-mask" id="vMask"></div>
+  <div class="modal-card" role="dialog" aria-modal="true" aria-labelledby="vTitle">
+    <header class="m-head">
+      <span class="m-title" id="vTitle">更新基座（构建新环境）</span>
+      <button type="button" class="m-close" id="vClose" aria-label="关闭">×</button>
+    </header>
+    <div class="m-body">
+      <div class="m-meta">
+        <span class="m-repo" id="vRepo">—</span>
+        <button type="button" class="m-refresh" id="vRefresh">刷新列表</button>
+      </div>
+      <div class="m-current" id="vCurrent">当前版本 —</div>
+      <div class="m-sync" id="vSyncBox">
+        <div class="m-sync-row">
+          <div class="m-sync-text">
+            <strong>构建并切换到最新 main</strong>
+            <span id="vSyncHint">构建新环境并切换到 origin/main；当前环境保持不变</span>
+          </div>
+          <button type="button" class="btn primary" id="vSync">立即同步</button>
+        </div>
+        <label class="m-force" id="vForceRow" hidden>
+          <input type="checkbox" id="vForce">
+          <span>强制同步：<b>丢弃我的本地改动</b>（不可撤销）</span>
+        </label>
+        <div class="m-warn" id="vDirty" hidden></div>
+      </div>
+      <div class="m-list" id="vList"></div>
+      <div class="m-note" id="vNote" hidden></div>
+    </div>
+    <footer class="m-foot">
+      <button type="button" class="btn ghost" id="vCancel">取消</button>
+      <button type="button" class="btn primary" id="vApply" disabled>更新到所选版本</button>
+    </footer>
+  </div>
+</div>
+
+<div class="modal" id="sModal" hidden>
+  <div class="modal-mask" id="sMask"></div>
+  <div class="modal-card" role="dialog" aria-modal="true" aria-labelledby="sTitle">
+    <header class="m-head">
+      <span class="m-title" id="sTitle">启动器设置</span>
+      <button type="button" class="m-close" id="sClose" aria-label="关闭">×</button>
+    </header>
+    <div class="m-body">
+      <div class="set-row">
+        <div class="set-label"><strong>安装配置</strong><span id="sProfileDesc">—</span></div>
+        <div class="seg" id="sProfileSeg">
+          <button type="button" data-profile="standard">标准</button>
+          <button type="button" data-profile="full">完整</button>
+        </div>
+      </div>
+      <div class="m-note" id="sProfileNote" style="color:var(--dim)">—</div>
+      <div class="set-row">
+        <div class="set-label"><strong>镜像源</strong><span>PyPI / GitHub 下载源</span></div>
+        <div class="seg" id="sMirrorSeg">
+          <button type="button" data-mirror="cn">国内镜像</button>
+          <button type="button" data-mirror="global">官方源</button>
+        </div>
+      </div>
+      <div class="set-row">
+        <div class="set-label"><strong>运行模式</strong><span>正式加载已安装插件；预览只加载内置组件</span></div>
+        <div class="seg" id="sModeSeg">
+          <button type="button" data-mode="run">正式</button>
+          <button type="button" data-mode="gallery">预览</button>
+        </div>
+      </div>
+      <label class="set-check"><input type="checkbox" id="sAuto"> 启动器就绪时自动启动基座</label>
+      <label class="set-check"><input type="checkbox" id="sClosePage"> 关闭页面时退出启动器</label>
+      <div class="m-warn" id="sNote" hidden></div>
+      <div class="set-actions">
+        <button type="button" class="btn ghost" id="sRepair">修复 / 重建环境</button>
+        <button type="button" class="btn ghost" id="sRollback">回滚上一环境</button>
+        <button type="button" class="btn ghost" id="sCleanup">清理旧环境</button>
+        <button type="button" class="btn ghost" id="sDiag">导出诊断</button>
+      </div>
+      <div class="set-info" id="sInfo">—</div>
+    </div>
+    <footer class="m-foot">
+      <button type="button" class="btn ghost" id="sCancel">取消</button>
+      <button type="button" class="btn primary" id="sSave">保存</button>
+    </footer>
+  </div>
+</div>
+
+<script nonce="__NONCE__">
+(function(){
+  'use strict';
+  var TOKEN = '__TOKEN__';
+  var el = function(id){ return document.getElementById(id); };
+  var state = null, cursor = 0, lvlCount = 0;
+  var lastPhase = '', versions = null, vSelected = '', vBusy = false;
+  var stepSig = '', factSig = '', polling = null, tickFails = 0;
+
+  var WORD = {
+    idle:  ['未就绪', '将按所选配置安装 uv、CPython、源码与依赖。'],
+    setup: ['初始化中', '正在执行初始化，请保持窗口打开。'],
+    update:['更新中', '正在构建独立的新环境，当前环境保持不变…'],
+    done:  ['已就绪', '可打开基座，或在设置中切换版本与配置。'],
+    error: ['任务中断', '请查看日志，可重试或修复环境。'],
+    running:['运行中', '基座运行中。']
+  };
+  var ACT = {
+    idle:  { text: '开始初始化', act: 'setup' },
+    setup: { text: '停止初始化', act: 'stop' },
+    update:{ text: '停止更新',   act: 'stopUpdate' },
+    error: { text: '重试初始化', act: 'setup' },
+    done:  { text: '打开基座',   act: 'launch' },
+    running:{ text: '退出启动器', act: 'exit' }
+  };
+  var LVL = { sys:'SYS', cmd:'CMD', out:'OUT', net:'NET', ok:'OK', warn:'WARN', err:'ERR' };
+  var PROFILES = {
+    standard: { label:'标准', download:176, installed:530, desc:'Git 版本管理 + Essentials；可切换 tag/main；不含 QtCharts' },
+    full:     { label:'完整', download:333, installed:900, desc:'Git + 完整 PySide6（含 Addons/QtCharts）；所有功能' }
+  };
+  var sProfile = 'standard', sMirror = 'cn', sMode = 'run';
+
+  var SID = Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
+  function withSid(path){
+    return path + (path.indexOf('?') >= 0 ? '&' : '?') + 'sid=' + SID;
+  }
+  function api(path, body, method){
+    var opt = { headers: { 'X-Token': TOKEN } };
+    if(body !== undefined){
+      opt.method = method || 'POST';
+      opt.headers['Content-Type'] = 'application/json';
+      opt.body = JSON.stringify(body);
+    }
+    return fetch(withSid(path), opt).then(function(r){
+      return r.json().catch(function(){ return { ok:false, error:'bad response' }; });
+    });
+  }
+  function esc(s){
+    return String(s == null ? '' : s).replace(/[&<>"]/g, function(c){
+      return { '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;' }[c];
+    });
+  }
+  function mmss(n){
+    n = Math.max(0, n|0);
+    var m = Math.floor(n / 60), s = n % 60;
+    return (m < 10 ? '0' : '') + m + ':' + (s < 10 ? '0' : '') + s;
+  }
+  function setMirror(m){
+    var box = el('mirror');
+    box.dataset.m = m;
+    Array.prototype.forEach.call(box.querySelectorAll('button'), function(b){
+      b.classList.toggle('on', b.dataset.m === m);
+    });
+  }
+  function setMode(m){
+    var box = el('mode');
+    box.dataset.m = (m === 'gallery') ? 'gallery' : 'run';
+    Array.prototype.forEach.call(box.querySelectorAll('button'), function(b){
+      b.classList.toggle('on', b.dataset.md === box.dataset.m);
+    });
+  }
+  function flashMode(text, bad){
+    var s = el('modeMsg');
+    s.textContent = text;
+    s.className = 'saved show' + (bad ? ' bad' : '');
+    setTimeout(function(){ s.className = 'saved'; }, 1600);
+  }
+  function flashSaved(){
+    var s = el('saved');
+    s.classList.add('show');
+    setTimeout(function(){ s.classList.remove('show'); }, 1400);
+  }
+
+  // ------------------------------------------------------------------
+  // 环境 / 健康 / 设置
+  // ------------------------------------------------------------------
+  function renderEnv(s){
+    var env = s.env || {};
+    el('envId').textContent = env.id || '未初始化';
+    el('envProfile').textContent = env.profileLabel || s.profileLabel || '—';
+    el('envDisk').textContent = env.diskText ? ('· ' + env.diskText) : '';
+    var h = s.health || {};
+    el('envDot').className = 'env-dot ' + (h.state || '');
+    el('envHealth').textContent = h.message || '—';
+    var l = s.launcher || {};
+    el('launcherVer').textContent = l.version ? ('v' + l.version + (l.signed ? ' · signed' : ' · unsigned')) : '';
+    el('stopApp').hidden = !s.running;
+    el('settingsOpen').disabled = (s.phase === 'setup' || s.phase === 'update');
+  }
+
+  function renderDownload(s){
+    var d = s.download || {};
+    el('pbytes').textContent = d.active ? (d.label + ' ' + (d.text || '')) : '';
+  }
+
+  function setSeg(box, attr, value){
+    if(!box) return;
+    Array.prototype.forEach.call(box.querySelectorAll('button'), function(b){
+      b.classList.toggle('on', b.dataset[attr] === value);
+    });
+  }
+
+  function showSettingsNote(text, bad){
+    var n = el('sNote');
+    n.hidden = false;
+    n.className = bad ? 'm-warn' : 'm-ok';
+    n.textContent = text;
+  }
+
+  function renderSettings(){
+    var p = PROFILES[sProfile] || PROFILES.standard;
+    el('sProfileDesc').textContent = p.desc;
+    el('sProfileNote').textContent = '首次下载约 ' + p.download + ' MB，安装后约 ' + p.installed + ' MB；修改后下次初始化 / 修复生效。';
+    setSeg(el('sProfileSeg'), 'profile', sProfile);
+    setSeg(el('sMirrorSeg'), 'mirror', sMirror);
+    setSeg(el('sModeSeg'), 'mode', sMode);
+    if(state){
+      var cfg = state.config || {};
+      el('sAuto').checked = !!cfg.autoLaunch;
+      el('sClosePage').checked = !!cfg.closeWithPage;
+      var env = state.env || {};
+      var l = state.launcher || {};
+      var lines = [
+        'launcher v' + (l.version || '—') + (l.signed ? ' · signed' : ' · unsigned'),
+        'env ' + (env.id || '未初始化') + (env.ref ? (' · ' + env.ref) : '') + (env.sha ? (' · ' + env.sha) : ''),
+        'profile ' + (cfg.profileLabel || '—') + ' · 首次约 ' + (cfg.downloadMb || 0) + ' MB',
+        'runtime ' + ((state.paths || {}).runtime || '')
+      ];
+      el('sInfo').textContent = lines.join('\n');
+      el('sRepair').disabled = !(state.capabilities && state.capabilities.canRepair);
+      el('sRollback').disabled = !(state.capabilities && state.capabilities.canRollback);
+      el('sCleanup').disabled = !(state.capabilities && state.capabilities.canCleanup);
+    }
+  }
+
+  function openSettings(){
+    if(state){
+      sProfile = state.profile || 'standard';
+      sMirror = state.mirror || 'cn';
+      sMode = state.mode || 'run';
+    }
+    el('sNote').hidden = true;
+    renderSettings();
+    el('sModal').hidden = false;
+    setTimeout(function(){ el('sClose').focus(); }, 30);
+  }
+  function closeSettings(){ el('sModal').hidden = true; }
+
+  function saveSettings(){
+    var body = {
+      profile: sProfile, mirror: sMirror, mode: sMode,
+      autoLaunch: el('sAuto').checked, closeWithPage: el('sClosePage').checked
+    };
+    api('/api/config', body).then(function(r){
+      if(r && r.ok === false){ showSettingsNote(r.error || '保存失败', true); return; }
+      if(r && r.phase){ state = r; render(r); }
+      closeSettings();
+      flashSaved();
+    }).catch(function(){ showSettingsNote('保存失败', true); });
+  }
+
+  function stopApp(){
+    api('/api/stop', {}).then(function(r){
+      if(r && r.ok === false){ el('desc').textContent = r.error || '关闭失败'; }
+      setTimeout(tickState, 400);
+    });
+  }
+
+  function repairEnv(){
+    api('/api/repair', {}).then(function(r){
+      if(r && r.ok === false){ showSettingsNote(r.error || '修复失败', true); return; }
+      closeSettings();
+      tickState();
+    });
+  }
+  function rollbackEnv(){
+    api('/api/rollback', {}).then(function(r){
+      if(r && r.ok === false){ showSettingsNote(r.error || '回滚失败', true); return; }
+      if(r && r.phase){ state = r; render(r); }
+      closeSettings();
+      flashSaved();
+    });
+  }
+  function cleanupEnv(){
+    api('/api/cleanup', {}).then(function(r){
+      if(r && r.ok === false){ showSettingsNote(r.error || '清理失败', true); return; }
+      showSettingsNote('已释放 ' + (r.freedText || '0 B'), false);
+      tickState();
+    });
+  }
+  function exportDiag(){
+    fetch(withSid('/api/diagnostics'), { headers: { 'X-Token': TOKEN } }).then(function(r){
+      return r.blob();
+    }).then(function(blob){
+      var a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = 'sllkgui-diagnostics.json';
+      a.click();
+      setTimeout(function(){ URL.revokeObjectURL(a.href); }, 2000);
+    });
+  }
+
+  function renderVersionBar(s){
+    var v = s.version || {};
+    el('vRef').textContent = v.ref || (s.ready ? '未知' : '未拉取');
+    el('vSha').textContent = v.sha ? ('· ' + v.sha) : '';
+    var flag = el('vFlag');
+    if(v.ref === 'main'){
+      flag.hidden = false;
+      flag.className = 'v-flag warn';
+      flag.textContent = 'DEV';
+    } else if(v.updateAvailable){
+      flag.hidden = false;
+      flag.className = 'v-flag new';
+      flag.textContent = '可更新';
+    } else {
+      flag.hidden = true;
+      flag.textContent = '';
+    }
+    el('vLatest').textContent = v.latest ? ('最新 ' + v.latest) : '';
+    el('vOpen').disabled = (s.phase === 'setup' || s.phase === 'update');
+  }
+
+  function openVersions(){
+    el('vModal').hidden = false;
+    el('vRepo').textContent = (state && state.repo) || '';
+    el('vNote').hidden = true;
+    el('vForce').checked = false;
+    if(versions){ renderVersionList(versions); }
+    loadVersions(!versions);
+    refreshDirty();
+    setTimeout(function(){ el('vClose').focus(); }, 30);
+  }
+
+  function closeVersions(){
+    el('vModal').hidden = true;
+  }
+
+  function loadVersions(force){
+    if(!el('vList').childElementCount || force){
+      el('vList').innerHTML = '<div class="busy">正在读取版本…</div>';
+    }
+    api('/api/versions' + (force ? '?refresh=1' : '')).then(function(v){
+      versions = v;
+      renderVersionList(v);
+      tickState();
+    }).catch(function(){
+      el('vList').innerHTML = '<div class="busy">版本列表读取失败</div>';
+    });
+  }
+
+  function updateBlockReason(){
+    if(!state) return '';
+    if(state.running) return '基座正在运行，请先关闭基座再更新。';
+    if(state.phase === 'setup') return '初始化进行中，完成后再更新。';
+    if(state.phase === 'update') return '正在更新，请稍候。';
+    return '';
+  }
+
+  function renderVersionList(v){
+    var cur = v.current || '';
+    var exists = false;
+    (v.versions || []).forEach(function(x){ if(x.ref === vSelected){ exists = true; } });
+    if(!vSelected || !exists){ vSelected = cur; }
+    el('vCurrent').textContent = '当前版本 ' + (cur || '未知') + (v.short ? ' · ' + v.short : '');
+    if(v.error){
+      el('vList').innerHTML = '<div class="busy">' + esc(v.error) + '</div>';
+      el('vApply').disabled = true;
+      return;
+    }
+    var rows = (v.versions || []).map(function(item){
+      var chips = '';
+      if(item.current){ chips += '<span class="chip cur">当前</span>'; }
+      if(item.latest){ chips += '<span class="chip latest">最新</span>'; }
+      var dev = item.dev ? '<em class="vdev">dev</em>' : '';
+      return '<button type="button" class="vrow" data-ref="' + esc(item.ref) + '" aria-pressed="' + (item.ref === vSelected) + '">' +
+        '<span class="radio"></span>' +
+        '<span class="vlabel"><span>' + esc(item.label) + '</span>' + dev +
+        '<span class="vsha2">' + esc(item.short) + '</span></span>' +
+        '<span class="vchips">' + chips + '</span></button>';
+    }).join('');
+    el('vList').innerHTML = rows || '<div class="busy">仓库暂无可选版本</div>';
+    Array.prototype.forEach.call(el('vList').querySelectorAll('.vrow'), function(row){
+      row.addEventListener('click', function(){
+        vSelected = row.dataset.ref;
+        renderVersionList(v);
+      });
+    });
+    var blocked = updateBlockReason();
+    var note = el('vNote');
+    if(blocked){
+      note.hidden = false;
+      note.textContent = blocked;
+    } else if(vSelected === 'main'){
+      note.hidden = false;
+      // main 是活动分支：给出「代码是否已落后远端」的明确判断
+      if(v.mainAhead){
+        note.textContent = '远端 main 有新提交（' + (v.mainSha ? v.mainSha.slice(0,7) : '') + '），点上方「同步到最新 main」会构建一个新环境。';
+      } else {
+        note.textContent = 'main 为开发分支，内容随时变化，可能不稳定；需要稳定版本请选择 tag。更新会构建新环境，当前环境保持不变。';
+      }
+    } else {
+      note.hidden = true;
+      note.textContent = '';
+    }
+    el('vApply').disabled = (vBusy || !vSelected || vSelected === cur || !!blocked);
+  }
+
+  function applyUpdate(){
+    if(!vSelected || vBusy){ return; }
+    vBusy = true;
+    el('vApply').disabled = true;
+    api('/api/update', { ref: vSelected }).then(function(r){
+      vBusy = false;
+      if(r && r.ok){
+        closeVersions();
+        tickState();
+        tickLogs();
+      } else {
+        el('vNote').hidden = false;
+        el('vNote').textContent = (r && r.error) || '更新失败';
+        el('vApply').disabled = false;
+      }
+    }).catch(function(){
+      vBusy = false;
+      el('vApply').disabled = false;
+    });
+  }
+
+  // ------------------------------------------------------------------
+  // 同步到最新 main
+  // ------------------------------------------------------------------
+  var dirtyState = null;
+  var syncBusy = false;
+
+  function refreshDirty(){
+    return api('/api/dirty').then(function(d){
+      dirtyState = d;
+      renderSyncBox();
+      return d;
+    }).catch(function(){
+      dirtyState = null;
+      renderSyncBox();
+      return null;
+    });
+  }
+
+  function dirtSummary(d){
+    if(!d || !d.dirty) return '';
+    var parts = [];
+    if(d.tracked) parts.push(d.tracked + ' 项已跟踪修改');
+    if(d.untracked) parts.push(d.untracked + ' 项新增未跟踪文件');
+    return parts.join('，');
+  }
+
+  function renderSyncBox(){
+    var d = dirtyState;
+    var dirty = d && d.dirty > 0;
+    el('vForceRow').hidden = true;
+    var box = el('vDirty');
+    if(dirty){
+      box.hidden = false;
+      var list = (d.sample || []).slice(0, 8).map(function(x){ return '<li>' + esc(x) + '</li>'; }).join('');
+      var more = d.dirty > 8 ? '<li>… 其余 ' + (d.dirty - 8) + ' 项</li>' : '';
+      box.className = 'm-warn';
+      box.innerHTML = '当前环境有 <b>' + d.dirty + '</b> 项本地改动' +
+        (dirtSummary(d) ? '（' + esc(dirtSummary(d)) + '）' : '') +
+        '。更新会构建独立的新环境，<b>不会修改或丢弃它们</b>：' +
+        '<ul>' + list + more + '</ul>';
+    } else {
+      box.hidden = true;
+    }
+    el('vSyncHint').textContent = '构建新环境并切换到 origin/main；当前环境保持不变';
+    var blocked = updateBlockReason();
+    el('vSync').disabled = syncBusy || !!blocked;
+    el('vSync').textContent = syncBusy ? '构建中…' : '同步到最新 main';
+  }
+
+  function showSyncResult(summary){
+    var box = el('vDirty');
+    box.hidden = false;
+    box.className = 'm-ok';
+    var lines = [];
+    var fromSha = summary.from ? summary.from.slice(0, 7) : '—';
+    var toSha = summary.to ? summary.to.slice(0, 7) : '—';
+    if(summary.changed){
+      lines.push('已构建并切换到 <b>' + esc(summary.ref || 'main') + '</b> · ' + esc(fromSha) + ' → <b>' + esc(toSha) + '</b>');
+    } else {
+      lines.push('已是最新（<b>' + esc(toSha) + '</b>），无需构建新环境');
+    }
+    lines.push('当前环境的本地改动未被修改。');
+    box.innerHTML = lines.join('<br>');
+  }
+
+  function syncToMain(){
+    if(syncBusy){ return; }
+    if(!window.confirm('将构建独立的新环境并切换；当前环境的本地改动不会被修改。继续？')){ return; }
+    syncBusy = true;
+    vBusy = true;
+    renderSyncBox();
+    el('vApply').disabled = true;
+    el('vNote').hidden = true;
+    api('/api/sync', { ref: 'main' }).then(function(r){
+      if(r && r.ok){
+        // 更新在后台跑：立刻关闭弹窗，进度与结果都在页面上跟踪
+        syncBusy = false;
+        vBusy = false;
+        closeVersions();
+        pollSync();
+        return;
+      }
+      syncBusy = false;
+      vBusy = false;
+      var note = el('vNote');
+      note.hidden = false;
+      note.textContent = (r && r.error) || '更新失败';
+      renderSyncBox();
+    }).catch(function(){
+      syncBusy = false;
+      vBusy = false;
+      renderSyncBox();
+    });
+  }
+
+  function pollSync(){
+    // 常规轮询（800ms）已在跑，这里只补一个更密的短轮询，结束后自动让位于常规轮询。
+    // 弹窗关闭后用户仍能通过页面上的进度条与日志看到同步过程与结果。
+    var timer = setInterval(function(){
+      api('/api/state').then(function(s){
+        state = s;
+        render(s);
+        if(s.phase !== 'update'){
+          clearInterval(timer);
+          tickLogs();
+          refreshDirty();
+        }
+      }).catch(function(){ clearInterval(timer); });
+    }, 700);
+  }
+
+  function render(s){
+    state = s;
+    document.body.dataset.phase = s.phase;
+    var w = WORD[s.phase] || WORD.idle;
+    el('word').textContent = w[0];
+    if(s.phase === 'running'){
+      el('desc').textContent = s.owned
+        ? ('基座运行中 · ' + (s.modeLabel || '正式模式') + ' · PID ' + s.pid + '，下方为基座日志。')
+        : ('检测到其他目录的基座实例 · PID ' + s.pid + '，无法读取其日志。');
+    } else if(s.phase === 'update'){
+      var target = (s.update && s.update.ref) ? s.update.ref : '所选版本';
+      el('desc').textContent = '正在更新到 ' + target + '，过程日志见下方。';
+    } else if(s.error){
+      el('desc').textContent = s.error;
+    } else {
+      var hint = (s.phase === 'idle')
+        ? (' 当前配置：' + (s.profileLabel || '标准') + '，首次下载约 ' + (s.downloadMb || 0) + ' MB；可在设置中切换。')
+        : '';
+      el('desc').textContent = w[1] + hint;
+    }
+
+    renderEnv(s);
+    renderDownload(s);
+
+    var a = ACT[s.phase] || ACT.idle;
+    el('primaryText').textContent = a.text;
+    el('primary').dataset.act = a.act;
+    el('primary').hidden = (s.phase === 'running');
+
+    setMirror(s.mirror);
+    setMode(s.mode);
+    Array.prototype.forEach.call(el('mode').querySelectorAll('button'), function(b){
+      b.disabled = s.running;
+    });
+    el('mode').title = s.running ? '基座运行中，不能切换模式' : '';
+    el('railCount').textContent = s.progress + ' / ' + s.total;
+    el('logCount').textContent = lvlCount;
+    el('logTitle').textContent = (s.phase === 'running') ? '基座日志' : '实时日志';
+    el('logEmpty').textContent = (s.phase === 'running' && !s.owned)
+      ? '外部基座实例，日志不可用'
+      : '等待开始 · 初始化日志将在此实时输出';
+    renderVersionBar(s);
+
+    var sig = JSON.stringify(s.steps);
+    if(sig !== stepSig){
+      stepSig = sig;
+      el('steps').innerHTML = s.steps.map(function(st, i){
+        return '<li class="step" data-s="' + st.state + '">' +
+          '<span class="dot"></span>' +
+          '<span class="idx">' + (i < 9 ? '0' : '') + (i + 1) + '</span>' +
+          '<span class="lbl">' + esc(st.label) + '</span>' +
+          '<span class="note">' + esc(st.note) + '</span></li>';
+      }).join('');
+    }
+
+    var fsig = s.steps.map(function(x){ return x.state + '|' + x.note; }).join('~');
+    if(fsig !== factSig){
+      factSig = fsig;
+      el('facts').innerHTML = s.steps.map(function(st){
+        return '<div class="fact" data-s="' + st.state + '">' +
+          '<span class="fk">' + esc(st.short) + '</span>' +
+          '<span class="fv">' + esc(st.note) + '</span></div>';
+      }).join('');
+    }
+
+    var showProgress = (s.phase === 'setup' || s.phase === 'update' || (s.phase === 'done' && !s.running) || s.phase === 'error');
+    el('progress').hidden = !showProgress;
+    if(showProgress){
+      var pct = Math.round((s.progress / s.total) * 100);
+      var dl = s.download || {};
+      if(dl.active){
+        el('pstage').textContent = '下载 · ' + (dl.label || '');
+        if(dl.total > 0){ pct = dl.percent || 0; }
+      } else if(s.phase === 'setup' && s.current){
+        var cur = s.steps.filter(function(x){ return x.id === s.current; })[0];
+        el('pstage').textContent = '正在执行 · ' + (cur ? cur.label : s.current);
+      } else if(s.phase === 'update'){
+        el('pstage').textContent = '正在构建新环境 · ' + ((s.update && s.update.ref) || '');
+      } else if(s.phase === 'error'){
+        el('pstage').textContent = '已中断';
+      } else {
+        el('pstage').textContent = s.progress + ' / ' + s.total + ' 项组件就绪';
+      }
+      el('pbar').style.width = (s.phase === 'update' && !dl.active ? 100 : (s.phase === 'setup' ? Math.max(pct, 4) : pct)) + '%';
+      el('ptime').textContent = mmss(s.elapsed);
+    }
+
+    if(lastPhase === 'update' && s.phase !== 'update'){
+      loadVersions(false);
+      refreshDirty();
+      // 同步/更新刚结束：把摘要显示在版本栏下方，用户关掉弹窗也能看到结果
+      var sum = s.update && s.update.summary;
+      if(sum){ showSyncResult(sum); }
+    }
+    lastPhase = s.phase;
+  }
+
+  function addLine(l){
+    var box = el('log');
+    var row = document.createElement('div');
+    row.className = 'ln';
+    row.dataset.lv = l.level;
+    var t = document.createElement('span'); t.className = 't'; t.textContent = l.t;
+    var v = document.createElement('span'); v.className = 'lv'; v.textContent = LVL[l.level] || l.level.toUpperCase();
+    var m = document.createElement('span'); m.className = 'm'; m.textContent = l.text;
+    row.appendChild(t); row.appendChild(v); row.appendChild(m);
+    box.appendChild(row);
+    lvlCount++;
+    while(box.childElementCount > 700){ box.removeChild(box.firstChild); }
+    el('logCount').textContent = lvlCount;
+    el('logEmpty').classList.add('hide');
+  }
+
+  function addAppLine(text){
+    var box = el('log');
+    var row = document.createElement('div');
+    row.className = 'ln app';
+    var m = document.createElement('span');
+    m.className = 'm';
+    m.textContent = text;
+    row.appendChild(m);
+    box.appendChild(row);
+    while(box.childElementCount > 900){ box.removeChild(box.firstChild); }
+  }
+
+  function tickState(){
+    api('/api/state').then(function(s){
+      if(!s || !s.phase){ throw new Error('stale session'); }
+      tickFails = 0;
+      render(s);
+      document.title = 'SllkGui 启动器 · ' + ((WORD[s.phase] || WORD.idle)[0]);
+    }).catch(function(){
+      tickFails++;
+      if(tickFails < 3){ return; }
+      document.body.dataset.phase = 'off';
+      el('word').textContent = '连接中断';
+      el('desc').textContent = '启动器服务已关闭，可重新运行启动器。';
+      el('primary').hidden = true;
+      if(polling){ clearInterval(polling); polling = null; }
+    });
+  }
+
+  var appLogSig = '', logMode = '';
+
+  function tickAppLog(){
+    api('/api/applog').then(function(r){
+      if(!r || !r.lines) return;
+      var sig = r.lines.join('\n');
+      if(sig === appLogSig) return;
+      appLogSig = sig;
+      var box = el('log');
+      box.innerHTML = '';
+      r.lines.forEach(addAppLine);
+      lvlCount = r.lines.length;
+      el('logCount').textContent = lvlCount;
+      if(r.lines.length > 0){ el('logEmpty').classList.add('hide'); }
+    }).catch(function(){});
+  }
+
+  function tickLogs(){
+    var mode = (state && state.phase === 'running' && state.owned) ? 'app' : 'launcher';
+    if(mode !== logMode){
+      logMode = mode;
+      appLogSig = '';
+      el('log').innerHTML = '';
+      lvlCount = 0;
+      el('logCount').textContent = '0';
+      el('logEmpty').classList.remove('hide');
+    }
+    if(mode === 'app'){ tickAppLog(); return; }
+    api('/api/log?cursor=' + cursor).then(function(r){
+      if(!r || !r.lines) return;
+      cursor = r.cursor;
+      r.lines.forEach(addLine);
+    }).catch(function(){});
+  }
+
+  function shutdownUi(){
+    document.body.dataset.phase = 'off';
+    el('word').textContent = '启动器已退出';
+    el('desc').textContent = '可以关闭此页面。';
+    el('primary').hidden = true;
+    if(polling){ clearInterval(polling); polling = null; }
+    try { window.close(); } catch(e){}
+  }
+  function exitLauncher(){
+    api('/api/exit', {}).then(function(r){
+      if(r && r.ok === false){ el('desc').textContent = r.error || '暂时无法退出'; return; }
+      shutdownUi();
+    }).catch(shutdownUi);
+  }
+
+  function boot(){
+    el('primary').addEventListener('click', function(){
+      var act = this.dataset.act;
+      if(act === 'setup'){
+        this.disabled = true;
+        api('/api/setup', {}).then(function(r){
+          if(r && r.ok === false && r.error === 'busy'){ el('desc').textContent = '初始化正在进行中。'; }
+          setTimeout(function(){ el('primary').disabled = false; }, 600);
+          tickState();
+        }).catch(function(){ el('primary').disabled = false; });
+      } else if(act === 'stop'){
+        api('/api/setup/stop', {}).then(tickState);
+      } else if(act === 'stopUpdate'){
+        api('/api/update/stop', {}).then(tickState);
+      } else if(act === 'launch'){
+        api('/api/launch', {}).then(function(r){
+          if(r && r.ok){ setTimeout(tickState, 600); }
+          else if(r){ el('desc').textContent = '启动失败：' + r.error; }
+        });
+      } else if(act === 'exit'){
+        exitLauncher();
+      }
+    });
+    el('vOpen').addEventListener('click', openVersions);
+    el('vClose').addEventListener('click', closeVersions);
+    el('vCancel').addEventListener('click', closeVersions);
+    el('vMask').addEventListener('click', closeVersions);
+    el('vApply').addEventListener('click', applyUpdate);
+    el('vRefresh').addEventListener('click', function(){ loadVersions(true); refreshDirty(); });
+    el('vSync').addEventListener('click', syncToMain);
+    el('vForce').addEventListener('change', renderSyncBox);
+    document.addEventListener('keydown', function(e){
+      if(e.key === 'Escape' && !el('vModal').hidden){ closeVersions(); }
+      if(e.key === 'Escape' && !el('sModal').hidden){ closeSettings(); }
+    });
+    el('settingsOpen').addEventListener('click', openSettings);
+    el('sClose').addEventListener('click', closeSettings);
+    el('sCancel').addEventListener('click', closeSettings);
+    el('sMask').addEventListener('click', closeSettings);
+    el('sSave').addEventListener('click', saveSettings);
+    el('sRepair').addEventListener('click', repairEnv);
+    el('sRollback').addEventListener('click', rollbackEnv);
+    el('sCleanup').addEventListener('click', cleanupEnv);
+    el('sDiag').addEventListener('click', exportDiag);
+    el('stopApp').addEventListener('click', stopApp);
+    el('diag').addEventListener('click', exportDiag);
+    Array.prototype.forEach.call(document.querySelectorAll('#sProfileSeg button'), function(b){
+      b.addEventListener('click', function(){ sProfile = b.dataset.profile; renderSettings(); });
+    });
+    Array.prototype.forEach.call(document.querySelectorAll('#sMirrorSeg button'), function(b){
+      b.addEventListener('click', function(){ sMirror = b.dataset.mirror; renderSettings(); });
+    });
+    Array.prototype.forEach.call(document.querySelectorAll('#sModeSeg button'), function(b){
+      b.addEventListener('click', function(){ sMode = b.dataset.mode; renderSettings(); });
+    });
+    el('ghostLogs').addEventListener('click', function(){ api('/api/open', {}).catch(function(){}); });
+    el('ghostExit').addEventListener('click', exitLauncher);
+    el('logBottom').addEventListener('click', function(){
+      var box = el('log');
+      box.scrollTop = box.scrollHeight;
+    });
+    el('clearLog').addEventListener('click', function(){
+      el('log').innerHTML = '';
+      lvlCount = 0;
+      el('logCount').textContent = '0';
+      el('logEmpty').classList.remove('hide');
+    });
+    Array.prototype.forEach.call(document.querySelectorAll('#mirror button'), function(b){
+      b.addEventListener('click', function(){
+        if(state && state.phase === 'setup') return;
+        var m = b.dataset.m;
+        setMirror(m);
+        api('/api/config', { mirror: m }).then(function(s){
+          if(s && s.mirror){ setMirror(s.mirror); }
+          flashSaved();
+        }).catch(function(){});
+      });
+    });
+    Array.prototype.forEach.call(document.querySelectorAll('#mode button'), function(b){
+      b.addEventListener('click', function(){
+        if(state && state.running){ flashMode('运行中不可切换', true); return; }
+        var m = b.dataset.md;
+        setMode(m);
+        api('/api/mode', { mode: m }).then(function(r){
+          if(r && r.ok){ flashMode('已切换'); tickState(); }
+          else {
+            setMode(state ? state.mode : 'run');
+            flashMode((r && r.error) || '切换失败', true);
+          }
+        }).catch(function(){
+          setMode(state ? state.mode : 'run');
+          flashMode('切换失败', true);
+        });
+      });
+    });
+    tickState();
+    tickLogs();
+    polling = setInterval(function(){
+      tickState();
+      tickLogs();
+    }, 800);
+    window.addEventListener('pagehide', function(){
+      try { fetch(withSid('/api/bye'), { method: 'POST', headers: { 'X-Token': TOKEN }, keepalive: true }); } catch (e) { }
+    });
+  }
+
+  boot();
+})();
+</script>
+</body>
+</html>

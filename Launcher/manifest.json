@@ -1,0 +1,67 @@
+{
+  "manifestVersion": 2,
+  "launcherVersion": "5.0.0",
+  "repo": "https://gitee.com/shilianlvke/SllkGui.git",
+  "repoWeb": "https://gitee.com/shilianlvke/SllkGui",
+  "defaultBranch": "main",
+  "base": {
+    "tag": "base-v4.0.2",
+    "sha": "ecb60018464284c843e8f304eff16678c22a15b6"
+  },
+  "uv": {
+    "version": "0.13.9",
+    "assetX64": "uv-x86_64-pc-windows-msvc.zip",
+    "sha256X64": "edd61f7f5728a56cc62455386661860bdfc7bab65872f39b0c25bdcc1d8e1beb",
+    "bytesX64": 15567875,
+    "assetArm64": "uv-aarch64-pc-windows-msvc.zip",
+    "sha256Arm64": "72eed595983a4d7d22d79f21065b0f4479cc7e5c7a89104bb410c8f47559a878",
+    "bytesArm64": 15747415
+  },
+  "minGit": {
+    "version": "2.56.1",
+    "asset": "MinGit-2.56.1-64-bit.zip",
+    "sha256": "4a92850b6e917da4fd010669b614b55dccf5b0ec333a534cc4be4700dfefdafd",
+    "bytes": 39849768
+  },
+  "python": {
+    "version": "3.12.16",
+    "tag": "20261110",
+    "sha256": "e23fe5b16926de1d81661b1a97352e89fb167549c55a6825796ccd0f32ec7f1b"
+  },
+  "profiles": [
+    {
+      "name": "standard",
+      "label": "标准",
+      "useGit": true,
+      "includeAddons": false,
+      "downloadMb": 176,
+      "installedMb": 530,
+      "description": "Git 版本管理 + Essentials；可切换 tag/main；不含 QtCharts"
+    },
+    {
+      "name": "full",
+      "label": "完整",
+      "useGit": true,
+      "includeAddons": true,
+      "downloadMb": 333,
+      "installedMb": 900,
+      "description": "Git + 完整 PySide6（含 Addons/QtCharts）；所有功能"
+    }
+  ],
+  "mirrors": {
+    "cn": {
+      "label": "国内镜像",
+      "pypi": "https://pypi.tuna.tsinghua.edu.cn/simple",
+      "github": "https://gh-proxy.com/https://github.com",
+      "python": "https://gh-proxy.com/https://github.com/astral-sh/python-build-standalone/releases/download",
+      "gitBinary": "https://registry.npmmirror.com/-/binary/git-for-windows/"
+    },
+    "global": {
+      "label": "官方源",
+      "pypi": "https://pypi.org/simple",
+      "github": "https://github.com",
+      "python": "https://github.com/astral-sh/python-build-standalone/releases/download",
+      "gitBinary": "https://github.com/git-for-windows/git/releases/download"
+    }
+  }
+}
