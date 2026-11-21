@@ -102,6 +102,14 @@ class PageRouterController:
             previous_button_id=previous_btn,
         )
         self._window.ui.title_bar.set_title(title)
+        # GalleryWindow 需要同步“当前页”状态（原生页/插件 Surface 进入与离开）；
+        # 控制器不直接依赖 gallery，用可选钩子保持 guis -> gallery 的单向边界。
+        sync_context = getattr(self._window, "_on_page_router_switch", None)
+        if callable(sync_context):
+            try:
+                sync_context(page_name)
+            except Exception as exc:  # noqa: BLE001 - 状态同步失败不阻断切页
+                self._logger.warning(f"同步页面上下文失败: {exc}")
         self._logger.debug(f"切换页面: {btn_name} -> {page_name} ({title})")
         self._record_event(
             "ui.page_switch",

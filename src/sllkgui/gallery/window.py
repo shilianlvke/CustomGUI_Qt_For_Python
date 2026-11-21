@@ -96,6 +96,8 @@ class GalleryWindow(QMainWindow):
         #: 选择性重载期间暂存的 Surface 状态：route -> save_state() 返回值
         self._surface_state_cache: dict[str, object] = {}
         self._dev_watcher = None
+        #: 当前停留的原生页；菜单按钮高亮可能被外部重建，保留独立记录更稳
+        self._current_native: NativePage | None = None
         try:
             Language.subscribe(self._refresh_tray_texts)
         except Exception as exc:  # noqa: BLE001 - 托盘文案刷新失败不阻断启动
@@ -162,9 +164,9 @@ class GalleryWindow(QMainWindow):
     # ------------------------------------------------------------------
     # 导航
     # ------------------------------------------------------------------
-    def _notify_surface_leave(self) -> None:
+    def _notify_surface_leave(self, route: str | None = None) -> None:
         """对当前激活的 Surface 触发 leave（幂等），并清空激活态。"""
-        route = self._active_route
+        route = route or self._active_route
         self._active_route = ""
         if not route:
             return
@@ -220,6 +222,7 @@ class GalleryWindow(QMainWindow):
         )
         self.ui.title_bar.set_title(surface.display_title(Language.current()))
         self._current_route = route
+        self._current_native = None
         if self._active_route != surface.route:
             self._notify_surface_enter(surface)
         record_event(
@@ -268,7 +271,14 @@ class GalleryWindow(QMainWindow):
         if not targets:
             return 0
         pages = self.ui.load_pages.pages
-        if self._active_route and self._active_route in targets.values():
+        target_routes = set(targets.values())
+        current = pages.currentWidget()
+        current_surface = (
+            self.gallery_registry.route_for_page(current.objectName()) if current is not None else None
+        )
+        if current_surface is not None and current_surface.route in target_routes:
+            self._notify_surface_leave(current_surface.route)
+        elif self._active_route and self._active_route in target_routes:
             self._notify_surface_leave()
         removed = 0
         canceled = False
@@ -349,8 +359,7 @@ class GalleryWindow(QMainWindow):
         当前页面属于目标插件时，会先触发 ``on_surface_leave`` 并安全回退；
         不属于目标插件时，页面实例、滚动与表单状态保持不变。
         """
-        current_route = self._current_route
-        native = self._current_native_page() if not self._active_route else None
+        current_route, native = self._current_page_context()
         if self.runtime.is_reloading():
             busy = ReloadResult(
                 ok=False,
@@ -511,8 +520,59 @@ class GalleryWindow(QMainWindow):
         if not self._open_default_native_page():
             self._show_empty_state()
 
+    def _on_page_router_switch(self, page_name: str) -> None:
+        """菜单直切页面时同步 Surface 生命周期与当前页状态。
+
+        ``PageRouterController`` 不依赖 gallery，因此这里用鸭子类型钩子接收。
+        插件页正常进入/离开钩子、``current_route()`` 与选择性重载都依赖这份
+        状态；不更新会出现“点原生页后 current_route 仍是上一个插件页”的问题。
+        """
+        native = native_page_for(page_name)
+        if native is not None:
+            self._notify_surface_leave()
+            self._current_route = ""
+            self._current_native = native
+            return
+        surface = self.gallery_registry.route_for_page(page_name)
+        if surface is None:
+            self._notify_surface_leave()
+            self._current_route = ""
+            self._current_native = None
+            return
+        if self._active_route != surface.route:
+            self._notify_surface_leave()
+            self._notify_surface_enter(surface)
+        self._current_route = surface.route
+        self._current_native = None
+
+    def _current_page_context(self) -> tuple[str, NativePage | None]:
+        """以页面栈实际当前控件为准，避免菜单切换后状态字段滞后。
+
+        原生页由 ``PageRouterController.switch_page`` 直接切换，不会经过
+        ``open_route``；如果只看 ``_current_route`` / ``_active_route``，重载
+        时会把上次插件页当成当前页，从而跳离插件管理页。
+        """
+        current = self.ui.load_pages.pages.currentWidget()
+        if current is not None:
+            native = native_page_for(current.objectName())
+            if native is not None:
+                return "", native
+            surface = self.gallery_registry.route_for_page(current.objectName())
+            if surface is not None:
+                return surface.route, None
+        if self._current_native is not None:
+            return "", self._current_native
+        return self._current_route, None
+
     def _current_native_page(self) -> NativePage | None:
         """重载前左侧菜单停留的原生页；当前在插件 Surface 上时返回 ``None``。"""
+        current = self.ui.load_pages.pages.currentWidget()
+        if current is not None:
+            native = native_page_for(current.objectName())
+            if native is not None:
+                return native
+        if self._current_native is not None:
+            return self._current_native
         if self._active_route:
             return None
         active = getattr(self.ui.left_menu, "active_button_id", None)
@@ -552,6 +612,7 @@ class GalleryWindow(QMainWindow):
         title = str(Language.resolve_key(native.title_key, native.title_fallback))
         self.ui.title_bar.set_title(title)
         self._current_route = ""
+        self._current_native = native
         return True
 
     def _clear_pages(self) -> None:
@@ -577,6 +638,7 @@ class GalleryWindow(QMainWindow):
     # 空状态
     # ------------------------------------------------------------------
     def _show_empty_state(self) -> None:
+        self._current_native = None
         pages = self.ui.load_pages.pages
         existing = pages.findChild(QWidget, "GalleryEmptyState")
         if existing is not None:

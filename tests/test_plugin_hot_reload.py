@@ -419,6 +419,69 @@ def test_window_rolls_back_failed_update(tmp_path: Path, qapp):
         window.deleteLater()
 
 
+def test_window_stays_on_plugin_store_when_toggling_plugin(tmp_path: Path, qapp):
+    from sllkgui.guis.windows.main_window.native_pages import NATIVE_PAGES
+    from sllkgui.window import load_run
+
+    dev = tmp_path / "dev"
+    write_plugin(dev / "a", plugin_id="com.example.a", name="A", plugin_source=_source("A"))
+    window = load_run(
+        data_dir=tmp_path / "data",
+        gallery_dir=tmp_path / "data" / "gallery",
+        plugin_dirs=[dev],
+        install_missing_deps=False,
+        interactive=False,
+        check_tools=False,
+    )
+    try:
+        assert window._open_native_page(NATIVE_PAGES[0], animate=False)
+        store_page = window.ui.load_pages.pages.currentWidget()
+        assert store_page.objectName() == "page_native_plugin_store"
+
+        result = window.reload_plugin_in_place("com.example.a", reason="disable", load=False)
+        assert result.ok, result.message
+        assert window.current_route() == ""
+        assert window.ui.load_pages.pages.currentWidget() is store_page
+    finally:
+        window.runtime.shutdown()
+        window.close()
+        window.deleteLater()
+
+
+def test_toggle_stays_on_native_page_after_router_navigation(tmp_path: Path, qapp):
+    """真实菜单路径由 PageRouterController 切换原生页，不能因旧路由状态跳走。"""
+    from sllkgui.guis.windows.main_window.controller import PageRouterController
+    from sllkgui.guis.windows.main_window.native_pages import NATIVE_PAGES
+    from sllkgui.window import load_run
+
+    dev = tmp_path / "dev"
+    write_plugin(dev / "a", plugin_id="com.example.a", name="A", plugin_source=_source("A"))
+    window = load_run(
+        data_dir=tmp_path / "data",
+        gallery_dir=tmp_path / "data" / "gallery",
+        plugin_dirs=[dev],
+        install_missing_deps=False,
+        interactive=False,
+        check_tools=False,
+    )
+    try:
+        assert window.open_route("com.example.a/home")
+        native = NATIVE_PAGES[0]
+        PageRouterController(window).switch_page(native.button_id, native.page_object, "插件管理")
+        store_page = window.ui.load_pages.pages.currentWidget()
+        assert store_page.objectName() == native.page_object
+        assert window.current_route() == ""
+
+        result = window.reload_plugin_in_place("com.example.a", reason="disable", load=False)
+        assert result.ok, result.message
+        assert window.ui.load_pages.pages.currentWidget() is store_page
+        assert window.current_route() == ""
+    finally:
+        window.runtime.shutdown()
+        window.close()
+        window.deleteLater()
+
+
 def test_window_preserves_unaffected_page_and_restores_target(tmp_path: Path, qapp):
     from PySide6.QtWidgets import QWidget
 
