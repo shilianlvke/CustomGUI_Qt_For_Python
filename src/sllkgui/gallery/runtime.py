@@ -44,6 +44,7 @@ from .services import PluginServiceRegistry
 from .source import SourceManager
 from .state import RegistryState, SourcesState, load_registry, load_sources
 from .store import GalleryStore
+from .toast import ToastRouter
 from .tray import TrayService
 
 Mode = Literal["gallery", "run"]
@@ -125,6 +126,7 @@ class GalleryRuntime:
         self.store = GalleryStore(self.gallery_dir)
         self.registry = GalleryRegistry()
         self.tray = TrayService()
+        self.toast = ToastRouter()
         self.events = PluginEventBus()
         self.services = PluginServiceRegistry()
         self.registry_state: RegistryState = RegistryState(base_version=sllkgui.__version__)
@@ -227,6 +229,7 @@ class GalleryRuntime:
             shortcuts=self.shortcuts,
             events=self.events,
             services=self.services,
+            toast=self.toast,
         )
 
     def _run_roots(self) -> list[tuple[Path, bool]]:
@@ -262,7 +265,7 @@ class GalleryRuntime:
         self._parent_window = parent_window
 
     def attach_window(self, window: Any) -> None:
-        """把宿主窗口接入托盘：显示主窗口 / 设置 / 退出。
+        """把宿主窗口接入托盘与 toast 总线。
 
         「设置…」是基座级菜单项，宿主没有 ``open_settings_window`` 时自动省略，
         插件无法注入到这一段（见 ``docs/TRAY.md`` §2）。
@@ -273,6 +276,27 @@ class GalleryRuntime:
             window.quit_application,
             settings if callable(settings) else None,
         )
+        self._attach_toast(window)
+
+    def _attach_toast(self, window: Any) -> None:
+        """把插件侧 toast 路由接到 UI 总线，并注入锚点取景器。
+
+        ``guicore`` 的导入放在函数内：``gallery`` 的 CLI 路径不应因为装配而拉起 Qt。
+        """
+        try:
+            from sllkgui.guicore.feedback import toast_bus
+
+            bus = toast_bus()
+            controller = getattr(window, "controller", None)
+            settings_getter = getattr(controller, "settings_window", None)
+            bus.set_sources(
+                main=lambda: window,
+                settings=(lambda: settings_getter() if callable(settings_getter) else None),
+            )
+            self.toast.bind(bus)
+        except Exception as exc:  # noqa: BLE001 - 无 UI 环境保持降级
+            Logger.debug(f"toast 总线接入失败（降级为不可用）: {exc}")
+            self.toast.bind(None)
 
     # ------------------------------------------------------------------
     # 查询
@@ -659,6 +683,7 @@ class GalleryRuntime:
             self.registry.clear()
             self.events.clear()
             self.services.clear()
+            self.toast.shutdown()
             set_current_registry(None)
             set_current_runtime(None)
         Logger.info("Gallery 已关闭")

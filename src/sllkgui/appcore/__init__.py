@@ -1,4 +1,18 @@
 from .app import ButtonDecision, MainWindowButtonUseCase
+from .feedback import (
+    TOAST_PROTOCOL_VERSION,
+    DedupePolicy,
+    ToastAction,
+    ToastAnchor,
+    ToastCode,
+    ToastDismiss,
+    ToastDismissReason,
+    ToastLevel,
+    ToastMode,
+    ToastRequest,
+    ToastResult,
+    ToastState,
+)
 from .settings import (
     KEY_BACKGROUND_FIT,
     KEY_BACKGROUND_IMAGE,
@@ -151,4 +165,16 @@ __all__ = [
     "KEY_MENU_MODE",
     "KEY_DRAWER_MODE",
     "KEY_REMEMBER_SIZE",
+    "TOAST_PROTOCOL_VERSION",
+    "DedupePolicy",
+    "ToastAction",
+    "ToastAnchor",
+    "ToastCode",
+    "ToastDismiss",
+    "ToastDismissReason",
+    "ToastLevel",
+    "ToastMode",
+    "ToastRequest",
+    "ToastResult",
+    "ToastState",
 ]

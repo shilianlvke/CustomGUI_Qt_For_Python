@@ -15,12 +15,14 @@ from typing import Any
 from sllkgui.appcore import Language, Logger, get_theme_manager, record_event, track_timing
 
 from .api import (
+    NOOP_TOAST,
     GalleryContext,
     GalleryEvents,
     GalleryServices,
     GallerySettings,
     GalleryShortcuts,
     GalleryStorage,
+    GalleryToast,
     GalleryTray,
     Permission,
 )
@@ -33,6 +35,7 @@ from .settings import PluginSettings
 from .shortcuts import ShortcutBridge
 from .storage import PluginStorage
 from .store import GalleryStore
+from .toast import ToastRouter
 from .tray import TrayHandle, TrayService
 
 _LEVELS = {
@@ -123,6 +126,7 @@ class GalleryContextImpl(GalleryContext):
         shortcuts: Any | None = None,
         events: PluginEventBus | None = None,
         services: PluginServiceRegistry | None = None,
+        toast: ToastRouter | None = None,
     ) -> None:
         self._manifest = manifest
         self._store = store
@@ -130,6 +134,8 @@ class GalleryContextImpl(GalleryContext):
         self._open_surface_cb = open_surface
         self._parent_window_cb = parent_window
         self._error_reporter = error_reporter
+        self._toast_router = toast
+        self._toast_handle = toast.handle(manifest.plugin_id) if toast is not None else None
         self._tray_handle = (
             TrayHandle(tray, manifest.plugin_id, tuple(manifest.permissions), manifest.name)
             if tray is not None
@@ -247,6 +253,20 @@ class GalleryContextImpl(GalleryContext):
     def services(self) -> GalleryServices:
         """进程内服务注册表；未注入时为安全空操作。"""
         return self._service_handle if self._service_handle is not None else _NOOP_SERVICES
+
+    @property
+    def toast(self) -> GalleryToast:
+        """统一提示通道；未注入渲染宿主时返回安全空实现。"""
+        return self._toast_handle if self._toast_handle is not None else NOOP_TOAST
+
+    def clear_toast(self) -> None:
+        """卸载时关闭本插件的全部 toast 并丢弃回调。"""
+        if self._toast_router is not None:
+            try:
+                self._toast_router.clear_plugin(self.plugin_id)
+            except Exception as exc:  # noqa: BLE001 - 清理失败不影响卸载
+                Logger.debug(f"{self._prefix} toast 清理失败: {exc}")
+        self._toast_handle = None
 
     def clear_services(self) -> None:
         """卸载时注销本插件注册的全部服务。"""

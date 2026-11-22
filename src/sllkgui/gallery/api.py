@@ -15,6 +15,42 @@ from enum import StrEnum
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
+from ..appcore.feedback import (
+    TOAST_PROTOCOL_VERSION as TOAST_PROTOCOL_VERSION,
+)
+from ..appcore.feedback import (
+    DedupePolicy as DedupePolicy,
+)
+from ..appcore.feedback import (
+    ToastAction as ToastAction,
+)
+from ..appcore.feedback import (
+    ToastAnchor as ToastAnchor,
+)
+from ..appcore.feedback import (
+    ToastCode as ToastCode,
+)
+from ..appcore.feedback import (
+    ToastDismiss as ToastDismiss,
+)
+from ..appcore.feedback import (
+    ToastDismissReason as ToastDismissReason,
+)
+from ..appcore.feedback import (
+    ToastLevel as ToastLevel,
+)
+from ..appcore.feedback import (
+    ToastMode as ToastMode,
+)
+from ..appcore.feedback import (
+    ToastRequest as ToastRequest,
+)
+from ..appcore.feedback import (
+    ToastResult as ToastResult,
+)
+from ..appcore.feedback import (
+    ToastState as ToastState,
+)
 from .defaults import PLUGIN_API_VERSION as PLUGIN_API_VERSION
 
 if TYPE_CHECKING:  # pragma: no cover - 仅类型检查
@@ -365,6 +401,227 @@ class GalleryServices(ABC):
         """注销自己注册的服务（非 owner 的调用无效）。"""
 
 
+class ToastHandle(ABC):
+    """一次提示的句柄：更新内容、收敛结果、订阅关闭与动作。
+
+    ``result`` 给出**受理**结果；``state`` 给出**当前**状态。两者不同：
+    一条 ``ok=False`` 的句柄不会被渲染，``update()`` 会直接返回失败码。
+    """
+
+    @property
+    @abstractmethod
+    def toast_id(self) -> str: ...
+
+    @property
+    @abstractmethod
+    def state(self) -> ToastState: ...
+
+    @property
+    @abstractmethod
+    def result(self) -> ToastResult: ...
+
+    @abstractmethod
+    def update(
+        self,
+        *,
+        text: str | None = None,
+        title: str | None = None,
+        level: ToastLevel | str | None = None,
+        progress: float | None = None,
+        life: int | None = None,
+        persist: bool | None = None,
+        actions: tuple[ToastAction, ...] | None = None,
+        payload: Mapping[str, Any] | None = None,
+        code: str | None = None,
+        detail: str | None = None,
+    ) -> ToastResult:
+        """增量更新；字段为 ``None`` 表示保持不变。"""
+
+    def succeed(self, text: str | None = None, *, detail: str = "", life: int | None = None) -> ToastResult:
+        """把 ``loading``/``progress`` 收敛为成功。"""
+        return self.update(
+            text=text,
+            level=ToastLevel.SUCCESS,
+            persist=False,
+            life=life,
+            detail=detail or None,
+        )
+
+    def fail(
+        self,
+        text: str,
+        *,
+        code: str = "",
+        detail: str = "",
+        life: int | None = None,
+        actions: tuple[ToastAction, ...] = (),
+    ) -> ToastResult:
+        """把 ``loading``/``progress`` 收敛为失败；``detail`` 只进日志与 tooltip。"""
+        return self.update(
+            text=text,
+            level=ToastLevel.ERROR,
+            persist=False,
+            life=life,
+            code=code or None,
+            detail=detail or None,
+            actions=actions or None,
+        )
+
+    def advance(self, value: float, text: str | None = None) -> ToastResult:
+        """推进确定进度（0..1）。"""
+        return self.update(progress=value, text=text)
+
+    @abstractmethod
+    def dismiss(
+        self,
+        reason: ToastDismissReason | str = ToastDismissReason.MANUAL,
+        *,
+        immediate: bool = False,
+    ) -> bool:
+        """关闭；幂等。"""
+
+    @abstractmethod
+    def on_dismiss(self, callback: Callable[[ToastDismiss], None]) -> Callable[[], None]:
+        """订阅关闭；返回退订函数。"""
+
+    @abstractmethod
+    def on_action(self, callback: Callable[[str], None]) -> Callable[[], None]:
+        """订阅动作按钮；返回退订函数。"""
+
+
+class GalleryToast(ABC):
+    """统一提示通道：7 级类型、去重、通道、进度、动作与事件。
+
+    错误语义：**不抛异常**。任何非法参数都折算成 ``ToastResult.code``，
+    业务逻辑不应因为一条提示失败而中断。
+    """
+
+    @property
+    @abstractmethod
+    def protocol_version(self) -> int:
+        """协议版本；插件可据此判断能力（当前为 1）。"""
+
+    @abstractmethod
+    def capabilities(self) -> frozenset[str]:
+        """能力集合：``stack`` ``replace`` ``coalesce`` ``dedupe`` ``channels``
+        ``progress`` ``actions`` ``update``。"""
+
+    @abstractmethod
+    def show(
+        self,
+        text: str,
+        *,
+        title: str = "",
+        level: ToastLevel | str = ToastLevel.INFO,
+        detail: str = "",
+        text_key: str = "",
+        code: str = "",
+        life: int | None = None,
+        closable: bool = True,
+        channel: str = "",
+        mode: ToastMode | str = ToastMode.STACK,
+        dedupe_key: str = "",
+        dedupe: DedupePolicy | str = DedupePolicy.SUPPRESS,
+        dedupe_window: int = 1200,
+        anchor: ToastAnchor | str = ToastAnchor.AUTO,
+        progress: float | None = None,
+        actions: tuple[ToastAction, ...] = (),
+        payload: Mapping[str, Any] | None = None,
+        on_dismiss: Callable[[ToastDismiss], None] | None = None,
+        on_action: Callable[[str], None] | None = None,
+    ) -> ToastHandle:
+        """显示一条提示。"""
+
+    def loading(self, text: str, **kwargs: Any) -> ToastHandle:
+        """常驻加载提示：必须由句柄收敛（``succeed`` / ``fail`` / ``dismiss``）。"""
+        kwargs.setdefault("level", ToastLevel.LOADING)
+        kwargs["life"] = 0
+        return self.show(text, **kwargs)
+
+    def progress(self, text: str = "", value: float | None = None, **kwargs: Any) -> ToastHandle:
+        """确定进度提示：用 ``handle.advance()`` 推进，结束时收敛。"""
+        kwargs.setdefault("level", ToastLevel.PROGRESS)
+        kwargs["life"] = 0
+        kwargs["progress"] = value
+        return self.show(text, **kwargs)
+
+    @abstractmethod
+    def dismiss(
+        self,
+        toast_id: str,
+        reason: ToastDismissReason | str = ToastDismissReason.MANUAL,
+        *,
+        immediate: bool = False,
+    ) -> bool:
+        """按 id 关闭一条提示。"""
+
+    @abstractmethod
+    def clear(self, channel: str | None = None) -> int:
+        """关闭本插件的全部（或指定通道的）提示；返回关闭条数。"""
+
+    @abstractmethod
+    def active(self, channel: str | None = None) -> tuple[ToastHandle, ...]:
+        """当前仍显示的提示句柄。"""
+
+
+class _NoopHandle(ToastHandle):
+    """空实现：宿主不提供 toast 能力时的安全句柄。"""
+
+    def __init__(self, result: ToastResult | None = None) -> None:
+        self._result = result or ToastResult(ok=False, code=str(ToastCode.NOOP), state=ToastState.CLOSED)
+
+    @property
+    def toast_id(self) -> str:
+        return self._result.toast_id
+
+    @property
+    def state(self) -> ToastState:
+        return ToastState.CLOSED
+
+    @property
+    def result(self) -> ToastResult:
+        return self._result
+
+    def update(self, **_kwargs: Any) -> ToastResult:
+        return ToastResult(ok=False, code=str(ToastCode.NOOP), state=ToastState.CLOSED)
+
+    def dismiss(self, *_args: Any, **_kwargs: Any) -> bool:
+        return False
+
+    def on_dismiss(self, _callback: Callable[[ToastDismiss], None]) -> Callable[[], None]:
+        return lambda: None
+
+    def on_action(self, _callback: Callable[[str], None]) -> Callable[[], None]:
+        return lambda: None
+
+
+class NoopToast(GalleryToast):
+    """没有渲染宿主时的降级实现：所有调用都是安全空操作。"""
+
+    @property
+    def protocol_version(self) -> int:
+        return TOAST_PROTOCOL_VERSION
+
+    def capabilities(self) -> frozenset[str]:
+        return frozenset()
+
+    def show(self, text: str, **_kwargs: Any) -> ToastHandle:
+        return _NoopHandle()
+
+    def dismiss(self, toast_id: str, *_args: Any, **_kwargs: Any) -> bool:
+        return False
+
+    def clear(self, channel: str | None = None) -> int:
+        return 0
+
+    def active(self, channel: str | None = None) -> tuple[ToastHandle, ...]:
+        return ()
+
+
+#: 共享的空实现（无状态，可直接复用）
+NOOP_TOAST: NoopToast = NoopToast()
+
+
 class GalleryContext(ABC):
     """插件运行上下文：所有基座能力都从这里进入。"""
 
@@ -454,6 +711,15 @@ class GalleryContext(ABC):
     def services(self) -> GalleryServices:
         """进程内服务注册表：按 name 注册/解析服务对象。"""
 
+    @property
+    def toast(self) -> GalleryToast:
+        """统一提示通道（见 ``docs/TOAST.md``）。
+
+        非抽象属性：宿主未实现时返回安全空实现 ``NOOP_TOAST``，旧上下文子类
+        （测试替身、第三方宿主）不会因为新增能力而无法实例化。
+        """
+        return NOOP_TOAST
+
 
 class Plugin(ABC):
     """插件基类。唯一合法入口是模块级 ``PLUGIN`` 实例。"""
@@ -484,6 +750,7 @@ class Plugin(ABC):
 
 
 __all__ = [
+    "DedupePolicy",
     "GalleryContext",
     "GalleryEvents",
     "GalleryServices",
@@ -491,10 +758,25 @@ __all__ = [
     "GalleryStorage",
     "GalleryShortcut",
     "GalleryShortcuts",
+    "GalleryToast",
     "GalleryTray",
+    "NOOP_TOAST",
+    "NoopToast",
     "PLUGIN_API_VERSION",
     "Permission",
     "Plugin",
     "ShortcutBinding",
     "ShortcutConflict",
+    "TOAST_PROTOCOL_VERSION",
+    "ToastAction",
+    "ToastAnchor",
+    "ToastCode",
+    "ToastDismiss",
+    "ToastDismissReason",
+    "ToastHandle",
+    "ToastLevel",
+    "ToastMode",
+    "ToastRequest",
+    "ToastResult",
+    "ToastState",
 ]

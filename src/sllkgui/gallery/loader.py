@@ -35,6 +35,7 @@ from .manifest import PluginManifest, ensure_within, load_manifest
 from .registry import GalleryRegistry, PluginRecord, sanitize_route
 from .services import PluginServiceRegistry
 from .store import GalleryStore
+from .toast import ToastRouter
 from .tray import TrayService
 
 #: plugin_id -> locale -> flatten(key -> text)
@@ -296,6 +297,7 @@ def load_plugin(
     shortcuts: Any | None = None,
     events: PluginEventBus | None = None,
     services: PluginServiceRegistry | None = None,
+    toast: ToastRouter | None = None,
 ) -> PluginRecord | None:
     """加载单个插件；失败只记录，不影响调用方。
 
@@ -365,6 +367,7 @@ def load_plugin(
         shortcuts=shortcuts,
         events=events,
         services=services,
+        toast=toast,
     )
     record = PluginRecord(
         manifest=manifest,
@@ -404,6 +407,7 @@ def load_plugin(
         context.clear_tray()
         context.clear_shortcuts()
         context.clear_settings()
+        context.clear_toast()
         context.clear_logger()
         registry._errors.append({"plugin_id": manifest.plugin_id, "code": PLUGIN_LOAD_FAILED, "detail": detail})
         Logger.error(f"插件加载失败: {manifest.plugin_id}: {detail}")
@@ -416,6 +420,7 @@ def load_plugin(
         context.clear_tray()
         context.clear_shortcuts()
         context.clear_settings()
+        context.clear_toast()
         context.clear_logger()
         registry._errors.append({"plugin_id": manifest.plugin_id, "code": PLUGIN_LOAD_FAILED, "detail": str(exc)})
         Logger.exception(f"插件加载失败: {manifest.plugin_id}: {exc}")
@@ -435,6 +440,8 @@ def unload_plugin(record: PluginRecord) -> None:
         record.context.clear_shortcuts()
         # 设置页与磁盘配置分离：只撤注册，用户改过的值保留
         record.context.clear_settings()
+        # toast 随插件一起收敛：避免热重载后旧页面闭包继续更新已销毁的条
+        record.context.clear_toast()
         # 日志 handler 绑定旧版本前缀；清掉后下次加载会重新挂新的
         record.context.clear_logger()
     for name in {*(getattr(record, "_module_names", []) or []), *_modules_under(record.path)}:

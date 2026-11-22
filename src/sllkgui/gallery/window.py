@@ -14,7 +14,7 @@ from sllkgui.appcore import AppSettings, Language, Logger, PathFactory, record_e
 from sllkgui.gallery.loader import discover_plugin_dirs
 from sllkgui.gallery.registry import SurfaceRecord
 from sllkgui.gallery.runtime import GalleryRuntime, ReloadResult
-from sllkgui.guicore import CPageTransition, CToast
+from sllkgui.guicore import CPageTransition
 from sllkgui.guis.windows.main_window.builtin_shortcuts import (
     install_builtin_shortcuts,
     uninstall_builtin_shortcuts,
@@ -131,16 +131,38 @@ class GalleryWindow(QMainWindow):
         """把插件加载 / 页面构建失败显示给用户，避免「点了没反应」。
 
         错误详情仍只写日志；通知条只给出可定位的最小信息（目标、错误码、
-        日志入口）。``gallery`` 只在本组合根弹通知，``guis`` 侧的桩窗口不受影响。
+        日志入口）。统一走 toast 总线：去重、时长、锚点与堆叠由总线裁决，
+        ``gallery`` 只在本组合根弹通知，``guis`` 侧的桩窗口不受影响。
         """
-        bar = getattr(self.ui, "title_bar", None)
-        offset = bar.height() + 8 if bar is not None else 56
+        from sllkgui.appcore.feedback import (
+            DedupePolicy,
+            ToastAnchor,
+            ToastCode,
+            ToastLevel,
+            ToastRequest,
+        )
+        from sllkgui.guicore.feedback import toast_bus
+
         hint = "详情见日志"
         detail = message or hint
         if hint not in detail:
             detail = f"{detail}（{hint}）"
-        text = f"{target} · {code}\n{detail}" if code else f"{target}\n{detail}"
-        CToast.show_message(self, text, "页面加载失败", "error", life=6000, offset_top=offset)
+        text = f"{target} · {code}" if code else str(target)
+        bus = toast_bus()
+        bus.show(
+            ToastAnchor.AUTO,
+            ToastRequest(
+                text=text,
+                title="页面加载失败",
+                level=ToastLevel.ERROR,
+                detail=detail,
+                code=str(code or ToastCode.OK),
+                scope="base",
+                channel="base.gallery",
+                dedupe_key=f"gallery.failure.{target}.{code or 'unknown'}",
+                dedupe=DedupePolicy.RESTART,
+            ),
+        )
 
     # ------------------------------------------------------------------
     # 窗口骨架信号槽（与宿主 MainWindow 约定一致）
@@ -192,14 +214,17 @@ class GalleryWindow(QMainWindow):
             Logger.warning(f"路由不存在: {route}")
             self._notify_failure(route, message="路由不存在，详情见日志")
             return False
-        previous_error = self.runtime.last_error
-        if not ensure_registered_page(self, surface.page_object):
-            error = self.runtime.last_error
-            fresh = error if error is not None and error is not previous_error else None
+        failure: dict[str, str] = {}
+
+        def _record(code: str, detail: str = "") -> None:
+            failure["code"] = code
+            failure["detail"] = detail
+
+        if not ensure_registered_page(self, surface.page_object, on_error=_record):
             self._notify_failure(
                 surface.route,
-                code=fresh.get("code") if fresh else None,
-                message=(fresh.get("message") if fresh else None) or "页面构建失败，详情见日志",
+                code=failure.get("code"),
+                message=failure.get("detail") or "页面构建失败，详情见日志",
             )
             return False
         page = self.ui.load_pages.pages.findChild(QWidget, surface.page_object)
@@ -592,7 +617,18 @@ class GalleryWindow(QMainWindow):
         return False
 
     def _open_native_page(self, native: NativePage, *, animate: bool = True) -> bool:
-        if not ensure_registered_page(self, native.page_object):
+        failure: dict[str, str] = {}
+
+        def _record(code: str, detail: str = "") -> None:
+            failure["code"] = code
+            failure["detail"] = detail
+
+        if not ensure_registered_page(self, native.page_object, on_error=_record):
+            self._notify_failure(
+                native.page_object,
+                code=failure.get("code"),
+                message=failure.get("detail") or "原生页面构建失败，详情见日志",
+            )
             return False
         page = self.ui.load_pages.pages.findChild(QWidget, native.page_object)
         if page is None:
