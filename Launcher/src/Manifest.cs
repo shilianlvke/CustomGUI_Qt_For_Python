@@ -83,7 +83,7 @@ namespace SllkGui.Launcher
 
             Dictionary<string, object> b = Json.Dict(root, "base");
             m.Base = new BaseInfo();
-            m.Base.Tag = Json.Str(b, "tag", "base-v4.1.0");
+            m.Base.Tag = Json.Str(b, "tag", "base-v4.2.0");
             m.Base.Sha = Json.Str(b, "sha", "");
 
             Dictionary<string, object> u = Json.Dict(root, "uv");

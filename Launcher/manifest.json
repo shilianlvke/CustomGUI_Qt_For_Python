@@ -5,8 +5,8 @@
   "repoWeb": "https://gitee.com/shilianlvke/SllkGui",
   "defaultBranch": "main",
   "base": {
-    "tag": "base-v4.1.0",
-    "sha": "60fdf053a6e6d8cf0437fc7f77838d1e1b38b9d9"
+    "tag": "base-v4.2.0",
+    "sha": "3e11875467623717969788bc9d5f4afaa85d4e6b"
   },
   "uv": {
     "version": "0.13.9",
