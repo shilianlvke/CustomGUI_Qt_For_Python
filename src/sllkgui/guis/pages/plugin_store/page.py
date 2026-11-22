@@ -20,7 +20,6 @@ from sllkgui.guicore import (
     CIconTile,
     CInputText,
     CSelectButton,
-    CToast,
     run_task,
     single_shot,
 )
@@ -39,7 +38,7 @@ from .entries import (
     version_chip,
 )
 from .panels import BusyStrip, InspectorPanel, ListPanel
-from .theme import STAT_DIVIDER_OBJECT, _toast_offset, page_sheet
+from .theme import STAT_DIVIDER_OBJECT, page_sheet
 
 
 def build_plugin_store_page(window) -> QWidget:
@@ -1144,25 +1143,72 @@ class StorePage(QWidget):
         self._set_plugin_enabled(plugin_id, not enabled)
 
     def set_status(self, message: str, level: str = "info") -> None:
+        """页内状态提示：统一走 toast 总线（``base.plugin_store`` 通道）。"""
         if not message:
             return
-        window = self.ctx.parent_window()
-        if window is None:
-            return
-        severity = {"error": "error", "warning": "warn"}.get(level, level)
-        life = 6000 if level in {"error", "warning"} else 3000
-        CToast.show_message(
-            window,
-            message,
-            self.ctx.text("store.title", "插件管理"),
-            severity,
-            life=life,
-            offset_top=_toast_offset(window),
+        self._toast(message, level)
+
+    def _toast(
+        self,
+        message: str,
+        level: str = "info",
+        *,
+        code: str = "",
+        detail: str = "",
+    ) -> None:
+        """发一条基座 toast；失败只记日志，不影响页面流程。"""
+        from sllkgui.appcore.feedback import (
+            ToastAction,
+            ToastAnchor,
+            ToastMode,
+            ToastRequest,
+            normalize_level,
         )
+        from sllkgui.guicore.feedback import toast_bus
+
+        actions: tuple[ToastAction, ...] = ()
+        on_action = None
+        if code:
+            label = str(self.ctx.text("status.copy_error", "复制错误信息"))
+            actions = (ToastAction("copy-error", label),)
+            on_action = lambda _action_id: self._copy_error(code, message, detail)  # noqa: E731
+        try:
+            toast_bus().show(
+                ToastAnchor.AUTO,
+                ToastRequest(
+                    text=message,
+                    title=self.ctx.text("store.title", "插件管理"),
+                    level=normalize_level(level)[0],
+                    detail=detail,
+                    code=code,
+                    scope="base",
+                    channel="base.plugin_store",
+                    mode=ToastMode.REPLACE,
+                    dedupe_key=f"plugin_store.{code}" if code else "",
+                    actions=actions,
+                    on_action=on_action,
+                ),
+            )
+        except Exception as exc:  # noqa: BLE001 - 提示失败不得打断插件管理操作
+            self.ctx.log(f"toast 显示失败: {exc}", "warning")
+
+    def _copy_error(self, code: str, message: str, detail: str) -> None:
+        from PySide6.QtWidgets import QApplication
+
+        text = f"{code}: {message}"
+        if detail:
+            text = f"{text}\n{detail}"
+        clipboard = QApplication.clipboard()
+        if clipboard is not None:
+            clipboard.setText(text)
+            self.ctx.log(f"错误信息已复制: {code}", "debug")
 
     def _fail(self, code: str, message: str, exc: Exception) -> None:
+        from .copy import failure_copy
+
         self.ctx.report_error(code, message, str(exc))
-        self.set_status(self.ctx.text("status.failed", "操作未能完成，请重试。"), "error")
+        text, level = failure_copy(self.ctx, code)
+        self._toast(text, level, code=code, detail=f"{message}\n{exc}")
 
     def _run_async(
         self,

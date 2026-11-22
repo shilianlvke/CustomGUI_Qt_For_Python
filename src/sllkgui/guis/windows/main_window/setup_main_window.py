@@ -21,6 +21,7 @@ from .registry import (
     get_menu_items,
     get_page_routes,
     load_registered_pages,
+    notify_page_failure,
 )
 
 
@@ -82,7 +83,7 @@ class SetupMainWindow:
         # 设置初始页面/设置左右列菜单（无任何应用时内容区留空）
         default_page = get_default_page_object(self)
         if default_page:
-            ensure_registered_page(self, default_page)
+            ensure_registered_page(self, default_page, on_error=notify_page_failure)
         page = self.ui.load_pages.pages.findChild(QWidget, default_page) if default_page else None
         if page is not None:
             MainFunctions.set_page(self, page)

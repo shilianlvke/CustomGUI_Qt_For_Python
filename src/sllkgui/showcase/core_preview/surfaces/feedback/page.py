@@ -18,7 +18,6 @@ from sllkgui.guicore import (
     CProgressBar,
     CSkeleton,
     CTag,
-    CToast,
 )
 
 _MESSAGES = (
@@ -67,14 +66,15 @@ class FeedbackPreviewPage(CPreviewPage):
             widget.setFixedWidth(380)
         return widgets
 
-    @staticmethod
-    def _toast_offset(window) -> int:
-        """通知避开标题栏：优先取真实标题栏高度，取不到时退回 56。"""
-        bar = getattr(getattr(window, "ui", None), "title_bar", None)
-        return bar.height() + 8 if bar is not None else 56
-
     @classmethod
-    def _toasts(cls, window):
+    def _toasts(cls, _window):
+        """通知演示：成功/信息/警告/失败 + 加载收敛 + 进度 + 清理。
+
+        统一走 ``ctx.toast``：偏移、堆叠、去重与时长由基座裁决，页面不再
+        关心 ``offset_top``。
+        """
+        from ...common import toast
+
         box = QWidget()
         layout = QHBoxLayout(box)
         layout.setContentsMargins(0, 0, 0, 0)
@@ -86,20 +86,72 @@ class FeedbackPreviewPage(CPreviewPage):
             ("warn", "toast_warn", "Warning", "Something went wrong."),
             ("error", "toast_error", "Error", "Failed to save the record."),
         )
-        for severity, key, title, text in samples:
-            button = CButton(cls.tr(key), severity=severity)
+
+        def show_sample(level: str, title: str, text: str) -> None:
+            channel = toast()
+            if channel is None:
+                return
+            channel.show(text, title=title, level=level, channel="preview", dedupe="restart")
+
+        for level, key, title, text in samples:
+            button = CButton(cls.tr(key), severity=level)
             button.clicked.connect(
-                lambda _checked=False, s=severity, ti=title, tx=text: CToast.show_message(
-                    window, tx, ti, s, offset_top=cls._toast_offset(window)
-                )
+                lambda _checked=False, lv=level, ti=title, tx=text: show_sample(lv, ti, tx)
             )
             layout.addWidget(button)
 
+        loading = CButton(cls.tr("toast_loading"), severity="info", variant="outlined")
+        loading.clicked.connect(lambda: cls._demo_loading())
+        layout.addWidget(loading)
+
+        progress = CButton(cls.tr("toast_progress"), severity="info", variant="outlined")
+        progress.clicked.connect(lambda: cls._demo_progress())
+        layout.addWidget(progress)
+
         clear = CButton(cls.tr("toast_clear"), variant="outlined", severity="secondary")
-        clear.clicked.connect(lambda: CToast.clear(window))
+        clear.clicked.connect(lambda: toast().clear() if toast() is not None else 0)
         layout.addWidget(clear)
         layout.addStretch()
         return [box]
+
+    @staticmethod
+    def _demo_loading() -> None:
+        """加载 → 结果：同一句柄收敛，不新增第二条。"""
+        from PySide6.QtCore import QTimer
+
+        from ...common import toast
+
+        channel = toast()
+        if channel is None:
+            return
+        handle = channel.loading("Loading preview…", channel="preview-loading", code="PREVIEW_LOAD")
+        if handle.result.ok:
+            QTimer.singleShot(900, lambda: handle.succeed("Loaded in 0.9s"))
+
+    @staticmethod
+    def _demo_progress() -> None:
+        """确定进度：每 120ms 推进 10%，完成后收敛。"""
+        from PySide6.QtCore import QTimer
+
+        from ...common import toast
+
+        channel = toast()
+        if channel is None:
+            return
+        handle = channel.progress("Importing preview data…", 0.0, channel="preview-progress")
+        if not handle.result.ok:
+            return
+        steps = {"value": 0.0}
+
+        def tick() -> None:
+            steps["value"] += 0.1
+            if steps["value"] >= 1.0:
+                handle.succeed("Import finished")
+                return
+            handle.advance(steps["value"], f"Importing preview data… {int(steps['value'] * 100)}%")
+            QTimer.singleShot(120, tick)
+
+        QTimer.singleShot(120, tick)
 
     @staticmethod
     def _tags():

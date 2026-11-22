@@ -12,7 +12,6 @@ from sllkgui.guicore import (
     CDivider,
     COverlayPanel,
     CPreviewPage,
-    CToast,
 )
 
 
@@ -26,13 +25,14 @@ class OverlayPreviewPage(CPreviewPage):
     # 浮层工具
     # ------------------------------------------------------------------
     @staticmethod
-    def _offset_top(window) -> int:
-        bar = getattr(getattr(window, "ui", None), "title_bar", None)
-        return bar.height() + 8 if bar is not None else 56
+    def _toast(_window, text: str, severity: str = "info", title: str = "") -> None:
+        """预览页的确认回执：走插件上下文，偏移与去重交给基座。"""
+        from ...common import toast
 
-    @classmethod
-    def _toast(cls, window, text: str, severity: str = "info", title: str = "") -> None:
-        CToast.show_message(window, text, title, severity, offset_top=cls._offset_top(window))
+        channel = toast()
+        if channel is None:
+            return
+        channel.show(text, title=title, level=severity, channel="preview-overlays")
 
     @classmethod
     def _show_dialog(cls, window, header: bool, width: int) -> None:

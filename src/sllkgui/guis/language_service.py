@@ -301,6 +301,7 @@ def _rebuild_pages(window) -> None:
         get_default_page_object,
         get_page_routes,
         load_registered_pages,
+        notify_page_failure,
     )
 
     load_registered_pages(window, eager=False)
@@ -308,7 +309,7 @@ def _rebuild_pages(window) -> None:
     routes = get_page_routes(Language, window)
     target = routes.get(current_btn)
     page_object = target[0] if target else get_default_page_object()
-    ensure_registered_page(window, page_object)
+    ensure_registered_page(window, page_object, on_error=notify_page_failure)
 
     page = pages.findChild(QWidget, page_object)
     if page is None and pages.count():

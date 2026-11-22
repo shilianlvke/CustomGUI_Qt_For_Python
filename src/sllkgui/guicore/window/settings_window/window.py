@@ -42,7 +42,6 @@ from sllkgui.appcore import (
 
 from ...acrylic import apply_acrylic
 from ...custom_ui.close_button import CCloseButton
-from ...custom_ui.feedback.toast import CToast
 from ...custom_ui.line_edit.input_text import CInputText
 from ...custom_ui.overlay.confirm import CConfirmDialog
 from ...custom_ui.panels.settings import CEditActionBar
@@ -571,16 +570,7 @@ class CSettingsWindow(QDialog):
             removed = self._session.prune_namespace(namespace)
             if removed:
                 Logger.warning(f"插件更新后清理失效设置草稿: {namespace}: {', '.join(removed)}")
-                CToast.show_message(
-                    self,
-                    Language.resolve_key(
-                        "language.UI.ui_SettingsDraftPruned",
-                        "插件更新后，部分未保存的设置项已失效并被丢弃。",
-                    ),
-                    Language.resolve_key("language.UI.ui_Settings", "设置"),
-                    "warn",
-                    life=5000,
-                )
+                self._notify_draft_pruned()
             if item_id == self._current_entry:
                 self.stack.setCurrentWidget(new_widget)
                 self.page_title.setText(entry["title"])
@@ -589,6 +579,33 @@ class CSettingsWindow(QDialog):
                 self.page_hint.setToolTip(hint)
                 if isinstance(new_widget, CScrollArea):
                     new_widget.verticalScrollBar().setValue(scroll_value)
+
+    def _notify_draft_pruned(self) -> None:
+        """设置草稿失效提示：走 toast 总线，锚点就是本窗口。"""
+        from sllkgui.appcore.feedback import ToastAnchor, ToastLevel, ToastRequest
+
+        from ...feedback.toast_bus import toast_bus
+
+        try:
+            toast_bus().show(
+                ToastAnchor.SETTINGS,
+                ToastRequest(
+                    text=str(
+                        Language.resolve_key(
+                            "language.UI.ui_SettingsDraftPruned",
+                            "插件更新后，部分未保存的设置项已失效并被丢弃。",
+                        )
+                    ),
+                    title=str(Language.resolve_key("language.UI.ui_Settings", "设置")),
+                    level=ToastLevel.WARN,
+                    scope="base",
+                    channel="base.settings",
+                    dedupe_key="settings.draft_pruned",
+                    actions=(),
+                ),
+            )
+        except Exception as exc:  # noqa: BLE001 - 提示失败不影响设置页重建
+            Logger.debug(f"设置草稿提示失败: {exc}")
 
     def _detach_page_bus(self, *_args) -> None:
         unsubscribe = self._page_unsubscribe

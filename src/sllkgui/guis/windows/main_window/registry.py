@@ -7,6 +7,7 @@
 
 from __future__ import annotations
 
+from collections.abc import Callable
 from typing import TYPE_CHECKING
 
 from PySide6.QtWidgets import QWidget
@@ -53,13 +54,65 @@ def load_registered_pages(window, *, eager: bool = False):
     record_event("pages.loaded", category="ui", payload={"count": count, "eager": eager})
 
 
-def ensure_registered_page(window, page_object: str) -> bool:
-    """按 ``page_<路由>`` 构建 Surface / 原生页面并加入页面栈（幂等）。"""
-    if not page_object:
+def notify_page_failure(code: str, detail: str = "") -> None:
+    """页面构建失败的统一提示（``guis`` 侧，不依赖 ``gallery``）。
+
+    走 toast 总线：去重键按错误码归一，连续失败只保留最新一条，避免启动期
+    多个坏插件把屏幕铺满。
+    """
+    from sllkgui.appcore.feedback import (
+        DedupePolicy,
+        ToastAnchor,
+        ToastLevel,
+        ToastRequest,
+    )
+    from sllkgui.guicore.feedback import toast_bus
+
+    try:
+        toast_bus().show(
+            ToastAnchor.AUTO,
+            ToastRequest(
+                text=detail or code,
+                title="页面加载失败",
+                level=ToastLevel.ERROR,
+                detail=detail,
+                code=code,
+                scope="base",
+                channel="base.pages",
+                dedupe_key=f"pages.failure.{code}",
+                dedupe=DedupePolicy.RESTART,
+            ),
+        )
+    except Exception as exc:  # noqa: BLE001 - 提示失败不得影响导航
+        Logger.debug(f"页面失败提示未发出: {exc}")
+
+
+def ensure_registered_page(
+    window,
+    page_object: str,
+    *,
+    on_error: Callable[[str, str], None] | None = None,
+) -> bool:
+    """按 ``page_<路由>`` 构建 Surface / 原生页面并加入页面栈（幂等）。
+
+    ``on_error(code, detail)`` 在任一失败分支被调用一次：调用方据此给出可定位
+    提示（原生页走 :func:`notify_page_failure`，Gallery 窗口走自己的文案）。
+    不传时保持旧行为（只写日志），便于测试与无 UI 场景。
+    """
+
+    def _fail(code: str, detail: str = "") -> bool:
+        if on_error is not None:
+            try:
+                on_error(code, detail)
+            except Exception as exc:  # noqa: BLE001 - 回调失败不影响返回值
+                Logger.debug(f"页面失败回调异常: {exc}")
         return False
+
+    if not page_object:
+        return _fail("PAGE_OBJECT_EMPTY")
     pages = getattr(getattr(window, "ui", None), "load_pages", None)
     if pages is None:
-        return False
+        return _fail("PAGE_STACK_MISSING", page_object)
     if pages.pages.findChild(QWidget, page_object) is not None:
         return True
     native = native_page_for(page_object)
@@ -68,10 +121,10 @@ def ensure_registered_page(window, page_object: str) -> bool:
             widget = native.factory(window)
         except Exception as exc:  # noqa: BLE001 - 单个原生页面失败不影响其它页面
             Logger.exception(f"原生页面构建失败 {page_object}: {exc}")
-            return False
+            return _fail("NATIVE_PAGE_BUILD_FAILED", f"{page_object}: {exc}")
         if not isinstance(widget, QWidget):
             Logger.error(f"原生页面工厂未返回 QWidget: {page_object} -> {type(widget).__name__}")
-            return False
+            return _fail("NATIVE_PAGE_INVALID", page_object)
         widget.setObjectName(page_object)
         pages.pages.addWidget(widget)
         record_event("native_page.opened", category="ui", payload={"page": page_object})
@@ -80,19 +133,19 @@ def ensure_registered_page(window, page_object: str) -> bool:
     surface = registry.route_for_page(page_object) if registry else None
     if surface is None:
         Logger.warning(f"未找到 Surface 路由: {page_object}")
-        return False
+        return _fail("SURFACE_ROUTE_MISSING", page_object)
     if surface.plugin.context is None:
         Logger.warning(f"插件上下文缺失，无法构建 Surface: {surface.route}")
-        return False
+        return _fail("SURFACE_CONTEXT_MISSING", surface.route)
     try:
         widget = surface.factory(surface.plugin.context)
     except Exception as exc:  # noqa: BLE001 - 单个 Surface 失败不影响其它页面
         Logger.exception(f"Surface 构建失败 {surface.route}: {exc}")
         surface.plugin.context.report_error("SURFACE_BUILD_FAILED", f"Surface 构建失败: {surface.route}", str(exc))
-        return False
+        return _fail("SURFACE_BUILD_FAILED", f"{surface.route}: {exc}")
     if not isinstance(widget, QWidget):
         Logger.error(f"Surface 工厂未返回 QWidget: {surface.route} -> {type(widget).__name__}")
-        return False
+        return _fail("SURFACE_INVALID", surface.route)
     widget.setObjectName(page_object)
     pages.pages.addWidget(widget)
     surface.plugin.context.event("surface.opened", {"surface": surface.surface_id})

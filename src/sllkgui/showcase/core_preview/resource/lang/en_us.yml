@@ -81,6 +81,8 @@ feedback:
   toast_info: Info
   toast_warn: Warn
   toast_error: Error
+  toast_loading: Loading
+  toast_progress: Progress
   toast_clear: Clear
 inputs:
   app_text: Inputs

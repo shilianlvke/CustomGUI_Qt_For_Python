@@ -1,7 +1,8 @@
-"""插件加载 / 页面构建失败必须对户可见（RV-09 回归）。
+"""插件加载 / 页面构建失败必须对用户可见（RV-09 回归）。
 
 失败路径仍只写日志不足以让用户区分「没反应」和「卡住」；
-这里锁定 GalleryWindow 通过 CToast 给出可定位的最小信息。
+这里锁定 GalleryWindow 通过统一 toast 总线给出可定位的最小信息
+（目标 + 错误码 + 日志入口），且不再直调 ``CToast``。
 """
 
 from __future__ import annotations
@@ -53,14 +54,17 @@ def _close(window) -> None:
 
 
 def _spy_toast(monkeypatch):
-    from sllkgui.guicore import CToast
+    """拦截 toast 总线的 ``show``，断言协议字段而不是组件调用。"""
+    from sllkgui.appcore.feedback import ToastResult, ToastState
+    from sllkgui.guicore.feedback.toast_bus import ToastBus
 
     calls: list[dict] = []
 
-    def fake_show_message(cls, parent, text, title="", severity="info", life=None, offset_top=0):
-        calls.append({"parent": parent, "text": text, "title": title, "severity": severity})
+    def fake_show(self, anchor, request=None):
+        calls.append({"anchor": anchor, "request": request})
+        return ToastResult(ok=True, code="TOAST_OK", toast_id="t-spy", state=ToastState.SHOWN)
 
-    monkeypatch.setattr(CToast, "show_message", classmethod(fake_show_message))
+    monkeypatch.setattr(ToastBus, "show", fake_show)
     return calls
 
 
@@ -70,8 +74,10 @@ def test_missing_route_shows_toast(tmp_path, prepared, monkeypatch):
     try:
         assert window.open_route("missing/route") is False
         assert calls, "路由不存在时必须有可见提示"
-        assert "missing/route" in calls[-1]["text"]
-        assert calls[-1]["severity"] == "error"
+        request = calls[-1]["request"]
+        assert "missing/route" in request.text
+        assert str(request.level) == "error"
+        assert request.scope == "base"
     finally:
         _close(window)
 
@@ -90,10 +96,11 @@ def test_surface_build_failure_shows_code_and_log_hint(tmp_path, prepared, monke
         monkeypatch.setattr(surface, "factory", boom)
         assert window.open_route(route) is False
         assert calls, "Surface 构建失败时必须有可见提示"
-        text = calls[-1]["text"]
-        assert surface.route in text
-        assert "SURFACE_BUILD_FAILED" in text
-        assert "详情见日志" in text
+        request = calls[-1]["request"]
+        assert surface.route in request.text
+        assert request.code == "SURFACE_BUILD_FAILED"
+        assert "详情见日志" in request.detail
+        assert "boom" in request.detail
         assert window.runtime.last_error is not None
         assert window.runtime.last_error["code"] == "SURFACE_BUILD_FAILED"
     finally:

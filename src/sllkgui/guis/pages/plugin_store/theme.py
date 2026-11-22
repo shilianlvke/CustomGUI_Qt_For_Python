@@ -119,12 +119,6 @@ def page_sheet() -> str:
     """
 
 
-def _toast_offset(window) -> int:
-    """通知条避让标题栏：顶部偏移 = 标题栏高度 + 8。"""
-    bar = getattr(getattr(window, "ui", None), "title_bar", None)
-    return bar.height() + 8 if bar is not None else 56
-
-
 __all__ = [
     "BUSY_OBJECT",
     "ROLE_PROP",

@@ -81,6 +81,8 @@ feedback:
   toast_info: 情報
   toast_warn: 警告
   toast_error: エラー
+  toast_loading: 読み込み
+  toast_progress: 進捗
   toast_clear: 通知をクリア
 inputs:
   app_text: 入力プレビュー

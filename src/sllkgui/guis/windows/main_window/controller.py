@@ -26,7 +26,7 @@ from sllkgui.guicore import (
 )
 
 from .functions import MainFunctions
-from .registry import ensure_registered_page, get_page_routes
+from .registry import ensure_registered_page, get_page_routes, notify_page_failure
 
 
 class _WindowStateTracker(QObject):
@@ -93,7 +93,7 @@ class PageRouterController:
         active_getter = getattr(left_menu, "active_button_id", None)
         previous_btn = active_getter() if callable(active_getter) else None
         left_menu.select_only_one(btn_name)
-        ensure_registered_page(self._window, page_name)
+        ensure_registered_page(self._window, page_name, on_error=notify_page_failure)
         self._main_functions.set_page(
             self._window,
             self._window.ui.load_pages.pages.findChild(QWidget, page_name),
@@ -161,6 +161,14 @@ class SettingsController:
     # ------------------------------------------------------------------
     # 独立设置窗口
     # ------------------------------------------------------------------
+    def settings_window(self) -> CSettingsWindow | None:
+        """当前打开的设置窗口（未打开时为 ``None``）。
+
+        供 toast 锚点解析使用：设置页里的动作结果应出现在设置窗口，
+        而不是落到被它遮住的主窗口。
+        """
+        return self._settings_window
+
     def open_settings_window(self) -> bool:
         """打开独立设置窗口；已打开时聚焦到现有实例。"""
         if self._settings_window is not None:

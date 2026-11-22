@@ -81,6 +81,8 @@ feedback:
   toast_info: 資訊
   toast_warn: 警告
   toast_error: 錯誤
+  toast_loading: 載入演示
+  toast_progress: 進度演示
   toast_clear: 清空通知
 inputs:
   app_text: 輸入預覽
