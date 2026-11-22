@@ -298,9 +298,7 @@ class GalleryWindow(QMainWindow):
         pages = self.ui.load_pages.pages
         target_routes = set(targets.values())
         current = pages.currentWidget()
-        current_surface = (
-            self.gallery_registry.route_for_page(current.objectName()) if current is not None else None
-        )
+        current_surface = self.gallery_registry.route_for_page(current.objectName()) if current is not None else None
         if current_surface is not None and current_surface.route in target_routes:
             self._notify_surface_leave(current_surface.route)
         elif self._active_route and self._active_route in target_routes:

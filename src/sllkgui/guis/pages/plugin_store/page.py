@@ -609,9 +609,7 @@ class StorePage(QWidget):
     @classmethod
     def _freeze_record(cls, record: dict[str, Any]) -> tuple[Any, ...]:
         """把详情数据压成可比较的指纹；``enabled`` 由局部更新处理，故排除。"""
-        return tuple(
-            sorted((str(key), cls._freeze(value)) for key, value in record.items() if key != "enabled")
-        )
+        return tuple(sorted((str(key), cls._freeze(value)) for key, value in record.items() if key != "enabled"))
 
     @classmethod
     def _freeze(cls, value: Any) -> Any:
@@ -712,9 +710,7 @@ class StorePage(QWidget):
                 )
             )
             toggle = self._action_button(
-                self.ctx.text("installed.disable", "停用")
-                if enabled
-                else self.ctx.text("installed.enable", "启用"),
+                self.ctx.text("installed.disable", "停用") if enabled else self.ctx.text("installed.enable", "启用"),
                 severity="warn",
                 variant="outlined",
                 icon="icon_close" if enabled else "icon_check",
@@ -891,9 +887,7 @@ class StorePage(QWidget):
         column.setSpacing(12)
 
         state_chip = chip(
-            self.ctx.text("installed.enabled", "已启用")
-            if enabled
-            else self.ctx.text("installed.disabled", "已停用"),
+            self.ctx.text("installed.enabled", "已启用") if enabled else self.ctx.text("installed.disabled", "已停用"),
             accent=enabled,
         )
         self._inspector_state_chip = state_chip
@@ -1105,9 +1099,7 @@ class StorePage(QWidget):
         if toggle is not None:
             try:
                 text = (
-                    self.ctx.text("installed.disable", "停用")
-                    if enabled
-                    else self.ctx.text("installed.enable", "启用")
+                    self.ctx.text("installed.disable", "停用") if enabled else self.ctx.text("installed.enable", "启用")
                 )
                 if toggle.text() != text:
                     toggle.setText(text)
@@ -1558,6 +1550,7 @@ class StorePage(QWidget):
             return
         reloader = getattr(window, "reload_plugin_in_place", None)
         if callable(reloader):
+
             def run() -> None:
                 try:
                     result = reloader(plugin_id, reason=reason, load=load)

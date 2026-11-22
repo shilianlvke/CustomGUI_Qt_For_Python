@@ -95,9 +95,7 @@ class FeedbackPreviewPage(CPreviewPage):
 
         for level, key, title, text in samples:
             button = CButton(cls.tr(key), severity=level)
-            button.clicked.connect(
-                lambda _checked=False, lv=level, ti=title, tx=text: show_sample(lv, ti, tx)
-            )
+            button.clicked.connect(lambda _checked=False, lv=level, ti=title, tx=text: show_sample(lv, ti, tx))
             layout.addWidget(button)
 
         loading = CButton(cls.tr("toast_loading"), severity="info", variant="outlined")

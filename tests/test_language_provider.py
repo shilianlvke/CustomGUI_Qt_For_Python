@@ -92,6 +92,7 @@ def test_apply_force_refreshes_app_providers(handler):
     handler.apply("zh_cn", force=True)
     assert handler.resolve("app.plugin.text") == "2"
 
+
 def test_resolve_flat_surface_title_for_dotted_plugin_id(handler):
     """插件菜单键：扁平标题键 + 反向域名插件 id 应按 4 种语言解析。"""
     titles = {"zh_cn": "小部件", "zh_tw": "小工具", "en_us": "Widgets", "ja_jp": "ウィジェット"}

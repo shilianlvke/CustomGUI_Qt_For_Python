@@ -84,7 +84,6 @@ class ReloadResult:
         }
 
 
-
 def set_current_runtime(runtime: GalleryRuntime | None) -> None:
     global _CURRENT_RUNTIME
     _CURRENT_RUNTIME = runtime
@@ -538,9 +537,7 @@ class GalleryRuntime:
                 try:
                     preflight_plugin(roots[plugin_id], check_dependencies=reason in {"update", "rollback", "dev-watch"})
                 except GalleryError as exc:
-                    self.registry._errors.append(
-                        {"plugin_id": plugin_id, "code": exc.code, "detail": str(exc)}
-                    )
+                    self.registry._errors.append({"plugin_id": plugin_id, "code": exc.code, "detail": str(exc)})
                     return self._record_reload(
                         ReloadResult(
                             ok=False,
@@ -577,11 +574,7 @@ class GalleryRuntime:
                 record = self._load_root(roots[plugin_id], replace=True)
                 if record is None:
                     error = next(
-                        (
-                            item
-                            for item in reversed(self.registry.errors)
-                            if item.get("plugin_id") == plugin_id
-                        ),
+                        (item for item in reversed(self.registry.errors) if item.get("plugin_id") == plugin_id),
                         {},
                     )
                     return self._record_reload(

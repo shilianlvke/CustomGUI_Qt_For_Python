@@ -37,9 +37,7 @@ from sllkgui.appcore.feedback import (
 from .api import GalleryToast, ToastHandle
 
 #: 当前实现支持的协议能力
-_CAPABILITIES = frozenset(
-    {"stack", "replace", "coalesce", "dedupe", "channels", "progress", "actions", "update"}
-)
+_CAPABILITIES = frozenset({"stack", "replace", "coalesce", "dedupe", "channels", "progress", "actions", "update"})
 
 
 class _Handle(ToastHandle):
@@ -279,14 +277,20 @@ class ToastRouter:
 
     def update(self, plugin_id: str, toast_id: str, patch: dict[str, Any]) -> ToastResult:
         if not self._is_alive(plugin_id):
-            return ToastResult(ok=False, code=str(ToastCode.PLUGIN_UNLOADED), toast_id=toast_id, state=ToastState.CLOSED)
+            return ToastResult(
+                ok=False, code=str(ToastCode.PLUGIN_UNLOADED), toast_id=toast_id, state=ToastState.CLOSED
+            )
         if self._host is None:
-            return ToastResult(ok=False, code=str(ToastCode.HOST_UNAVAILABLE), toast_id=toast_id, state=ToastState.CLOSED)
+            return ToastResult(
+                ok=False, code=str(ToastCode.HOST_UNAVAILABLE), toast_id=toast_id, state=ToastState.CLOSED
+            )
         try:
             result = self._host.update(toast_id, patch)
         except Exception as exc:  # noqa: BLE001
             Logger.debug(f"toast 更新失败 [{plugin_id}:{toast_id}]: {exc}")
-            return ToastResult(ok=False, code=str(ToastCode.UPDATING_CLOSED), toast_id=toast_id, state=ToastState.CLOSED)
+            return ToastResult(
+                ok=False, code=str(ToastCode.UPDATING_CLOSED), toast_id=toast_id, state=ToastState.CLOSED
+            )
         if result.ok and "progress" in patch:
             record_event(
                 "toast.updated",
@@ -362,9 +366,7 @@ class ToastRouter:
 
         return unsubscribe
 
-    def add_action_callback(
-        self, plugin_id: str, toast_id: str, callback: Callable[[str], None]
-    ) -> Callable[[], None]:
+    def add_action_callback(self, plugin_id: str, toast_id: str, callback: Callable[[str], None]) -> Callable[[], None]:
         with self._lock:
             if plugin_id in self._alive:
                 self._action_callbacks.setdefault(toast_id, []).append(callback)
@@ -475,7 +477,9 @@ class RecordingHost:
     def update(self, toast_id: str, patch: dict[str, Any]) -> ToastResult:
         self.updates.append((toast_id, dict(patch)))
         if toast_id not in self.requests:
-            return ToastResult(ok=False, code=str(ToastCode.UPDATING_CLOSED), toast_id=toast_id, state=ToastState.CLOSED)
+            return ToastResult(
+                ok=False, code=str(ToastCode.UPDATING_CLOSED), toast_id=toast_id, state=ToastState.CLOSED
+            )
         return ToastResult(ok=True, code=str(ToastCode.OK), toast_id=toast_id)
 
     def dismiss(self, toast_id: str, reason: Any = "manual", *, immediate: bool = False) -> bool:

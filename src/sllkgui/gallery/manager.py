@@ -586,7 +586,9 @@ class PluginManager:
         return {"id": plugin_id, "updated": True, **result}
 
     def update_all(self, *, dry_run: bool = False, hot_reload: bool = False) -> list[dict[str, Any]]:
-        return [self.update(plugin_id, dry_run=dry_run, hot_reload=hot_reload) for plugin_id in list(self.state.plugins)]
+        return [
+            self.update(plugin_id, dry_run=dry_run, hot_reload=hot_reload) for plugin_id in list(self.state.plugins)
+        ]
 
     def rollback(self, plugin_id: str, *, hot_reload: bool = False) -> dict[str, Any]:
         current = self.state.plugins.get(plugin_id)
@@ -600,9 +602,12 @@ class PluginManager:
         if not previous_path.is_dir():
             raise GalleryError(PLUGIN_VERSION_NOT_FOUND, f"{plugin_id} 没有可回滚的历史版本")
         current_path = self.store.plugin_path(plugin_id)
-        if hot_reload and current.enabled and (
-            (current_path.is_dir() and has_native_extensions(current_path))
-            or has_native_extensions(previous_path)
+        if (
+            hot_reload
+            and current.enabled
+            and (
+                (current_path.is_dir() and has_native_extensions(current_path)) or has_native_extensions(previous_path)
+            )
         ):
             raise GalleryError(
                 PLUGIN_RESTART_REQUIRED,

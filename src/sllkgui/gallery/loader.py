@@ -54,10 +54,7 @@ def has_native_extensions(root: Path) -> bool:
     插件必须重启进程，而不是热替换。
     """
     try:
-        return any(
-            path.is_file() and path.suffix.lower() in _NATIVE_SUFFIXES
-            for path in Path(root).rglob("*")
-        )
+        return any(path.is_file() and path.suffix.lower() in _NATIVE_SUFFIXES for path in Path(root).rglob("*"))
     except OSError as exc:
         Logger.debug(f"原生扩展扫描失败 {root}: {exc}")
         return False
@@ -75,7 +72,6 @@ def prepare_plugin_reload(root: Path) -> None:
         if cache.is_dir():
             shutil.rmtree(cache, ignore_errors=True)
     importlib.invalidate_caches()
-
 
 
 def _relative_import_hint(exc: ModuleNotFoundError, root: Path) -> str:

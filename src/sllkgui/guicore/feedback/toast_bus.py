@@ -431,11 +431,11 @@ class ToastBus(QObject):
             if toast_id:
                 with self._lock:
                     self._pending_patches.setdefault(toast_id, []).append(dict(patch))
-            return ToastResult(ok=False, code=str(ToastCode.UPDATING_CLOSED), toast_id=toast_id, state=ToastState.CLOSED)
-        if record.state in (ToastState.DISMISSING, ToastState.CLOSED):
             return ToastResult(
-                ok=False, code=str(ToastCode.UPDATING_CLOSED), toast_id=toast_id, state=record.state
+                ok=False, code=str(ToastCode.UPDATING_CLOSED), toast_id=toast_id, state=ToastState.CLOSED
             )
+        if record.state in (ToastState.DISMISSING, ToastState.CLOSED):
+            return ToastResult(ok=False, code=str(ToastCode.UPDATING_CLOSED), toast_id=toast_id, state=record.state)
         self._apply_patch(record, patch)
         self._notify(
             "updated",
@@ -541,8 +541,7 @@ class ToastBus(QObject):
             code=record.request.code,
             repeat=record.repeat,
             duration_ms=int(max(0.0, time.monotonic() - record.shown_at) * 1000),
-            by_user=dismiss_reason
-            in (ToastDismissReason.MANUAL, ToastDismissReason.ACTION),
+            by_user=dismiss_reason in (ToastDismissReason.MANUAL, ToastDismissReason.ACTION),
         )
         self._notify(
             "dismissed",
@@ -684,9 +683,7 @@ class ToastBus(QObject):
             return None
         anchor_key = id(anchor)
         same_channel = [
-            record
-            for record in candidates
-            if self._by_channel.get((anchor_key, record.channel)) == record.toast_id
+            record for record in candidates if self._by_channel.get((anchor_key, record.channel)) == record.toast_id
         ]
         if same_channel:
             return same_channel[0]
@@ -775,9 +772,9 @@ class ToastBus(QObject):
             changes["closable"] = bool(patch["closable"])
         if "persist" in patch and patch["persist"] is not None:
             persist = bool(patch["persist"])
-            changes["life"] = 0 if persist else resolve_life(
-                changes.get("level", record.level), None, _feedback_settings()[0]
-            )[0]
+            changes["life"] = (
+                0 if persist else resolve_life(changes.get("level", record.level), None, _feedback_settings()[0])[0]
+            )
         if "life" in patch and patch["life"] is not None:
             level = changes.get("level", record.level)
             life, _ = resolve_life(level, int(patch["life"]), _feedback_settings()[0])

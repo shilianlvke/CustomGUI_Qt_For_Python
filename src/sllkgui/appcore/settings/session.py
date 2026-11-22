@@ -185,14 +185,8 @@ class SettingsSession:
         丢弃的完整键，便于设置窗口提示用户。
         """
         prefix = f"{namespace}."
-        valid = {
-            page.full_key(spec.key)
-            for page in self._registry.pages(namespace)
-            for spec in page.specs()
-        }
-        removed = tuple(
-            key for key in sorted(self._dirty) if key.startswith(prefix) and key not in valid
-        )
+        valid = {page.full_key(spec.key) for page in self._registry.pages(namespace) for spec in page.specs()}
+        removed = tuple(key for key in sorted(self._dirty) if key.startswith(prefix) and key not in valid)
         for key in removed:
             self._dirty.discard(key)
             self._draft.pop(key, None)
