@@ -18,7 +18,6 @@ ROLE_PROP = "sllkRole"
 ROW_OBJECT = "CPlugin_Row"
 ROW_BAR_OBJECT = "CPlugin_RowBar"
 UPDATE_DOT_OBJECT = "CPlugin_UpdateDot"
-BUSY_OBJECT = "CPlugin_Busy"
 STAT_DIVIDER_OBJECT = "CPlugin_StatDivider"
 
 
@@ -52,8 +51,6 @@ def page_sheet() -> str:
     colors = get_design_tokens().colors
     hover = _rgba(colors.text_primary, 0.09)
     selected = _rgba(colors.accent, 0.12)
-    accent_wash = _rgba(colors.accent, 0.10)
-    accent_border = _rgba(colors.accent, 0.55)
     hairline = _rgba(colors.text_primary, 0.10)
     return f"""
         QLabel[{ROLE_PROP}="title"] {{
@@ -103,15 +100,6 @@ def page_sheet() -> str:
             background: {colors.accent};
             border-radius: 3px;
         }}
-        #{BUSY_OBJECT} {{
-            background: {accent_wash};
-            border: 1px solid {accent_border};
-            border-radius: 4px;
-        }}
-        #{BUSY_OBJECT} QLabel {{
-            color: {colors.text_primary};
-            background: transparent;
-        }}
         #{STAT_DIVIDER_OBJECT} {{
             background: {hairline};
             border: 0px;
@@ -120,7 +108,6 @@ def page_sheet() -> str:
 
 
 __all__ = [
-    "BUSY_OBJECT",
     "ROLE_PROP",
     "ROW_BAR_OBJECT",
     "ROW_OBJECT",

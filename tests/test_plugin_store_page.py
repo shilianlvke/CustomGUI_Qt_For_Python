@@ -13,6 +13,8 @@ from PySide6.QtCore import QPoint, Qt
 from PySide6.QtTest import QTest
 from PySide6.QtWidgets import QApplication, QLabel, QWidget
 
+from sllkgui.guicore import CButton
+
 
 @pytest.fixture(scope="module")
 def qapp():
@@ -236,3 +238,85 @@ def test_retranslate_keeps_mode(qapp):
 def test_legacy_detail_dialogs_are_removed():
     """详情已改为内嵌检查器，包内不应再有 dialogs 模块。"""
     assert importlib.util.find_spec("sllkgui.guis.pages.plugin_store.dialogs") is None
+
+
+def test_inspector_shows_dependency_state(qapp):
+    """缺依赖的插件在详情里给出「缺什么 + 一键补全 + 可复制命令」。"""
+    host = QWidget()
+    host.runtime = SimpleNamespace(
+        manager=_Manager(),
+        sources=_Sources(),
+        plugin_dependencies=lambda plugin_id: (
+            ["mutagen>=1.47", "quickjs>=1.19"],
+            ["quickjs>=1.19"],
+        ),
+        plugin_dependency_command=lambda plugin_id: "uv pip install --python python quickjs>=1.19",
+    )
+    page = _page(host)
+    try:
+        record = dict(page._manager().installed_rows()[0])
+        record["installed"] = True
+        record["installed_version"] = record["version"]
+        inspector = page._build_plugin_inspector(record)
+        labels = [item.text() for item in inspector.findChildren(QLabel)]
+        assert page.ctx.text("detail.dependencies", "依赖") in labels
+        assert "mutagen>=1.47" in labels
+        assert "quickjs>=1.19" in labels
+        assert page.ctx.text("detail.dep_missing", "缺失") in labels
+        buttons = [item.text() for item in inspector.findChildren(CButton)]
+        assert page.ctx.text("detail.deps_complete", "补全依赖") in buttons
+        assert page.ctx.text("detail.deps_copy", "复制安装命令") in buttons
+    finally:
+        page.deleteLater()
+        host.deleteLater()
+
+
+def test_busy_state_uses_toast_not_inline_strip(qapp):
+    """忙碌反馈改走 toast：页面不再插入会挤动布局的活动条。"""
+    from sllkgui.guicore.feedback import toast_bus
+
+    host = QWidget()
+    host.resize(900, 600)
+    host.show()
+    page = _page(host)
+    try:
+        assert not hasattr(page, "busy_strip")
+        page._set_busy(True, "正在安装插件…")
+        assert page._busy_toast
+        toast_id = page._busy_toast
+        page._set_busy(False)
+        assert page._busy_toast == ""
+        assert str(toast_bus().state_of(toast_id)) == "closed"
+    finally:
+        page.deleteLater()
+        host.deleteLater()
+
+
+def test_ensure_ready_installs_then_continues(qapp):
+    """缺依赖时先补全再继续（安装/启用共用），不要求用户再点一次。"""
+    import time
+
+    installed: list[str] = []
+    host = QWidget()
+    host.resize(900, 600)
+    host.show()
+    host.runtime = SimpleNamespace(
+        manager=_Manager(),
+        sources=_Sources(),
+        plugin_dependencies=lambda plugin_id: (["demo>=1"], ["demo>=1"]),
+        install_plugin_dependencies=lambda plugin_id: installed.append(plugin_id) or ("demo>=1",),
+        recent_reloads=lambda limit=5: [],
+    )
+    page = _page(host)
+    try:
+        ready: list[str] = []
+        page._ensure_ready("com.example.one", then=lambda: ready.append("ready"))
+        deadline = time.monotonic() + 5
+        while not ready and time.monotonic() < deadline:
+            QApplication.processEvents()
+            time.sleep(0.02)
+        assert installed == ["com.example.one"]
+        assert ready == ["ready"]
+    finally:
+        page.deleteLater()
+        host.deleteLater()

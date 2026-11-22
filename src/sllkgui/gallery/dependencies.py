@@ -1,8 +1,10 @@
 """插件第三方 Python 依赖检测与安装。
 
-运行时只检查、不静默安装：发现缺失时先询问用户，再通过 ``uv pip install``
-安装到**当前 Python 环境**。镜像源可由 ``SLLKGUI_PIP_INDEX_URL`` /
-``configure(pip_index_url=...)`` / ``--index-url`` 配置。
+检查与安装分离：加载期**只检查**，缺依赖时回传结构化错误；安装由插件管理页
+在用户点击安装/启用/补全后以后台任务执行（``install_python_dependencies``），
+结果用 toast 反馈。GUI 下不再弹模态对话框；终端（无 GUI、有 TTY）保留文本提问。
+镜像源可由 ``SLLKGUI_PIP_INDEX_URL`` / ``configure(pip_index_url=...)`` /
+``--index-url`` 配置。
 
 冻结形态（PyInstaller 等）下 ``sys.executable`` 指向打包出来的可执行文件，
 不是可执行的 Python 解释器——``pip install`` 在那里必然失败。这里显式
@@ -660,6 +662,38 @@ def install_with_uv(packages: list[str], *, index_url: str = "", uv_path: str | 
     Logger.info("Python 依赖安装完成")
 
 
+def install_python_dependencies(
+    packages: list[str] | tuple[str, ...],
+    *,
+    index_url: str = "",
+    uv_path: str | None = None,
+) -> None:
+    """把依赖安装到当前解释器；**不提问、不弹窗**。
+
+    供插件管理页在后台任务里调用：调用方负责进度反馈（toast）与失败后的
+    可复制命令。冻结形态直接抛 ``FROZEN_ENV_UNSUPPORTED``。
+    """
+    specs = [str(item).strip() for item in packages if str(item).strip()]
+    if not specs:
+        return
+    if is_frozen():
+        raise GalleryError(
+            FROZEN_ENV_UNSUPPORTED,
+            f"冻结形态下无法安装 Python 依赖: {', '.join(specs)}。{_frozen_hint()}",
+            manual_command(specs, index_url),
+            params={"packages": specs, "command": manual_command(specs, index_url)},
+        )
+    install_with_uv(specs, index_url=index_url, uv_path=uv_path)
+    remaining = missing_packages(specs)
+    if remaining:
+        raise GalleryError(
+            PYTHON_DEPENDENCY_INSTALL_FAILED,
+            f"依赖安装后仍缺少: {', '.join(remaining)}",
+            manual_command(remaining, index_url),
+            params={"packages": remaining},
+        )
+
+
 def ensure_python_dependencies(
     requirements: list[str] | tuple[str, ...],
     *,
@@ -690,6 +724,17 @@ def ensure_python_dependencies(
         raise GalleryError(
             PYTHON_DEPENDENCY_MISSING,
             f"缺少 Python 依赖: {', '.join(missing)}",
+            command,
+            params={"packages": missing, "command": command},
+        )
+
+    if _gui_available():
+        # GUI 下不再弹「缺少插件依赖」模态：依赖补全是可后台完成、可撤销的修复动作，
+        # 应该在插件管理页以「状态 + 一键补全」呈现，而不是打断启动/安装流程。
+        # 这里只把事实与可复制命令回传给调用方（见 GalleryRuntime.install_plugin_dependencies）。
+        raise GalleryError(
+            PYTHON_DEPENDENCY_MISSING,
+            f"缺少 Python 依赖: {', '.join(missing)}（请在插件管理中补全）",
             command,
             params={"packages": missing, "command": command},
         )
@@ -735,6 +780,7 @@ __all__ = [
     "find_uv",
     "git_manual_command",
     "import_name",
+    "install_python_dependencies",
     "install_with_uv",
     "is_frozen",
     "manual_command",

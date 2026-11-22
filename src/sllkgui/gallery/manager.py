@@ -62,7 +62,8 @@ class PluginManager:
         self.store = store
         self.state = state
         self.sources = sources
-        self._manifest_cache: dict[tuple[str, str], tuple[str, str]] = {}
+        #: (plugin_id, version) -> 清单对象（展示名/简介/依赖共用一次读盘）
+        self._manifest_cache: dict[tuple[str, str], Any] = {}
         if base_version:
             self.state.base_version = base_version
 
@@ -100,10 +101,26 @@ class PluginManager:
                     "enabled": record.enabled,
                     "path": record.path,
                     "previous": dict(record.previous or {}),
+                    "dependencies": list(self.declared_dependencies(record.plugin_id, record.version)),
                     "icon": icons.get(record.plugin_id, ""),
                 }
             )
         return rows
+
+    def declared_dependencies(self, plugin_id: str, version: str = "") -> tuple[str, ...]:
+        manifest = self._manifest(plugin_id, version)
+        return tuple(manifest.python_dependencies) if manifest is not None else ()
+
+    def missing_dependencies(self, plugin_id: str, version: str = "") -> tuple[str, ...]:
+        """当前解释器中缺失的声明依赖（只检查，不安装）。"""
+        record = self.state.plugins.get(plugin_id)
+        target = version or (record.version if record is not None else "")
+        declared = self.declared_dependencies(plugin_id, target)
+        if not declared:
+            return ()
+        from .dependencies import missing_packages
+
+        return tuple(missing_packages(declared))
 
     def _icon_map(self, index: SourceIndex | None = None) -> dict[str, str]:
         """源注册表声明的插件图标：``{plugin_id: 绝对路径}``。
@@ -134,8 +151,8 @@ class PluginManager:
         candidate = entry.path / entry.icon
         return str(candidate) if candidate.is_file() else ""
 
-    def _manifest_text(self, plugin_id: str, version: str) -> tuple[str, str]:
-        """已安装清单的展示名与简介；按 (id, version) 缓存，避免反复读盘。"""
+    def _manifest(self, plugin_id: str, version: str):
+        """已安装清单对象；按 (id, version) 缓存，避免反复读盘。"""
         key = (plugin_id, version)
         cached = self._manifest_cache.get(key)
         if cached is not None:
@@ -143,10 +160,16 @@ class PluginManager:
         try:
             manifest = load_manifest(self.store.plugin_path(plugin_id))
         except Exception:  # noqa: BLE001 - 展示信息失败不影响插件管理
+            return None
+        self._manifest_cache[key] = manifest
+        return manifest
+
+    def _manifest_text(self, plugin_id: str, version: str) -> tuple[str, str]:
+        """已安装清单的展示名与简介。"""
+        manifest = self._manifest(plugin_id, version)
+        if manifest is None:
             return "", ""
-        value = (manifest.name, manifest.description)
-        self._manifest_cache[key] = value
-        return value
+        return manifest.name, manifest.description
 
     def search(self, query: str = "", *, source_id: str = "") -> list[dict[str, Any]]:
         index = self.sources.index()

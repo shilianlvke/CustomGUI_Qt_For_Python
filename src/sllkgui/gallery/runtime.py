@@ -310,6 +310,68 @@ class GalleryRuntime:
         return self.registry.errors
 
     # ------------------------------------------------------------------
+    # 依赖补全（加载期只检查，安装由插件管理触发）
+    # ------------------------------------------------------------------
+    def plugin_dependencies(self, plugin_id: str) -> tuple[tuple[str, ...], tuple[str, ...]]:
+        """返回 ``(声明依赖, 当前缺失)``；未安装/清单不可读时均为空。"""
+        from .dependencies import missing_packages
+
+        declared: tuple[str, ...] = ()
+        manager = self.manager
+        if manager is not None:
+            declared = manager.declared_dependencies(plugin_id)
+        if not declared:
+            manifest = self._manifest_for(plugin_id)
+            declared = tuple(manifest.python_dependencies) if manifest is not None else ()
+        if not declared:
+            return (), ()
+        return declared, tuple(missing_packages(declared))
+
+    def plugin_dependency_command(self, plugin_id: str) -> str:
+        """手动安装命令（缺失时用缺失清单，否则用声明清单）。"""
+        from .dependencies import manual_command
+
+        declared, missing = self.plugin_dependencies(plugin_id)
+        return manual_command(list(missing or declared), self.index_url)
+
+    def install_plugin_dependencies(self, plugin_id: str) -> tuple[str, ...]:
+        """补全缺失依赖；返回本次安装的包。失败抛结构化 ``GalleryError``。
+
+        只在用户显式动作（安装/启用/更新/补全）后调用；启动路径**不**自动安装，
+        避免在用户没有预期时改动解释器环境。
+        """
+        from .dependencies import install_python_dependencies, manual_command, missing_packages
+        from .errors import PYTHON_DEPENDENCY_INSTALL_FAILED, PYTHON_DEPENDENCY_MISSING
+
+        declared, missing = self.plugin_dependencies(plugin_id)
+        if not missing:
+            return ()
+        command = manual_command(list(missing), self.index_url)
+        if not self.install_missing_deps:
+            raise GalleryError(
+                PYTHON_DEPENDENCY_MISSING,
+                "已禁用自动安装依赖（--no-install-deps），请手动安装",
+                command,
+                params={"packages": list(missing), "command": command},
+            )
+        install_python_dependencies(list(missing), index_url=self.index_url)
+        remaining = missing_packages(declared)
+        if remaining:
+            raise GalleryError(
+                PYTHON_DEPENDENCY_INSTALL_FAILED,
+                f"依赖安装后仍缺少: {', '.join(remaining)}",
+                manual_command(list(remaining), self.index_url),
+                params={"packages": list(remaining)},
+            )
+        record_event(
+            "plugin.dependencies_installed",
+            category="plugin",
+            payload={"plugin_id": plugin_id, "packages": list(missing), "trigger": "plugin_store"},
+        )
+        Logger.info(f"插件依赖已补全: {plugin_id} -> {', '.join(missing)}")
+        return tuple(missing)
+
+    # ------------------------------------------------------------------
     # 选择性重载
     # ------------------------------------------------------------------
     def _record_for(self, plugin_id: str) -> PluginRecord | None:

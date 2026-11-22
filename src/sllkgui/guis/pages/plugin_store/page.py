@@ -37,7 +37,7 @@ from .entries import (
     section_title,
     version_chip,
 )
-from .panels import BusyStrip, InspectorPanel, ListPanel
+from .panels import InspectorPanel, ListPanel
 from .theme import STAT_DIVIDER_OBJECT, page_sheet
 
 
@@ -93,6 +93,8 @@ class StorePage(QWidget):
         self.query = ""
         self.add_source = False
         self._busy = False
+        #: 忙碌态对应的 loading toast（单通道；结束时关闭）
+        self._busy_toast = ""
         self._selection: dict[str, str] = {"installed": "", "discover": "", "sources": ""}
         self._counts = {"installed": 0, "discover": 0, "sources": 0}
         #: 文案版本：语言切换时递增，让行/详情按新文案重建一次
@@ -137,9 +139,6 @@ class StorePage(QWidget):
 
         root.addLayout(self._build_header())
         root.addLayout(self._build_toolbar())
-
-        self.busy_strip = BusyStrip(self)
-        root.addWidget(self.busy_strip)
 
         body = QHBoxLayout()
         body.setContentsMargins(0, 0, 0, 0)
@@ -639,7 +638,7 @@ class StorePage(QWidget):
         *,
         severity: str,
         variant: str,
-        icon: str,
+        icon: str | None = None,
         callback: Callable[[], None],
         enabled: bool = True,
         tooltip: str = "",
@@ -804,6 +803,60 @@ class StorePage(QWidget):
         if repository:
             items.append((self.ctx.text("detail.repository", "仓库"), repository, True))
         column.addWidget(meta_grid(items))
+
+        declared, missing = self._plugin_dependencies(plugin_id)
+        if declared:
+            column.addWidget(section_title(self.ctx.text("detail.dependencies", "依赖")))
+            readiness = [
+                (
+                    spec,
+                    self.ctx.text("detail.dep_missing", "缺失")
+                    if spec in missing
+                    else self.ctx.text("detail.dep_ready", "已就绪"),
+                    True,
+                )
+                for spec in declared
+            ]
+            column.addWidget(meta_grid(readiness))
+            if missing:
+                column.addWidget(
+                    label(
+                        "muted",
+                        self.ctx.text(
+                            "detail.deps_hint",
+                            "缺少 {count} 个依赖；补全后会自动重新加载该插件。",
+                            count=len(missing),
+                        ),
+                        pixel_size=10,
+                        wrap=True,
+                    )
+                )
+                deps_row = QHBoxLayout()
+                deps_row.setContentsMargins(0, 0, 0, 0)
+                deps_row.setSpacing(8)
+                deps_row.addWidget(
+                    self._action_button(
+                        self.ctx.text("detail.deps_complete", "补全依赖"),
+                        severity="primary",
+                        variant="solid",
+                        icon="icon_refresh",
+                        callback=lambda: self._complete_dependencies(plugin_id),
+                    )
+                )
+                command = self._dependency_command(plugin_id)
+                if command:
+                    deps_row.addWidget(
+                        self._action_button(
+                            self.ctx.text("detail.deps_copy", "复制安装命令"),
+                            severity="secondary",
+                            variant="outlined",
+                            callback=lambda: self._copy_text(
+                                command, self.ctx.text("detail.deps_copied", "安装命令已复制")
+                            ),
+                        )
+                    )
+                deps_row.addStretch(1)
+                column.addLayout(deps_row)
 
         column.addWidget(permission_block(list(record.get("permissions") or []), self.ctx))
 
@@ -1046,16 +1099,58 @@ class StorePage(QWidget):
     # 忙碌 / 提示
     # ------------------------------------------------------------------
     def _set_busy(self, busy: bool, text: str = "") -> None:
+        """忙碌态：禁用动作 + 一条常驻 loading toast（不再插入页内活动条）。
+
+        页内活动条会把列表整体下移，且在深浅主题下与卡片边界打架；toast 是
+        全局唯一的「操作进行中」反馈，结束即收敛为结果提示。
+        """
         self._busy = busy
         if busy:
-            self.busy_strip.start(text)
+            self._show_busy_toast(text)
         else:
-            self.busy_strip.stop()
+            self._dismiss_busy_toast()
         self.list_panel.set_busy(busy)
         for button in (self.refresh_button, self.refresh_sources_button, self.add_source_button):
             button.setEnabled(not busy)
         # 忙碌只改变按钮可用性，详情内容与滚动位置保持不变。
         self._apply_busy_to_inspector()
+
+    def _show_busy_toast(self, text: str) -> None:
+        from sllkgui.appcore.feedback import ToastAnchor, ToastLevel, ToastMode, ToastRequest
+        from sllkgui.guicore.feedback import toast_bus
+
+        self._dismiss_busy_toast()
+        try:
+            result = toast_bus().show(
+                ToastAnchor.AUTO,
+                ToastRequest(
+                    text=text or self.ctx.text("status.working", "正在处理…"),
+                    title=self.ctx.text("store.title", "插件管理"),
+                    level=ToastLevel.LOADING,
+                    life=0,
+                    scope="base",
+                    channel="base.plugin_store_busy",
+                    mode=ToastMode.REPLACE,
+                    dedupe_key="plugin_store.busy",
+                    code="PLUGIN_STORE_BUSY",
+                ),
+            )
+        except Exception as exc:  # noqa: BLE001 - 提示失败不影响操作
+            self.ctx.log(f"忙碌提示失败: {exc}", "warning")
+            return
+        self._busy_toast = result.toast_id if result.ok else ""
+
+    def _dismiss_busy_toast(self) -> None:
+        from sllkgui.appcore.feedback import ToastDismissReason
+        from sllkgui.guicore.feedback import toast_bus
+
+        toast_id, self._busy_toast = self._busy_toast, ""
+        if not toast_id:
+            return
+        try:
+            toast_bus().dismiss(toast_id, ToastDismissReason.CLEARED, immediate=True)
+        except Exception:  # noqa: BLE001 - 已关闭/宿主销毁时忽略
+            pass
 
     # ------------------------------------------------------------------
     # 详情局部同步
@@ -1223,10 +1318,10 @@ class StorePage(QWidget):
 
         def done(result: Any) -> None:
             finish()
+            if success_message is not None:
+                self.set_status(success_message(result), "success")
             if on_done is not None:
                 on_done(result)
-            elif success_message is not None:
-                self.set_status(success_message(result), "success")
             single_shot(self, 0, self.refresh_all)
             if reload_plugins:
                 self.schedule_reload()
@@ -1250,6 +1345,12 @@ class StorePage(QWidget):
         manager = self._manager()
         if manager is None:
             return
+        if enabled:
+            _declared, missing = self._plugin_dependencies(plugin_id)
+            if missing:
+                # 先补依赖再启用：避免「启用 → 加载失败 → 让用户再找原因」
+                self._ensure_ready(plugin_id, then=lambda: self._set_plugin_enabled(plugin_id, True))
+                return
         try:
             result = manager.set_enabled(plugin_id, enabled) or {}
         except Exception as exc:  # noqa: BLE001 - 页面必须保持可用
@@ -1293,7 +1394,7 @@ class StorePage(QWidget):
             else:
                 message = self.ctx.text("status.up_to_date", "「{name}」已是最新版本").format(name=name)
             self.set_status(message, "success")
-            self._reload_one(plugin_id, "update")
+            self._ensure_ready(plugin_id, then=lambda: self._reload_one(plugin_id, "update"))
 
         self._run_async(
             name="plugin_store.update",
@@ -1318,7 +1419,7 @@ class StorePage(QWidget):
                 ),
                 "success",
             )
-            self._reload_one(plugin_id, "rollback")
+            self._ensure_ready(plugin_id, then=lambda: self._reload_one(plugin_id, "rollback"))
 
         self._run_async(
             name="plugin_store.rollback",
@@ -1370,6 +1471,11 @@ class StorePage(QWidget):
 
         def done(_result: Any) -> None:
             self._selection["installed"] = plugin_id
+            _declared, missing = self._plugin_dependencies(plugin_id)
+            if missing:
+                # 安装即隐含同意补全其声明依赖：先装依赖再加载，不额外打断。
+                self._ensure_ready(plugin_id, then=lambda: self._reload_one(plugin_id, "install"))
+                return
             self.set_status(self.ctx.text("status.install_done", "已安装「{name}」").format(name=name), "success")
             self._reload_one(plugin_id, "install")
 
@@ -1390,6 +1496,92 @@ class StorePage(QWidget):
             if str(row.get("id") or "") == plugin_id:
                 return str(row.get("name") or plugin_id)
         return plugin_id
+
+    # ------------------------------------------------------------------
+    # 依赖补全
+    # ------------------------------------------------------------------
+    def _plugin_dependencies(self, plugin_id: str) -> tuple[list[str], list[str]]:
+        """``(声明依赖, 缺失依赖)``；运行时不可用时返回空。"""
+        runtime = self.ctx.runtime()
+        getter = getattr(runtime, "plugin_dependencies", None)
+        if callable(getter):
+            try:
+                declared, missing = getter(plugin_id)
+                return list(declared), list(missing)
+            except Exception as exc:  # noqa: BLE001 - 依赖查询失败不影响主流程
+                self.ctx.log(f"读取插件依赖失败 {plugin_id}: {exc}", "debug")
+        manager = self._manager()
+        if manager is not None:
+            try:
+                return (
+                    list(manager.declared_dependencies(plugin_id)),
+                    list(manager.missing_dependencies(plugin_id)),
+                )
+            except Exception:  # noqa: BLE001
+                pass
+        return [], []
+
+    def _dependency_command(self, plugin_id: str) -> str:
+        runtime = self.ctx.runtime()
+        getter = getattr(runtime, "plugin_dependency_command", None)
+        if callable(getter):
+            try:
+                return str(getter(plugin_id))
+            except Exception:  # noqa: BLE001
+                return ""
+        return ""
+
+    def _copy_text(self, text: str, message: str = "") -> None:
+        from PySide6.QtWidgets import QApplication
+
+        if not text:
+            return
+        clipboard = QApplication.clipboard()
+        if clipboard is not None:
+            clipboard.setText(text)
+            if message:
+                self.set_status(message, "info")
+
+    def _ensure_ready(self, plugin_id: str, *, then: Any = None) -> None:
+        """依赖缺失时先补全，再执行 ``then``（安装/启用/更新共用）。"""
+        _declared, missing = self._plugin_dependencies(plugin_id)
+        if not missing:
+            if then is not None:
+                then()
+            return
+        runtime = self.ctx.runtime()
+        installer = getattr(runtime, "install_plugin_dependencies", None)
+        if not callable(installer):
+            if then is not None:
+                then()
+            return
+        name = self._name_of_plugin(plugin_id)
+        self._run_async(
+            name="plugin_store.dependencies",
+            fn=lambda: installer(plugin_id),
+            busy_text=self.ctx.text(
+                "status.deps_installing",
+                "正在补全「{name}」的 {count} 个依赖…",
+                name=name,
+                count=len(missing),
+            ),
+            success_message=lambda _result: self.ctx.text("status.deps_done", "「{name}」的依赖已就绪", name=name),
+            error_code="PLUGIN_STORE_DEPS_FAILED",
+            on_done=lambda _result: self._after_dependencies(plugin_id, then),
+        )
+
+    def _after_dependencies(self, plugin_id: str, then: Any) -> None:
+        self.refresh_all()
+        if then is not None:
+            then()
+        else:
+            self._reload_one(plugin_id, "deps")
+
+    def _complete_dependencies(self, plugin_id: str) -> None:
+        """详情页「补全依赖」按钮：补全后自动重载该插件。"""
+        if self._busy:
+            return
+        self._ensure_ready(plugin_id, then=lambda: self._reload_one(plugin_id, "deps"))
 
     # ------------------------------------------------------------------
     # 源动作

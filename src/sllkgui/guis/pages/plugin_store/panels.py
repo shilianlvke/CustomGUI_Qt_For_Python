@@ -1,4 +1,4 @@
-"""插件管理的工作区面板：列表面板、检查器面板与页内活动条。
+"""插件管理的工作区面板：列表面板与检查器面板。
 
 列表与检查器都放在 ``CCard`` 上：卡片底色/描边由全局样式表维护，页面只
 负责头部、空态与内容重排；这样主题切换不需要重建控件树，也不会在玻璃
@@ -7,81 +7,14 @@
 
 from __future__ import annotations
 
-from PySide6.QtCore import QRectF, Qt, QTimer
-from PySide6.QtGui import QColor, QPainter, QPen
+from PySide6.QtCore import Qt
 from PySide6.QtWidgets import QHBoxLayout, QSizePolicy, QVBoxLayout, QWidget
 
-from sllkgui.appcore import get_design_tokens
-from sllkgui.guicore import CCard, CHDiv, CScrollArea, CText, single_shot
+from sllkgui.guicore import CCard, CHDiv, CScrollArea, single_shot
 
 from .entries import StoreRow, label
-from .theme import BUSY_OBJECT, text_role
 
-_SPINNER_SIZE = 12
-_SPINNER_INTERVAL = 16
 _BODY_MAX_WIDTH = 760
-
-
-class _Spinner(QWidget):
-    """12px 旋转弧：只用令牌强调色，主题切换后下一次重绘即生效。"""
-
-    def __init__(self, parent=None) -> None:
-        super().__init__(parent)
-        self.setFixedSize(_SPINNER_SIZE, _SPINNER_SIZE)
-        self._angle = 0
-        self._timer = QTimer(self)
-        self._timer.setInterval(_SPINNER_INTERVAL)
-        self._timer.timeout.connect(self._tick)
-
-    def _tick(self) -> None:
-        self._angle = (self._angle + 6) % 360
-        self.update()
-
-    def showEvent(self, event):  # noqa: N802 - 覆写 Qt 命名
-        self._timer.start()
-        super().showEvent(event)
-
-    def hideEvent(self, event):  # noqa: N802 - 覆写 Qt 命名
-        self._timer.stop()
-        super().hideEvent(event)
-
-    def paintEvent(self, event):  # noqa: N802 - 覆写 Qt 命名
-        painter = QPainter(self)
-        painter.setRenderHint(QPainter.RenderHint.Antialiasing)
-        pen = QPen(QColor(get_design_tokens().colors.accent), 2)
-        pen.setCapStyle(Qt.PenCapStyle.RoundCap)
-        painter.setPen(pen)
-        rect = QRectF(self.rect()).adjusted(1, 1, -1, -1)
-        painter.drawArc(rect, -self._angle * 16, 270 * 16)
-        painter.end()
-
-
-class BusyStrip(QWidget):
-    """页内活动条：替代整页禁用，让用户仍能看见列表与当前选择。"""
-
-    def __init__(self, parent=None) -> None:
-        super().__init__(parent)
-        self.setObjectName(BUSY_OBJECT)
-        self.setFixedHeight(30)
-        self.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed)
-        row = QHBoxLayout(self)
-        row.setContentsMargins(10, 0, 10, 0)
-        row.setSpacing(8)
-        row.addWidget(_Spinner(self))
-        self._text = CText("", pixel_size=10)
-        text_role(self._text, "body")
-        row.addWidget(self._text, 1)
-        self.hide()
-
-    def set_text(self, text: str) -> None:
-        self._text.setText(text)
-
-    def start(self, text: str) -> None:
-        self._text.setText(text)
-        self.show()
-
-    def stop(self) -> None:
-        self.hide()
 
 
 class _Panel(CCard):
@@ -253,4 +186,4 @@ class InspectorPanel(_Panel):
             single_shot(self, 0, lambda: bar.setValue(min(previous, bar.maximum())))
 
 
-__all__ = ["BusyStrip", "InspectorPanel", "ListPanel"]
+__all__ = ["InspectorPanel", "ListPanel"]

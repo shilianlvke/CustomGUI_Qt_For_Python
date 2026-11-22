@@ -40,6 +40,11 @@ _LR_DEFAULTSIZE = 0x00000040
 #: 按槽位缓存 HICON，避免窗口每次显示都重复加载图标句柄
 _TASKBAR_ICONS: dict[int, int] = {}
 
+#: 依赖类错误：启动时聚合成一条可操作提示，而不是逐个弹通知
+_DEPENDENCY_CODES = frozenset(
+    {"PYTHON_DEPENDENCY_MISSING", "PYTHON_DEPENDENCY_INSTALL_FAILED", "FROZEN_ENV_UNSUPPORTED"}
+)
+
 
 def _reapply_taskbar_icon(window: QMainWindow) -> None:
     """窗口显示后重设一次原生图标，刷新 Windows 任务栏按钮。
@@ -120,12 +125,50 @@ class GalleryWindow(QMainWindow):
             self.open_route(target)
         errors = self.runtime.errors()
         if errors:
-            first = errors[0]
-            self._notify_failure(
-                first.get("plugin_id", "unknown"),
-                code=first.get("code"),
-                message=f"启动时 {len(errors)} 个插件未就绪，详情见日志",
-            )
+            dependency_errors = [item for item in errors if item.get("code") in _DEPENDENCY_CODES]
+            other_errors = [item for item in errors if item.get("code") not in _DEPENDENCY_CODES]
+            if dependency_errors:
+                self._notify_dependencies(len(dependency_errors))
+            if other_errors:
+                first = other_errors[0]
+                self._notify_failure(
+                    first.get("plugin_id", "unknown"),
+                    code=first.get("code"),
+                    message=f"启动时 {len(other_errors)} 个插件未就绪，详情见日志",
+                )
+
+    def _notify_dependencies(self, count: int) -> None:
+        """启动期依赖缺失：一条聚合提示 + 直达插件管理（不阻断启动）。"""
+        from sllkgui.appcore.feedback import (
+            ToastAction,
+            ToastAnchor,
+            ToastLevel,
+            ToastMode,
+            ToastRequest,
+        )
+        from sllkgui.guicore.feedback import toast_bus
+
+        def open_store(_action_id: str) -> None:
+            native = native_page_for("page_native_plugin_store")
+            if native is not None:
+                self._open_native_page(native)
+
+        toast_bus().show(
+            ToastAnchor.AUTO,
+            ToastRequest(
+                text=f"{count} 个插件因缺少依赖未加载",
+                title="插件未就绪",
+                level=ToastLevel.WARN,
+                detail="打开「插件管理」可一键补全依赖；插件数据与设置已保留。",
+                code="PYTHON_DEPENDENCY_MISSING",
+                scope="base",
+                channel="base.gallery",
+                mode=ToastMode.REPLACE,
+                dedupe_key="gallery.dependencies",
+                actions=(ToastAction("open-store", "打开插件管理"),),
+                on_action=open_store,
+            ),
+        )
 
     def _notify_failure(self, target: str, *, code: str | None = None, message: str | None = None) -> None:
         """把插件加载 / 页面构建失败显示给用户，避免「点了没反应」。
