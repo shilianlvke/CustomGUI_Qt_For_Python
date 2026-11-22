@@ -22,7 +22,7 @@
 | 基座原生页接入 | ✅ | 插件管理页 `set_status`/`_fail`（含「复制错误信息」动作与码表）、设置窗口草稿提示、`gallery/window._notify_failure`、`registry.ensure_registered_page` 的 6 个失败分支 |
 | py-rm 接入 | ✅ | `_set_status` 单通道替换；补齐置顶/桌面层对称回执；旧基座降级为日志 |
 | py-listen 接入 | ✅ | `_toast` 适配、播放提示 `replace` 通道、WebDAV 三条 loading 收敛、页脚重复提示去除、下载完成/失败与队列清空回执；`ui/notify.py` 统一旧基座降级 |
-| 测试 | ✅ | 新增 `test_toast_protocol.py`（15）、`test_toast_bus.py`（16）、`test_toast_bridge.py`（5）、`test_notify.py`（4）；基座 841 / py-rm 259 / py-listen 77 全绿 |
+| 测试 | ✅ | 新增 `test_toast_protocol.py`（15）、`test_toast_bus.py`（17）、`test_toast_bridge.py`（5）、`test_notify.py`（4）；基座 842 / py-rm 259 / py-listen 77 全绿 |
 | R-15 大备份阻塞 | ⚠ 未改 | `import_backup` 复用主线程 sqlite 连接（连接有线程亲和性），需先重构 DB 连接模型；已在代码注释与协议审计标注 |
 
 > 结论：89 条改造中，除 R-15 需要独立的 DB 线程模型改造外，其余全部落地。

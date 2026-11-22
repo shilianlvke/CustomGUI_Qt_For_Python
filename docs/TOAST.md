@@ -770,7 +770,7 @@ else:
 
 > 2026-11-22 实现批次已用测试锁定：`tests/test_toast_protocol.py`（15 例，无 Qt）、
 > `tests/test_toast_bus.py`（16 例，Qt 总线）、`tests/test_toast_bridge.py`（5 例，
-> `ctx.toast` → 总线）；基座全量 841 例、py-rm 259 例、py-listen 77 例通过。
+> `ctx.toast` → 总线）；基座全量 842 例、py-rm 259 例、py-listen 77 例通过。
 
 | # | 验收项 | 判定 |
 | --- | --- | --- |
