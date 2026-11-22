@@ -1,8 +1,9 @@
 """插件开发规范检查（``sllkgui plugin lint``）。
 
 检查项对应方案 §4.4：日志/遥测接入、禁止 print/自建文件日志、禁止动态执行与
-``sys.path`` 修改、四语言齐全、图标存在、错误码/权限声明基础校验。输出可直接
-JSON 序列化，供源仓库 CI 使用。
+``sys.path`` 修改、四语言齐全、图标存在、错误码/权限声明基础校验。4.2 起
+``CToast`` 直调降为警告（统一走 ``ctx.toast``）。输出可直接 JSON 序列化，
+供源仓库 CI 使用。
 """
 
 from __future__ import annotations
@@ -50,6 +51,11 @@ _PATTERNS: tuple[tuple[str, re.Pattern[str], str], ...] = (
     ("SUBPROCESS", re.compile(r"\b(subprocess|os\.system|os\.popen)\b"), "使用子进程需要声明 subprocess 权限"),
     ("REQUESTS", re.compile(r"\b(requests|httpx|urllib\.request|urlopen)\b"), "网络访问需要声明 network 权限"),
     ("SHORTCUTS", re.compile(r"\bctx\.shortcuts\b"), "使用快捷键需要声明 shortcuts 权限"),
+    (
+        "TOAST_DIRECT",
+        re.compile(r"\bCToast\b"),
+        "不要直调 CToast，请使用 ctx.toast（去重/通道/卸载清理由基座负责，见 docs/TOAST.md）",
+    ),
 )
 
 #: 允许出现在注释/字符串里的误报噪声：lint 只做静态扫描，不追求 100% 精确

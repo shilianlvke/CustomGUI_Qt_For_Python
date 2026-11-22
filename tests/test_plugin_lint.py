@@ -50,6 +50,22 @@ def test_lint_rejects_print_and_missing_telemetry(tmp_path: Path, monkeypatch):
     assert "TELEMETRY_TIMING" in codes
 
 
+def test_lint_warns_on_direct_ctoast_use(tmp_path: Path):
+    """4.2 起：插件直调 CToast 只报警告，不阻断（旧插件仍可加载）。"""
+    root = write_plugin(tmp_path / "legacy")
+    source = (root / "plugin.py").read_text(encoding="utf-8")
+    source += (
+        "\n\ndef _legacy_toast(ctx):\n"
+        "    from sllkgui.guicore import CToast\n"
+        '    CToast.show_message(ctx.parent_window(), "saved")\n'
+    )
+    (root / "plugin.py").write_text(source, encoding="utf-8")
+    report = lint_plugin(root)
+    codes = {item.code for item in report.warnings}
+    assert "TOAST_DIRECT" in codes
+    assert report.ok is True
+
+
 def test_lint_rejects_missing_language(tmp_path: Path):
     root = write_plugin(tmp_path / "hello")
     (root / "resource" / "lang" / "ja_jp.yml").unlink()

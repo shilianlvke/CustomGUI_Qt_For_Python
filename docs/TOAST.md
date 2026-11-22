@@ -719,7 +719,7 @@ assert router.host.records[-1].level == "success"
 | 版本 | 变更 |
 | --- | --- |
 | 4.1.0 | 协议 v1 落地；`ctx.toast` 以**非抽象属性**加入（`NoopToast` 兜底）；`CToast` 直调保留；基座原生页与 py-rm / py-listen 已接入；文档 + 三项新测试文件 |
-| 4.2 | 基座原生页全部切到 `toast_bus()`；插件 `CToast` 直调在 lint 中降为警告（`plugin-lint` 新增规则 `toast-direct-use`） |
+| 4.2.0 | 依赖补全与插件管理忙碌态接入 toast（移除依赖模态与页内活动条）；`plugin-lint` 新增 `TOAST_DIRECT` 警告（不阻断旧插件） |
 | 5.0 / API 3 | `ctx.toast` 转为必需能力；插件侧 `CToast` 不再保证签名稳定；`severity` 旧枚举仅保留别名 |
 
 **为什么 API 2 不升版**：新增属性不是破坏性变更（`Plugin` / `GalleryContext` 的实现由基座提供，
