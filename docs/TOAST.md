@@ -21,7 +21,7 @@
 | 队列 | 每个锚点窗口一条栈（上限 `feedback.toast_max`=4）；**无阻塞队列**，溢出按级别裁决 |
 | 并发 | 任意线程可调；跨线程自动排队到 GUI 线程；进度更新 100ms 合并 |
 | 回调 | `on_dismiss(reason)` / `on_action(id)`；同时发 `toast.shown/updated/dismissed/action` 遥测 |
-| 错误码 | `TOAST_*` 19 个稳定码；业务错误码经 `code=` 透传，不进文案 |
+| 错误码 | `TOAST_*` 20 个稳定码（19 个受理结果 + 1 个生命周期）；业务错误码经 `code=` 透传，不进文案 |
 | 兼容 | API 2 不升版；`ctx.toast` 以非抽象属性加入，`CToast` 直调保留但降级为内部 API |
 
 ---
@@ -163,23 +163,23 @@ guicore/custom_ui/feedback/toast.py  CToast  ← 外观、动画、堆叠、悬�
 ### 4.3 状态机 `ToastState`
 
 ```text
-                    show()
-                      │
-      ┌───────────────┼───────────────────────────────┐
-      │ 命中去重 SUPPRESS                            │ 锚点/宿主不可用
-      ▼                                              ▼
-   CLOSED(duplicate_of)                        CLOSED(no_anchor)
-      │
-      ▼
-   QUEUED ── 进入 GUI 线程 / 同帧合并 ──► SHOWN ──update()──► SHOWN
-                                            │
-              ┌──────────┬──────────┬───────┼──────────┬─────────────┐
-              ▼          ▼          ▼       ▼          ▼             ▼
-          life 到点   dismiss()   被挤出   动作按钮   宿主关闭    插件卸载
-              │          │          │       │          │             │
-              ▼          ▼          ▼       ▼          ▼             ▼
-        DISMISSING → CLOSED（reason = timeout / manual / superseded /
-                                     action / host_closed / plugin_unloaded）
+                  show()
+                    │
+        ┌───────────┴────────────┐
+        │ 受理前判定              │
+        ├─ SUPPRESS 命中 ──► 返回已有句柄（result.duplicate_of）
+        ├─ 锚点/宿主不可用 ──► CLOSED(no_anchor)
+        ▼
+     QUEUED ── 进入 GUI 线程 / 同帧合并 ──► SHOWN ──update()──► SHOWN
+                                              │
+              ┌──────────┬──────────┬─────────┼──────────┬──────────────┐
+              ▼          ▼          ▼         ▼          ▼              ▼
+          life 到点   dismiss()   被挤出    动作按钮    宿主关闭      插件卸载
+              └──────────┴──────────┴─────────┴──────────┴──────────────┘
+                                              ▼
+                    DISMISSING ──► CLOSED（reason = timeout / manual /
+                                   superseded / replaced / cleared / action /
+                                   host_closed / plugin_unloaded / failed）
 ```
 
 | 状态 | 含义 | 对外可见 |
@@ -272,9 +272,9 @@ mode: ToastMode = STACK              # stack | replace | coalesce
 
 #### 4.7.2 溢出裁决（栈已满）
 
-1. 先尝试挤掉**同通道最旧**的非 `error` 条（`SUPERSEDED`）。
-2. 否则挤掉**级别最低**的非 `error` 条（neutral < info < success < warn）。
-3. `error` 条与带 action 的条**永不被挤**；若全部为 `error`，丢弃新条并返回 `TOAST_STACK_FULL`（遥测告警，用户界面无变化）。
+1. 先尝试挤掉**同通道最旧**、且不带 action 的非 `error` 条（`SUPERSEDED`）。
+2. 否则挤掉**级别最低**、且不带 action 的非 `error` 条（neutral < info < success < warn）。
+3. `error` 条与带 action 的条**永不被挤**；若没有可挤出的条，丢弃新条并返回 `TOAST_STACK_FULL`（遥测告警，界面无变化）。
 4. 被挤出的条必定触发 `on_dismiss(reason=SUPERSEDED)`，调用方可据此重排。
 
 #### 4.7.3 并发与线程
@@ -499,7 +499,8 @@ run_task(self, worker, name="pylisten.scan", on_done=done, on_error=failed)
 
 > 口径：**"瞬时、非阻塞、无需用户输入"** 这一类反馈共 18 个场景类，协议 18/18 有定义。
 > 其中 14 类由协议原生表达，4 类（确认/字段校验/常驻横幅/系统通知）由协议**显式指派**到既有组件。
-> 因此不存在"协议没规定、插件只好自己画"的中间地带 —— 这是"≥99%"的实质含义。
+> 因此不存在"协议没规定、插件只好自己画"的中间地带 —— 这是本协议对"≥99%"的工程口径：
+> **不是统计出来的百分比，而是"没有未定义场景"**；剩余部分是本协议显式排除并指派的四类。
 
 | # | 场景 | 协议表达 | 覆盖 |
 | --- | --- | --- | --- |
@@ -826,4 +827,4 @@ else:
 
 | 日期 | 版本 | 变更 |
 | --- | --- | --- |
-| 2026-11-22 | v1 设计稿 | 首次定义：7 级类型、句柄模型、去重/通道/溢出/限流、19 个协议码、注册规范、场景矩阵、实现落点 |
+| 2026-11-22 | v1 设计稿 | 首次定义：7 级类型、句柄模型、去重/通道/溢出/限流、20 个协议码、注册规范、场景矩阵、实现落点 |
