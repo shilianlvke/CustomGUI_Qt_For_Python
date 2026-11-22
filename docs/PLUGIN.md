@@ -75,10 +75,13 @@ permissions:
 - `permissions`：`network`、`filesystem.read`、`filesystem.write`、`subprocess`、
   `clipboard`、`notifications`、`tray`、`shortcuts`、`autostart`、`system.info`。
 - `python_dependencies`（可选）：第三方 Python 包声明（PEP 508 格式，如
-  `psutil>=6`）。基座在导入插件**之前**检查；缺失时弹窗让用户选择自动安装
-  （`uv pip install` 到当前解释器）或手动安装，安装失败则隔离该插件并记录
-  `PYTHON_DEPENDENCY_MISSING`。镜像源见 `sllkgui run --index-url` /
-  `SLLKGUI_PIP_INDEX_URL` / `sllkgui.configure(pip_index_url=...)`。
+  `psutil>=6`）。基座在导入插件**之前**检查；缺失时**不弹模态**：插件进入
+  「未就绪（缺少依赖）」状态并记录 `PYTHON_DEPENDENCY_MISSING`，启动只给一条
+  聚合提示。用户在「插件管理」里点「补全依赖」后，基座用
+  `uv pip install` 装到当前解释器并在成功后自动重载该插件；失败记录
+  `PYTHON_DEPENDENCY_INSTALL_FAILED`，详情页保留可复制的安装命令。
+  镜像源见 `sllkgui run --index-url` / `SLLKGUI_PIP_INDEX_URL` /
+  `sllkgui.configure(pip_index_url=...)`；`--no-install-deps` 下只检查不安装。
   能用标准库、纯 Python 小库或 `vendor/` 内联解决的，优先不声明。
 
   > **冻结形态例外**：宿主以 PyInstaller 等方式打包分发时，解释器不是可执行的

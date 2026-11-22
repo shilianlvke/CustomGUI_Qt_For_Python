@@ -7,6 +7,28 @@ minor 与 patch 保持向后兼容。
 
 ---
 
+## 未发布
+
+### 新增
+
+- **插件依赖补全改为「状态 + 一键修复」**：加载期只检查并回传结构化错误；插件管理详情
+  新增依赖区块（逐项「已就绪 / 缺失」、补全依赖、复制安装命令），补全在后台执行并在
+  成功后自动重载该插件。启动期缺依赖只聚合成一条可操作 toast（直达插件管理），不再
+  阻断启动。
+- **运行时依赖接口**：`GalleryRuntime.plugin_dependencies()` /
+  `install_plugin_dependencies()` / `plugin_dependency_command()`；
+  `PluginManager.declared_dependencies()` / `missing_dependencies()`。
+
+### 行为变更
+
+- **移除「缺少插件依赖」模态**：GUI 下 `ensure_python_dependencies(install=True)` 不再
+  询问用户，改为抛 `PYTHON_DEPENDENCY_MISSING`（`params` 带 `packages` / `command`）；
+  终端（无 GUI、有 TTY）保留文本询问。安装 / 启用 / 更新插件时若声明依赖缺失，
+  基座先补全再加载，失败保留可复制命令与详情页重试入口。
+- **插件管理页移除页内活动条**：刷新来源、安装、更新、回滚等忙碌反馈改为常驻
+  `loading` toast（结束后另发结果提示），页面不再因活动条出现/消失而挤动列表。
+- `_run_async` 现在可以同时给出成功提示与 `on_done` 回调（此前二选一）。
+
 ## 4.1.0（2026-11-22）
 
 ### 新增

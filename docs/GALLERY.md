@@ -97,9 +97,11 @@ sllkgui scaffold <dir> [--id ID] [--name NAME] [--source]
 
 - `run` 启动时检测 **uv** 与 **Git**：缺失时弹窗让用户选择自动安装（pip 装 uv、
   winget 装 Git）或手动安装，也可跳过（仅影响「从源安装/刷新插件」）。
-- 插件清单声明 `python_dependencies` 时，加载前检查当前解释器；缺失则提示
-  自动安装（`uv pip install --python <当前解释器>`）或给出手动命令。安装失败
-  的插件被隔离，记录 `PYTHON_DEPENDENCY_MISSING` / `PYTHON_DEPENDENCY_INSTALL_FAILED`。
+- 插件清单声明 `python_dependencies` 时，加载前检查当前解释器；缺失则隔离该插件
+  并记录 `PYTHON_DEPENDENCY_MISSING`（GUI 不弹模态，启动只给一条聚合提示 + 直达
+  插件管理；终端且无 GUI 时保留文本询问）。安装由插件管理的「补全依赖」触发，
+  使用 `uv pip install --python <当前解释器>`；失败记录
+  `PYTHON_DEPENDENCY_INSTALL_FAILED` 并保留可复制命令。
 - **冻结形态例外**：宿主以 PyInstaller 等方式打包时，`sys.executable` 指向打包产物
   而非解释器，安装必然失败。此时基座识别 `sys.frozen` / `sys._MEIPASS`，直接报
   `FROZEN_ENV_UNSUPPORTED` 并跳过该插件，而不是给出一条注定失败的手动命令。
