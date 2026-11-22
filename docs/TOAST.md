@@ -718,7 +718,7 @@ assert router.host.records[-1].level == "success"
 
 | 版本 | 变更 |
 | --- | --- |
-| 未发布（4.0.2 之后） | 协议 v1 落地；`ctx.toast` 以**非抽象属性**加入（`NoopToast` 兜底）；`CToast` 直调保留；基座原生页与 py-rm / py-listen 已接入；文档 + 三项新测试文件 |
+| 4.1.0 | 协议 v1 落地；`ctx.toast` 以**非抽象属性**加入（`NoopToast` 兜底）；`CToast` 直调保留；基座原生页与 py-rm / py-listen 已接入；文档 + 三项新测试文件 |
 | 4.2 | 基座原生页全部切到 `toast_bus()`；插件 `CToast` 直调在 lint 中降为警告（`plugin-lint` 新增规则 `toast-direct-use`） |
 | 5.0 / API 3 | `ctx.toast` 转为必需能力；插件侧 `CToast` 不再保证签名稳定；`severity` 旧枚举仅保留别名 |
 
