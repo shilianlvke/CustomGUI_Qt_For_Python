@@ -175,6 +175,7 @@ from . import helpers`）。若确实需要加载插件目录下的文件，用 
 | `shortcuts` | 基座快捷键表：注册/更新/注销、启停与冲突查询（见 `docs/SHORTCUTS.md`） |
 | `settings` | 统一设置：声明页面、读写本插件配置（见 `docs/SETTINGS.md`） |
 | `storage` | 契约化 KV 存储：读写清单 `data:` 声明的键，落 `data_dir`，删插件时清除 |
+| `toast` | 统一提示通道：7 级类型、去重、通道、进度、动作与关闭回调（见 `docs/TOAST.md`）|
 
 ### 契约化存储
 
@@ -194,6 +195,36 @@ count = ctx.storage.get("notes_index", {}).get("count", 0)
 
 值落在 `ctx.data_dir/<key>.json`，由基座原子写（`.bak` 回退）。卸载（reload/shutdown）保留数据，
 显式删除插件时随 `purge` 一并清除；与 `settings` 的用户数据保留语义一致。
+
+### 统一提示 `ctx.toast`
+
+所有可见反馈走一条通道：**不需要额外权限**，也不需要自己算标题栏偏移、
+自己维护「只留一条」的替换逻辑。
+
+```python
+ctx.toast.show("已保存", level="success", channel="editor", dedupe_key="save", dedupe="restart")
+
+handle = ctx.toast.loading("正在测试连接…", channel="webdav")
+try:
+    client.ping()
+except Exception as exc:
+    handle.fail("连接失败", code="WEBDAV_FAILED", detail=str(exc))
+else:
+    handle.succeed("连接成功")
+```
+
+约定：
+
+- **不抛异常**：非法参数折算成 `handle.result.code`（`TOAST_INVALID_LEVEL` 等），业务不受影响。
+- **去重**：`dedupe_key` 默认 1200ms 窗口；`dedupe` 支持 `suppress/restart/count/replace`。
+- **通道**：`channel` + `mode="replace"` 表示同一时刻只留最新一条（播放提示、同步进度）。
+- **常驻必须收敛**：`loading`/`progress` 的 `life=0`，必须 `succeed`/`fail`/`dismiss`；
+  忘记收敛时基座会在 120s 后兜底关闭并记 `TOAST_LEAK_AUTO_CLOSED`。
+- **卸载自动清理**：插件停用/更新时其 toast 一律关闭，回调不再触发。
+- **旧基座兼容**：4.0.x 没有 `ctx.toast`，需要兼容时用
+  `getattr(ctx, "toast", None)` 探测并降级为 `ctx.log`。
+
+完整类型、错误码与场景矩阵见 [TOAST.md](TOAST.md)。
 
 ### Surface 生命周期钩子
 

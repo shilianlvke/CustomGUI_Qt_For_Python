@@ -1,10 +1,13 @@
 # 统一 Toast 协议（v1）
 
-> **状态：设计稿，尚未实现。** 本文定义协议与接入规范；§8 给出文件级实现落点，
-> §9 给出兼容与迁移路径。落地前的现状盘点见
-> [reviews/2026-11-22-toast-audit.md](reviews/2026-11-22-toast-audit.md)。
+> **状态：已实现（协议 v1，2026-11-22）。** 实现文件：
+> `appcore/feedback.py`（纯数据模型）、`guicore/feedback/toast_bus.py`（总线）、
+> `guicore/custom_ui/feedback/toast.py`（渲染器）、`gallery/toast.py`（插件门面）。
+> §8 记录实际落点，§9 是兼容与迁移路径，§10 是验收与测试证据。
+> 改造前的现状盘点见 [reviews/2026-11-22-toast-audit.md](reviews/2026-11-22-toast-audit.md)。
 >
-> 适用基座：SllkGUI `4.0.x`（插件协议 API 2）。协议自身版本 `TOAST_PROTOCOL_VERSION = 1`。
+> 适用基座：SllkGUI `4.0.x`（插件协议 API 2，`ctx.toast` 为非破坏新增）。
+> 协议自身版本 `TOAST_PROTOCOL_VERSION = 1`。
 
 ---
 
@@ -664,7 +667,7 @@ assert router.host.records[-1].level == "success"
 
 ## 8. 实现落点（文件级）
 
-### 8.1 阶段 P1（协议可用，外观不变）
+### 8.1 阶段 P1（协议可用，外观不变）✅ 已完成
 
 | # | 文件 | 变更 |
 | --- | --- | --- |
@@ -683,7 +686,7 @@ assert router.host.records[-1].level == "success"
 | 13 | `guicore/window/settings_window/window.py` | 草稿失效改走 `toast_bus()`（`base.settings`） |
 | 14 | `docs/TOAST.md`（本文） + `docs/README.md` 索引 | 文档 |
 
-### 8.2 阶段 P2（渲染器增强）
+### 8.2 阶段 P2（渲染器增强）✅ 已完成
 
 | # | 变更 | 目的 |
 | --- | --- | --- |
@@ -694,8 +697,9 @@ assert router.host.records[-1].level == "success"
 | 5 | `detail` 的 tooltip / "查看日志" 动作 | 错误可定位 |
 | 6 | 文本超过 3 行折叠 + 展开 | 长错误 |
 
-> P2 缺失时协议**不阻塞**：`actions` 降级为纯文本（返回 `TOAST_ACTION_UNSUPPORTED`），
-> `progress` 降级为文案内百分比，`loading` 降级为 `info` + 常驻。
+> P2 已随 P1 一并落地：`loading` 用旋转指示、`progress` 用底部进度条（不确定进度为循环滑块）、
+> `actions` 为内联文本按钮（最多 2 个）、`COUNT` 去重在正文追加 `(×N)`、`detail` 进 tooltip、
+> 正文超过 3 行折叠并提供「展开 / 收起」。
 
 ### 8.3 关键实现约束
 
@@ -714,7 +718,7 @@ assert router.host.records[-1].level == "success"
 
 | 版本 | 变更 |
 | --- | --- |
-| 4.1 | 协议 v1 落地；`ctx.toast` 以**非抽象属性**加入（`NoopToast` 兜底）；`CToast` 直调保留；文档 + 严格模式 |
+| 未发布（4.0.2 之后） | 协议 v1 落地；`ctx.toast` 以**非抽象属性**加入（`NoopToast` 兜底）；`CToast` 直调保留；基座原生页与 py-rm / py-listen 已接入；文档 + 三项新测试文件 |
 | 4.2 | 基座原生页全部切到 `toast_bus()`；插件 `CToast` 直调在 lint 中降为警告（`plugin-lint` 新增规则 `toast-direct-use`） |
 | 5.0 / API 3 | `ctx.toast` 转为必需能力；插件侧 `CToast` 不再保证签名稳定；`severity` 旧枚举仅保留别名 |
 
@@ -762,7 +766,11 @@ else:
 
 ## 10. 验收与测试关注点
 
-### 10.1 验收标准（P1 完成时）
+### 10.1 验收标准
+
+> 2026-11-22 实现批次已用测试锁定：`tests/test_toast_protocol.py`（15 例，无 Qt）、
+> `tests/test_toast_bus.py`（16 例，Qt 总线）、`tests/test_toast_bridge.py`（5 例，
+> `ctx.toast` → 总线）；基座全量 841 例、py-rm 259 例、py-listen 77 例通过。
 
 | # | 验收项 | 判定 |
 | --- | --- | --- |

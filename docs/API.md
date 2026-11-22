@@ -194,10 +194,20 @@ available_languages()                # -> ("en_us", "ja_jp", "zh_cn", "zh_tw")
 ```python
 from sllkgui.plugin import (
     Plugin, GalleryContext, GalleryEvents, GalleryServices, GallerySettings, GalleryStorage, GalleryShortcut, GalleryShortcuts,
-    GalleryTray, Permission, PLUGIN_API_VERSION,
+    GalleryTray, GalleryToast, ToastAction, ToastDismiss, ToastHandle, ToastLevel, ToastMode, ToastResult,
+    Permission, PLUGIN_API_VERSION,
     Setting, SettingOption, SettingsAction, SettingsInfo, SettingsPage, SettingsSection,
     PluginError, ShortcutBinding, ShortcutConflict, TrayEntry, TrayGroup,
 )
+```
+
+提示走统一协议（`ctx.toast`）：失败也**不抛异常**，用 `handle.result.code` 判断；
+详情见 [TOAST.md](TOAST.md)。
+
+```python
+ctx.toast.show("已保存", level="success", channel="editor", dedupe="restart")
+handle = ctx.toast.loading("正在连接…", channel="net")
+handle.succeed("连接成功")          # 或 handle.fail("连接失败", code="NET_FAILED", detail=str(exc))
 ```
 
 宿主侧（加载器、注册表、存储）在 `sllkgui.gallery`：

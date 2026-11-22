@@ -1,6 +1,6 @@
 # 组件速查
 
-`sllkgui.guicore` 顶层导出 159 个公开名，其中 `custom_ui` 命名空间 105 个；
+`sllkgui.guicore` 顶层导出 163 个公开名，其中 `custom_ui` 命名空间 105 个；
 另有窗口部件、材质工具、`Styles`、字体、任务与回调工具。
 两个数字由 `tests/test_public_api_consistency.py` 与 `__all__` 实时校验，新增导出时请同步更新本行。
 全部组件由设计令牌驱动，主题切换后重绘即生效。
@@ -153,6 +153,16 @@ CToast.clear(parent)
 ```
 
 `CToast` 按窗口分组堆叠，`life=0` 表示不自动消失；同屏上限与停留时长走 `feedback` 设置段。
+
+页内与插件**不要直调** `CToast`：统一走 `toast_bus()`（原生页）或 `ctx.toast`（插件），
+由总线负责去重、通道、溢出与卸载清理；协议见 [TOAST.md](TOAST.md)。
+
+```python
+from sllkgui.guicore import toast_bus
+from sllkgui.appcore.feedback import ToastRequest, ToastAnchor
+
+toast_bus().show(ToastAnchor.AUTO, ToastRequest(text="已保存", level="success", scope="base"))
+```
 
 ### 浮层
 

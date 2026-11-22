@@ -7,8 +7,26 @@
 >
 > **行号基于本次快照，重构后可能漂移；表格以「文件 + 函数名」为主键，行号仅作定位参考。**
 > 统计口径：AST 计 `Call` 节点，不含函数定义本身。
+>
+> 本轮审计与改造**同批完成**：§0 是实施结果，§2–§5 保留改造前的现状快照（用于回溯
+> 「为什么这么改」），当前代码已不含其中多数私有封装。
 
 ---
+
+## 0. 实施结果（同批完成）
+
+| 项 | 状态 | 证据 |
+| --- | --- | --- |
+| 协议骨架（模型 / 总线 / 路由 / 门面） | ✅ | `appcore/feedback.py`、`guicore/feedback/toast_bus.py`、`gallery/toast.py`、`guicore/feedback` 包；`import` 不拉 Qt（子进程断言） |
+| 渲染器增强（更新/进度/动作/计数/折叠） | ✅ | `custom_ui/feedback/toast.py`；`CToast.show_message` 旧契约保留 |
+| 基座原生页接入 | ✅ | 插件管理页 `set_status`/`_fail`（含「复制错误信息」动作与码表）、设置窗口草稿提示、`gallery/window._notify_failure`、`registry.ensure_registered_page` 的 6 个失败分支 |
+| py-rm 接入 | ✅ | `_set_status` 单通道替换；补齐置顶/桌面层对称回执；旧基座降级为日志 |
+| py-listen 接入 | ✅ | `_toast` 适配、播放提示 `replace` 通道、WebDAV 三条 loading 收敛、页脚重复提示去除、下载完成/失败与队列清空回执；`ui/notify.py` 统一旧基座降级 |
+| 测试 | ✅ | 新增 `test_toast_protocol.py`（15）、`test_toast_bus.py`（16）、`test_toast_bridge.py`（5）、`test_notify.py`（4）；基座 841 / py-rm 259 / py-listen 77 全绿 |
+| R-15 大备份阻塞 | ⚠ 未改 | `import_backup` 复用主线程 sqlite 连接（连接有线程亲和性），需先重构 DB 连接模型；已在代码注释与协议审计标注 |
+
+> 结论：89 条改造中，除 R-15 需要独立的 DB 线程模型改造外，其余全部落地。
+> 「保留」项（确认对话框、字段校验、对话框内联页脚、托盘通知）按协议边界保持原样。
 
 ## 1. 结论摘要
 
@@ -376,11 +394,11 @@ uv run pytest -q tests/test_architecture_boundaries.py
 
 | 阶段 | 范围 | 交付 | 验收 |
 | --- | --- | --- | --- |
-| **P0-1** | `gallery/api.py` 类型 + `gallery/toast.py` 路由 + `guicore/feedback/toast_bus.py` | 协议可用、无 UI 变更 | 协议层单测全绿；`import` 不拉 Qt |
-| **P0-2** | `registry.py` 静默分支 + `gallery/window.py` + 插件管理页 `_fail` | 消除"点了没反应" | 失败路径均有 error toast 与错误码 |
-| **P0-3** | py-rm `_set_status` → `ctx.toast`；py-listen `_toast` / `_show_toast` → `ctx.toast` | 删除 3 处偏移与 2 处替换逻辑 | 两插件无 `CToast` 直调 |
-| **P1** | 其余成功/警告点批量替换；py-listen 页脚与 toast 去重；loading 配对 | 语义统一 | 重复提示为 0；风暴测试通过 |
-| **P2** | `CToast` 加载/进度/动作/计数；`ToastCatalog`；lint 规则；`notify` 辅助 | 体验增强 | 视觉基线更新；lint 生效 |
+| **P0-1** | `gallery/api.py` 类型 + `gallery/toast.py` 路由 + `guicore/feedback/toast_bus.py` | ✅ 已完成 | `test_toast_protocol.py` / `test_toast_bus.py` |
+| **P0-2** | `registry.py` 静默分支 + `gallery/window.py` + 插件管理页 `_fail` | ✅ 已完成 | `test_gallery_failure_visibility.py`（改为断言协议字段） |
+| **P0-3** | py-rm `_set_status` → `ctx.toast`；py-listen `_toast` / `_show_toast` → `ctx.toast` | ✅ 已完成 | 两插件 grep 无 `CToast` 直调 |
+| **P1** | 其余成功/警告点批量替换；py-listen 页脚与 toast 去重；loading 配对 | ✅ 已完成 | `test_skin_settings.py` 断言通道/替换；WebDAV 三流程同句柄 |
+| **P2** | `CToast` 加载/进度/动作/计数；`ToastCatalog`；lint 规则；`notify` 辅助 | ✅ 已完成（`plugin_store/copy.py` 承担码表；lint 规则留待 4.2） | 视觉基线待人工复测 |
 
 **不建议一次性全改**：先 P0-1/P0-2（基座自身），再逐插件替换。原因是协议一旦定稿，
 插件侧只是机械替换；反过来先改插件会迫使他们继续维护私有封装。

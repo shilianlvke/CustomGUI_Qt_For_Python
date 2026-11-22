@@ -51,6 +51,8 @@
   全量重载仍保留为 `force_full=True` 回退路径。
 - 选择性重载先做清单/依赖/Surface 实现预检，再卸载旧实例；更新失败尝试用 history 目录回滚。
   原生扩展（`.pyd` / `.so` / `.dll`）不参与热替换，返回 `PLUGIN_RESTART_REQUIRED`。
+- 可见反馈只有一条通道：插件走 `ctx.toast`，原生页走 `guicore.toast_bus()`，
+  去重/通道/溢出/卸载清理由总线裁决（见 `docs/TOAST.md`）；`CToast` 只负责渲染。
 - 输入类能力（托盘、快捷键）由基座持有唯一实例，插件只注册条目：托盘走
   `ctx.tray`（声明槽与次序，形态与预算由基座裁决），快捷键走 `ctx.shortcuts`，
   两者都在卸载时由加载器统一清理。

@@ -14,7 +14,7 @@
 | [GALLERY.md](GALLERY.md) | gallery / run 两种模式、存储布局、加载流程、命令 | 用命令行、排查加载问题的人 |
 | [SETTINGS.md](SETTINGS.md) | 统一设置系统：命名空间、存储、基座页面、插件 `ctx.settings`、组件与保存语义 | 改设置或给插件加配置的人 |
 | [COMPONENTS.md](COMPONENTS.md) | 组件分类、常用签名、窗口部件、设计令牌、设置项速查 | 写界面的人 |
-| [TOAST.md](TOAST.md) | 统一 Toast 协议 v1（**设计稿**）：类型、去重、通道/并发、事件、错误码、注册规范、场景覆盖 | 写插件反馈、做通知一致性改造的人 |
+| [TOAST.md](TOAST.md) | 统一 Toast 协议 v1：类型、去重、通道/并发、事件、错误码、注册规范、场景覆盖 | 写插件反馈、做通知一致性改造的人 |
 | [POPUP_MENU.md](POPUP_MENU.md) | 自绘弹出菜单：接口、交互、边界与 `QMenu` 迁移 | 写菜单的人 |
 | [TRAY.md](TRAY.md) | 托盘所有权、槽位裁决、插件动作协议 | 写托盘动作的人 |
 | [SHORTCUTS.md](SHORTCUTS.md) | 快捷键作用域、优先级、冲突策略与插件协议 | 写快捷键的人 |

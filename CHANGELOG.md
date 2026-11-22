@@ -11,6 +11,14 @@ minor 与 patch 保持向后兼容。
 
 ### 新增
 
+- **统一 Toast 协议（v1）**：新增 `ctx.toast`（插件）与 `guicore.toast_bus()`（原生页）两个入口，
+  统一 7 级类型（success/info/warn/error/neutral/loading/progress）、去重（suppress/restart/count/replace）、
+  通道（stack/replace/coalesce）、溢出裁决、跨线程投递、进度与动作按钮、关闭回调与遥测。
+  协议、错误码与注册规范见 `docs/TOAST.md`。
+- **提示渲染增强**：`CToast` 支持内容热更新、加载旋转指示、底部进度条（含不确定进度）、
+  内联动作按钮、`(×N)` 合并计数、`detail` tooltip 与超过 3 行折叠。
+- **页面构建失败可见**：`ensure_registered_page(...)` 的 6 个失败分支不再静默，
+  经 `on_error(code, detail)` 回传并由调用方给出可定位提示。
 - **插件选择性热重载**：启用、停用、更新、回滚、卸载时只卸载/加载目标插件及其反向依赖者，
   未受影响的插件与页面实例保持不变；插件管理页不再因启停/更新而被销毁。全量重载保留为
   `force_full=True` 回退路径。
@@ -23,6 +31,10 @@ minor 与 patch 保持向后兼容。
 
 ### 行为变更
 
+- 提示的时长、堆叠、避让偏移与去重由基座统一裁决：插件管理页、py-rm、py-listen 不再各自维护
+  `_toast` / `_set_status` 封装与硬编码偏移；设置窗口里的动作结果锚定到设置窗口。
+- 插件卸载/更新时其全部 toast 以 `PLUGIN_UNLOADED` 关闭，回调不再触发（热重载不再留下悬空引用）。
+- 长时间未收敛的 `loading` / `progress`（`life=0`）由 120s 看门狗兜底关闭并记录 `TOAST_LEAK_AUTO_CLOSED`。
 - 停用提供者插件时，基座会同时停用已启用的依赖者，避免依赖者继续运行却解析不到服务。
 - 插件更新/回滚失败时，基座尝试把 history 中的旧版本移回并重新加载；插件数据迁移不回滚。
 - 含原生扩展（`.pyd` / `.so` / `.dll` / `.dylib`）的插件更新/回滚返回
