@@ -1,0 +1,607 @@
+<!doctype html>
+<html lang="zh-CN" data-theme="default">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>SllkGui — 基于 PySide6 的桌面 UI 基座</title>
+  <meta name="description" content="SllkGui 是一个基于 PySide6 的开源桌面 UI 基座：窗口骨架、组件库、主题与多语言、插件运行时都已就位，你只需要专心写页面和业务。">
+  <meta name="keywords" content="SllkGui, PySide6, Qt, 桌面应用, UI 基座, 组件库, 插件系统, 开源">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="SllkGui — 基于 PySide6 的桌面 UI 基座">
+  <meta property="og:description" content="窗口骨架、组件库、主题与多语言、插件运行时。把桌面应用的底色，一次打好。">
+  <meta name="theme-color" content="#0b0f12">
+  <link rel="icon" href="assets/favicon.png" type="image/png">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=Instrument+Serif:ital@0;1&family=Noto+Sans+SC:wght@400;500;700&family=Noto+Serif+SC:wght@600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <a class="skip-link" href="#main">跳到主要内容</a>
+  <div class="noise" aria-hidden="true"></div>
+
+  <header class="site-header" id="siteHeader">
+    <div class="header-inner">
+      <a class="brand" href="#top" aria-label="SllkGui 首页">
+        <svg class="brand-mark" viewBox="0 0 32 32" fill="none" aria-hidden="true">
+          <rect x="2.5" y="4.5" width="27" height="23" rx="5.5" stroke="currentColor" stroke-width="1.6"/>
+          <path d="M2.5 11.5h27" stroke="currentColor" stroke-width="1.2" opacity=".4"/>
+          <circle cx="6.6" cy="8" r="1.1" fill="currentColor"/>
+          <rect x="6" y="15" width="5.5" height="9" rx="2" fill="currentColor" opacity=".9"/>
+          <rect x="14.5" y="15" width="10" height="2.6" rx="1.3" fill="currentColor" opacity=".55"/>
+          <rect x="14.5" y="20.4" width="7" height="2.6" rx="1.3" fill="currentColor" opacity=".35"/>
+        </svg>
+        <span class="brand-word">SllkGui</span>
+        <span class="brand-ver">v4.2.0</span>
+      </a>
+
+      <nav class="main-nav" aria-label="主导航">
+        <a href="#intro" data-nav="intro">简介</a>
+        <a href="#features" data-nav="features">能力</a>
+        <a href="#themes" data-nav="themes">主题</a>
+        <a href="#scenarios" data-nav="scenarios">场景</a>
+        <a href="#start" data-nav="start">快速开始</a>
+        <a href="#docs" data-nav="docs">文档</a>
+      </nav>
+
+      <div class="header-actions">
+        <div class="theme-switch" role="group" aria-label="站点配色，对应 SllkGui 内置主题">
+          <button class="theme-dot" type="button" data-set-theme="default" aria-label="Default 主题" aria-pressed="true"><span style="--dot:#5bd1e6"></span></button>
+          <button class="theme-dot" type="button" data-set-theme="bright" aria-label="Bright 主题" aria-pressed="false"><span style="--dot:#1668e3"></span></button>
+          <button class="theme-dot" type="button" data-set-theme="dracula" aria-label="Dracula 主题" aria-pressed="false"><span style="--dot:#ff79c6"></span></button>
+          <button class="theme-dot" type="button" data-set-theme="eye" aria-label="Eye 主题" aria-pressed="false"><span style="--dot:#4fd08a"></span></button>
+        </div>
+        <a class="btn btn-outline btn-sm header-source" href="https://gitee.com/shilianlvke/SllkGui" target="_blank" rel="noopener noreferrer">
+          Gitee 源码
+          <svg viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M4 12 12 4M6 4h6v6" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </a>
+        <button class="nav-toggle" type="button" aria-expanded="false" aria-controls="mobileMenu" aria-label="打开菜单">
+          <span></span><span></span>
+        </button>
+      </div>
+    </div>
+
+    <div class="mobile-menu" id="mobileMenu" hidden>
+      <nav aria-label="移动端导航">
+        <a href="#intro">简介</a>
+        <a href="#features">能力</a>
+        <a href="#themes">主题</a>
+        <a href="#scenarios">场景</a>
+        <a href="#start">快速开始</a>
+        <a href="#docs">文档</a>
+      </nav>
+      <div class="mobile-menu-foot">
+        <div class="theme-switch" role="group" aria-label="站点配色，对应 SllkGui 内置主题">
+          <button class="theme-dot" type="button" data-set-theme="default" aria-label="Default 主题" aria-pressed="true"><span style="--dot:#5bd1e6"></span></button>
+          <button class="theme-dot" type="button" data-set-theme="bright" aria-label="Bright 主题" aria-pressed="false"><span style="--dot:#1668e3"></span></button>
+          <button class="theme-dot" type="button" data-set-theme="dracula" aria-label="Dracula 主题" aria-pressed="false"><span style="--dot:#ff79c6"></span></button>
+          <button class="theme-dot" type="button" data-set-theme="eye" aria-label="Eye 主题" aria-pressed="false"><span style="--dot:#4fd08a"></span></button>
+        </div>
+        <a class="btn btn-primary btn-sm" href="https://gitee.com/shilianlvke/SllkGui" target="_blank" rel="noopener noreferrer">Gitee 源码</a>
+      </div>
+    </div>
+  </header>
+
+  <main id="main">
+    <section class="hero" id="top">
+      <div class="hero-grid-bg" aria-hidden="true"></div>
+      <div class="hero-glow" aria-hidden="true"></div>
+      <div class="hero-inner">
+        <div class="hero-copy">
+          <p class="eyebrow hero-eyebrow"><span class="pulse"></span>OPEN SOURCE · PYSIDE6 DESKTOP FOUNDATION</p>
+          <h1>把桌面应用的<br><span class="ink">底色</span>，一次打好。</h1>
+          <p class="lede">SllkGui 是一个基于 PySide6 的桌面 UI 基座：窗口骨架、组件库、主题与多语言、插件运行时都已就位，你只需要专心写页面和业务。</p>
+          <div class="hero-actions">
+            <a class="btn btn-primary" href="#start">
+              快速开始
+              <svg viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M3 8h10M9 4l4 4-4 4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            </a>
+            <a class="btn btn-outline" href="https://gitee.com/shilianlvke/SllkGui" target="_blank" rel="noopener noreferrer">
+              查看源码
+              <svg viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M4 12 12 4M6 4h6v6" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            </a>
+          </div>
+          <dl class="hero-facts">
+            <div><dt>当前版本</dt><dd>4.2.0</dd></div>
+            <div><dt>运行环境</dt><dd>Python ≥ 3.12</dd></div>
+            <div><dt>插件协议</dt><dd>API 2</dd></div>
+            <div><dt>许可证</dt><dd>MIT</dd></div>
+          </dl>
+        </div>
+
+        <div class="hero-visual">
+          <div class="app-window" role="img" aria-label="SllkGui 默认主题界面结构示意：左侧导航栏、中部组件预览、右侧外观设置。">
+            <div class="win-bar">
+              <span class="win-logo" aria-hidden="true">
+                <svg viewBox="0 0 20 20" fill="none"><rect x="2" y="3" width="16" height="14" rx="3" stroke="currentColor" stroke-width="1.2"/><path d="M2 7h16" stroke="currentColor" stroke-width="1" opacity=".5"/><rect x="5" y="9.5" width="3" height="5" rx="1" fill="currentColor" opacity=".8"/></svg>
+              </span>
+              <span class="win-title">SllkGui · 组件预览</span>
+              <span class="win-controls" aria-hidden="true"><i></i><i></i><i></i></span>
+            </div>
+            <div class="win-body">
+              <div class="win-rail" aria-hidden="true">
+                <span class="rail-btn is-active"><svg viewBox="0 0 24 24"><path d="M12 3l2.7 5.8 6.3.7-4.7 4.3 1.2 6.2L12 16.9 6.5 20l1.2-6.2L3 9.5l6.3-.7z"/></svg></span>
+                <span class="rail-btn"><svg viewBox="0 0 24 24"><rect x="4" y="4" width="6" height="6" rx="1.5"/><rect x="14" y="4" width="6" height="6" rx="1.5"/><rect x="4" y="14" width="6" height="6" rx="1.5"/><rect x="14" y="14" width="6" height="6" rx="1.5"/></svg></span>
+                <span class="rail-btn"><svg viewBox="0 0 24 24"><path d="M6 16v-5a6 6 0 1112 0v5l1.5 2.5h-15L6 16z"/><path d="M10 21h4"/></svg></span>
+                <span class="rail-btn"><svg viewBox="0 0 24 24"><circle cx="9" cy="8" r="3"/><path d="M3.5 19c.6-3.2 2.8-5 5.5-5s4.9 1.8 5.5 5"/><circle cx="17" cy="9" r="2.2"/><path d="M16 14.2c2.4.1 4 1.7 4.5 4.3"/></svg></span>
+                <span class="rail-btn"><svg viewBox="0 0 24 24"><rect x="3.5" y="5" width="17" height="14" rx="2.5"/><path d="M3.5 9.5h17M8 5v4.5"/></svg></span>
+                <span class="rail-btn"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3.2"/><path d="M12 2.8v3M12 18.2v3M2.8 12h3M18.2 12h3M5.5 5.5l2.1 2.1M16.4 16.4l2.1 2.1M18.5 5.5l-2.1 2.1M7.6 16.4l-2.1 2.1"/></svg></span>
+              </div>
+              <div class="win-main">
+                <div class="win-head"><span class="win-head-dot"></span>按钮预览<span class="win-badge">Surface</span></div>
+                <div class="mock-grid">
+                  <div class="mock-col">
+                    <div class="mock-panel">
+                      <div class="mock-label">默认</div>
+                      <div class="mock-buttons">
+                        <span class="m-btn m-primary">提交</span>
+                        <span class="m-btn m-disabled">禁用</span>
+                        <span class="m-link">链接</span>
+                      </div>
+                    </div>
+                    <div class="mock-panel">
+                      <div class="mock-label">语义色</div>
+                      <div class="m-chips">
+                        <span class="m-chip s-primary">Primary</span>
+                        <span class="m-chip s-secondary">Secondary</span>
+                        <span class="m-chip s-success">Success</span>
+                        <span class="m-chip s-info">Info</span>
+                        <span class="m-chip s-warn">Warn</span>
+                        <span class="m-chip s-help">Help</span>
+                        <span class="m-chip s-danger">Danger</span>
+                        <span class="m-chip s-contrast">Contrast</span>
+                      </div>
+                    </div>
+                    <div class="mock-panel mock-text">
+                      <div class="mock-label">文字</div>
+                      <div class="m-textrow"><span class="t-primary">Primary</span><span class="t-secondary">Secondary</span><span class="t-success">Success</span><span class="t-info">Info</span></div>
+                      <div class="m-textrow"><span class="t-warn">Warn</span><span class="t-help">Help</span><span class="t-danger">Danger</span><span class="t-plain">朴素</span></div>
+                    </div>
+                  </div>
+                  <aside class="mock-side">
+                    <div class="side-title">外观配置<span class="side-close">×</span></div>
+                    <div class="side-sub">主题、语言与界面布局</div>
+                    <div class="side-label">主题</div>
+                    <div class="theme-mini-grid">
+                      <div class="theme-mini is-active"><span class="tm-name">Default</span><span class="tm-swatches"><i style="--sw:#0b0f12"></i><i style="--sw:#1a2026"></i><i style="--sw:#5bd1e6"></i><i style="--sw:#f5f7f8"></i></span></div>
+                      <div class="theme-mini"><span class="tm-name">Bright</span><span class="tm-swatches"><i style="--sw:#f5f2ea"></i><i style="--sw:#ffffff"></i><i style="--sw:#1668e3"></i><i style="--sw:#0e9f8a"></i></span></div>
+                      <div class="theme-mini"><span class="tm-name">Dracula</span><span class="tm-swatches"><i style="--sw:#17101f"></i><i style="--sw:#2a1c36"></i><i style="--sw:#ff79c6"></i><i style="--sw:#bd93f9"></i></span></div>
+                      <div class="theme-mini"><span class="tm-name">Eye</span><span class="tm-swatches"><i style="--sw:#0e1a16"></i><i style="--sw:#1a2f27"></i><i style="--sw:#4fd08a"></i><i style="--sw:#c9e88a"></i></span></div>
+                    </div>
+                    <div class="side-row"><span>深色模式</span><span class="m-toggle"><i></i></span></div>
+                    <div class="side-row"><span>窗口透明度</span><span class="m-slider"><i></i></span></div>
+                  </aside>
+                </div>
+              </div>
+            </div>
+            <div class="win-status"><span>SllkGui 基于 PySide6 的开源 UI 基座</span><span>4.2.0</span></div>
+          </div>
+
+          <div class="float-card float-api" aria-hidden="true">
+            <span class="float-k">插件协议</span>
+            <strong>API 2</strong>
+            <span class="float-sub">Surface · 依赖 · 热重载</span>
+          </div>
+          <div class="float-card float-theme" aria-hidden="true">
+            <span class="float-k">内置</span>
+            <strong>4 主题 · 4 语言</strong>
+            <span class="float-sub">切换后重绘即生效</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="ticker" aria-hidden="true">
+        <div class="ticker-track">
+          <div class="ticker-group">
+            <span>窗口骨架</span><i></i><span>设计令牌</span><i></i><span>163 个公开组件名</span><i></i><span>4 套内置主题</span><i></i><span>4 种语言</span><i></i><span>Surface 页面</span><i></i><span>Toast 协议 v1</span><i></i><span>插件热重载</span><i></i><span>托盘与快捷键</span><i></i><span>亚克力材质</span><i></i>
+            <span>窗口骨架</span><i></i><span>设计令牌</span><i></i><span>163 个公开组件名</span><i></i><span>4 套内置主题</span><i></i><span>4 种语言</span><i></i><span>Surface 页面</span><i></i><span>Toast 协议 v1</span><i></i><span>插件热重载</span><i></i><span>托盘与快捷键</span><i></i><span>亚克力材质</span><i></i>
+          </div>
+          <div class="ticker-group" aria-hidden="true">
+            <span>窗口骨架</span><i></i><span>设计令牌</span><i></i><span>163 个公开组件名</span><i></i><span>4 套内置主题</span><i></i><span>4 种语言</span><i></i><span>Surface 页面</span><i></i><span>Toast 协议 v1</span><i></i><span>插件热重载</span><i></i><span>托盘与快捷键</span><i></i><span>亚克力材质</span><i></i>
+            <span>窗口骨架</span><i></i><span>设计令牌</span><i></i><span>163 个公开组件名</span><i></i><span>4 套内置主题</span><i></i><span>4 种语言</span><i></i><span>Surface 页面</span><i></i><span>Toast 协议 v1</span><i></i><span>插件热重载</span><i></i><span>托盘与快捷键</span><i></i><span>亚克力材质</span><i></i>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="section intro" id="intro">
+      <div class="intro-grid">
+        <div class="intro-lead reveal-on-scroll">
+          <p class="eyebrow">01 / 项目简介</p>
+          <h2>不是另一个<br>UI 套件，<br>而是应用的底座。</h2>
+          <p class="section-lede">桌面应用总要重复解决同一批问题：窗口怎么搭、菜单怎么排、主题怎么换、插件怎么装。SllkGui 把这些做成一套可运行、可扩展的基座。</p>
+          <a class="text-link" href="https://gitee.com/shilianlvke/SllkGui/blob/main/docs/ARCHITECTURE.md" target="_blank" rel="noopener noreferrer">阅读架构说明 <span aria-hidden="true">→</span></a>
+        </div>
+        <div class="intro-list">
+          <article class="intro-row reveal-on-scroll">
+            <span class="row-index">01</span>
+            <div>
+              <h3>一套可运行的窗口外壳</h3>
+              <p>标题栏、左菜单、四向抽屉、设置窗口、托盘与快捷键表，按真实桌面应用的结构组织，而不是零散控件的拼图。</p>
+            </div>
+          </article>
+          <article class="intro-row reveal-on-scroll">
+            <span class="row-index">02</span>
+            <div>
+              <h3>分层清晰的代码底座</h3>
+              <p><code>appcore</code> 不依赖 PySide6，<code>guicore</code> 负责组件与令牌，<code>gallery</code> 负责插件协议与加载；包间边界由守卫测试锁定。</p>
+            </div>
+          </article>
+          <article class="intro-row reveal-on-scroll">
+            <span class="row-index">03</span>
+            <div>
+              <h3>面向扩展的插件协议</h3>
+              <p>一个 Git 仓库就是一个插件，通过 <strong>Surface</strong> 向宿主贡献页面；路由键为 <code>plugin_id/surface_id</code>，可贡献多个页面。</p>
+            </div>
+          </article>
+          <article class="intro-row reveal-on-scroll">
+            <span class="row-index">04</span>
+            <div>
+              <h3>明确的信任边界</h3>
+              <p>插件在宿主进程内运行，权限声明用于知情同意，而不是沙箱。安装前请自行确认来源可信。</p>
+            </div>
+          </article>
+        </div>
+      </div>
+      <p class="pull-quote reveal-on-scroll">SllkGui 是基座，不是成品业务应用。它适合承载你自己的页面、插件与工作流。</p>
+    </section>
+
+    <section class="section features" id="features">
+      <div class="section-head reveal-on-scroll">
+        <p class="eyebrow">02 / 核心能力</p>
+        <h2>桌面应用需要的东西，<br>这里已经打好了底。</h2>
+        <p class="section-lede">从窗口壳层到插件运行时，六个模块可以单独取用，也可以组合成一个完整的宿主。</p>
+      </div>
+
+      <div class="bento">
+        <article class="bento-card span-7 reveal-on-scroll">
+          <div class="card-top"><span class="card-index">01</span><span class="card-tag">SHELL</span></div>
+          <h3>窗口与壳层</h3>
+          <p>标题栏、左菜单、页面栈、设置窗口与四向抽屉；托盘、快捷键、窗口材质各有独立协议，亚克力不可用时自动降级。</p>
+          <div class="card-visual visual-shell" aria-hidden="true">
+            <div class="shell-frame">
+              <div class="shell-bar"><i></i><i></i><i></i></div>
+              <div class="shell-body">
+                <div class="shell-rail"><i></i><i></i><i></i><i></i><i></i></div>
+                <div class="shell-pages"><span></span><span></span><span></span></div>
+              </div>
+            </div>
+          </div>
+        </article>
+
+        <article class="bento-card span-5 reveal-on-scroll">
+          <div class="card-top"><span class="card-index">02</span><span class="card-tag">WIDGETS</span></div>
+          <h3>组件库</h3>
+          <p>按钮、输入、数据表、菜单、浮层、反馈、图表与窗口部件，全部由设计令牌驱动。按文档记录，<code>guicore</code> 顶层导出 163 个公开名，其中 <code>custom_ui</code> 命名空间 105 个。</p>
+          <div class="card-visual visual-chips" aria-hidden="true">
+            <span class="comp-chip">CButton</span>
+            <span class="comp-chip">CDataTable</span>
+            <span class="comp-chip">CSelect</span>
+            <span class="comp-chip">CToast</span>
+            <span class="comp-chip">CCard</span>
+            <span class="comp-chip">CSideNav</span>
+            <span class="comp-chip">CMenu</span>
+            <span class="comp-chip">CChart</span>
+          </div>
+        </article>
+
+        <article class="bento-card span-5 reveal-on-scroll">
+          <div class="card-top"><span class="card-index">03</span><span class="card-tag">THEME</span></div>
+          <h3>主题与设计令牌</h3>
+          <p>内置 Default、Bright、Dracula、Eye 四套配色，语义色、尺寸与动效参数集中管理；透明度、质感与背景图支持实时预览。</p>
+          <div class="card-visual visual-themes" aria-hidden="true">
+            <div class="swatch-row"><span class="swatch-name">Default</span><span class="swatch-bars"><i style="--c:#0b0f12"></i><i style="--c:#1a2026"></i><i style="--c:#5bd1e6"></i><i style="--c:#f5f7f8"></i></span></div>
+            <div class="swatch-row"><span class="swatch-name">Bright</span><span class="swatch-bars"><i style="--c:#f5f2ea"></i><i style="--c:#ffffff"></i><i style="--c:#1668e3"></i><i style="--c:#0e9f8a"></i></span></div>
+            <div class="swatch-row"><span class="swatch-name">Dracula</span><span class="swatch-bars"><i style="--c:#17101f"></i><i style="--c:#2a1c36"></i><i style="--c:#ff79c6"></i><i style="--c:#bd93f9"></i></span></div>
+            <div class="swatch-row"><span class="swatch-name">Eye</span><span class="swatch-bars"><i style="--c:#0e1a16"></i><i style="--c:#1a2f27"></i><i style="--c:#4fd08a"></i><i style="--c:#c9e88a"></i></span></div>
+          </div>
+        </article>
+
+        <article class="bento-card span-7 reveal-on-scroll">
+          <div class="card-top"><span class="card-index">04</span><span class="card-tag">I18N · SETTINGS</span></div>
+          <h3>多语言与统一设置</h3>
+          <p>随包提供简体中文、繁體中文、English、日本語四种语言。设置只有一套界面：外观、界面、软件信息与插件配置页合并在一个设置窗口里，修改实时预览。</p>
+          <div class="card-visual visual-i18n" aria-hidden="true">
+            <div class="lang-row is-on"><span>简体中文</span><code>zh-CN</code><i></i></div>
+            <div class="lang-row"><span>繁體中文</span><code>zh-TW</code><i></i></div>
+            <div class="lang-row"><span>English</span><code>en-US</code><i></i></div>
+            <div class="lang-row"><span>日本語</span><code>ja-JP</code><i></i></div>
+          </div>
+        </article>
+
+        <article class="bento-card span-7 reveal-on-scroll">
+          <div class="card-top"><span class="card-index">05</span><span class="card-tag">PLUGIN RUNTIME</span></div>
+          <h3>插件运行时</h3>
+          <p>插件即仓库，页面即 Surface。支持来源管理、依赖检查与一键补全、按插件选择性热重载，以及统一的 Toast 反馈协议。</p>
+          <div class="card-visual visual-plugin" aria-hidden="true">
+            <div class="route-node route-host"><span>宿主窗口</span></div>
+            <div class="route-lines"><i></i><i></i><i></i></div>
+            <div class="route-nodes">
+              <div class="route-node"><span class="route-id">com.example.notes</span><span class="route-path">/home</span></div>
+              <div class="route-node"><span class="route-id">com.example.notes</span><span class="route-path">/settings</span></div>
+              <div class="route-node"><span class="route-id">com.example.tools</span><span class="route-path">/dashboard</span></div>
+            </div>
+          </div>
+        </article>
+
+        <article class="bento-card span-5 reveal-on-scroll">
+          <div class="card-top"><span class="card-index">06</span><span class="card-tag">LAUNCHER · CLI</span></div>
+          <h3>启动器与命令行</h3>
+          <p>Windows 启动器双击即用，无需预装 Python，自动完成七步环境初始化；CLI 覆盖运行、插件源、校验、脚手架与诊断。</p>
+          <div class="card-visual visual-cli" aria-hidden="true">
+            <div class="cli-line"><span>$</span>uv run sllkgui gallery</div>
+            <div class="cli-note"># 组件预览模式</div>
+            <div class="cli-line"><span>$</span>uv run sllkgui doctor</div>
+            <div class="cli-note"># 路径与安装状态诊断</div>
+          </div>
+        </article>
+      </div>
+    </section>
+
+    <section class="section themes" id="themes">
+      <div class="section-head themes-head reveal-on-scroll">
+        <div>
+          <p class="eyebrow">03 / 外观</p>
+          <h2>四套主题，<br>同一套设计令牌。</h2>
+        </div>
+        <p class="section-lede">Default、Bright、Dracula、Eye 随包提供。选择下方卡片可以切换本站配色——本站复刻其色感，产品内实际效果以下方截图为准。</p>
+      </div>
+
+      <div class="theme-layout">
+        <div class="theme-cards reveal-on-scroll" role="tablist" aria-label="SllkGui 内置主题">
+          <button class="theme-card is-active" type="button" role="tab" aria-selected="true" aria-controls="themePanel" data-theme-target="default">
+            <span class="tc-head"><span class="tc-name">Default</span><span class="tc-check" aria-hidden="true">✓</span></span>
+            <span class="tc-desc">深色 · 亚克力质感</span>
+            <span class="tc-bars"><i style="--c:#0b0f12"></i><i style="--c:#1a2026"></i><i style="--c:#5bd1e6"></i><i style="--c:#f5f7f8"></i></span>
+          </button>
+          <button class="theme-card" type="button" role="tab" aria-selected="false" aria-controls="themePanel" data-theme-target="bright">
+            <span class="tc-head"><span class="tc-name">Bright</span><span class="tc-check" aria-hidden="true">✓</span></span>
+            <span class="tc-desc">浅色 · 通透背景</span>
+            <span class="tc-bars"><i style="--c:#f5f2ea"></i><i style="--c:#ffffff"></i><i style="--c:#1668e3"></i><i style="--c:#0e9f8a"></i></span>
+          </button>
+          <button class="theme-card" type="button" role="tab" aria-selected="false" aria-controls="themePanel" data-theme-target="dracula">
+            <span class="tc-head"><span class="tc-name">Dracula</span><span class="tc-check" aria-hidden="true">✓</span></span>
+            <span class="tc-desc">深色 · 梦幻紫粉</span>
+            <span class="tc-bars"><i style="--c:#17101f"></i><i style="--c:#2a1c36"></i><i style="--c:#ff79c6"></i><i style="--c:#bd93f9"></i></span>
+          </button>
+          <button class="theme-card" type="button" role="tab" aria-selected="false" aria-controls="themePanel" data-theme-target="eye">
+            <span class="tc-head"><span class="tc-name">Eye</span><span class="tc-check" aria-hidden="true">✓</span></span>
+            <span class="tc-desc">深色 · 护眼绿意</span>
+            <span class="tc-bars"><i style="--c:#0e1a16"></i><i style="--c:#1a2f27"></i><i style="--c:#4fd08a"></i><i style="--c:#c9e88a"></i></span>
+          </button>
+        </div>
+
+        <figure class="shot-frame reveal-on-scroll" id="themePanel" role="tabpanel" aria-live="polite" aria-label="主题截图预览">
+          <div class="shot-bar">
+            <span class="shot-dots" aria-hidden="true"><i></i><i></i><i></i></span>
+            <span class="shot-file" id="shotFile">default.png</span>
+          </div>
+          <div class="shot-canvas">
+            <img id="themeShot" src="assets/default.png" width="960" height="540" data-current="default" alt="SllkGui Default 主题界面截图：深色亚克力窗口、按钮与语义色预览、右侧外观配置面板。">
+          </div>
+          <figcaption id="shotCaption">Default 主题 · 界面截图来自仓库 docs/assets，为历史版本界面，仅用于展示主题配色。</figcaption>
+        </figure>
+      </div>
+
+      <p class="themes-note reveal-on-scroll">主题切换后组件重绘即生效；透明度、亚克力强度与背景图在设置窗口中实时预览，放弃修改会还原到基线。</p>
+    </section>
+
+    <section class="section scenarios" id="scenarios">
+      <div class="section-head reveal-on-scroll">
+        <p class="eyebrow">04 / 适用场景</p>
+        <h2>它适合承载什么样的<br>桌面应用？</h2>
+        <p class="section-lede">以下是根据项目能力整理的适用方向，供你判断是否契合，不代表官方客户案例。</p>
+      </div>
+
+      <div class="scenario-grid">
+        <article class="scenario-card reveal-on-scroll">
+          <span class="scenario-num">01</span>
+          <h3>内部工具与管理后台</h3>
+          <p>数据表格、分页、表单、设置、托盘与通知一应俱全。把重复的壳层工作交给基座，把时间留给业务逻辑。</p>
+          <span class="scenario-fit">你会用到：CDataTable · CFormGrid · CToast · 设置窗口</span>
+        </article>
+        <article class="scenario-card reveal-on-scroll">
+          <span class="scenario-num">02</span>
+          <h3>插件化工具工作台</h3>
+          <p>一个宿主窗口承载多个独立插件，按需安装、启停、更新与回滚；插件可以各自贡献多个 Surface 页面。</p>
+          <span class="scenario-fit">你会用到：插件协议 · 源管理 · 选择性热重载</span>
+        </article>
+        <article class="scenario-card reveal-on-scroll">
+          <span class="scenario-num">03</span>
+          <h3>桌面工具原型</h3>
+          <p>用现成组件快速搭出可演示、可交付的桌面界面；gallery 模式只加载内置预览插件，不读取已安装插件，也不发起网络请求。</p>
+          <span class="scenario-fit">你会用到：sllkgui gallery · 内置 Showcase</span>
+        </article>
+        <article class="scenario-card reveal-on-scroll">
+          <span class="scenario-num">04</span>
+          <h3>基座二次开发与教学</h3>
+          <p>分层、令牌、插件协议都有文档与守卫测试支撑，适合定制自己的桌面基座，也适合作为 Qt 组件设计的教学案例。</p>
+          <span class="scenario-fit">你会用到：ARCHITECTURE · COMPONENTS · 测试</span>
+        </article>
+      </div>
+    </section>
+
+    <section class="section start" id="start">
+      <div class="section-head reveal-on-scroll">
+        <p class="eyebrow">05 / 快速开始</p>
+        <h2>两条路径，<br>选你顺手的那条。</h2>
+        <p class="section-lede">开发者从源码运行，普通用户直接用 Windows 启动器。两种方式共享同一套基座。</p>
+      </div>
+
+      <div class="start-grid">
+        <article class="start-panel reveal-on-scroll">
+          <div class="panel-head">
+            <h3>从源码运行</h3>
+            <span class="panel-tag">开发者</span>
+          </div>
+          <p class="panel-desc">需要 Python ≥ 3.12 与 <a href="https://docs.astral.sh/uv/" target="_blank" rel="noopener noreferrer">uv</a>。</p>
+          <div class="code-block">
+            <button class="copy-btn" type="button" data-copy-target="codeSource" aria-label="复制源码运行命令">复制</button>
+            <pre><code id="codeSource">git clone https://gitee.com/shilianlvke/SllkGui.git
+cd SllkGui
+uv sync
+uv run sllkgui gallery   # 组件预览：只加载内置预览插件
+uv run sllkgui run       # 正式模式：加载已安装插件</code></pre>
+          </div>
+          <ul class="cli-list">
+            <li><code>uv run sllkgui --help</code><span>查看全部命令</span></li>
+            <li><code>uv run sllkgui doctor</code><span>路径与安装状态诊断</span></li>
+            <li><code>uv run sllkgui source refresh --all</code><span>刷新全部插件源</span></li>
+            <li><code>uv run sllkgui plugin search</code><span>搜索可安装插件</span></li>
+          </ul>
+        </article>
+
+        <article class="start-panel reveal-on-scroll">
+          <div class="panel-head">
+            <h3>Windows 启动器</h3>
+            <span class="panel-tag">零环境</span>
+          </div>
+          <p class="panel-desc">在 <code>Launcher/</code> 目录获取启动器，双击即用，无需预先安装 Python。首次运行自动完成七步初始化：</p>
+          <ol class="step-list">
+            <li><span>01</span>准备 uv</li>
+            <li><span>02</span>准备 CPython</li>
+            <li><span>03</span>检查 Git</li>
+            <li><span>04</span>拉取基座源码</li>
+            <li><span>05</span>创建虚拟环境</li>
+            <li><span>06</span>同步依赖</li>
+            <li><span>07</span>启动校验</li>
+          </ol>
+          <dl class="size-facts">
+            <div><dt>standard</dt><dd>约 176 MB<small>Git + PySide6 Essentials</small></dd></div>
+            <div><dt>full</dt><dd>约 333 MB<small>完整 PySide6</small></dd></div>
+          </dl>
+          <p class="fine-print">默认运行时目录在启动器旁 <code>runtime/</code>；不可写时回退到 <code>%LOCALAPPDATA%\SllkGuiLauncher</code>。启动器使用说明见仓库 <code>Launcher/README.md</code>。</p>
+        </article>
+      </div>
+
+      <article class="plugin-cta reveal-on-scroll">
+        <div class="plugin-cta-copy">
+          <p class="eyebrow">WRITE A PLUGIN</p>
+          <h3>一个 Git 仓库，就是一个插件。</h3>
+          <p>用脚手架生成插件仓库，本地 lint 通过后，把元信息提交到官方源即可被搜索与安装。插件可贡献多个 Surface，并声明自己的设置页、快捷键与依赖。</p>
+          <div class="plugin-cta-links">
+            <a class="btn btn-primary btn-sm" href="https://gitee.com/shilianlvke/SllkGui/blob/main/docs/PLUGIN.md" target="_blank" rel="noopener noreferrer">插件协议</a>
+            <a class="btn btn-outline btn-sm" href="https://gitee.com/shilianlvke/sllkgui-source" target="_blank" rel="noopener noreferrer">官方插件源</a>
+          </div>
+        </div>
+        <div class="plugin-cta-code">
+          <div class="code-block code-block-sm">
+            <button class="copy-btn" type="button" data-copy-target="codePlugin" aria-label="复制插件开发命令">复制</button>
+            <pre><code id="codePlugin">uv run sllkgui scaffold ./my-plugin
+uv run sllkgui plugin lint ./my-plugin</code></pre>
+          </div>
+        </div>
+      </article>
+    </section>
+
+    <section class="section docs" id="docs">
+      <div class="section-head reveal-on-scroll">
+        <p class="eyebrow">06 / 文档与源码</p>
+        <h2>所有入口，<br>都在一个仓库里。</h2>
+        <p class="section-lede">文档与代码同仓维护，内容与 4.2.0 同步；若文档与代码冲突，以代码为准并提 issue。</p>
+      </div>
+
+      <div class="doc-grid">
+        <a class="doc-card reveal-on-scroll" href="https://gitee.com/shilianlvke/SllkGui" target="_blank" rel="noopener noreferrer">
+          <span class="doc-kicker">REPOSITORY</span>
+          <h3>源码仓库</h3>
+          <p>代码、示例、测试与发版记录</p>
+          <span class="doc-arrow" aria-hidden="true">↗</span>
+        </a>
+        <a class="doc-card reveal-on-scroll" href="https://gitee.com/shilianlvke/SllkGui/blob/main/docs/README.md" target="_blank" rel="noopener noreferrer">
+          <span class="doc-kicker">DOCS INDEX</span>
+          <h3>文档索引</h3>
+          <p>按角色选择阅读路径</p>
+          <span class="doc-arrow" aria-hidden="true">↗</span>
+        </a>
+        <a class="doc-card reveal-on-scroll" href="https://gitee.com/shilianlvke/SllkGui/blob/main/docs/ARCHITECTURE.md" target="_blank" rel="noopener noreferrer">
+          <span class="doc-kicker">ARCHITECTURE</span>
+          <h3>架构总览</h3>
+          <p>分层、包地图、关键约定与扩展点</p>
+          <span class="doc-arrow" aria-hidden="true">↗</span>
+        </a>
+        <a class="doc-card reveal-on-scroll" href="https://gitee.com/shilianlvke/SllkGui/blob/main/docs/COMPONENTS.md" target="_blank" rel="noopener noreferrer">
+          <span class="doc-kicker">COMPONENTS</span>
+          <h3>组件速查</h3>
+          <p>分类、签名、窗口部件与设计令牌</p>
+          <span class="doc-arrow" aria-hidden="true">↗</span>
+        </a>
+        <a class="doc-card reveal-on-scroll" href="https://gitee.com/shilianlvke/SllkGui/blob/main/docs/PLUGIN.md" target="_blank" rel="noopener noreferrer">
+          <span class="doc-kicker">PLUGIN</span>
+          <h3>插件协议</h3>
+          <p>清单、入口、GalleryContext 与生命周期</p>
+          <span class="doc-arrow" aria-hidden="true">↗</span>
+        </a>
+        <a class="doc-card reveal-on-scroll" href="https://gitee.com/shilianlvke/SllkGui/blob/main/docs/API.md" target="_blank" rel="noopener noreferrer">
+          <span class="doc-kicker">API</span>
+          <h3>公开 API</h3>
+          <p>配置、主题、语言、插件、存储与任务</p>
+          <span class="doc-arrow" aria-hidden="true">↗</span>
+        </a>
+        <a class="doc-card reveal-on-scroll" href="https://gitee.com/shilianlvke/SllkGui/blob/main/CHANGELOG.md" target="_blank" rel="noopener noreferrer">
+          <span class="doc-kicker">CHANGELOG</span>
+          <h3>更新日志</h3>
+          <p>版本语义、破坏性变更与修复记录</p>
+          <span class="doc-arrow" aria-hidden="true">↗</span>
+        </a>
+        <a class="doc-card reveal-on-scroll" href="https://gitee.com/shilianlvke/sllkgui-source" target="_blank" rel="noopener noreferrer">
+          <span class="doc-kicker">SOURCE REPO</span>
+          <h3>官方插件源</h3>
+          <p>插件元信息、分类与发布流程</p>
+          <span class="doc-arrow" aria-hidden="true">↗</span>
+        </a>
+      </div>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <div class="footer-inner">
+      <div class="footer-brand">
+        <a class="brand" href="#top" aria-label="SllkGui 首页">
+          <svg class="brand-mark" viewBox="0 0 32 32" fill="none" aria-hidden="true">
+            <rect x="2.5" y="4.5" width="27" height="23" rx="5.5" stroke="currentColor" stroke-width="1.6"/>
+            <path d="M2.5 11.5h27" stroke="currentColor" stroke-width="1.2" opacity=".4"/>
+            <circle cx="6.6" cy="8" r="1.1" fill="currentColor"/>
+            <rect x="6" y="15" width="5.5" height="9" rx="2" fill="currentColor" opacity=".9"/>
+            <rect x="14.5" y="15" width="10" height="2.6" rx="1.3" fill="currentColor" opacity=".55"/>
+            <rect x="14.5" y="20.4" width="7" height="2.6" rx="1.3" fill="currentColor" opacity=".35"/>
+          </svg>
+          <span class="brand-word">SllkGui</span>
+        </a>
+        <p>基于 PySide6 的开源桌面 UI 基座。窗口、组件、主题、语言与插件运行时，一套代码打好底。</p>
+        <span class="footer-badge">v4.2.0 · MIT License</span>
+      </div>
+      <nav class="footer-nav" aria-label="页脚导航">
+        <div>
+          <h4>产品</h4>
+          <a href="#intro">项目简介</a>
+          <a href="#features">核心能力</a>
+          <a href="#themes">内置主题</a>
+          <a href="#scenarios">适用场景</a>
+        </div>
+        <div>
+          <h4>文档</h4>
+          <a href="https://gitee.com/shilianlvke/SllkGui/blob/main/docs/README.md" target="_blank" rel="noopener noreferrer">文档索引</a>
+          <a href="https://gitee.com/shilianlvke/SllkGui/blob/main/docs/ARCHITECTURE.md" target="_blank" rel="noopener noreferrer">架构总览</a>
+          <a href="https://gitee.com/shilianlvke/SllkGui/blob/main/docs/PLUGIN.md" target="_blank" rel="noopener noreferrer">插件协议</a>
+          <a href="https://gitee.com/shilianlvke/SllkGui/blob/main/docs/API.md" target="_blank" rel="noopener noreferrer">公开 API</a>
+        </div>
+        <div>
+          <h4>社区</h4>
+          <a href="https://gitee.com/shilianlvke/SllkGui" target="_blank" rel="noopener noreferrer">Gitee 仓库</a>
+          <a href="https://gitee.com/shilianlvke/SllkGui/issues" target="_blank" rel="noopener noreferrer">问题反馈</a>
+          <a href="https://gitee.com/shilianlvke/sllkgui-source" target="_blank" rel="noopener noreferrer">插件源</a>
+          <a href="https://gitee.com/shilianlvke/SllkGui/blob/main/CHANGELOG.md" target="_blank" rel="noopener noreferrer">更新日志</a>
+        </div>
+      </nav>
+    </div>
+    <div class="footer-bottom">
+      <span>© 2026 SllkGui Contributors</span>
+      <span>本页为 SllkGui 门户示例；主题截图来自仓库 docs/assets。</span>
+      <a href="#top">回到顶部 ↑</a>
+    </div>
+  </footer>
+
+  <script src="main.js" defer></script>
+</body>
+</html>
