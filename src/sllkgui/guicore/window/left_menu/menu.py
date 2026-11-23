@@ -1,3 +1,10 @@
+"""左侧导航菜单控件族。
+
+CLeftMenu 是可展开/收起的左栏容器，管理 CLeftMenuButton 按钮的增删、选中态、
+语言文本刷新与展开动画，并通过 CHDiv 分隔线组织顶部/底部布局。位于 guicore
+窗口层，供 CWindow 组装为主界面左导航栏；按钮尺寸与圆角回落设计令牌。
+"""
+
 from PySide6.QtCore import QEasingCurve, QParallelAnimationGroup, QPropertyAnimation, QRect, Qt, Signal
 from PySide6.QtWidgets import QFrame, QPushButton, QVBoxLayout, QWidget
 

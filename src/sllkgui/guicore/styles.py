@@ -1,3 +1,11 @@
+"""全局 QSS 生成与主题样式入口。
+
+Styles 继承 _ComponentStyles，按组件 objectName 集中定义颜色/状态/字体，
+由 CWindow.apply_style() 在主题切换时整体重建并下发样式表。颜色与几何取值
+来自 appcore 设计令牌与窗口设置（glass 分组），透明/亚克力底色经本模块的
+rgba/渐变辅助函数按 acrylic 状态合成；与主题无关的几何量由组件本地提供。
+"""
+
 # 这里决定整个window的总体样式
 from PySide6.QtGui import QColor
 

@@ -26,9 +26,10 @@ from __future__ import annotations
 
 from collections.abc import Callable, Iterable, Mapping
 from dataclasses import dataclass, field
-from typing import Any
+from typing import Any, cast
 
 from PySide6.QtCore import QEvent, QObject
+from PySide6.QtGui import QKeyEvent
 from PySide6.QtWidgets import (
     QAbstractSpinBox,
     QApplication,
@@ -506,10 +507,13 @@ class ShortcutRegistry(QObject):
             return False
         if not self._active or not self._entries:
             return False
-        if event.isAutoRepeat():
+        # PySide6 stub 把 eventFilter 的参数声明为 QEvent；此处已判定 KeyPress，
+        # 运行期对象就是 QKeyEvent，cast 只用于恢复精确类型供 mypy 门禁使用。
+        key_event = cast(QKeyEvent, event)
+        if key_event.isAutoRepeat():
             return False
         target = obj if isinstance(obj, QWidget) else None
-        shortcut_id = self.activate(_flag(event.key()), _flag(event.modifiers()), target)
+        shortcut_id = self.activate(_flag(key_event.key()), _flag(key_event.modifiers()), target)
         if shortcut_id is None:
             return False
         event.accept()

@@ -95,6 +95,8 @@ uv run pre-commit install
 | 预览插件 | `sllkgui.showcase` | 内置组件预览（gallery 模式） | 只用 plugin API，不得 import `gallery` 内部 |
 | 门面 | `sllkgui.window` | 把装配层与插件层的能力收成稳定 API | 不写业务逻辑 |
 
+命名评估结论：`guis` 沿用的是历史名称，职责是窗口装配层（shell，主窗口组装、页面栈、语言服务）；未来若考虑更名，须先评估公开 API 兼容性——本次仅记录该结论，不实施更名。
+
 这些不是口头约定，`tests/test_architecture_boundaries.py` 用 AST 扫 import 根逐条守着，
 并按 5×5 白名单矩阵表达包间依赖。新增层级依赖前先想清楚，改断言要单独说明理由。
 

@@ -1,3 +1,11 @@
+"""GUI 核心层统一门面：再导出全项目使用的公开 API。
+
+汇集亚克力窗口效果（acrylic）、Qt 回调安全封装（callbacks）、自定义控件族
+（custom_ui）、反馈/字体/快捷键/全局样式与任务工具，以及 CWindow、CLeftMenu、
+CSettingsWindow 等窗口与导航控件。业务与窗口模块统一从本包导入，避免耦合
+到内部子模块路径。
+"""
+
 from .acrylic import MIN_WINDOW_GLASS_ALPHA as MIN_WINDOW_GLASS_ALPHA
 from .acrylic import acrylic_active as acrylic_active
 from .acrylic import acrylic_opacity as acrylic_opacity

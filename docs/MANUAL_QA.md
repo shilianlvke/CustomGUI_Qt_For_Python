@@ -615,3 +615,19 @@
 - **复测**：轨道 54px、展开 200px、内容宽度 1108→1108 不变；点击遮罩 / Esc /
   菜单项三种收起方式均通过；Static 恢复后布局 index=0、无残留遮罩与占位。
 
+---
+
+## 10. 当前版本（4.2.0）Windows 特化手动验证清单
+
+> 4.2.0 的 Windows 特化分支（真亚克力材质、系统托盘、内置修饰键）以及 Launcher 自身**没有 CI 覆盖**：基座现有自动化仅覆盖非 Windows 降级路径（见 `tests/test_cross_platform.py`），因此下列项目*必须*在真实 Windows 上人工走查，本文只登记步骤，不执行。宿主环境：Windows 10 1809+ / Windows 11（建议同时覆盖 Win10 与 Win11 各一台）；源码启动命令统一在仓库根目录执行。
+
+| 编号 | 验证项 | 复现路径 / 命令 | 预期（真 Windows） | CI 覆盖 |
+| --- | --- | --- | --- | --- |
+| W-01 | 亚克力窗口材质：非 Windows 降级正常、Windows 生效 | 非 Windows 机器执行 `uv run sllkgui gallery`（或 `uv run sllkgui run`），观察 `acrylic_supported()/acrylic_active()` 为 False、窗口为不透明主题色且功能正常；回到 Windows 11 执行 `uv run sllkgui gallery`，确认窗口背景呈系统亚克力/半透明材质、圆角与阴影正确；在设置中修改 `acrylic_transparency`（0/50/100）并观察实时变化；关闭系统透明效果后重启应用确认回退不透明且功能不受影响。 | 非 Windows 无异常、无崩溃；Windows 11 真亚克力可见且随设置变化；关闭透明效果可降级。 | **无**（仅非 Windows 降级有单测） |
+| W-02 | 系统托盘图标 / 菜单 / 通知；窗口隐藏到托盘与恢复 | `uv run sllkgui run --plugin-dir <含 tray 权限插件的目录>`（托盘为基座常驻能力，也可先用 `uv run sllkgui run` 验证外壳）；观察任务栏托盘区出现品牌图标、悬停提示为系统名；左键/双击图标恢复窗口，右键弹出菜单（显示主窗口 / 设置 / 退出 + 插件动作，形态含内联 / 子菜单 / 兜底桶）；调用插件通知 API 观察气泡；点窗口关闭按钮确认 `window.hidden_to_tray` 后窗口隐藏且进程存活，再单击托盘图标确认恢复（含背景与任务栏图标）。 | 图标唯一且常驻；菜单层级清晰、贴图标上方不越屏；通知可见；关闭隐藏而非退出，托盘图标可恢复。 | **无** |
+| W-03 | 内置修饰键 primary 在 Windows 为 Ctrl、与插件快捷键共存 | `uv run sllkgui run --plugin-dir <注册了自定义快捷键的插件目录>`；在 Windows 按下 `Ctrl+K`（内置 `base.search`，页面快速跳转）与 `Ctrl+,`（内置 `base.settings`，设置窗口）；再触发插件注册的快捷键（如 `Ctrl+Alt+S` / `Ctrl+Shift+S`），确认互不串扰；确认插件以 `conflict="replace"` 也无法覆盖 locked 的内置绑定；按 `Esc` 关闭弹层后重复。 | `primary` 在 Windows 解析为 `Ctrl`；内置与插件快捷键同时生效、无重复派发或抢占。 | **无**（解析单测为平台无关层） |
+| W-04 | 任务栏图标重设（`GalleryWindow._reapply_taskbar_icon`） | Windows 11 上执行 `uv run sllkgui run`，确认任务栏按钮显示品牌图标而非系统默认图标；最小化后还原、隐藏到托盘再经托盘恢复、反复打开/关闭窗口，每次观察任务栏图标仍为品牌图标且无闪烁；窗口显示调用 `showEvent` 中 `QTimer.singleShot(0, _reapply_taskbar_icon)` 后图标保持正确。 | 任务栏图标每次重建后都被重设为品牌图标，无默认图标残留。 | **无**（`sys.platform != "win32"` 直接返回，CI 不触达） |
+| W-05 | 插件热重载后托盘 / 快捷键不残留 | `uv run sllkgui run --watch --plugin-dir <开发插件目录>`；插件清单声明 `tray` 权限并注册托盘动作与快捷键；修改插件源码触发热重载 3 次，每次核对：托盘图标仍唯一、插件菜单动作刷新为最新文案且不重复堆叠、旧快捷键不再触发、新快捷键生效；停止观察后卸载插件确认对应托盘动作与快捷键被清理而基座常驻能力仍在。 | 重载不产生重复图标 / 菜单项 / 快捷键；卸载后插件项被清理、基座项保留。 | **无** |
+
+**记录约定**：逐项填写 `通过 / 不通过（Windows 版本 + DPI + 现象 + 截图）`；W-01 需注明真亚克力是否肉眼可见，W-04 需注明任务栏图标状态。上述任一项在 CI 中均无覆盖，合并前必须保留人工走查记录。
+

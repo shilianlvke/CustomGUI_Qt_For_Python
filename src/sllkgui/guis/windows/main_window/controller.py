@@ -1,3 +1,11 @@
+"""主窗口控制器组装层。
+
+MainWindowController 聚合 PageRouterController（栏目路由与页面切换）、
+SettingsController（主题/背景/外观设置与预览）与 ColumnController（左右/底
+列按钮处理），并接管主窗口按钮分发与关闭时尺寸持久化。位于 GUI 窗口层，
+把 UI 事件委派给 appcore 用例与页面注册表，保持控件与业务逻辑解耦。
+"""
+
 from PySide6.QtCore import QEvent, QObject, Qt
 from PySide6.QtWidgets import QPushButton, QWidget
 

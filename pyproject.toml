@@ -131,6 +131,10 @@ files = [
     "src/sllkgui/appcore/user_settings.py",
     "src/sllkgui/guicore/callbacks.py",
     "src/sllkgui/guicore/task.py",
+    # 2.9 万行组件实现的类型覆盖分批推进：先纳入已治理的横切模块。
+    "src/sllkgui/guicore/shortcuts.py",
+    "src/sllkgui/guicore/_shortcut_parsing.py",
+    "src/sllkgui/guicore/custom_ui/config_helpers.py",
 ]
 ignore_missing_imports = true
 follow_imports = "skip"

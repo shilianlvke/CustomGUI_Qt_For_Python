@@ -1,3 +1,10 @@
+"""自定义控件（C* 系列）命名空间与统一导出门面。
+
+按控件族把 button/card/data/display/menu/overlay/panels 等子模块中的公开控件
+（CButton、CDataTable、CMenu、CDialog、CSideNav 等）以及 Severity、Variant、
+MenuItem 等枚举/数据类再导出到本包顶层，调用方无需感知具体子模块划分。
+"""
+
 from .button import (
     CButton as CButton,
 )
