@@ -47,7 +47,7 @@
 
   function readStoredTheme() {
     try {
-      return window.localStorage.getItem("sllkgui-portal-theme");
+      return window.localStorage.getItem("sllkgui-portal-theme-v2");
     } catch (error) {
       return null;
     }
@@ -55,7 +55,7 @@
 
   function storeTheme(name) {
     try {
-      window.localStorage.setItem("sllkgui-portal-theme", name);
+      window.localStorage.setItem("sllkgui-portal-theme-v2", name);
     } catch (error) {
       /* storage may be unavailable; theme still applies for this visit */
     }
@@ -134,7 +134,7 @@
   });
 
   var initialTheme = readStoredTheme();
-  applyTheme(THEMES[initialTheme] ? initialTheme : "default", false);
+  applyTheme(THEMES[initialTheme] ? initialTheme : "eye", false);
 
   /* ------------------------------------------------------------------
      Header state, mobile menu, scroll spy

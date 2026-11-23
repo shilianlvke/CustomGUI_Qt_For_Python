@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="zh-CN" data-theme="default">
+<html lang="zh-CN" data-theme="eye">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -9,7 +9,7 @@
   <meta property="og:type" content="website">
   <meta property="og:title" content="SllkGui — 基于 PySide6 的桌面 UI 基座 · TRAE 好应用大赏赛参赛作品">
   <meta property="og:description" content="窗口骨架、组件库、主题与多语言、插件运行时。把桌面应用的底色，一次打好。本站为 TRAE 好应用大赏赛参赛作品展示页。">
-  <meta name="theme-color" content="#0b0f12">
+  <meta name="theme-color" content="#0c1713">
   <link rel="icon" href="assets/favicon.png" type="image/png">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -47,10 +47,10 @@
 
       <div class="header-actions">
         <div class="theme-switch" role="group" aria-label="站点配色，对应 SllkGui 内置主题">
-          <button class="theme-dot" type="button" data-set-theme="default" aria-label="Default 主题" aria-pressed="true"><span style="--dot:#5bd1e6"></span></button>
+          <button class="theme-dot" type="button" data-set-theme="default" aria-label="Default 主题" aria-pressed="false"><span style="--dot:#5bd1e6"></span></button>
           <button class="theme-dot" type="button" data-set-theme="bright" aria-label="Bright 主题" aria-pressed="false"><span style="--dot:#1668e3"></span></button>
           <button class="theme-dot" type="button" data-set-theme="dracula" aria-label="Dracula 主题" aria-pressed="false"><span style="--dot:#ff79c6"></span></button>
-          <button class="theme-dot" type="button" data-set-theme="eye" aria-label="Eye 主题" aria-pressed="false"><span style="--dot:#4fd08a"></span></button>
+          <button class="theme-dot" type="button" data-set-theme="eye" aria-label="Eye 主题" aria-pressed="true"><span style="--dot:#4fd08a"></span></button>
         </div>
         <a class="btn btn-outline btn-sm header-source" href="https://gitee.com/shilianlvke/SllkGui" target="_blank" rel="noopener noreferrer">
           Gitee 源码
@@ -74,10 +74,10 @@
       </nav>
       <div class="mobile-menu-foot">
         <div class="theme-switch" role="group" aria-label="站点配色，对应 SllkGui 内置主题">
-          <button class="theme-dot" type="button" data-set-theme="default" aria-label="Default 主题" aria-pressed="true"><span style="--dot:#5bd1e6"></span></button>
+          <button class="theme-dot" type="button" data-set-theme="default" aria-label="Default 主题" aria-pressed="false"><span style="--dot:#5bd1e6"></span></button>
           <button class="theme-dot" type="button" data-set-theme="bright" aria-label="Bright 主题" aria-pressed="false"><span style="--dot:#1668e3"></span></button>
           <button class="theme-dot" type="button" data-set-theme="dracula" aria-label="Dracula 主题" aria-pressed="false"><span style="--dot:#ff79c6"></span></button>
-          <button class="theme-dot" type="button" data-set-theme="eye" aria-label="Eye 主题" aria-pressed="false"><span style="--dot:#4fd08a"></span></button>
+          <button class="theme-dot" type="button" data-set-theme="eye" aria-label="Eye 主题" aria-pressed="true"><span style="--dot:#4fd08a"></span></button>
         </div>
         <a class="btn btn-primary btn-sm" href="https://gitee.com/shilianlvke/SllkGui" target="_blank" rel="noopener noreferrer">Gitee 源码</a>
       </div>
@@ -91,6 +91,16 @@
       <div class="hero-inner">
         <div class="hero-copy">
           <div class="hero-flags">
+            <a class="contest-badge" href="#contest" aria-label="TRAE 好应用大赏赛参赛作品，查看赛事专区">
+              <img class="contest-badge-logo" src="assets/trae-logo.svg" width="44" height="44" alt="">
+              <span class="contest-badge-copy">
+                <span class="contest-badge-kicker">TRAE 好应用大赏赛</span>
+                <span class="contest-badge-title">参赛作品 · 查看赛事</span>
+              </span>
+              <span class="contest-badge-arrow" aria-hidden="true">
+                <svg viewBox="0 0 16 16" fill="none"><path d="M3 8h10M9 4l4 4-4 4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+              </span>
+            </a>
             <p class="eyebrow hero-eyebrow"><span class="pulse"></span>OPEN SOURCE · PYSIDE6 DESKTOP FOUNDATION</p>
           </div>
           <h1>把桌面应用的<br><span class="ink">底色</span>，一次打好。</h1>
@@ -167,10 +177,10 @@
                     <div class="side-sub">主题、语言与界面布局</div>
                     <div class="side-label">主题</div>
                     <div class="theme-mini-grid">
-                      <div class="theme-mini is-active"><span class="tm-name">Default</span><span class="tm-swatches"><i style="--sw:#0b0f12"></i><i style="--sw:#1a2026"></i><i style="--sw:#5bd1e6"></i><i style="--sw:#f5f7f8"></i></span></div>
+                      <div class="theme-mini"><span class="tm-name">Default</span><span class="tm-swatches"><i style="--sw:#0b0f12"></i><i style="--sw:#1a2026"></i><i style="--sw:#5bd1e6"></i><i style="--sw:#f5f7f8"></i></span></div>
                       <div class="theme-mini"><span class="tm-name">Bright</span><span class="tm-swatches"><i style="--sw:#f5f2ea"></i><i style="--sw:#ffffff"></i><i style="--sw:#1668e3"></i><i style="--sw:#0e9f8a"></i></span></div>
                       <div class="theme-mini"><span class="tm-name">Dracula</span><span class="tm-swatches"><i style="--sw:#17101f"></i><i style="--sw:#2a1c36"></i><i style="--sw:#ff79c6"></i><i style="--sw:#bd93f9"></i></span></div>
-                      <div class="theme-mini"><span class="tm-name">Eye</span><span class="tm-swatches"><i style="--sw:#0e1a16"></i><i style="--sw:#1a2f27"></i><i style="--sw:#4fd08a"></i><i style="--sw:#c9e88a"></i></span></div>
+                      <div class="theme-mini is-active"><span class="tm-name">Eye</span><span class="tm-swatches"><i style="--sw:#0e1a16"></i><i style="--sw:#1a2f27"></i><i style="--sw:#4fd08a"></i><i style="--sw:#c9e88a"></i></span></div>
                     </div>
                     <div class="side-row"><span>深色模式</span><span class="m-toggle"><i></i></span></div>
                     <div class="side-row"><span>窗口透明度</span><span class="m-slider"><i></i></span></div>
@@ -180,17 +190,6 @@
             </div>
             <div class="win-status"><span>SllkGui 基于 PySide6 的开源 UI 基座</span><span>4.2.0</span></div>
           </div>
-
-          <a class="contest-badge contest-badge-float" href="#contest" aria-label="TRAE 好应用大赏赛参赛作品，查看赛事专区">
-            <img class="contest-badge-logo" src="assets/trae-logo.svg" width="44" height="44" alt="">
-            <span class="contest-badge-copy">
-              <span class="contest-badge-kicker">TRAE 好应用大赏赛</span>
-              <span class="contest-badge-title">参赛作品 · 查看赛事</span>
-            </span>
-            <span class="contest-badge-arrow" aria-hidden="true">
-              <svg viewBox="0 0 16 16" fill="none"><path d="M3 8h10M9 4l4 4-4 4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
-            </span>
-          </a>
 
           <div class="float-card float-api" aria-hidden="true">
             <span class="float-k">插件协议</span>
@@ -364,7 +363,7 @@
 
       <div class="theme-layout">
         <div class="theme-cards reveal-on-scroll" role="tablist" aria-label="SllkGui 内置主题">
-          <button class="theme-card is-active" type="button" role="tab" aria-selected="true" aria-controls="themePanel" data-theme-target="default">
+          <button class="theme-card" type="button" role="tab" aria-selected="false" aria-controls="themePanel" data-theme-target="default">
             <span class="tc-head"><span class="tc-name">Default</span><span class="tc-check" aria-hidden="true">✓</span></span>
             <span class="tc-desc">深色 · 亚克力质感</span>
             <span class="tc-bars"><i style="--c:#0b0f12"></i><i style="--c:#1a2026"></i><i style="--c:#5bd1e6"></i><i style="--c:#f5f7f8"></i></span>
@@ -379,7 +378,7 @@
             <span class="tc-desc">深色 · 梦幻紫粉</span>
             <span class="tc-bars"><i style="--c:#17101f"></i><i style="--c:#2a1c36"></i><i style="--c:#ff79c6"></i><i style="--c:#bd93f9"></i></span>
           </button>
-          <button class="theme-card" type="button" role="tab" aria-selected="false" aria-controls="themePanel" data-theme-target="eye">
+          <button class="theme-card is-active" type="button" role="tab" aria-selected="true" aria-controls="themePanel" data-theme-target="eye">
             <span class="tc-head"><span class="tc-name">Eye</span><span class="tc-check" aria-hidden="true">✓</span></span>
             <span class="tc-desc">深色 · 护眼绿意</span>
             <span class="tc-bars"><i style="--c:#0e1a16"></i><i style="--c:#1a2f27"></i><i style="--c:#4fd08a"></i><i style="--c:#c9e88a"></i></span>
@@ -389,12 +388,12 @@
         <figure class="shot-frame reveal-on-scroll" id="themePanel" role="tabpanel" aria-live="polite" aria-label="主题截图预览">
           <div class="shot-bar">
             <span class="shot-dots" aria-hidden="true"><i></i><i></i><i></i></span>
-            <span class="shot-file" id="shotFile">default.png</span>
+            <span class="shot-file" id="shotFile">eye.png</span>
           </div>
           <div class="shot-canvas">
-            <img id="themeShot" src="assets/default.png" width="960" height="540" data-current="default" alt="SllkGui Default 主题界面截图：深色亚克力窗口、按钮与语义色预览、右侧外观配置面板。">
+            <img id="themeShot" src="assets/eye.png" width="960" height="540" data-current="eye" alt="SllkGui Eye 主题界面截图：墨绿背景、绿色主按钮与语义色预览。">
           </div>
-          <figcaption id="shotCaption">Default 主题 · 界面截图来自仓库 docs/assets，为历史版本界面，仅用于展示主题配色。</figcaption>
+          <figcaption id="shotCaption">Eye 主题 · 界面截图来自仓库 docs/assets，为历史版本界面，仅用于展示主题配色。</figcaption>
         </figure>
       </div>
 
