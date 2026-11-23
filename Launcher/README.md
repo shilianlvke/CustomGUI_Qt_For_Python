@@ -125,7 +125,7 @@ Gitee 的 tag archive 对非 curl UA 返回 HTML 反爬页，且 zip 字节哈�
 ## 运行时布局
 
 ```
-runtime/                       （启动器旁可写时；否则 %LOCALAPPDATA%\SllkGuiLauncher）
+%USERPROFILE%\.SllkGui/             （即 C:\Users\<用户>\.SllkGui，运行时根目录）
 ├─ config.json                 schemaVersion 2
 ├─ current.json                当前环境记录
 ├─ previous.json               上一环境（回滚用）

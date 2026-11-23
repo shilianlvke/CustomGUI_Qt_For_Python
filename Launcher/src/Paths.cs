@@ -41,13 +41,18 @@ namespace SllkGui.Launcher
             string runtime = runtimeOverride;
             if (string.IsNullOrEmpty(runtime))
             {
-                string portable = Path.Combine(p.Root, "runtime");
-                string local = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "SllkGuiLauncher");
-                runtime = portable;
+                // 运行时数据统一放在当前用户的 C:\Users\<用户>\.SllkGui 下，
+                // 不再写入启动器所在目录。UserProfile 在 Windows 上展开为 C:\Users\<用户>。
+                string userHome = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
+                if (string.IsNullOrEmpty(userHome))
+                    userHome = Environment.GetEnvironmentVariable("USERPROFILE");
+                string userData = Path.Combine(userHome, ".SllkGui");
+                string local = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), ".SllkGui");
+                runtime = userData;
                 try
                 {
-                    Directory.CreateDirectory(portable);
-                    string probe = Path.Combine(portable, ".probe-" + Guid.NewGuid().ToString("N"));
+                    Directory.CreateDirectory(userData);
+                    string probe = Path.Combine(userData, ".probe-" + Guid.NewGuid().ToString("N"));
                     File.WriteAllText(probe, "1");
                     File.Delete(probe);
                 }

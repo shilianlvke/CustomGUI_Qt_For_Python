@@ -24,13 +24,17 @@ namespace SllkGui.Launcher
             }
             ProfileInfo standard = m.Profile("standard");
             Console.WriteLine("  first run : " + m.Uv.Version + " -> " + m.Python.Version + " -> MinGit -> git clone -> venv -> uv sync");
-            Console.WriteLine("  runtime   : <launcher>\\runtime 或 %LOCALAPPDATA%\\SllkGuiLauncher");
+            Console.WriteLine("  runtime   : %USERPROFILE%\\.SllkGui（当前用户目录）");
             return 0;
         }
 
         public static int Run()
         {
-            string temp = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, ".selftest-" + Guid.NewGuid().ToString("N"));
+            // 自检临时数据同样放入当前用户目录，不写启动器所在目录。
+            string userHome = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
+            if (string.IsNullOrEmpty(userHome))
+                userHome = Environment.GetEnvironmentVariable("USERPROFILE");
+            string temp = Path.Combine(userHome, ".SllkGui", ".selftest-" + Guid.NewGuid().ToString("N"));
             LauncherApp app = null;
             int failures = 0;
             try
