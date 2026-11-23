@@ -7,7 +7,7 @@
 2. ``primary`` / ``info`` / ``help`` 使用主题强调色，success / warn / danger 使用
    主题的语义色（``custom_green`` / ``custom_yellow`` / ``custom_red``）；
 3. neutral（secondary / plain）使用 Fluent 控件层色：常态为面板层，悬停/按下按
-   正文色做 6% / 10% 的轻微叠加，避免 Aura 的大面积灰阶跳变；
+   正文色做 6% / 10% 的轻微叠加，避免大面积灰阶跳变；
 4. outlined / text 变体不铺实色，只用语义色描边 + 低透明度底色，符合 Fluent
    的“轻量控件”层级。
 """

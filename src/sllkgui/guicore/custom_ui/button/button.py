@@ -30,7 +30,7 @@ from .severity import Severity, Variant, colors_for, disabled_colors, normalize_
 
 @dataclass(frozen=True)
 class _SizeSpec:
-    """一档尺寸的几何参数（对齐 Aura：md 高 2.5rem）。"""
+    """一档尺寸的几何参数（按设计令牌：md 高 2.5rem）。"""
 
     height: int
     padding_x: int
@@ -266,7 +266,7 @@ class CButton(QPushButton):
         if self._fixed_width is not None:
             width = self._fixed_width
         elif not text and self._has_icon():
-            width = spec.height  # 纯图标：正方形（对齐 Aura 的 icon-only width）
+            width = spec.height  # 纯图标：正方形（按规整设计取与高度等宽）
         else:
             width = spec.padding_x * 2 + content
         return QSize(width + left + right, spec.height + top + bottom)
@@ -452,7 +452,7 @@ class CButton(QPushButton):
             if pixmap is not None:
                 painter.drawPixmap(int(x), int(center_y - pixmap.height() / 2), pixmap)
 
-        # Aura：link 变体只在 hover 时给文字加下划线
+        # Fluent 细节：link 变体只在 hover 时给文字加下划线
         if self._variant is Variant.LINK and self._state == "hover" and text:
             underline_y = center_y + spec.font_px * 0.72
             start = body.center().x() - text_width / 2
@@ -596,7 +596,7 @@ class CButton(QPushButton):
         super().mouseReleaseEvent(event)
 
     def keyPressEvent(self, event):  # noqa: N802 - 覆写 Qt 命名
-        # Aura 在 loading 时把按钮置为 disabled，键盘也不该能激活
+        # 语义上 loading 时按钮相当于 disabled，键盘也不该能激活
         if self._loading and event.key() in (Qt.Key_Space, Qt.Key_Return, Qt.Key_Enter):
             return
         super().keyPressEvent(event)

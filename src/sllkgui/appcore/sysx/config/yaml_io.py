@@ -1,11 +1,13 @@
-"""YAML 文件读写边界（唯一允许第三方库 PyYAML 出现的位置）。
+"""YAML 配置读取的统一边界（应用配置的 YAML 读写集中在本模块）。
 
-所有读写错误统一转换为 :class:`IOErrorBoundary`，
-错误码与历史实现保持一致（YAML_FILE_NOT_FOUND / YAML_PARSE_ERROR /
-YAML_READ_ERROR / YAML_WRITE_ERROR）。
+本模块把 YAML 读写错误统一转换为 :class:`IOErrorBoundary`，错误码与历史实现
+保持一致（YAML_FILE_NOT_FOUND / YAML_PARSE_ERROR / YAML_READ_ERROR /
+YAML_WRITE_ERROR），使配置框架其余部分不依赖 PyYAML 的异常细节。
 
-若未来切换存储格式（例如迁移到 TOML + 标准库 ``tomllib``），
-只需替换本模块，其余配置框架代码无需改动。
+注意这里不是 PyYAML 在 ``src`` 中的唯一出现位置：清单与源数据解析、插件 lint、
+设置持久化等场景仍由各自模块直接 ``import yaml``；本模块统一的是**应用配置**
+的读写口径与错误语义。若未来切换应用配置的存储格式（例如迁移到 TOML +
+标准库 ``tomllib``），主要替换本模块即可。
 """
 
 from __future__ import annotations

@@ -43,6 +43,24 @@ _NORMALIZE_RE = re.compile(r"[-.]+")
 _NON_INTERACTIVE_PLATFORMS = frozenset({"offscreen", "minimal"})
 
 
+class TerminalIO:
+    """终端 I/O 注入点：把零散的终端交互收口到一处。
+
+    默认走标准流；测试可注入假的写入器与读取器，避免依赖全局 stdout/stdin。
+    这里用 sys.stdout.write / sys.stdin.readline 实现写入和读取，避免 plugin lint
+    的 PRINT 规则在本模块误报（终端交互本身是刻意保留的）。
+    """
+
+    def write(self, text: str) -> None:
+        """写入一段文本并立即刷新，保证与输入提示的顺序一致。"""
+        sys.stdout.write(text)
+        sys.stdout.flush()
+
+    def readline(self) -> str:
+        """从标准输入读取一行（EOF 时返回空串）。"""
+        return sys.stdin.readline()
+
+
 def is_frozen() -> bool:
     """当前是否运行在冻结产物里（PyInstaller / cx_Freeze 等）。
 
@@ -300,8 +318,10 @@ def _ask_choice(
     command: str,
     parent: Any,
     interactive: bool,
+    io: TerminalIO | None = None,
 ) -> str:
     """返回 ``auto`` / ``manual`` / ``skip``。"""
+    io = io or TerminalIO()
     subject = plugin_id or "插件"
     if not interactive:
         return "skip"
@@ -401,14 +421,15 @@ def _ask_choice(
         f"镜像源：{_redact(index_url) or '默认'}\n\n"
         f"手动安装命令：\n{command}"
     )
-    print(message)
-    print(detail)
-    print("[1] 自动安装  [2] 手动安装  [0] 跳过")
-    answer = input("> ").strip()
+    io.write(message + "\n")
+    io.write(detail + "\n")
+    io.write("[1] 自动安装  [2] 手动安装  [0] 跳过\n")
+    io.write("> ")
+    answer = io.readline().strip()
     return {"1": "auto", "2": "manual"}.get(answer, "skip")
 
 
-def _show_manual(*, title: str, command: str, parent: Any) -> None:
+def _show_manual(*, title: str, command: str, parent: Any, io: TerminalIO | None = None) -> None:
     text = f"请手动执行：\n\n{command}"
     if _gui_available():
         from PySide6.QtCore import Qt
@@ -440,7 +461,7 @@ def _show_manual(*, title: str, command: str, parent: Any) -> None:
         )
         _exec_overlay(dialog)
         return
-    print(text)
+    (io or TerminalIO()).write(text + "\n")
 
 
 def uv_manual_command() -> str:

@@ -48,8 +48,9 @@ repos:
       - id: pytest-smoke
         name: pytest 冒烟
         language: system
+        # addopts 已带全量覆盖率门禁；本钩子只跑 3 个文件，无法达到 71%，故 --no-cov 跳过本次覆盖率检查。
         entry: >-
-          uv run pytest -q -x
+          uv run pytest -q -x --no-cov
           tests/test_package_metadata.py
           tests/test_architecture_boundaries.py
           tests/test_plugin_lint.py

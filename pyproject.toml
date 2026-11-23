@@ -30,6 +30,8 @@ dependencies = [
     "packaging>=24",
 ]
 
+# 开发期工具统一由 dev extra 提供（CI 用 uv sync --extra dev，本地同样用 --extra dev）；
+# 不要在 [dependency-groups].dev 重复声明，避免两处版本口径漂移。
 [project.optional-dependencies]
 dev = [
     "pytest>=8.3.5",
@@ -79,7 +81,8 @@ ignore = ["E501", "TID252"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
-addopts = "-q"
+# 本地 pytest 默认与 CI 同门槛：全量覆盖率 + 71% 下限（pytest-cov 由 dev extra 提供）。
+addopts = "-q --cov=sllkgui --cov-report=term-missing --cov-fail-under=71"
 
 [tool.coverage.run]
 source = ["sllkgui"]
@@ -133,11 +136,6 @@ ignore_missing_imports = true
 follow_imports = "skip"
 check_untyped_defs = true
 warn_unused_ignores = false
-
-[dependency-groups]
-dev = [
-    "pre-commit>=3.8",
-]
 
 [tool.hatch.build.targets.sdist]
 include = ["src/sllkgui", "examples", "docs", "tests", "scripts"]

@@ -4,7 +4,7 @@
 
 * :class:`_SplitMenu` 只画「菜单行」（36px 行高、4px 圆角悬停、着色图标、分隔线）；
 * 浮层容器复用下拉字段那套 :class:`~sllkgui.guicore.custom_ui.line_edit.overlay.CPopover`
-  （圆角 + 描边 + Aura 阴影 + 内容内衬 + 出屏翻边）。
+  （圆角 + 描边 + 设计令牌阴影 + 内容内衬 + 出屏翻边）。
 
 以前菜单自己是一个 ``Qt.Popup`` 窗口、自己画阴影，和 ``CSelect`` 等下拉字段是两套实现，
 圆角/阴影容易各走各的；统一到 ``CPopover`` 后只有一个地方定义「浮层长什么样」。
@@ -253,8 +253,8 @@ class CSplitButton(QWidget):
     """主操作 + 附加菜单的分体按钮。
 
     主按钮负责默认动作，右侧箭头按钮弹出 ``items`` 指定的菜单项；
-    两段共用同一 severity 与尺寸，右侧只有外侧圆角（对齐 Aura 的
-    ``.p-splitbutton-button`` / ``.p-splitbutton-dropdown``）。
+    两段共用同一 severity 与尺寸，右侧只有外侧圆角（沿用组件库约定的
+    ``.p-splitbutton-button`` / ``.p-splitbutton-dropdown`` 布局）。
 
     ``items`` 的每一项是 ``(label, icon)``；元素为 ``None`` 时插入一条分隔线。
     """
