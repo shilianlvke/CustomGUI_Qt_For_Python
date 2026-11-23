@@ -2,16 +2,7 @@
 
 from __future__ import annotations
 
-import pytest
-
 from sllkgui.guicore.custom_ui.menu import CPopupMenu, MenuItem, MenuStyle
-
-
-@pytest.fixture(scope="module")
-def app():
-    from PySide6.QtWidgets import QApplication
-
-    return QApplication.instance() or QApplication([])
 
 
 def _items():
@@ -42,7 +33,7 @@ def _open(items=None, *, anchor=None, above=True, align="right"):
     return menu
 
 
-def test_menu_items_and_separators(app):
+def test_menu_items_and_separators(qapp):
     menu = CPopupMenu(_items())
     labels = [item.label for item in menu.items()]
     assert labels[0] == "打开剪贴板面板"
@@ -51,7 +42,7 @@ def test_menu_items_and_separators(app):
     assert [child.label for child in menu.items()[3].items] == ["开始专注", "暂停"]
 
 
-def test_popup_shows_root_panel_and_stays_on_screen(app):
+def test_popup_shows_root_panel_and_stays_on_screen(qapp):
     from PySide6.QtGui import QGuiApplication
 
     area = QGuiApplication.primaryScreen().availableGeometry()
@@ -65,7 +56,7 @@ def test_popup_shows_root_panel_and_stays_on_screen(app):
         menu.dismiss()
 
 
-def test_keyboard_skips_disabled_and_wraps(app):
+def test_keyboard_skips_disabled_and_wraps(qapp):
     menu = _open()
     seen: list[str] = []
     menu.hovered.connect(lambda item: seen.append(item.label))
@@ -85,7 +76,7 @@ def test_keyboard_skips_disabled_and_wraps(app):
         menu.dismiss()
 
 
-def test_keyboard_opens_and_closes_submenu(app):
+def test_keyboard_opens_and_closes_submenu(qapp):
     menu = _open()
     try:
         menu.move_active(1)
@@ -101,7 +92,7 @@ def test_keyboard_opens_and_closes_submenu(app):
         menu.dismiss()
 
 
-def test_activate_emits_triggered_and_closes(app):
+def test_activate_emits_triggered_and_closes(qapp):
     seen: list[str] = []
     menu = _open()
     menu.triggered.connect(lambda item: seen.append(item.key))
@@ -113,7 +104,7 @@ def test_activate_emits_triggered_and_closes(app):
         menu.dismiss()
 
 
-def test_disabled_item_is_not_activated(app):
+def test_disabled_item_is_not_activated(qapp):
     seen: list[str] = []
     menu = _open()
     menu.triggered.connect(lambda item: seen.append(item.key))
@@ -126,7 +117,7 @@ def test_disabled_item_is_not_activated(app):
         menu.dismiss()
 
 
-def test_submenu_flips_left_near_right_edge(app):
+def test_submenu_flips_left_near_right_edge(qapp):
     from PySide6.QtCore import QPoint
     from PySide6.QtGui import QGuiApplication
 
@@ -144,7 +135,7 @@ def test_submenu_flips_left_near_right_edge(app):
         menu.dismiss()
 
 
-def test_tall_panel_scrolls_into_view(app):
+def test_tall_panel_scrolls_into_view(qapp):
     from PySide6.QtCore import Qt
     from PySide6.QtGui import QGuiApplication, QKeyEvent
 
@@ -161,14 +152,14 @@ def test_tall_panel_scrolls_into_view(app):
         menu.dismiss()
 
 
-def test_style_override_changes_palette(app):
+def test_style_override_changes_palette(qapp):
     menu = CPopupMenu(_items(), style=MenuStyle(background="#102030", text="#ffffff", row_height=40))
     assert menu.colors()["background"] == "#102030"
     assert menu.colors()["text"] == "#ffffff"
     assert menu.style().row_height == 40
 
 
-def test_mouse_click_triggers_item(app):
+def test_mouse_click_triggers_item(qapp):
     from PySide6.QtCore import QEvent, QPoint, QPointF, Qt
     from PySide6.QtGui import QMouseEvent
 
@@ -195,7 +186,7 @@ def test_mouse_click_triggers_item(app):
         menu.dismiss()
 
 
-def test_hover_opens_submenu_with_delay(app):
+def test_hover_opens_submenu_with_delay(qapp):
     from PySide6.QtCore import QEvent, QPoint, QPointF, Qt
     from PySide6.QtGui import QMouseEvent
     from PySide6.QtTest import QTest
@@ -226,7 +217,7 @@ def test_hover_opens_submenu_with_delay(app):
 # ----------------------------------------------------------------------
 # §11：勾选态、图标列、亚克力底
 # ----------------------------------------------------------------------
-def test_checkable_item_toggles_and_emits(app):
+def test_checkable_item_toggles_and_emits(qapp):
     items = [MenuItem(label="开机自启", key="auto", checked=False), MenuItem(label="退出", key="quit")]
     menu = _open(items)
     states: list[tuple[str, bool]] = []
@@ -240,7 +231,7 @@ def test_checkable_item_toggles_and_emits(app):
         menu.dismiss()
 
 
-def test_checked_item_starts_checked_and_unchecked_starts_empty(app):
+def test_checked_item_starts_checked_and_unchecked_starts_empty(qapp):
     items = [MenuItem(label="A", checked=True), MenuItem(label="B", checked=False), MenuItem(label="C")]
     menu = _open(items)
     try:
@@ -250,7 +241,7 @@ def test_checked_item_starts_checked_and_unchecked_starts_empty(app):
         menu.dismiss()
 
 
-def test_disabled_checkable_item_does_not_toggle(app):
+def test_disabled_checkable_item_does_not_toggle(qapp):
     items = [MenuItem(label="专注模式", checked=False, disabled=True)]
     menu = _open(items)
     try:
@@ -261,7 +252,7 @@ def test_disabled_checkable_item_does_not_toggle(app):
         menu.dismiss()
 
 
-def test_icon_and_check_share_one_column(app):
+def test_icon_and_check_share_one_column(qapp):
     """有图标/可勾选项时整列留白，其他行文案不会左移。"""
     mixed = CPopupMenu([MenuItem(label="A", icon="icon_home"), MenuItem(label="B", checked=True), MenuItem(label="C")])
     plain = CPopupMenu([MenuItem(label="A"), MenuItem(label="B")])
@@ -269,7 +260,7 @@ def test_icon_and_check_share_one_column(app):
     assert plain.icon_column(0) == 0
 
 
-def test_backdrop_is_composited_when_background_translucent(app):
+def test_backdrop_is_composited_when_background_translucent(qapp):
     """半透明底色 + 模糊底：面板像素应带上背景色，而不是纯底色。"""
     from PySide6.QtCore import QPoint, QRect
     from PySide6.QtGui import QColor, QPixmap
@@ -289,7 +280,7 @@ def test_backdrop_is_composited_when_background_translucent(app):
         menu.dismiss()
 
 
-def test_opaque_style_skips_backdrop(app):
+def test_opaque_style_skips_backdrop(qapp):
     from PySide6.QtCore import QPoint
 
     menu = CPopupMenu([MenuItem(label="A")], style=MenuStyle(background="#101010"))
@@ -319,7 +310,7 @@ def _move(menu, pos):
     menu.mouseMoveEvent(event)
 
 
-def test_submenu_survives_pointer_travelling_to_child(app):
+def test_submenu_survives_pointer_travelling_to_child(qapp):
     """从父行移向子菜单（含箭头、面板边缘）时不能收起子菜单。"""
     from PySide6.QtCore import QPoint
 
@@ -339,7 +330,7 @@ def test_submenu_survives_pointer_travelling_to_child(app):
         menu.dismiss()
 
 
-def test_hovering_another_row_closes_submenu(app):
+def test_hovering_another_row_closes_submenu(qapp):
 
     menu = _open()
     try:
@@ -352,7 +343,7 @@ def test_hovering_another_row_closes_submenu(app):
         menu.dismiss()
 
 
-def test_popup_rect_anchor_aligns_and_keeps_gap(app):
+def test_popup_rect_anchor_aligns_and_keeps_gap(qapp):
     from PySide6.QtCore import QRect
     from PySide6.QtGui import QGuiApplication
 
@@ -370,7 +361,7 @@ def test_popup_rect_anchor_aligns_and_keeps_gap(app):
         menu.dismiss()
 
 
-def test_popup_stays_above_taskbar_when_anchor_inside_it(app):
+def test_popup_stays_above_taskbar_when_anchor_inside_it(qapp):
     """右键点在任务栏上时，菜单底边应停在可用区底部，不压住任务栏。"""
     from PySide6.QtCore import QPoint, QRect
     from PySide6.QtGui import QGuiApplication

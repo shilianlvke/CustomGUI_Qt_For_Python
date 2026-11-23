@@ -4,21 +4,12 @@ import os
 
 os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
 
-import pytest
 from PySide6.QtCore import Qt
 from PySide6.QtTest import QTest
-from PySide6.QtWidgets import QApplication
 
 from sllkgui.guicore.custom_ui.data import CTimeline, CTree, CTreeTable
 from sllkgui.guicore.custom_ui.data.table import CTableColumn
 from sllkgui.guicore.custom_ui.data.tree import KEY_ROLE
-
-
-@pytest.fixture(scope="module")
-def qapp():
-    app = QApplication.instance() or QApplication([])
-    yield app
-
 
 NODES = [
     {

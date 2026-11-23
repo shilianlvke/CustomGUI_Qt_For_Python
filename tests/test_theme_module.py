@@ -16,14 +16,6 @@ def diagnostics_dir(tmp_path, monkeypatch):
     return tmp_path
 
 
-@pytest.fixture(scope="module")
-def qapp():
-    from PySide6.QtWidgets import QApplication
-
-    app = QApplication.instance() or QApplication([])
-    yield app
-
-
 @pytest.fixture(autouse=True)
 def _restore_theme():
     yield

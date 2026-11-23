@@ -9,14 +9,6 @@ from sllkgui.guis import language_service
 from sllkgui.guis.language_service import apply_language, current_language, switch_language
 
 
-@pytest.fixture(scope="module")
-def qapp():
-    from PySide6.QtWidgets import QApplication
-
-    app = QApplication.instance() or QApplication([])
-    yield app
-
-
 @pytest.fixture(autouse=True)
 def _restore_language():
     yield

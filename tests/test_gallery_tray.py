@@ -25,14 +25,7 @@ from sllkgui.gallery.tray import (
 
 
 @pytest.fixture(scope="module")
-def app():
-    from PySide6.QtWidgets import QApplication
-
-    return QApplication.instance() or QApplication([])
-
-
-@pytest.fixture(scope="module")
-def prepared(app):
+def prepared(qapp):
     from sllkgui.appcore import (
         AppLanguages,
         AppSettings,
@@ -334,7 +327,7 @@ def test_tray_entries_report_rendered_location():
     assert after[0].path == ("甲", "开始专注")
 
 
-def test_menu_items_group_plugins_and_append_base(app):
+def test_menu_items_group_plugins_and_append_base(qapp):
     """菜单项树：插件块 → 分隔线 → 基座固定项；卸载回到内联形态。"""
     service = TrayService()
     first = TrayHandle(service, "a", (Permission.TRAY,), "甲")
@@ -361,7 +354,7 @@ def test_menu_items_group_plugins_and_append_base(app):
     ]
 
 
-def test_menu_trigger_dispatches_plugin_action(app):
+def test_menu_trigger_dispatches_plugin_action(qapp):
     service = TrayService()
     called: list[str] = []
     handle = TrayHandle(service, "a", (Permission.TRAY,), "甲")
@@ -373,7 +366,7 @@ def test_menu_trigger_dispatches_plugin_action(app):
     assert called == ["x"]
 
 
-def test_base_section_includes_settings_when_available(app):
+def test_base_section_includes_settings_when_available(qapp):
     service = TrayService()
     calls: list[str] = []
     service.attach_window(lambda: None, lambda: None, lambda: calls.append("settings"))
@@ -395,7 +388,7 @@ def test_window_wires_settings_opener_into_tray(tmp_path: Path, prepared):
         window.close()
 
 
-def test_menu_activation_runs_action_once(app):
+def test_menu_activation_runs_action_once(qapp):
     """插件动作只走 triggered 派发：command 与信号不能各执行一次。"""
     service = TrayService()
     called: list[str] = []

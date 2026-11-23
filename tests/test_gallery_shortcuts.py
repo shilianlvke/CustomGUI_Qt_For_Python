@@ -16,22 +16,15 @@ from sllkgui.gallery.store import GalleryStore
 from sllkgui.guicore.shortcuts import PRIORITY_BASE, reset_shortcut_registry
 
 
-@pytest.fixture(scope="module")
-def app():
-    from PySide6.QtWidgets import QApplication
-
-    return QApplication.instance() or QApplication([])
-
-
 @pytest.fixture
-def registry(app):
+def registry(qapp):
     table = reset_shortcut_registry()
     yield table
     table.shutdown()
 
 
 @pytest.fixture(scope="module")
-def prepared(app):
+def prepared(qapp):
     from sllkgui.appcore import (
         AppLanguages,
         AppSettings,

@@ -6,7 +6,6 @@ import logging
 from pathlib import Path
 from types import SimpleNamespace
 
-import pytest
 from gallery_helpers import MANIFEST, write_plugin
 
 from sllkgui.gallery.runtime import GalleryRuntime
@@ -93,13 +92,6 @@ class P(Plugin):
 
 PLUGIN = P()
 '''
-
-
-@pytest.fixture(scope="module")
-def qapp():
-    from PySide6.QtWidgets import QApplication
-
-    yield QApplication.instance() or QApplication([])
 
 
 def _source(label: str, marker: str = "v1") -> str:

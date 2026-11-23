@@ -18,12 +18,6 @@ from PySide6.QtWidgets import QApplication, QWidget
 from sllkgui.guicore import CComboBox
 
 
-@pytest.fixture(scope="module")
-def qapp():
-    app = QApplication.instance() or QApplication([])
-    yield app
-
-
 def _wheel(widget: QWidget, delta: int = -120) -> QWheelEvent:
     center = QPointF(widget.width() / 2, widget.height() / 2)
     global_center = QPointF(widget.mapToGlobal(QPoint(int(center.x()), int(center.y()))))

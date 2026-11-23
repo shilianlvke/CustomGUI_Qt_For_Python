@@ -21,15 +21,8 @@ from sllkgui.appcore.feedback import (
 )
 
 
-@pytest.fixture(scope="module")
-def app():
-    from PySide6.QtWidgets import QApplication
-
-    return QApplication.instance() or QApplication([])
-
-
 @pytest.fixture
-def bus(app):
+def bus(qapp):
     from sllkgui.guicore.feedback import reset_toast_bus
 
     bus = reset_toast_bus()
@@ -38,7 +31,7 @@ def bus(app):
 
 
 @pytest.fixture
-def window(app, bus):
+def window(qapp, bus):
     from PySide6.QtWidgets import QWidget
 
     win = QWidget()

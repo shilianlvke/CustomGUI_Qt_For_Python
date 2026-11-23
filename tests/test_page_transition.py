@@ -16,18 +16,12 @@ from types import SimpleNamespace
 import pytest
 from PySide6.QtCore import QCoreApplication, QEasingCurve, QEvent
 from PySide6.QtTest import QTest
-from PySide6.QtWidgets import QApplication, QFrame, QStackedWidget, QWidget
+from PySide6.QtWidgets import QFrame, QStackedWidget, QWidget
 
 from sllkgui.guicore import CPageTransition
 from sllkgui.guis.windows.main_window.functions import MainFunctions
 
 LAYER_NAME = "CPageTransition_Layer"
-
-
-@pytest.fixture(scope="module")
-def qapp():
-    app = QApplication.instance() or QApplication([])
-    yield app
 
 
 @pytest.fixture

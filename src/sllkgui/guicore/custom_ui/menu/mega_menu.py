@@ -12,6 +12,7 @@ from PySide6.QtWidgets import QHBoxLayout, QWidget
 
 from sllkgui.appcore import AppSettings, get_design_tokens
 
+from ..config_helpers import resolve_config
 from .menu_item import MenuItem, as_menu_item
 from .menu_list import CMenuList, menu_colors
 from .menubar import _MenuBarBase
@@ -25,11 +26,12 @@ COLUMN_WIDTH = 180
 
 def _mega_menu_config() -> tuple[int, int, int]:
     """(面板内边距, 列间距, 单列宽度)，配置缺失时回落默认值。"""
-    try:
+
+    def getter() -> tuple[int, int, int]:
         cfg = AppSettings.menus
-        return int(cfg.mega_padding), int(cfg.mega_spacing), int(cfg.mega_column_width)
-    except Exception:
-        return MEGA_PADDING, MEGA_SPACING, COLUMN_WIDTH
+        return cfg.mega_padding, cfg.mega_spacing, cfg.mega_column_width
+
+    return resolve_config(getter, (MEGA_PADDING, MEGA_SPACING, COLUMN_WIDTH))
 
 
 class _MegaPanel(QWidget):

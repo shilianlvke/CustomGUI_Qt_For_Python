@@ -12,14 +12,6 @@ from types import SimpleNamespace
 
 os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
 
-import pytest
-from PySide6.QtWidgets import QApplication
-
-
-@pytest.fixture(scope="module")
-def qapp():
-    yield QApplication.instance() or QApplication([])
-
 
 class _FakeWindow:
     """只保留 reload_plugins 依赖的窗口成员，避免构造完整主窗口。"""

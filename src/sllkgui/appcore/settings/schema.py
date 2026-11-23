@@ -31,6 +31,19 @@ _CORE_NAMESPACE = "core"
 _PLUGIN_NAMESPACE_PREFIX = "plugin."
 
 
+def _display_text(key: str, fallback: str) -> str:
+    """按语言键解析展示文本；无语言键时直接回落默认值。
+
+    ``Language`` 保持调用时导入，避免本模块（插件可直接使用）在导入期
+    依赖 Qt 与语言服务。
+    """
+    if not key:
+        return fallback
+    from ..sysx.modules.language_module import Language
+
+    return str(Language.resolve_key(key, fallback))
+
+
 class SettingsError(ValueError):
     """设置声明 / 取值错误（消息直接面向开发者与设置界面）。"""
 
@@ -112,11 +125,7 @@ class SettingOption:
     label_key: str = ""
 
     def display_label(self) -> str:
-        if self.label_key:
-            from ..sysx.modules.language_module import Language
-
-            return str(Language.resolve_key(self.label_key, self.label or self.value))
-        return self.label or self.value
+        return _display_text(self.label_key, self.label or self.value)
 
 
 @dataclass(frozen=True)
@@ -144,25 +153,13 @@ class SettingsAction:
             raise SettingsError(f"{self.key}: command 必须可调用")
 
     def display_label(self) -> str:
-        if self.label_key:
-            from ..sysx.modules.language_module import Language
-
-            return str(Language.resolve_key(self.label_key, self.label or self.key))
-        return self.label or self.key
+        return _display_text(self.label_key, self.label or self.key)
 
     def display_hint(self) -> str:
-        if self.hint_key:
-            from ..sysx.modules.language_module import Language
-
-            return str(Language.resolve_key(self.hint_key, self.hint))
-        return self.hint
+        return _display_text(self.hint_key, self.hint)
 
     def display_button(self) -> str:
-        if self.button_key:
-            from ..sysx.modules.language_module import Language
-
-            return str(Language.resolve_key(self.button_key, self.button or self.display_label()))
-        return self.button or self.display_label()
+        return _display_text(self.button_key, self.button or self.display_label())
 
 
 @dataclass(frozen=True)
@@ -188,18 +185,10 @@ class SettingsInfo:
             raise SettingsError(f"{self.key}: value_provider 必须可调用")
 
     def display_label(self) -> str:
-        if self.label_key:
-            from ..sysx.modules.language_module import Language
-
-            return str(Language.resolve_key(self.label_key, self.label or self.key))
-        return self.label or self.key
+        return _display_text(self.label_key, self.label or self.key)
 
     def display_hint(self) -> str:
-        if self.hint_key:
-            from ..sysx.modules.language_module import Language
-
-            return str(Language.resolve_key(self.hint_key, self.hint))
-        return self.hint
+        return _display_text(self.hint_key, self.hint)
 
     def value(self) -> str:
         if self.value_provider is None:
@@ -527,18 +516,10 @@ class SettingSpec:
         return self.control or _DEFAULT_CONTROL[self.kind]
 
     def display_label(self) -> str:
-        if self.label_key:
-            from ..sysx.modules.language_module import Language
-
-            return str(Language.resolve_key(self.label_key, self.label or self.key))
-        return self.label or self.key
+        return _display_text(self.label_key, self.label or self.key)
 
     def display_hint(self) -> str:
-        if self.hint_key:
-            from ..sysx.modules.language_module import Language
-
-            return str(Language.resolve_key(self.hint_key, self.hint))
-        return self.hint
+        return _display_text(self.hint_key, self.hint)
 
     def option_values(self) -> tuple[str, ...]:
         return tuple(option.value for option in self.options)
@@ -572,18 +553,10 @@ class SettingsSection:
         object.__setattr__(self, "actions", tuple(self.actions))
 
     def display_title(self) -> str:
-        if self.title_key:
-            from ..sysx.modules.language_module import Language
-
-            return str(Language.resolve_key(self.title_key, self.title))
-        return self.title
+        return _display_text(self.title_key, self.title)
 
     def display_hint(self) -> str:
-        if self.hint_key:
-            from ..sysx.modules.language_module import Language
-
-            return str(Language.resolve_key(self.hint_key, self.hint))
-        return self.hint
+        return _display_text(self.hint_key, self.hint)
 
 
 @dataclass(frozen=True)
@@ -636,18 +609,10 @@ class SettingsPage:
         )
 
     def display_title(self) -> str:
-        if self.title_key:
-            from ..sysx.modules.language_module import Language
-
-            return str(Language.resolve_key(self.title_key, self.title))
-        return self.title
+        return _display_text(self.title_key, self.title)
 
     def display_hint(self) -> str:
-        if self.hint_key:
-            from ..sysx.modules.language_module import Language
-
-            return str(Language.resolve_key(self.hint_key, self.hint))
-        return self.hint
+        return _display_text(self.hint_key, self.hint)
 
     def specs(self) -> tuple[SettingSpec, ...]:
         return tuple(item for section in self.sections for item in section.items)

@@ -4,19 +4,10 @@ from __future__ import annotations
 
 from types import SimpleNamespace
 
-import pytest
-
 from sllkgui.guis.windows.main_window import setup_main_window as module
 
 
-@pytest.fixture(scope="module")
-def app():
-    from PySide6.QtWidgets import QApplication
-
-    return QApplication.instance() or QApplication([])
-
-
-def test_apply_minimum_size_resizes_small_window(app, monkeypatch):
+def test_apply_minimum_size_resizes_small_window(qapp, monkeypatch):
     monkeypatch.setattr(module, "AppSettings", SimpleNamespace(minimum_size=(900, 700)))
     window = module.QWidget()
     window.resize(400, 300)
@@ -32,7 +23,7 @@ def test_apply_minimum_size_resizes_small_window(app, monkeypatch):
     window.deleteLater()
 
 
-def test_apply_minimum_size_ignores_zero(app, monkeypatch):
+def test_apply_minimum_size_ignores_zero(qapp, monkeypatch):
     monkeypatch.setattr(module, "AppSettings", SimpleNamespace(minimum_size=(0, 0)))
     window = module.QWidget()
     window.resize(400, 300)

@@ -11,14 +11,7 @@ from sllkgui.gallery.registry import GalleryRegistry
 from sllkgui.gallery.store import GalleryStore
 
 
-@pytest.fixture(scope="module")
-def app():
-    from PySide6.QtWidgets import QApplication
-
-    return QApplication.instance() or QApplication([])
-
-
-def test_context_members(tmp_path: Path, app):
+def test_context_members(tmp_path: Path, qapp):
     root = write_plugin(tmp_path / "hello")
     store = GalleryStore(tmp_path / "gallery")
     store.ensure_layout()

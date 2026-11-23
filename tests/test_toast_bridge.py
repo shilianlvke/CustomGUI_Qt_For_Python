@@ -18,15 +18,8 @@ from sllkgui.gallery.toast import ToastRouter
 from sllkgui.guicore.feedback import reset_toast_bus
 
 
-@pytest.fixture(scope="module")
-def app():
-    from PySide6.QtWidgets import QApplication
-
-    return QApplication.instance() or QApplication([])
-
-
 @pytest.fixture
-def window(app):
+def window(qapp):
     from PySide6.QtWidgets import QWidget
 
     win = QWidget()
@@ -37,7 +30,7 @@ def window(app):
 
 
 @pytest.fixture
-def bus(app, window):
+def bus(qapp, window):
     bus = reset_toast_bus()
     bus.set_sources(main=lambda: window, settings=lambda: None)
     yield bus
@@ -111,7 +104,7 @@ def test_clear_on_unload(ctx, bus):
     assert handle.update(text="不应生效").code == str(ToastCode.PLUGIN_UNLOADED)
 
 
-def test_anchor_settings_prefers_settings_window(app, bus, window):
+def test_anchor_settings_prefers_settings_window(qapp, bus, window):
     from PySide6.QtWidgets import QWidget
 
     settings = QWidget()

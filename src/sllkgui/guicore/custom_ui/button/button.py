@@ -23,6 +23,7 @@ from PySide6.QtWidgets import QPushButton, QSizePolicy
 
 from sllkgui.appcore import AppSettings, ColorPalette
 
+from ..config_helpers import resolve_config
 from ..icon_utils import render_icon
 from ..paint_utils import SHADOW_MARGINS, shadow_layers
 from .severity import Severity, Variant, colors_for, disabled_colors, normalize_severity
@@ -57,17 +58,21 @@ _DISABLED_OPACITY = 0.38
 
 def _button_config() -> tuple[int, int, int, int, float]:
     """(圆角, 图标间距, 旋转周期, 刷新间隔, 禁用透明度)，配置缺失时回落默认值。"""
-    try:
+
+    def getter() -> tuple[int, int, int, int, float]:
         cfg = AppSettings.button
         return (
-            int(cfg.radius),
-            int(cfg.icon_gap),
+            cfg.radius,
+            cfg.icon_gap,
             max(1, int(cfg.spin_period)),
             max(1, int(cfg.spin_interval)),
-            float(cfg.disabled_opacity),
+            cfg.disabled_opacity,
         )
-    except Exception:  # 配置上下文未就绪时用兜底值，组件不应因此不可用
-        return _RADIUS, _ICON_GAP, _SPIN_PERIOD_MS, _SPIN_INTERVAL_MS, _DISABLED_OPACITY
+
+    return resolve_config(
+        getter,
+        (_RADIUS, _ICON_GAP, _SPIN_PERIOD_MS, _SPIN_INTERVAL_MS, _DISABLED_OPACITY),
+    )
 
 
 class CButton(QPushButton):

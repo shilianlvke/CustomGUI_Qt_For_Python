@@ -8,7 +8,7 @@ import pytest
 from PySide6.QtCore import Qt
 from PySide6.QtGui import QColor
 from PySide6.QtTest import QTest
-from PySide6.QtWidgets import QApplication, QLabel, QWidget
+from PySide6.QtWidgets import QLabel, QWidget
 
 from sllkgui.guicore import (
     CAccordion,
@@ -26,12 +26,6 @@ from sllkgui.guicore import (
     CToolbar,
 )
 from sllkgui.guicore.custom_ui.icon_utils import render_icon
-
-
-@pytest.fixture(scope="module")
-def qapp():
-    app = QApplication.instance() or QApplication([])
-    yield app
 
 
 @pytest.fixture

@@ -12,19 +12,13 @@ os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
 
 import pytest
 from PySide6.QtTest import QTest
-from PySide6.QtWidgets import QApplication, QFrame, QWidget
+from PySide6.QtWidgets import QFrame, QWidget
 
 from sllkgui.appcore import AppSettings
 from sllkgui.appcore.app.main_window_use_cases import MainWindowButtonUseCase
 from sllkgui.guicore import CBottomColumn, CLeftColumn, CTopColumn, Styles
 from sllkgui.guis.windows.main_window.controller import ColumnController
 from sllkgui.guis.windows.main_window.functions import MainFunctions
-
-
-@pytest.fixture(scope="module")
-def qapp():
-    app = QApplication.instance() or QApplication([])
-    yield app
 
 
 class _FakeWindow:

@@ -18,7 +18,7 @@ os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
 import pytest
 from PySide6.QtCore import Qt
 from PySide6.QtGui import QColor, QPalette
-from PySide6.QtWidgets import QApplication, QWidget
+from PySide6.QtWidgets import QWidget
 
 from sllkgui.appcore import ColorPalette, get_design_tokens, get_theme_manager
 from sllkgui.guicore import (
@@ -32,12 +32,6 @@ from sllkgui.guicore import (
 
 _HEX_COLOR_RE = re.compile(r"#[0-9a-fA-F]{3,8}\b")
 _COLOR_KEYWORDS = ("background", "color:", "rgb(", "rgba(")
-
-
-@pytest.fixture(scope="module")
-def qapp():
-    app = QApplication.instance() or QApplication([])
-    yield app
 
 
 @pytest.fixture(autouse=True)

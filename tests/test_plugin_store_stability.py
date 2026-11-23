@@ -8,13 +8,7 @@ from types import SimpleNamespace
 
 os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
 
-import pytest
-from PySide6.QtWidgets import QApplication, QWidget
-
-
-@pytest.fixture(scope="module")
-def qapp():
-    yield QApplication.instance() or QApplication([])
+from PySide6.QtWidgets import QWidget
 
 
 class _Manager:

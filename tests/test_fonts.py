@@ -5,15 +5,8 @@ from __future__ import annotations
 import sys
 
 import pytest
-from PySide6.QtWidgets import QApplication
 
 from sllkgui.guicore import install_fonts, install_system_fonts
-
-
-@pytest.fixture(scope="module")
-def qapp():
-    app = QApplication.instance() or QApplication([])
-    yield app
 
 
 def test_install_fonts_empty_is_noop(qapp):

@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import time
 
-import pytest
 from PySide6.QtCore import QObject
 from PySide6.QtWidgets import QApplication
 
@@ -16,12 +15,6 @@ from sllkgui.guicore import (
     run_task,
     safe_callback,
 )
-
-
-@pytest.fixture(scope="module")
-def qapp():
-    app = QApplication.instance() or QApplication([])
-    yield app
 
 
 # --------------------------------------------------------------------------

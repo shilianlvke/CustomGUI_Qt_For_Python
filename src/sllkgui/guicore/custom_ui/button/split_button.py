@@ -18,6 +18,7 @@ from PySide6.QtWidgets import QHBoxLayout, QWidget
 
 from sllkgui.appcore import AppSettings, get_design_tokens
 
+from ..config_helpers import resolve_config
 from ..icon_utils import render_icon
 from ..line_edit.overlay import CPopover
 from .button import _SIZES, CButton
@@ -37,19 +38,22 @@ _MENU_MIN_WIDTH = 200
 
 def _split_button_config() -> tuple[int, int, int, int, int, int, int]:
     """(行间距, 横向内边距, 纵向内边距, 行圆角, 图标间距, 图标尺寸, 最小宽度)。"""
-    try:
+
+    def getter() -> tuple[int, int, int, int, int, int, int]:
         cfg = AppSettings.split_button
         return (
-            int(cfg.menu_gap),
-            int(cfg.item_padding_x),
-            int(cfg.item_padding_y),
-            int(cfg.item_radius),
-            int(cfg.icon_gap),
-            int(cfg.icon_size),
-            int(cfg.min_width),
+            cfg.menu_gap,
+            cfg.item_padding_x,
+            cfg.item_padding_y,
+            cfg.item_radius,
+            cfg.icon_gap,
+            cfg.icon_size,
+            cfg.min_width,
         )
-    except Exception:  # 配置上下文未就绪时用兜底值
-        return (
+
+    return resolve_config(
+        getter,
+        (
             _MENU_GAP,
             _MENU_ITEM_PADDING_X,
             _MENU_ITEM_PADDING_Y,
@@ -57,7 +61,8 @@ def _split_button_config() -> tuple[int, int, int, int, int, int, int]:
             _MENU_ICON_GAP,
             _MENU_ICON,
             _MENU_MIN_WIDTH,
-        )
+        ),
+    )
 
 
 class _SplitMenu(QWidget):

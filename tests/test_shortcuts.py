@@ -16,15 +16,8 @@ from sllkgui.guicore.shortcuts import (
 )
 
 
-@pytest.fixture(scope="module")
-def app():
-    from PySide6.QtWidgets import QApplication
-
-    return QApplication.instance() or QApplication([])
-
-
 @pytest.fixture
-def registry(app):
+def registry(qapp):
     """每条用例独立的注册表：不污染进程内单例。"""
     table = ShortcutRegistry()
     yield table
@@ -122,7 +115,7 @@ def test_global_shortcut_activates_anywhere(registry):
     assert registry.is_installed() is True
 
 
-def test_local_scope_only_matches_host_subtree(registry, app):
+def test_local_scope_only_matches_host_subtree(registry, qapp):
     from PySide6.QtWidgets import QWidget
 
     hits: list[str] = []
@@ -231,7 +224,7 @@ def test_conflicts_are_reported_with_winner(registry):
     assert set(conflicts[0].owners) == {"base", "plugin"}
 
 
-def test_same_chord_in_disjoint_windows_is_not_a_conflict(registry, app):
+def test_same_chord_in_disjoint_windows_is_not_a_conflict(registry, qapp):
     from PySide6.QtWidgets import QWidget
 
     first, second = QWidget(), QWidget()
@@ -241,7 +234,7 @@ def test_same_chord_in_disjoint_windows_is_not_a_conflict(registry, app):
     assert registry.conflicts() == ()
 
 
-def test_conflict_detection_uses_physical_chord(app):
+def test_conflict_detection_uses_physical_chord(qapp):
     """文本不同但物理组合相同的绑定必须判为冲突。"""
     windows = ShortcutRegistry(platform="win32")
     darwin = ShortcutRegistry(platform="darwin")
@@ -276,7 +269,7 @@ def test_reregister_same_id_replaces_without_self_conflict(registry):
     assert hits == ["v2"]
 
 
-def test_reregister_rebinds_lifecycle_to_new_host(registry, app):
+def test_reregister_rebinds_lifecycle_to_new_host(registry, qapp):
     """换宿主重注册后，旧宿主销毁不得误删新条目。"""
     from PySide6.QtCore import QEvent
     from PySide6.QtWidgets import QWidget
@@ -286,13 +279,13 @@ def test_reregister_rebinds_lifecycle_to_new_host(registry, app):
     registry.register("demo.local", "f9", lambda: None, owner="demo", scope="local", host=new_host)
 
     old_host.deleteLater()
-    app.sendPostedEvents(None, QEvent.Type.DeferredDelete)
-    app.processEvents()
+    qapp.sendPostedEvents(None, QEvent.Type.DeferredDelete)
+    qapp.processEvents()
     assert registry.count() == 1
 
     new_host.deleteLater()
-    app.sendPostedEvents(None, QEvent.Type.DeferredDelete)
-    app.processEvents()
+    qapp.sendPostedEvents(None, QEvent.Type.DeferredDelete)
+    qapp.processEvents()
     assert registry.count() == 0
 
 
@@ -344,7 +337,7 @@ def test_unregister_owner_and_shutdown(registry):
     assert registry.is_installed() is False
 
 
-def test_host_destruction_releases_binding(registry, app):
+def test_host_destruction_releases_binding(registry, qapp):
     from PySide6.QtCore import QEvent
     from PySide6.QtWidgets import QWidget
 
@@ -353,8 +346,8 @@ def test_host_destruction_releases_binding(registry, app):
     assert registry.count() == 1
 
     host.deleteLater()
-    app.sendPostedEvents(None, QEvent.Type.DeferredDelete)
-    app.processEvents()
+    qapp.sendPostedEvents(None, QEvent.Type.DeferredDelete)
+    qapp.processEvents()
     assert registry.count() == 0
 
 
@@ -370,7 +363,7 @@ def test_callback_errors_are_isolated(registry):
 # ----------------------------------------------------------------------
 # 事件过滤器
 # ----------------------------------------------------------------------
-def test_event_filter_consumes_key_and_skips_text_input(registry, app):
+def test_event_filter_consumes_key_and_skips_text_input(registry, qapp):
     from PySide6.QtCore import QEvent, Qt
     from PySide6.QtGui import QKeyEvent
     from PySide6.QtWidgets import QLineEdit, QWidget
@@ -382,23 +375,23 @@ def test_event_filter_consumes_key_and_skips_text_input(registry, app):
     window = QWidget()
     window.show()
     event = QKeyEvent(QEvent.Type.KeyPress, Qt.Key.Key_S, Qt.KeyboardModifier.ControlModifier, "s")
-    app.sendEvent(window, event)
+    qapp.sendEvent(window, event)
     assert hits == ["save"]
     assert event.isAccepted() is True
 
     editor = QLineEdit()
     editor.show()
     plain = QKeyEvent(QEvent.Type.KeyPress, Qt.Key.Key_A, Qt.KeyboardModifier.NoModifier, "a")
-    app.sendEvent(editor, plain)
+    qapp.sendEvent(editor, plain)
     # 编辑文本时纯字符键必须留给输入框
     assert hits == ["save"]
 
     with_modifier = QKeyEvent(QEvent.Type.KeyPress, Qt.Key.Key_S, Qt.KeyboardModifier.ControlModifier, "s")
-    app.sendEvent(editor, with_modifier)
+    qapp.sendEvent(editor, with_modifier)
     assert hits == ["save", "save"]
 
 
-def test_unmatched_keys_are_not_consumed(registry, app):
+def test_unmatched_keys_are_not_consumed(registry, qapp):
     from PySide6.QtCore import QEvent, Qt
     from PySide6.QtGui import QKeyEvent
     from PySide6.QtWidgets import QWidget
@@ -406,7 +399,7 @@ def test_unmatched_keys_are_not_consumed(registry, app):
     registry.register("demo.save", "primary+s", lambda: None, owner="demo")
     window = QWidget()
     event = QKeyEvent(QEvent.Type.KeyPress, Qt.Key.Key_Q, Qt.KeyboardModifier.NoModifier, "q")
-    app.sendEvent(window, event)
+    qapp.sendEvent(window, event)
     assert event.isAccepted() is False
 
 

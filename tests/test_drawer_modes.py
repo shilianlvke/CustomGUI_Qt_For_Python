@@ -15,7 +15,7 @@ os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
 
 import pytest
 from PySide6.QtTest import QTest
-from PySide6.QtWidgets import QApplication, QMainWindow, QWidget
+from PySide6.QtWidgets import QMainWindow, QWidget
 
 from sllkgui.appcore import (
     AppLanguages,
@@ -61,12 +61,6 @@ class _StubRightPanel(QWidget):
     def hide(self) -> None:  # noqa: N802 - 覆写 Qt 命名
         self._open = False
         super().hide()
-
-
-@pytest.fixture(scope="module")
-def qapp():
-    app = QApplication.instance() or QApplication([])
-    yield app
 
 
 @pytest.fixture

@@ -8,17 +8,11 @@ from types import SimpleNamespace
 
 os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
 
-import pytest
 from PySide6.QtCore import QPoint, Qt
 from PySide6.QtTest import QTest
 from PySide6.QtWidgets import QApplication, QLabel, QWidget
 
 from sllkgui.guicore import CButton
-
-
-@pytest.fixture(scope="module")
-def qapp():
-    yield QApplication.instance() or QApplication([])
 
 
 class _Manager:

@@ -12,17 +12,11 @@ import pytest
 from PySide6.QtCore import Qt
 from PySide6.QtGui import QColor
 from PySide6.QtTest import QTest
-from PySide6.QtWidgets import QApplication, QVBoxLayout, QWidget
+from PySide6.QtWidgets import QVBoxLayout, QWidget
 
 from sllkgui.appcore import get_theme_manager
 from sllkgui.guicore.window.app_menu import CAppMenu
 from sllkgui.guicore.window.app_topbar import CAppTopbar
-
-
-@pytest.fixture(scope="module")
-def qapp():
-    app = QApplication.instance() or QApplication([])
-    yield app
 
 
 @pytest.fixture(autouse=True)

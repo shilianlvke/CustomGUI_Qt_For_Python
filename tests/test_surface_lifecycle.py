@@ -6,14 +6,7 @@ import pytest
 
 
 @pytest.fixture(scope="module")
-def app():
-    from PySide6.QtWidgets import QApplication
-
-    return QApplication.instance() or QApplication([])
-
-
-@pytest.fixture(scope="module")
-def prepared(app):
+def prepared(qapp):
     from sllkgui.appcore import (
         AppLanguages,
         AppSettings,

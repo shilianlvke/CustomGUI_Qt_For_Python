@@ -6,16 +6,9 @@ os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
 
 import pytest
 from PySide6.QtCore import QPointF
-from PySide6.QtWidgets import QApplication
 
 from sllkgui.guicore.custom_ui.chart.chart import CHART_TYPES, CChart
 from sllkgui.guicore.custom_ui.upload.file_upload import CFileUpload
-
-
-@pytest.fixture(scope="module")
-def qapp():
-    app = QApplication.instance() or QApplication([])
-    yield app
 
 
 # ----------------------------------------------------------------------

@@ -23,17 +23,6 @@ from sllkgui.appcore import AppLanguages, Language
 _SRC = Path(__file__).resolve().parents[1] / "src" / "sllkgui"
 
 
-@pytest.fixture(scope="module")
-def qapp():
-    """创建 QApplication。
-
-    没有 QApplication 时创建 QWidget 会直接让进程崩溃——因此凡是碰控件的
-    用例都必须先经过这个 fixture。
-    """
-    app = QApplication.instance() or QApplication([])
-    yield app
-
-
 # ----------------------------------------------------------------------
 # 版本号：单一来源
 # ----------------------------------------------------------------------

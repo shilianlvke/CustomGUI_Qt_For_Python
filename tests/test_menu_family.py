@@ -4,10 +4,9 @@ import os
 
 os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
 
-import pytest
 from PySide6.QtCore import QPoint, Qt
 from PySide6.QtTest import QTest
-from PySide6.QtWidgets import QApplication, QLabel
+from PySide6.QtWidgets import QLabel
 
 from sllkgui.guicore.custom_ui.menu import (
     CContextMenu,
@@ -20,12 +19,6 @@ from sllkgui.guicore.custom_ui.menu import (
     CTieredMenu,
     MenuItem,
 )
-
-
-@pytest.fixture(scope="module")
-def qapp():
-    app = QApplication.instance() or QApplication([])
-    yield app
 
 
 def _click(widget, rect) -> None:

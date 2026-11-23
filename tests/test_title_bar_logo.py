@@ -9,17 +9,9 @@ import os
 
 os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
 
-import pytest
 from PySide6.QtSvgWidgets import QSvgWidget
-from PySide6.QtWidgets import QApplication
 
 from sllkgui.guicore.window.title_bar.title_bar import fit_logo_size
-
-
-@pytest.fixture(scope="module")
-def qapp():
-    app = QApplication.instance() or QApplication([])
-    yield app
 
 
 def _write_svg(tmp_path, width: int, height: int) -> str:

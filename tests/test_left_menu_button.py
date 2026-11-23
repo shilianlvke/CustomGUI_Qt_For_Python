@@ -11,18 +11,12 @@ os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
 
 import pytest
 from PySide6.QtTest import QTest
-from PySide6.QtWidgets import QApplication, QVBoxLayout, QWidget
+from PySide6.QtWidgets import QVBoxLayout, QWidget
 
 from sllkgui.appcore import ColorPalette, get_theme_manager
 from sllkgui.guicore.window.left_menu.menu_button import CLeftMenuButton, _mix_color
 
 _FONT = "微软雅黑"
-
-
-@pytest.fixture(scope="module")
-def qapp():
-    app = QApplication.instance() or QApplication([])
-    yield app
 
 
 @pytest.fixture(autouse=True)

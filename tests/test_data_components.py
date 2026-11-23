@@ -4,20 +4,12 @@ import os
 
 os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
 
-import pytest
 from PySide6.QtCore import Qt
 from PySide6.QtTest import QTest
-from PySide6.QtWidgets import QApplication, QLabel
+from PySide6.QtWidgets import QLabel
 
 from sllkgui.guicore import CDataTable, CPaginator, CTableColumn, CTableModel
 from sllkgui.guicore.custom_ui.data.table import DETAIL_ROLE, GROUP_ROLE, TAG_ROLE
-
-
-@pytest.fixture(scope="module")
-def qapp():
-    app = QApplication.instance() or QApplication([])
-    yield app
-
 
 ROWS = [
     {"name": "Bamboo Watch", "category": "Accessories", "price": 65, "status": "INSTOCK"},

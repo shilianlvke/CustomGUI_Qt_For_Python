@@ -8,7 +8,7 @@ import pytest
 from PySide6.QtCore import Qt
 from PySide6.QtGui import QColor, QPixmap
 from PySide6.QtTest import QTest
-from PySide6.QtWidgets import QApplication, QScrollArea, QSizePolicy, QWidget
+from PySide6.QtWidgets import QScrollArea, QSizePolicy, QWidget
 
 from sllkgui.appcore import ColorPalette
 from sllkgui.guicore import (
@@ -22,12 +22,6 @@ from sllkgui.guicore import (
     CInputIcon,
     CScrollTop,
 )
-
-
-@pytest.fixture(scope="module")
-def qapp():
-    app = QApplication.instance() or QApplication([])
-    yield app
 
 
 @pytest.fixture

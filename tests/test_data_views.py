@@ -7,19 +7,11 @@ import os
 
 os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
 
-import pytest
 from PySide6.QtCore import Qt
 from PySide6.QtTest import QTest
-from PySide6.QtWidgets import QApplication, QGridLayout, QLabel, QVBoxLayout
+from PySide6.QtWidgets import QGridLayout, QLabel, QVBoxLayout
 
 from sllkgui.guicore.custom_ui.data import CDataView, COrderList, CPickList
-
-
-@pytest.fixture(scope="module")
-def qapp():
-    app = QApplication.instance() or QApplication([])
-    yield app
-
 
 ROWS = [
     {"name": "Bamboo Watch", "price": 65},

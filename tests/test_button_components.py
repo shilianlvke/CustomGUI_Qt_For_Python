@@ -8,17 +8,11 @@ import pytest
 from PySide6.QtCore import Qt
 from PySide6.QtGui import QColor
 from PySide6.QtTest import QTest
-from PySide6.QtWidgets import QApplication, QVBoxLayout, QWidget
+from PySide6.QtWidgets import QVBoxLayout, QWidget
 
 from sllkgui.appcore import ColorPalette, get_theme_manager
 from sllkgui.guicore import CButton, CButtonGroup, CSplitButton
 from sllkgui.guicore.custom_ui.button.severity import Severity, Variant, colors_for, is_dark_theme
-
-
-@pytest.fixture(scope="module")
-def qapp():
-    app = QApplication.instance() or QApplication([])
-    yield app
 
 
 @pytest.fixture(autouse=True)

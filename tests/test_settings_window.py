@@ -50,12 +50,6 @@ class _MemoryCore:
         return Path("user.yaml")
 
 
-@pytest.fixture(scope="module")
-def qapp():
-    app = QApplication.instance() or QApplication([])
-    yield app
-
-
 @pytest.fixture
 def prepared(qapp, tmp_path):
     get_app_context()
