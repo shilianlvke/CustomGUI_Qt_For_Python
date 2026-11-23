@@ -244,7 +244,7 @@ Launcher 自身与「Launcher + 基座」联调目前都**未纳入基座 CI**�
 
 ### 与基座联调的手动验证步骤
 
-1. 用 manifest 指向的 tag 构建环境：`Launcher/manifest.json` 的 `base.tag` 当前为 `base-v4.2.0`（`defaultBranch` 为 `main`）。在 Launcher 管理界面执行初始化 / 更新，使 `current.json` 指向该 tag 构建出的 `envs/<id>`；或在仓库根目录用 `uv run sllkgui run --data-dir data/` 复现同一基座行为。
+1. 用 manifest 指向的 tag 构建环境：`Launcher/manifest.json` 的 `base.tag` 当前为 `base-v4.2.1`（`defaultBranch` 为 `main`）。在 Launcher 管理界面执行初始化 / 更新，使 `current.json` 指向该 tag 构建出的 `envs/<id>`；或在仓库根目录用 `uv run sllkgui run --data-dir data/` 复现同一基座行为。
 2. 启动后确认基座进程与命令：`sllkgui.exe --data-dir data/` 正常启动、健康检查通过（`POST /api/launch` 6 秒健康检查），`data/` 跨环境保留用户设置和插件。
 3. 日志实时输出：管理界面“实时日志”区域随基座启动持续追加 `logs/app.out.log`、`logs/app.err.log` 与 `launcher.log`，点击“最新”可到达尾部；追加日志不把页面撑高。
 4. 更新 / 回滚 / 清理路径可用：`POST /api/update` 在 `envs/<new-id>` 构建新环境并切 `current.json`；失败可 `POST /api/rollback` 切回 `previous.json`；`POST /api/cleanup` 删除非 current/previous 旧环境与 cache 根下载包且保留 uv 缓存。逐项在界面执行并确认状态与 `/api/state` 一致。

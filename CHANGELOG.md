@@ -3,9 +3,18 @@
 项目遵循[语义化版本](https://semver.org/lang/zh-CN/)：major 版本允许破坏性变更并显式列出；
 minor 与 patch 保持向后兼容。
 
-当前版本：`4.2.0`（见 `src/sllkgui/_version.py`），对应 tag `base-v4.2.0`。
+当前版本：`4.2.1`（见 `src/sllkgui/_version.py`），对应 tag `base-v4.2.1`。
 
 ---
+
+## 4.2.1（2026-11-23）
+
+### 维护
+
+- **工程规范一致性**：统一按钮组件的通用设计描述、澄清 PyYAML 边界文档，终端交互改用可注入 I/O，消除与插件 lint 规则的双标。
+- **质量门禁收紧**：本地 pytest 默认启用 71% 覆盖率门禁，CI 与本地统一 Python 3.12；移除 dev 工具重复声明，单文件冒烟豁免覆盖率。
+- **代码结构收敛**：快捷键解析层拆分为独立模块，设置显示文本与组件配置兜底抽取为共享 helper；mypy 门禁覆盖由 20 个文件扩至 23 个。
+- **测试与文档**：集中重复 QApplication fixture；历史快照文档统一加过期提示，补 Gallery 术语澄清、Windows/Launcher 手动验证入口与门面模块 docstring。
 
 ## 4.2.0（2026-11-22）
 
