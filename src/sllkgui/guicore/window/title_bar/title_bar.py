@@ -51,7 +51,9 @@ class CTitleBar(QWidget):
 
         # 最大化状态跟随窗口实例（此前是模块级全局，多窗口会互相串状态）
         self._is_maximized = False
-        self._old_size = QSize()
+        #: 最大化前记下的还原尺寸：取 window.yaml 的 minimum_size，
+        #: 而不是窗口当前的启动尺寸（见 maximize_restore）。
+        self._restore_size = QSize()
 
         # 参数
         self._logo_image = AppSettings.logo_title
@@ -262,6 +264,11 @@ class CTitleBar(QWidget):
         旧实现是 ``showMaximized()`` 之后重建整张样式表，一次切换会让整棵控件树
         重新 polish（400+ 次 StyleChange、同步阻塞数十到数百毫秒），
         于是「点一下卡一下、还原再卡一下」。
+
+        还原尺寸的来源是配置里的 ``minimum_size``：最大化前记下它，还原时
+        ``showNormal()`` 之后显式 resize 到该尺寸。不能依赖 Qt 自己保存的
+        normal geometry——那是本次启动时的窗口尺寸（startup_size），而
+        配置里 minimum_size 可能与启动尺寸不同，此前点击还原会回到启动尺寸。
         """
         parent = self._parent
         if parent is None:
@@ -269,7 +276,15 @@ class CTitleBar(QWidget):
 
         maximize = not bool(parent.isMaximized())
         if maximize:
-            self._old_size = QSize(parent.width(), parent.height())
+            try:
+                min_width, min_height = (int(value) for value in self.settings.minimum_size)
+            except (AttributeError, TypeError, ValueError):
+                min_width = min_height = 0
+            # 用配置的最小尺寸作为还原目标；配置缺失时退回当前尺寸，
+            # 保持还原行为可用（等价于旧逻辑）。
+            self._restore_size = QSize(min_width, min_height)
+            if self._restore_size.width() <= 0 or self._restore_size.height() <= 0:
+                self._restore_size = QSize(parent.width(), parent.height())
         self._is_maximized = maximize
 
         self._apply_window_chrome(maximize)
@@ -278,6 +293,8 @@ class CTitleBar(QWidget):
             parent.showMaximized()
         else:
             parent.showNormal()
+            if self._restore_size.isValid() and self._restore_size.width() > 0 and self._restore_size.height() > 0:
+                parent.resize(self._restore_size)
 
     def _apply_window_chrome(self, maximized: bool) -> None:
         """按最大化状态刷新窗口框架、阴影、边距与按钮图标（全部为轻量操作）。"""
