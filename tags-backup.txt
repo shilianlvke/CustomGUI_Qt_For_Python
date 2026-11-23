@@ -1,7 +1,7 @@
 # SllkGui 标签备份（极简）
 # 生成时间: 2026-11-23 17:31:30 +0800
 # 格式: 标签<TAB>提交哈希(40位)<TAB>状态 (keep=当前保留, deleted=已删除)
-# 共 47 个标签，当前保留 5 个；完整备份见外部 backups/SllkGui-20261123-1723/
+# 共 47 个标签，当前保留 5 个；
 base-v0.2.0	862e0b1684aca87410dc70d1fae740b94163df36	deleted
 base-v0.2.1	01539226cf4b85389156dae17b08d671ed58261c	deleted
 base-v0.2.2	35a6c769ce6bf4381e3ab2331c4e2dc5ca9d0d1f	deleted
