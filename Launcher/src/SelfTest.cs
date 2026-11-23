@@ -93,6 +93,23 @@ namespace SllkGui.Launcher
                     Check((int)state.StatusCode == 200, "带 token 的 /api/state 返回 200");
                     Check(stateBody.IndexOf("\"phase\"", StringComparison.Ordinal) >= 0, "/api/state 返回 phase");
 
+                    Directory.CreateDirectory(Path.Combine(paths.DataDir, "logs"));
+                    File.WriteAllText(Path.Combine(paths.DataDir, "logs", "sllkgui.log"),
+                        "[INFO] 自检基座日志\r\n", new UTF8Encoding(false));
+                    HttpRequestMessage appLogReq = new HttpRequestMessage(HttpMethod.Get, "/api/applog");
+                    appLogReq.Headers.Add("X-Token", app.Token);
+                    HttpResponseMessage appLogResp = client.SendAsync(appLogReq).GetAwaiter().GetResult();
+                    string appLogBody = appLogResp.Content.ReadAsStringAsync().GetAwaiter().GetResult();
+                    Check((int)appLogResp.StatusCode == 200, "带 token 的 /api/applog 返回 200");
+                    Check(appLogBody.IndexOf("自检基座日志", StringComparison.Ordinal) >= 0, "/api/applog 返回基座日志内容");
+
+                    HttpRequestMessage stateAfterLog = new HttpRequestMessage(HttpMethod.Get, "/api/state");
+                    stateAfterLog.Headers.Add("X-Token", app.Token);
+                    HttpResponseMessage stateAfterLogResp = client.SendAsync(stateAfterLog).GetAwaiter().GetResult();
+                    string stateAfterLogBody = stateAfterLogResp.Content.ReadAsStringAsync().GetAwaiter().GetResult();
+                    Check(stateAfterLogBody.IndexOf("\"appLogAvailable\":true", StringComparison.Ordinal) >= 0,
+                        "/api/state 标记基座日志可用");
+
                     HttpRequestMessage evilHost = new HttpRequestMessage(HttpMethod.Get, "/");
                     evilHost.Headers.Host = "evil.example";
                     HttpResponseMessage denied = client.SendAsync(evilHost).GetAwaiter().GetResult();

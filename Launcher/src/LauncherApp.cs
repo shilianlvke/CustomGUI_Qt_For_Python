@@ -101,6 +101,7 @@ namespace SllkGui.Launcher
         {
             if (_shutdown && _timer == null) return;
             _shutdown = true;
+            try { _app.Dispose(); } catch { }
             try { _bootstrap.Cancel(); } catch { }
             try { _http.Stop(); } catch { }
             try { if (_timer != null) _timer.Dispose(); } catch { }
@@ -488,6 +489,8 @@ namespace SllkGui.Launcher
             state["running"] = running;
             state["pid"] = running ? _app.Pid : 0;
             state["owned"] = running && _app.Pid > 0;
+            state["appLogAvailable"] = _app.LogAvailable;
+            state["appExitNotice"] = running ? "" : _app.AppExitNotice;
             state["steps"] = steps;
             state["paths"] = new Dictionary<string, object>
             {
@@ -930,8 +933,11 @@ namespace SllkGui.Launcher
         {
             Dictionary<string, object> d = new Dictionary<string, object>();
             bool running = _app.IsRunning();
-            d["file"] = running ? Path.GetFileName(_app.LatestAppLog()) : "";
-            d["lines"] = running ? _app.AppLogLines(180) : new List<string>();
+            List<string> lines = _app.AppLogLines(180);
+            d["file"] = lines.Count > 0 ? Path.GetFileName(_app.LatestAppLog()) : "";
+            d["lines"] = lines;
+            d["running"] = running;
+            d["notice"] = running ? "" : _app.AppExitNotice;
             return d;
         }
 
@@ -956,6 +962,7 @@ namespace SllkGui.Launcher
             foreach (LogLine line in _log.Recent(80)) logs.Add(line.ToDto());
             d["logs"] = logs;
             d["appLog"] = _app.AppLogLines(80);
+            d["appExitNotice"] = _app.AppExitNotice;
             d["os"] = new Dictionary<string, object>
             {
                 { "version", Environment.OSVersion.VersionString },

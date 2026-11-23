@@ -944,10 +944,12 @@ body[data-phase="setup"] .live,body[data-phase="running"] .live,body[data-phase=
     el('mode').title = s.running ? '基座运行中，不能切换模式' : '';
     el('railCount').textContent = s.progress + ' / ' + s.total;
     el('logCount').textContent = lvlCount;
-    el('logTitle').textContent = (s.phase === 'running') ? '基座日志' : '实时日志';
+    var showingAppLog = s.phase === 'running' || s.appLogAvailable || s.appExitNotice;
+    el('logTitle').textContent = showingAppLog ? '基座日志' : '实时日志';
     el('logEmpty').textContent = (s.phase === 'running' && !s.owned)
       ? '外部基座实例，日志不可用'
       : '等待开始 · 初始化日志将在此实时输出';
+    if(!s.running && s.appExitNotice){ el('desc').textContent = s.appExitNotice; }
     renderVersionBar(s);
 
     var sig = JSON.stringify(s.steps);
@@ -1049,28 +1051,39 @@ body[data-phase="setup"] .live,body[data-phase="running"] .live,body[data-phase=
     });
   }
 
-  var appLogSig = '', logMode = '';
+  var appLogSig = '', appLogLines = [], logMode = '';
 
   function tickAppLog(){
     api('/api/applog').then(function(r){
       if(!r || !r.lines) return;
       var sig = r.lines.join('\n');
       if(sig === appLogSig) return;
+      var previous = appLogLines;
+      var next = r.lines;
+      var common = 0;
+      while(common < previous.length && common < next.length && previous[common] === next[common]){ common++; }
       appLogSig = sig;
-      var box = el('log');
-      box.innerHTML = '';
-      r.lines.forEach(addAppLine);
-      lvlCount = r.lines.length;
+      appLogLines = next.slice();
+      if(common === 0){
+        el('log').innerHTML = '';
+        lvlCount = 0;
+        next.forEach(addAppLine);
+      } else if(common < next.length){
+        next.slice(common).forEach(addAppLine);
+      }
+      lvlCount = el('log').childElementCount;
       el('logCount').textContent = lvlCount;
-      if(r.lines.length > 0){ el('logEmpty').classList.add('hide'); }
+      if(next.length > 0){ el('logEmpty').classList.add('hide'); }
+      if(r.notice){ el('desc').textContent = r.notice; }
     }).catch(function(){});
   }
 
   function tickLogs(){
-    var mode = (state && state.phase === 'running' && state.owned) ? 'app' : 'launcher';
+    var mode = (state && (state.phase === 'running' || state.appLogAvailable || state.appExitNotice)) ? 'app' : 'launcher';
     if(mode !== logMode){
       logMode = mode;
       appLogSig = '';
+      appLogLines = [];
       el('log').innerHTML = '';
       lvlCount = 0;
       el('logCount').textContent = '0';
@@ -1115,8 +1128,9 @@ body[data-phase="setup"] .live,body[data-phase="running"] .live,body[data-phase=
         api('/api/update/stop', {}).then(tickState);
       } else if(act === 'launch'){
         api('/api/launch', {}).then(function(r){
-          if(r && r.ok){ setTimeout(tickState, 600); }
+          if(r && r.ok){ setTimeout(tickState, 600); tickLogs(); }
           else if(r){ el('desc').textContent = '启动失败：' + r.error; }
+          else { el('desc').textContent = '启动失败：无法连接启动器服务'; }
         });
       } else if(act === 'exit'){
         exitLauncher();

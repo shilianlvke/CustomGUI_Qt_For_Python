@@ -5,6 +5,7 @@ using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading;
+using Timer = System.Threading.Timer;
 
 namespace SllkGui.Launcher
 {
@@ -18,6 +19,12 @@ namespace SllkGui.Launcher
         private readonly object _lock = new object();
         private readonly List<string> _tail = new List<string>();
         private Process _process;
+        private Process _monitored;
+        private Timer _exitTimer;
+        private int _exitCheckBusy;
+        private string _appExitNotice = "";
+        private int _monitoredExitCode = -1;
+        private bool _monitoredExited;
         private DateTime _lastCheck = DateTime.MinValue;
         private bool _lastRunning;
 
@@ -31,6 +38,13 @@ namespace SllkGui.Launcher
         }
 
         public int Pid { get; private set; }
+
+        public bool LogAvailable { get; private set; }
+
+        public string AppExitNotice
+        {
+            get { lock (_lock) return _appExitNotice; }
+        }
 
         public bool IsRunning()
         {
@@ -161,8 +175,19 @@ namespace SllkGui.Launcher
             _log.Cmd("uv " + psi.Arguments);
             Process p = new Process();
             p.StartInfo = psi;
-            p.OutputDataReceived += delegate(object s, DataReceivedEventArgs e) { Append(outPath, "out", e.Data); };
-            p.ErrorDataReceived += delegate(object s, DataReceivedEventArgs e) { Append(errPath, "err", e.Data); };
+            p.EnableRaisingEvents = true;
+            p.OutputDataReceived += delegate(object s, DataReceivedEventArgs e)
+            {
+                if (object.ReferenceEquals(s, p)) Append(outPath, "out", e.Data);
+            };
+            p.ErrorDataReceived += delegate(object s, DataReceivedEventArgs e)
+            {
+                if (object.ReferenceEquals(s, p)) Append(errPath, "err", e.Data);
+            };
+            p.Exited += delegate(object s, EventArgs e)
+            {
+                if (object.ReferenceEquals(s, p)) ScheduleExitCheck(p);
+            };
             try
             {
                 p.Start();
@@ -186,20 +211,47 @@ namespace SllkGui.Launcher
                     if (p.HasExited) break;
                     Thread.Sleep(200);
                 }
-                if (p.HasExited)
+                bool exitedEarly = false;
+                int exitCode = -1;
+                lock (_lock)
                 {
-                    int code = -1;
-                    try { code = p.ExitCode; } catch { }
+                    exitedEarly = _monitoredExited;
+                    exitCode = _monitoredExitCode;
+                }
+                if (!exitedEarly)
+                {
+                    try { exitedEarly = p.HasExited; } catch { exitedEarly = true; }
+                    if (exitedEarly)
+                    {
+                        try { exitCode = p.ExitCode; } catch { }
+                    }
+                }
+                if (exitedEarly)
+                {
+                    int code = exitCode;
                     Util.TryDeleteFile(_paths.AppJsonPath);
                     string tail = TailAppLog(12);
+                    string message = "基座启动失败（退出码 " + code + "）" + (tail.Length > 0 ? "：" + tail : "");
+                    SetAppExitNotice(message);
                     _log.Err("基座启动失败，退出码 " + code);
                     result["ok"] = false;
-                    result["error"] = "基座启动失败（退出码 " + code + "）" + (tail.Length > 0 ? "：" + tail : "");
+                    result["error"] = message;
+                    StopExitWatch();
+                    lock (_lock)
+                    {
+                        _lastCheck = DateTime.MinValue;
+                        _lastRunning = false;
+                        if (object.ReferenceEquals(_process, p)) ReleaseProcess(ref _process);
+                    }
+                    ReleaseProcess(ref p);
                     return result;
                 }
                 Pid = p.Id;
                 _lastCheck = DateTime.Now;
                 _lastRunning = true;
+                ClearAppExitNotice();
+                LogAvailable = true;
+                StartExitWatch(p);
                 result["ok"] = true;
                 result["pid"] = p.Id;
                 return result;
@@ -207,6 +259,7 @@ namespace SllkGui.Launcher
             catch (Exception ex)
             {
                 Util.TryDeleteFile(_paths.AppJsonPath);
+                SetAppExitNotice("基座启动失败：" + ex.Message);
                 _log.Err("启动基座失败：" + ex.Message);
                 result["ok"] = false;
                 result["error"] = ex.Message;
@@ -272,6 +325,8 @@ namespace SllkGui.Launcher
                 _lastRunning = false;
                 Pid = 0;
                 try { if (_process != null && !_process.HasExited) Util.KillTree(_process.Id); } catch { }
+                StopExitWatch();
+                ReleaseProcess(ref _process);
             }
             return result;
         }
@@ -307,16 +362,19 @@ namespace SllkGui.Launcher
             try
             {
                 string dir = Path.Combine(_paths.DataDir, "logs");
-                if (Directory.Exists(dir))
+                if (!Directory.Exists(dir)) return "";
+
+                string primary = Path.Combine(dir, "sllkgui.log");
+                if (File.Exists(primary)) return primary;
+
+                FileInfo latest = null;
+                foreach (string file in Directory.GetFiles(dir, "*.log"))
                 {
-                    FileInfo latest = null;
-                    foreach (string file in Directory.GetFiles(dir, "*.log"))
-                    {
-                        FileInfo fi = new FileInfo(file);
-                        if (latest == null || fi.LastWriteTime > latest.LastWriteTime) latest = fi;
-                    }
-                    if (latest != null) return latest.FullName;
+                    if (string.Equals(Path.GetFileName(file), "sllkgui.log", StringComparison.OrdinalIgnoreCase)) continue;
+                    FileInfo fi = new FileInfo(file);
+                    if (latest == null || fi.LastWriteTime > latest.LastWriteTime) latest = fi;
                 }
+                return latest == null ? "" : latest.FullName;
             }
             catch { }
             return "";
@@ -325,10 +383,155 @@ namespace SllkGui.Launcher
         public List<string> AppLogLines(int max)
         {
             string path = LatestAppLog();
-            if (string.IsNullOrEmpty(path)) return new List<string>();
-            string[] lines = Util.ReadTail(path, max);
-            for (int i = 0; i < lines.Length; i++) lines[i] = Util.StripAnsi(lines[i]);
-            return lines.ToList();
+            List<string> result = new List<string>();
+            if (!string.IsNullOrEmpty(path))
+            {
+                string[] lines = Util.ReadTail(path, max);
+                for (int i = 0; i < lines.Length; i++) result.Add(Util.StripAnsi(lines[i]));
+            }
+            if (result.Count == 0)
+            {
+                string outPath = Path.Combine(_paths.Logs, "app.out.log");
+                string errPath = Path.Combine(_paths.Logs, "app.err.log");
+                string fallback = "";
+                if (File.Exists(errPath) && new FileInfo(errPath).Length > 0) fallback = errPath;
+                else if (File.Exists(outPath) && new FileInfo(outPath).Length > 0) fallback = outPath;
+                if (!string.IsNullOrEmpty(fallback))
+                {
+                    string[] lines = Util.ReadTail(fallback, max);
+                    for (int i = 0; i < lines.Length; i++) result.Add(Util.StripAnsi(lines[i]));
+                }
+            }
+            if (result.Count == 0)
+            {
+                lock (_lock)
+                {
+                    int start = Math.Max(0, _tail.Count - max);
+                    for (int i = start; i < _tail.Count; i++) result.Add(_tail[i]);
+                }
+            }
+            LogAvailable = result.Count > 0;
+            return result;
+        }
+
+        private void ClearAppExitNotice()
+        {
+            lock (_lock)
+            {
+                _appExitNotice = "";
+                _monitoredExitCode = -1;
+                _monitoredExited = false;
+            }
+        }
+
+        private void SetAppExitNotice(string message)
+        {
+            lock (_lock) _appExitNotice = string.IsNullOrEmpty(message) ? "" : message;
+        }
+
+        private void StartExitWatch(Process process)
+        {
+            StopExitWatch();
+            lock (_lock)
+            {
+                _monitored = process;
+                _exitTimer = new Timer(CheckMonitoredExit, null, 1000, 1000);
+            }
+        }
+
+        private void StopExitWatch()
+        {
+            Timer timer;
+            lock (_lock)
+            {
+                timer = _exitTimer;
+                _exitTimer = null;
+                _monitored = null;
+            }
+            if (timer != null)
+            {
+                try { timer.Dispose(); } catch { }
+            }
+        }
+
+        private void ScheduleExitCheck(Process process)
+        {
+            Timer timer;
+            lock (_lock) timer = _exitTimer;
+            if (timer != null)
+            {
+                try { timer.Change(100, Timeout.Infinite); } catch { }
+            }
+            else
+            {
+                CheckMonitoredExit(process);
+            }
+        }
+
+        private void CheckMonitoredExit(object state)
+        {
+            if (Interlocked.Exchange(ref _exitCheckBusy, 1) != 0) return;
+            try
+            {
+                Process process = state as Process;
+                if (process == null)
+                {
+                    lock (_lock) process = _monitored;
+                }
+                if (process == null) return;
+
+                bool exited = false;
+                int code = -1;
+                try
+                {
+                    exited = process.HasExited;
+                    if (exited) code = process.ExitCode;
+                }
+                catch { exited = true; }
+
+                if (!exited) return;
+
+                StopExitWatch();
+                lock (_lock)
+                {
+                    _monitoredExitCode = code;
+                    _monitoredExited = true;
+                }
+                string tail = TailAppLog(6);
+                SetAppExitNotice("基座已退出（退出码 " + code + "）" + (tail.Length > 0 ? "：" + tail : ""));
+                _log.Err("基座异常退出，退出码 " + code);
+                Util.TryDeleteFile(_paths.AppJsonPath);
+                lock (_lock)
+                {
+                    _lastCheck = DateTime.MinValue;
+                    _lastRunning = false;
+                    if (Pid == process.Id) Pid = 0;
+                    if (object.ReferenceEquals(_process, process)) ReleaseProcess(ref _process);
+                    else ReleaseProcess(ref process);
+                }
+            }
+            catch { }
+            finally
+            {
+                Interlocked.Exchange(ref _exitCheckBusy, 0);
+            }
+        }
+
+        public void Dispose()
+        {
+            StopExitWatch();
+            lock (_lock) ReleaseProcess(ref _process);
+            LogAvailable = false;
+        }
+
+        private static void ReleaseProcess(ref Process process)
+        {
+            if (process == null) return;
+            try { process.CancelOutputRead(); } catch { }
+            try { process.CancelErrorRead(); } catch { }
+            try { process.EnableRaisingEvents = false; } catch { }
+            try { process.Dispose(); } catch { }
+            process = null;
         }
     }
 }
