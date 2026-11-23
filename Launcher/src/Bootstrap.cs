@@ -387,10 +387,17 @@ namespace SllkGui.Launcher
 
         private string EnsurePython(CancellationToken ct)
         {
+            // 先探测 uv 可见的已有解释器（继承用户环境的 UV_PYTHON_INSTALL_DIR），
+            // 找到就直接复用，不再重复下载。
             string python = _tools.FindPython(_config.Python);
-            if (!string.IsNullOrEmpty(python)) return python;
+            if (!string.IsNullOrEmpty(python))
+            {
+                _log.Ok("复用已安装的 CPython " + _config.Python + "：" + python);
+                return python;
+            }
+            // 未找到时才下载，且使用用户在配置中选择的镜像源。
             MirrorInfo mirror = _manifest.Mirror(_config.Mirror);
-            _log.Sys("安装 CPython " + _config.Python);
+            _log.Sys("未找到 CPython " + _config.Python + "，使用" + mirror.Label + "安装");
             bool useMirror = _config.Mirror == "cn";
             ProcResult r = _tools.InstallPython(_config.Python, mirror.Python, useMirror, ct).GetAwaiter().GetResult();
             if (r.Cancelled) throw new OperationCanceledException();

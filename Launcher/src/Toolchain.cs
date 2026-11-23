@@ -178,7 +178,9 @@ namespace SllkGui.Launcher
             }
             string uv = ResolveUv();
             if (uv == null) return "";
-            ProcResult r = RunAsync(uv, new string[] { "python", "find", version, "--managed-python" }, _paths.Runtime, CancellationToken.None, null, 20000).GetAwaiter().GetResult();
+            // 探测阶段不覆盖 UV_PYTHON_INSTALL_DIR：继承用户环境的设置，
+            // 这样 uv 能发现用户已安装的解释器（例如全局 UV_PYTHON_INSTALL_DIR 指向的目录）。
+            ProcResult r = RunAsync(uv, new string[] { "python", "find", version, "--managed-python" }, _paths.Runtime, CancellationToken.None, null, 20000, true).GetAwaiter().GetResult();
             if (r.ExitCode != 0) return "";
             for (int i = r.Output.Count - 1; i >= 0; i--)
             {
@@ -362,7 +364,7 @@ namespace SllkGui.Launcher
             return RunAsync(python, new string[] { "-c", "import PySide6; print(PySide6.__version__)" }, baseDir, CancellationToken.None, null, 30000).GetAwaiter().GetResult();
         }
 
-        public Task<ProcResult> RunAsync(string exe, IEnumerable<string> args, string cwd, CancellationToken ct, Action<string> onLine, int timeoutMs)
+        public Task<ProcResult> RunAsync(string exe, IEnumerable<string> args, string cwd, CancellationToken ct, Action<string> onLine, int timeoutMs, bool inheritPythonInstallDir = false)
         {
             ProcResult result = new ProcResult();
             if (string.IsNullOrEmpty(exe) || !File.Exists(exe))
@@ -385,7 +387,10 @@ namespace SllkGui.Launcher
             psi.EnvironmentVariables["UV_NO_PROGRESS"] = "1";
             psi.EnvironmentVariables["UV_NO_MODIFY_PATH"] = "1";
             psi.EnvironmentVariables["UV_CACHE_DIR"] = _paths.UvCache;
-            psi.EnvironmentVariables["UV_PYTHON_INSTALL_DIR"] = _paths.PythonDir;
+            // 探测已有解释器时继承用户环境；其余场景仍隔离到私有目录，
+            // 避免下载/同步污染用户目录。
+            if (!inheritPythonInstallDir)
+                psi.EnvironmentVariables["UV_PYTHON_INSTALL_DIR"] = _paths.PythonDir;
             psi.EnvironmentVariables["PYTHONUTF8"] = "1";
             psi.EnvironmentVariables["PYTHONIOENCODING"] = "utf-8";
             _log.Cmd(Path.GetFileName(exe) + " " + psi.Arguments);
