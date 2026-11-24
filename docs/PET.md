@@ -24,7 +24,6 @@ src/sllkgui/guicore/pet/
 ├── controller.py        # 生命周期、基座能力统一接入与状态同步
 ├── settings.py          # 基座统一设置页（plugin.sllkgui.pet）
 ├── shortcuts.py         # 基座快捷键注册表接入与冲突提示
-├── legacy.py            # 旧 pet.yaml 一次性迁移
 ├── pet_window.py        # 无边框/置顶/透明窗口 + 右键菜单（随语言刷新）
 └── engine/
     ├── core.py          # 角色引擎：几何 / 眼型 / 装饰 / 弹簧 / 状态机
@@ -85,7 +84,6 @@ size: 220             # 窗口边长 px（96–480）
 deco_scale: 1.32      # 特效层缩放（0.55–1.5）
 ```
 
-旧版 `<data_root>/settings/pet.yaml` 与 `<data_root>/settings/plugins/sllkgui.pet.yaml` 在首次启动时都会迁移到上述文件并改名 `.migrated` 备份，只迁移一次。
 窗口位置 `pos_x/pos_y` 仅保存在内存中，避免拖拽期间高频写盘。
 读写失败只告警，绝不阻断启动；非法值回落默认。
 

@@ -95,7 +95,6 @@ class MihoutaoPetController:
         self._started = True
 
         register_pet_page(replace=True)
-        self._migrate_legacy_preferences()
         self.preferences = self._load_from_store()
 
         self._unsub_settings = settings_change_bus().subscribe(PET_NAMESPACE, self._on_settings_changed)
@@ -180,13 +179,6 @@ class MihoutaoPetController:
         except Exception as exc:  # noqa: BLE001 - 读取失败只告警并回落默认
             Logger.warning(f"宠物设置读取失败，使用默认值: {exc}")
         return values
-
-    @staticmethod
-    def _migrate_legacy_preferences() -> None:
-        """把旧 settings/pet.yaml 迁移一次到统一设置存储。"""
-        from .legacy import migrate_legacy_pet_preferences
-
-        migrate_legacy_pet_preferences()
 
     def _on_settings_changed(self, changes: dict[str, Any]) -> None:
         """设置页保存后的统一同步入口（core 命名空间回调给的是 storage_key）。"""

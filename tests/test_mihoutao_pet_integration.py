@@ -119,25 +119,6 @@ def test_pet_accent_color(qapp):
     assert engine.accent_color is None
 
 
-def test_legacy_preference_migration(tmp_path, monkeypatch):
-    """旧 settings/pet.yaml 迁移一次并改名备份，不重复迁移。"""
-    import yaml
-
-    from sllkgui.appcore import user_settings_path
-    from sllkgui.guicore.pet.legacy import migrate_legacy_pet_preferences
-    from sllkgui.guicore.pet.settings import register_pet_page
-
-    monkeypatch.setattr("sllkgui.appcore.user_settings.user_settings_path", lambda: tmp_path / "settings" / "user.yaml")
-    register_pet_page(replace=True)
-    legacy = user_settings_path().parent / "pet.yaml"
-    legacy.parent.mkdir(parents=True, exist_ok=True)
-    legacy.write_text(yaml.safe_dump({"shape": "gem", "size": 300}), encoding="utf-8")
-    assert migrate_legacy_pet_preferences() is True
-    assert not legacy.exists()
-    assert legacy.with_suffix(".migrated").exists()
-    assert migrate_legacy_pet_preferences() is False
-
-
 def test_controller_settings_bus_sync(qapp, tmp_path, monkeypatch):
     """设置保存后经 change bus 即时同步到引擎，无需重启宠物。"""
     from sllkgui.appcore import settings_change_bus

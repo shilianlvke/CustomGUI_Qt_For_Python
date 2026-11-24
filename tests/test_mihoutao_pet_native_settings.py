@@ -8,7 +8,6 @@ import yaml
 from sllkgui.appcore import settings_registry
 from sllkgui.guicore.pet.controller import MihoutaoPetController
 from sllkgui.guicore.pet.events import CMD_HOP, CMD_STATE, pet_bus, reset_pet_bus
-from sllkgui.guicore.pet.legacy import migrate_legacy_pet_preferences
 from sllkgui.guicore.pet.settings import DEFAULTS, register_pet_page
 
 
@@ -54,30 +53,6 @@ def test_pet_settings_persist_in_user_yaml(qapp, tmp_path, monkeypatch):
         assert MihoutaoPetController._load_from_store()["shape"] == "gem"
     finally:
         pet.shutdown()
-
-
-def test_legacy_plugin_settings_migrate_to_user_yaml(tmp_path, monkeypatch):
-    """旧插件命名空间配置无损迁移到 core user.yaml。"""
-    user = tmp_path / "settings" / "user.yaml"
-    monkeypatch.setattr("sllkgui.appcore.user_settings.user_settings_path", lambda: user)
-    register_pet_page(replace=True)
-    legacy = user.parent / "plugins" / "sllkgui.pet.yaml"
-    legacy.parent.mkdir(parents=True, exist_ok=True)
-    legacy.write_text(
-        yaml.safe_dump({"shape": "gem", "size": 300, "follow_pointer": False}),
-        encoding="utf-8",
-    )
-    assert migrate_legacy_pet_preferences() is True
-    assert not legacy.exists()
-    assert legacy.with_suffix(".migrated").exists()
-    stored = yaml.safe_load(user.read_text(encoding="utf-8"))
-    assert stored["pet_shape"] == "gem"
-    assert stored["pet_size"] == 300
-    assert stored["pet_follow_pointer"] is False
-    loaded = MihoutaoPetController._load_from_store()
-    assert loaded["shape"] == "gem"
-    assert loaded["size"] == 300
-    assert loaded["follow_pointer"] is False
 
 
 def test_base_operations_publish_pet_events(qapp, tmp_path, monkeypatch):
