@@ -22,7 +22,7 @@
 src/sllkgui/guicore/pet/
 ├── __init__.py          # 公开面：MihoutaoPetController / PetWindow
 ├── controller.py        # 生命周期、基座能力统一接入与状态同步
-├── settings.py          # 基座统一设置页（plugin.sllkgui.pet）
+├── settings.py          # 宠物偏好默认值与键映射（设置页本体在 appcore 基座原生设置）
 ├── shortcuts.py         # 基座快捷键注册表接入与冲突提示
 ├── pet_window.py        # 无边框/置顶/透明窗口 + 右键菜单（随语言刷新）
 └── engine/

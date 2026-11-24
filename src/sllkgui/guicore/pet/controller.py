@@ -2,7 +2,7 @@
 
 统一接入点：
 - 事件：经 pet_bus 订阅 pet.command.* 控制宠物、发布 pet.event.* 汇报状态；
-- 设置：注册 plugin.sllkgui.pet 设置页，值由 SettingsStore 读写；
+- 设置：同步基座原生宠物设置页（core.pet）的值，由 SettingsStore 读写；
   通过 settings_change_bus 接收保存后的变化，即时同步到引擎/窗口；
 - 主题：订阅 ThemeManager，用强调色覆盖默认描边/徽标色；
 - 语言：订阅 Language，刷新菜单、tooltip、托盘与快捷键说明；

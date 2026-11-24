@@ -473,12 +473,8 @@ class MainWindowController:
         registry = getattr(self._window, "gallery_registry", None)
         if registry is None:
             return {}
-        titles = {record.plugin_id: record.name for record in registry.plugins()}
-        # 基座原生宠物以 plugin 命名空间接入统一设置，给它一个可读的分组标题
-        from sllkgui.appcore import Language as _Language
-
-        titles["sllkgui.pet"] = str(_Language.resolve_key("language.UI.ui_PetSettingsTitle", "猕猴桃桌面宠物"))
-        return titles
+        # 只列出真实安装的插件；桌面宠物是基座原生设置，不属于插件栏
+        return {record.plugin_id: record.name for record in registry.plugins()}
 
     def handle_button(self, btn):
         btn_name = btn.objectName()

@@ -95,3 +95,26 @@ def test_pet_bridge_errors_do_not_break_base(qapp, monkeypatch):
     monkeypatch.setattr(pet_bridge, "pet_bus", broken_bus)
     assert pet_bridge.on_theme_cycled("default") is False
     assert pet_bridge.on_search_opened() is False
+
+
+def test_pet_not_in_plugin_settings(qapp, tmp_path, monkeypatch):
+    """宠物是基座原生设置，不出现在插件设置栏（即使无 Gallery 注册表）。"""
+    from sllkgui.appcore import plugin_namespace
+    from sllkgui.guicore.window.settings_window.window import CSettingsWindow
+    from sllkgui.guis.windows.main_window.controller import MainWindowController
+
+    register_pet_page(replace=True)
+    assert plugin_namespace("sllkgui.pet") not in {p.namespace for p in settings_registry().pages()}
+
+    class StubWindow:
+        gallery_registry = None
+
+    ctrl = MainWindowController.__new__(MainWindowController)
+    ctrl._window = StubWindow()
+    assert "sllkgui.pet" not in ctrl._plugin_titles()
+
+    sw = CSettingsWindow(parent=None, plugin_titles=ctrl._plugin_titles)
+    try:
+        assert all(plugin_id != "sllkgui.pet" for plugin_id, _title, _pages in sw._plugin_pages())
+    finally:
+        sw.close()
