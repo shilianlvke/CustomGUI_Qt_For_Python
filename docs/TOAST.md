@@ -99,6 +99,7 @@ guicore/custom_ui/feedback/toast.py  CToast  ← 外观、动画、堆叠、悬�
 | 协议实现 | `gallery/toast.py`（新增） | 只依赖 `gallery.api` + `appcore`，Qt 由 host 回调带入 |
 | UI 总线 | `guicore/feedback/toast_bus.py`（新增） | 依赖 `appcore` + `guicore`（Qt） |
 | 渲染器 | `guicore/custom_ui/feedback/toast.py`（扩展） | 现有组件，保持 `show_message` 兼容 |
+| 落位 | `guicore/custom_ui/feedback/placement.py` | 边距 / 标题栏避让 / 栈内坐标的唯一实现 |
 | 组合根 | `gallery/window.py`（绑定 host）、`gallery/runtime.py`（持有 router） | `gallery → guis` 仍只允许 `window.py` 这一条边 |
 
 ### 3.2 锚点解析（`ToastAnchor`）
@@ -115,6 +116,26 @@ guicore/custom_ui/feedback/toast.py  CToast  ← 外观、动画、堆叠、悬�
 2. `AUTO` 必须优先命中活动模态窗口：设置窗口里的动作结果应出现在设置窗口，而不是被主窗口遮住。
 3. 锚点解析失败（全部窗口已关闭、或处于无显示环境）→ 返回 `TOAST_NO_ANCHOR_WINDOW`，静默降级为日志。
 4. 锚点窗口 `closeEvent` 时，其上全部 toast 以 `HOST_CLOSED` 收敛，不残留句柄。
+
+### 3.3 落位规则（唯一实现：`placement.py`）
+
+位置只在 `guicore/custom_ui/feedback/placement.py` 里算一次，总线与渲染器都消费
+`stack_points()` 的返回值，不得各自读配置或各自换算。
+
+| 规则 | 值 | 说明 |
+| --- | --- | --- |
+| 横向 | 卡片右边缘距窗口右边缘 = `feedback.toast_margin`（默认 20） | `margin` 描述**卡片可见边缘**；控件外框含一圈透明阴影，换算由 `ToastMetrics.inset_x` 完成 |
+| 顶部 | 标题栏高度 + `TITLE_BAR_GAP`（8）+ `margin` | 标题栏取 `ui.title_bar`，或设置窗口的 `_title_bar` |
+| 栈间距 | 相邻卡片 = `feedback.toast_spacing`（默认 8） | 最新在最上面 |
+| 无标题栏宿主 | 只让 `margin`，不凭空避让 | 旧实现用固定 56px 兜底，普通宿主会莫名下沉 |
+| 窗口变化 | 立即重排 | 监听 `Resize` / `Show` / `ScreenChangeInternal` |
+
+标题栏高度必须**逐级降级**取：已布局高度 → 声明固定高度 → 父容器固定高度 → `sizeHint`。
+直接读 `title_bar.height()`，在窗口完成布局前拿到的是控件的构造尺寸（实测 480），
+启动期弹出的提示会被推到页面中间，且此后不再纠正。
+
+重排前必须停掉仍在跑的滑入动画（`CToast._stop_slide`）：动画终点是旧位置，会在
+几十毫秒后把刚排好的坐标覆盖回去，表现为两条提示完全重叠。
 
 ---
 

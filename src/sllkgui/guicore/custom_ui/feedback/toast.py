@@ -44,6 +44,7 @@ from ..button.severity import Severity, normalize_severity
 from ..close_button import CCloseButton as _CloseButton
 from ..display.palette import tokens
 from .message import _MessageIcon
+from .placement import ToastMetrics, stack_points, title_bar_offset, toast_metrics
 
 #: 单条通知宽度 / 外阴影边距（配置不可用时的兜底默认）
 _WIDTH = 340
@@ -71,8 +72,12 @@ _LEVEL_TO_SEVERITY: dict[str, str] = {
 _UNSET = object()
 
 
-def _settings() -> tuple[int, int, int, int, int]:
-    """(life, max, duration, margin, spacing)，配置缺失时回落到默认值。"""
+def _settings() -> tuple[int, int, int]:
+    """(life, max, duration)，配置缺失时回落到默认值。
+
+    边距 / 间距 / 阴影归 ``feedback.placement`` 统一读取，避免同一份配置在两个
+    模块里各取一遍、再各自解释出一套落位规则。
+    """
     try:
         from sllkgui.appcore import AppSettings
 
@@ -81,11 +86,9 @@ def _settings() -> tuple[int, int, int, int, int]:
             int(cfg.toast_life),
             max(1, int(cfg.toast_max)),
             int(cfg.toast_duration),
-            int(cfg.toast_margin),
-            int(cfg.toast_spacing),
         )
     except Exception:
-        return 3000, 4, 180, 20, 8
+        return 3000, 4, 180
 
 
 def _severity_for(level: str | ToastLevel) -> Severity:
@@ -209,16 +212,20 @@ class CToast(QFrame):
         self._detail = str(detail or "")
         self._dismiss_reason = ToastDismissReason.MANUAL
         self._offset_top = max(0, int(offset_top))
-        self._life, _, self._duration, self._margin, self._spacing = _settings()
-        # 宽度与外阴影边距来自 settings（构造时读取，避免导入期触发配置加载）
+        self._life, _, self._duration = _settings()
+        # 边距 / 间距 / 阴影统一来自 placement：控件自身不再解释配置
+        metrics: ToastMetrics = toast_metrics()
+        self._metrics = metrics
+        self._margin = metrics.margin
+        self._spacing = metrics.spacing
+        # 宽度来自 settings（构造时读取，避免导入期触发配置加载）
         try:
             from sllkgui.appcore import AppSettings
 
-            feedback = AppSettings.feedback
-            self._width = int(feedback.toast_width)
-            self._shadow = int(feedback.toast_shadow)
+            self._width = int(AppSettings.feedback.toast_width)
         except Exception:
-            self._width, self._shadow = _WIDTH, _SHADOW
+            self._width = _WIDTH
+        self._shadow = metrics.shadow if metrics.shadow > 0 else _SHADOW
         if life is not None:
             self._life = max(0, int(life))
 
@@ -563,10 +570,11 @@ class CToast(QFrame):
     ) -> CToast:
         """在 ``parent`` 右上角弹出一条通知（最新的排在最上面）。
 
-        ``offset_top`` 用于避开标题栏等顶部区域。基座内部请优先走
-        ``toast_bus()``；本方法保留给旧调用方与组件预览。
+        ``offset_top`` 为 0 时自动按 ``parent`` 的标题栏避让，落位与堆叠全部交给
+        ``placement``，与 ``toast_bus()`` 走同一套换算；基座内部仍请优先走
+        ``toast_bus()``（去重 / 通道 / 生命周期在那里裁决）。
         """
-        _, limit, _, _, _ = _settings()
+        _, limit, _ = _settings()
         key = id(parent)
         if key not in cls._stacks:
             # 父窗口销毁时清掉分组，避免 id 复用后串栈
@@ -581,11 +589,18 @@ class CToast(QFrame):
         toast.animate_in(toast.pos())
         return toast
 
+    def _stop_slide(self) -> None:
+        """停掉仍在跑的滑入动画：它的终点是旧位置，会把重排结果覆盖回去。"""
+        if self._slide is not None and self._slide.state() == QAbstractAnimation.State.Running:
+            self._slide.stop()
+
     def animate_in(self, target: QPoint) -> None:
         """从右侧滑入并淡入到 ``target``。"""
         self._fit_height()
         self.show()
         self.raise_()
+        # 同一位置的二次入场（批量显示）不能被旧动画接管
+        self._stop_slide()
         start = QPoint(target.x() + 20, target.y())
         self.move(start)
         self._opacity.setOpacity(0.0)
@@ -660,16 +675,30 @@ class CToast(QFrame):
 
     @classmethod
     def _reflow(cls, parent: QWidget) -> None:
+        """按 ``placement`` 统一重排本窗口的整个栈（最新在最上面）。
+
+        两个历史问题在这里一并解决：
+
+        1. 边距 / 顶部避让以前在组件与总线各算一次，``show_message`` 直接把
+           卡片压在标题栏上；现在两边都只看 ``stack_points`` 的返回值。
+        2. 落位前必须停掉仍在跑的滑入动画——它的终点是旧位置，会在几十毫秒后
+           把刚排好的位置覆盖回去，表现为两条提示完全重叠。
+        """
         stack = cls._stacks.get(id(parent), [])
-        _, _, _, margin, spacing = _settings()
-        y = margin
-        for toast in stack:
-            y = max(y, margin + toast._offset_top)
-            # 新通知插入时，旧通知的滑入动画终点已过期，先停掉再重新落位
-            if toast._slide is not None and toast._slide.state() == QAbstractAnimation.State.Running:
-                toast._slide.stop()
-            toast.move(parent.width() - toast.width() - margin, y)
-            y += toast.height() + spacing
+        if not stack:
+            return
+        # 调用方没显式给偏移时才自动避让标题栏（组件预览给的偏移要尊重）
+        auto = 0 if any(toast._offset_top for toast in stack) else title_bar_offset(parent)
+        metrics = stack[0]._metrics
+        points = stack_points(
+            parent,
+            [toast.size() for toast in stack],
+            [toast._offset_top or auto for toast in stack],
+            metrics=metrics,
+        )
+        for toast, point in zip(stack, points, strict=False):
+            toast._stop_slide()
+            toast.move(point)
             # 无显示环境下 show() 可能投递一次伪 enter 事件把倒计时停掉；
             # 重新落位时补一次启动，保证自动消失不会被悬停状态卡死。
             if toast._life > 0 and not toast._closing and not toast._timer.isActive():

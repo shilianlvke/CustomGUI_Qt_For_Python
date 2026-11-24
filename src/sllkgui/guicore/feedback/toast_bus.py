@@ -14,7 +14,7 @@ from collections.abc import Callable
 from dataclasses import dataclass, field, replace
 from typing import Any
 
-from PySide6.QtCore import QEvent, QMetaObject, QObject, QPoint, Qt, QThread, Signal, Slot
+from PySide6.QtCore import QEvent, QMetaObject, QObject, Qt, QThread, Signal, Slot
 from PySide6.QtWidgets import QApplication, QWidget
 
 from sllkgui.appcore import Logger
@@ -45,13 +45,12 @@ from sllkgui.appcore.feedback import (
     resolve_life,
 )
 
+from ..custom_ui.feedback.placement import stack_points, title_bar_offset, toast_metrics
 from ..custom_ui.feedback.toast import CToast
 
 #: 限流窗口（秒）与次数
 _RATE_WINDOW = 2.0
 _RATE_LIMIT = 20
-#: 锚点解析不到时的兜底顶部偏移（无标题栏的宿主）
-_DEFAULT_OFFSET = 56
 
 
 @dataclass
@@ -76,8 +75,12 @@ class ToastRecord:
         return self.request.channel
 
 
-def _feedback_settings() -> tuple[int, int, int, int]:
-    """(base_life, limit, margin, spacing)，配置缺失时回落默认值。"""
+def _feedback_settings() -> tuple[int, int]:
+    """(base_life, limit)，配置缺失时回落默认值。
+
+    边距 / 间距 / 标题栏避让归 ``custom_ui.feedback.placement``，总线不再自己算——
+    两处各算一次正是「同一条提示位置不一致」的来源。
+    """
     try:
         from sllkgui.appcore import AppSettings
 
@@ -85,11 +88,9 @@ def _feedback_settings() -> tuple[int, int, int, int]:
         return (
             int(cfg.toast_life),
             max(1, int(cfg.toast_max)),
-            int(cfg.toast_margin),
-            int(cfg.toast_spacing),
         )
     except Exception:
-        return 3000, 4, 20, 8
+        return 3000, 4
 
 
 class ToastBus(QObject):
@@ -206,19 +207,12 @@ class ToastBus(QObject):
         return None
 
     def _offset_for(self, anchor: QWidget) -> int:
-        """标题栏避让：读 ``ui.title_bar`` 或设置窗口的 ``_title_bar``。"""
-        bar = getattr(getattr(anchor, "ui", None), "title_bar", None)
-        if bar is None:
-            bar = getattr(anchor, "_title_bar", None)
-        if bar is not None:
-            try:
-                height = int(bar.height())
-            except RuntimeError:
-                height = 0
-            if height > 0:
-                return height + 8
-            return 0
-        return _DEFAULT_OFFSET if self._main_getter is not None else 0
+        """标题栏避让高度；由 ``placement`` 统一计算，布局前也保持稳定。
+
+        旧实现直接读 ``title_bar.height()``：窗口尚未完成布局时该值是控件的构造
+        尺寸（实测 480），启动期弹出的提示会被推到页面中间且此后不再纠正。
+        """
+        return title_bar_offset(anchor)
 
     # ------------------------------------------------------------------
     # 显示
@@ -260,7 +254,7 @@ class ToastBus(QObject):
         if not channel_ok:
             channel = ""
         progress, progress_bad = clamp_progress(request.progress)
-        base_life, limit, margin, spacing = _feedback_settings()
+        base_life, limit = _feedback_settings()
         life, life_clamped = resolve_life(level, request.life, base_life)
         actions = clamp_actions(request.actions)
         payload, payload_dropped = self._sanitize_payload(request.payload)
@@ -621,40 +615,50 @@ class ToastBus(QObject):
             if key[0] == anchor_key:
                 self._by_channel.pop(key, None)
 
+    #: 需要重排的锚点事件：尺寸变化、首次显示（布局在 show 时才跑）与跨屏移动；
+    #: 这三种情况下 title_bar 高度或窗口几何都会变，提示必须跟着纠正。
+    _REFLOW_EVENTS = frozenset({QEvent.Type.Resize, QEvent.Type.Show, QEvent.Type.ScreenChangeInternal})
+
     def eventFilter(self, watched, event):  # noqa: N802 - 覆写 Qt 命名
-        if event.type() == QEvent.Type.Resize:
+        if event.type() in self._REFLOW_EVENTS:
             anchor_key = id(watched)
             if anchor_key in self._order:
                 self._reflow(watched)
         return super().eventFilter(watched, event)
 
     def _reflow(self, anchor: QWidget) -> None:
-        """重排某锚点上的全部 toast（最新在最上面）。"""
-        _, _, margin, spacing = _feedback_settings()
+        """重排某锚点上的全部 toast（最新在最上面）。
+
+        坐标一律由 ``placement.stack_points`` 给出：边距、标题栏避让、阴影占位
+        与越界钳制都只在那里实现一次，总线与 ``CToast.show_message`` 共用同一套
+        结果，不再出现「同一句提示换条路径就换个位置」。
+
+        重排前必须停掉仍在跑的滑入动画——它的终点是旧位置，会在几十毫秒后把
+        刚排好的坐标覆盖回去，表现为两条提示完全重叠（见 ``_stop_slide``）。
+        """
         order = self._order.get(id(anchor), [])
-        y = margin + self._offset_for(anchor)
+        toasts: list[CToast] = []
+        offsets: list[int] = []
         for toast_id in order:
             record = self._records.get(toast_id)
             if record is None:
                 continue
-            toast = record.toast
+            toasts.append(record.toast)
+            offsets.append(self._offset_for(anchor))
+        if not toasts:
+            return
+        points = stack_points(
+            anchor,
+            [toast.size() for toast in toasts],
+            offsets,
+            metrics=toast_metrics(),
+        )
+        for toast, point in zip(toasts, points, strict=False):
+            toast._stop_slide()
             try:
-                toast.move(anchor.width() - toast.width() - margin, y)
-                y += toast.height() + spacing
+                toast.move(point)
             except RuntimeError:
                 continue
-
-    def _target_pos(self, anchor: QWidget, toast: CToast, order: list[str]) -> QPoint:
-        """（保留）计算某条 toast 的目标位置；总线当前直接用 ``_reflow`` + ``toast.pos()``。"""
-        _, _, margin, spacing = _feedback_settings()
-        y = margin + self._offset_for(anchor)
-        for toast_id in order:
-            if toast_id == toast.toast_id():
-                break
-            record = self._records.get(toast_id)
-            if record is not None:
-                y += record.toast.height() + spacing
-        return QPoint(anchor.width() - toast.width() - margin, y)
 
     # ------------------------------------------------------------------
     # 内部：容量 / 限流 / 补丁
