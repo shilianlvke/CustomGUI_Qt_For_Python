@@ -62,7 +62,7 @@ src/sllkgui/guicore/pet/
 
 | 基础项 | 接入方式 |
 | --- | --- |
-| 设置页 | `plugin.sllkgui.pet` 命名空间注册到统一设置系统；设置窗口「猕猴桃桌面宠物」页含 7 项配置 |
+| 设置页 | **基座原生设置**（`core.pet`），出现在设置窗口原生分类而非插件栏；含 7 项配置，值落 `user.yaml` 的 `pet_*` 键 |
 | 配置读写 | SettingsSession / SettingsStore 统一读写；`settings_change_bus` 保存后即时同步 |
 | 快捷键 | `shortcut_registry` 的 `sllkgui.pet` owner；冲突时拒绝注册并 toast 提示 |
 | 主题色 | 订阅 ThemeManager，强调色覆盖默认描边/徽标；状态显式配色保持原型 |
@@ -73,7 +73,7 @@ src/sllkgui/guicore/pet/
 
 ## 偏好
 
-统一写在 `<data_root>/settings/plugins/sllkgui.pet.yaml`（由基座 SettingsStore 管理）：
+统一写在 `<data_root>/settings/user.yaml`（基座原生设置，键名 `pet_*`）：
 
 ```yaml
 show_pet: true        # 是否显示
@@ -85,7 +85,7 @@ size: 220             # 窗口边长 px（96–480）
 deco_scale: 1.32      # 特效层缩放（0.55–1.5）
 ```
 
-旧版 `<data_root>/settings/pet.yaml` 在首次启动时会迁移到上述文件并改名 `.migrated` 备份，只迁移一次。
+旧版 `<data_root>/settings/pet.yaml` 与 `<data_root>/settings/plugins/sllkgui.pet.yaml` 在首次启动时都会迁移到上述文件并改名 `.migrated` 备份，只迁移一次。
 窗口位置 `pos_x/pos_y` 仅保存在内存中，避免拖拽期间高频写盘。
 读写失败只告警，绝不阻断启动；非法值回落默认。
 

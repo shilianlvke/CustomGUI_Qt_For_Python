@@ -108,6 +108,17 @@ events.clear()                                  # 注销本 owner 全部订阅
 
 未知载荷键始终透传，因此为现有事件增加可选字段无需修改协议版本。
 
+## 基座操作联动
+
+基座通过 `guis/windows/main_window/pet_bridge.py` 把用户操作按协议发布为宠物命令：
+
+- 主题循环 → `CMD_HOP` + `CMD_STATE(happy)`；
+- 打开设置窗口 → `CMD_STATE(curious)`；
+- 打开搜索 → `CMD_STATE(searching)`；
+- 菜单 / 抽屉布局模式变化 → `CMD_SPIN`。
+
+事件桥只负责发布，不直接持有宠物控制器；总线或宠物未就绪时静默降级，绝不打断基座操作。
+
 ## 与基座 / 插件机制的关系
 
 - 总线实例由 `pet_bus()` 进程级惰性提供，测试用 `reset_pet_bus()` 隔离；

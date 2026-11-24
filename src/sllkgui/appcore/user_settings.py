@@ -64,6 +64,14 @@ SUPPORTED_FIELDS = (
     "background_image",
     "background_fit",
     "background_recent",
+    # 桌面宠物（基座原生设置页）
+    "pet_show",
+    "pet_pinned",
+    "pet_follow_pointer",
+    "pet_shape",
+    "pet_color",
+    "pet_size",
+    "pet_deco_scale",
 )
 
 #: 不属于用户可编辑设置的字段：由运行期写入，不参与 ``SettingSpec`` 校验。
@@ -132,6 +140,18 @@ def _normalize_field(key: str, value: Any) -> Any | None:
             return None
         paths = [str(item).strip() for item in value if isinstance(item, str) and str(item).strip()]
         return list(dict.fromkeys(paths))[:5]
+    if key in ("pet_show", "pet_pinned", "pet_follow_pointer"):
+        return value if isinstance(value, bool) else None
+    if key == "pet_size":
+        if isinstance(value, bool) or not isinstance(value, int):
+            return None
+        return max(96, min(480, value))
+    if key == "pet_deco_scale":
+        if isinstance(value, bool) or not isinstance(value, (int, float)):
+            return None
+        return max(0.55, min(1.5, float(value)))
+    if key in ("pet_shape", "pet_color"):
+        return value.strip() if isinstance(value, str) and value.strip() else None
     return None
 
 

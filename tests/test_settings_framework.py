@@ -100,7 +100,7 @@ def test_session_prunes_removed_plugin_keys(registry, store):
 
 def test_core_pages_are_namespaced(registry):
     pages = registry.pages("core")
-    assert [page.page_id for page in pages] == ["appearance", "interface", "window"]
+    assert [page.page_id for page in pages] == ["appearance", "interface", "window", "pet"]
     assert pages[0].full_key("theme") == KEY_THEME == "core.appearance.theme"
     assert pages[2].full_key("remember_size") == KEY_REMEMBER_SIZE
 

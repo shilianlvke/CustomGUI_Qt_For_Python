@@ -27,6 +27,7 @@ class _CoreDefaults(TypedDict):
 PAGE_APPEARANCE = "appearance"
 PAGE_INTERFACE = "interface"
 PAGE_WINDOW = "window"
+PAGE_PET = "pet"
 
 #: 基座配置在 user.yaml 中的历史键名
 STORAGE_THEME = "theme_name"
@@ -38,6 +39,14 @@ STORAGE_GLASS_STRENGTH = "glass_strength"
 STORAGE_BACKGROUND_IMAGE = "background_image"
 STORAGE_BACKGROUND_FIT = "background_fit"
 STORAGE_REMEMBER_SIZE = "remember_window_size"
+# 桌面宠物（基座原生设置，走 user.yaml）
+STORAGE_PET_SHOW = "pet_show"
+STORAGE_PET_PINNED = "pet_pinned"
+STORAGE_PET_FOLLOW = "pet_follow_pointer"
+STORAGE_PET_SHAPE = "pet_shape"
+STORAGE_PET_COLOR = "pet_color"
+STORAGE_PET_SIZE = "pet_size"
+STORAGE_PET_DECO = "pet_deco_scale"
 
 #: 主题实时预览键（宿主据此还原 / 应用）
 KEY_THEME = f"core.{PAGE_APPEARANCE}.theme"
@@ -49,6 +58,13 @@ KEY_LANGUAGE = f"core.{PAGE_INTERFACE}.language"
 KEY_MENU_MODE = f"core.{PAGE_INTERFACE}.menu_mode"
 KEY_DRAWER_MODE = f"core.{PAGE_INTERFACE}.drawer_mode"
 KEY_REMEMBER_SIZE = f"core.{PAGE_WINDOW}.remember_size"
+KEY_PET_SHOW = f"core.{PAGE_PET}.show_pet"
+KEY_PET_PINNED = f"core.{PAGE_PET}.pinned"
+KEY_PET_FOLLOW = f"core.{PAGE_PET}.follow_pointer"
+KEY_PET_SHAPE = f"core.{PAGE_PET}.shape"
+KEY_PET_COLOR = f"core.{PAGE_PET}.color"
+KEY_PET_SIZE = f"core.{PAGE_PET}.size"
+KEY_PET_DECO = f"core.{PAGE_PET}.deco_scale"
 
 
 #: 语言显示名：不在表里的语言直接显示代码，新增语言无需改动这里
@@ -94,6 +110,124 @@ def _defaults() -> _CoreDefaults:
         pass
     transparency = max(0, min(100, transparency))
     return {"theme": theme, "language": language, "transparency": transparency}
+
+
+def _pet_options() -> tuple[tuple[tuple[str, str], ...], tuple[tuple[str, str], ...]]:
+    """读取宠物规格表的形状/色板标签（只做 JSON 读取，不依赖 guicore）。"""
+    import json
+
+    from sllkgui import package_root
+
+    spec_path = package_root() / "guicore" / "pet" / "engine" / "spec.json"
+    shapes: tuple[tuple[str, str], ...] = ()
+    colors: tuple[tuple[str, str], ...] = ()
+    try:
+        data = json.loads(spec_path.read_text(encoding="utf-8"))
+        shapes = tuple((key, str(val.get("label", key))) for key, val in data["shapes"].items())
+        colors = tuple((key, str(val.get("label", key))) for key, val in data["palette"].items())
+    except (OSError, ValueError, KeyError, TypeError):
+        # 规格文件不可用时给出最小可选项，保证设置页仍能构造
+        shapes = (("blob", "圆果"),)
+        colors = (("green", "果绿"),)
+    return shapes, colors
+
+
+def _pet_page() -> SettingsPage:
+    """桌面宠物设置页：基座原生页面，值落 user.yaml。"""
+    shape_options, color_options = _pet_options()
+    return SettingsPage(
+        page_id=PAGE_PET,
+        title="猕猴桃桌面宠物",
+        hint="常驻桌面宠物的展示、外观与交互。",
+        title_key="language.UI.ui_PetSettingsTitle",
+        hint_key="language.UI.ui_PetSettingsHint",
+        icon="icon_palette",
+        order=40,
+        sections=(
+            SettingsSection(
+                section_id="display",
+                title="展示",
+                hint="控制宠物是否显示以及窗口行为。",
+                title_key="language.UI.ui_PetSectionDisplay",
+                hint_key="language.UI.ui_PetSectionDisplayHint",
+                items=(
+                    SettingSpec.switch(
+                        "show_pet",
+                        True,
+                        "显示宠物",
+                        label_key="language.UI.ui_PetShow",
+                        hint_key="language.UI.ui_PetShowHint",
+                        storage_key=STORAGE_PET_SHOW,
+                    ),
+                    SettingSpec.switch(
+                        "pinned",
+                        True,
+                        "窗口置顶",
+                        label_key="language.UI.ui_PetPinned",
+                        hint_key="language.UI.ui_PetPinnedHint",
+                        storage_key=STORAGE_PET_PINNED,
+                    ),
+                    SettingSpec.switch(
+                        "follow_pointer",
+                        True,
+                        "眼睛跟随指针",
+                        label_key="language.UI.ui_PetFollow",
+                        hint_key="language.UI.ui_PetFollowHint",
+                        storage_key=STORAGE_PET_FOLLOW,
+                    ),
+                ),
+            ),
+            SettingsSection(
+                section_id="appearance",
+                title="外观",
+                hint="果形、果肉色与特效层大小。",
+                title_key="language.UI.ui_PetSectionAppearance",
+                hint_key="language.UI.ui_PetSectionAppearanceHint",
+                items=(
+                    SettingSpec.select(
+                        "shape",
+                        "blob",
+                        "果形",
+                        shape_options,
+                        label_key="language.UI.ui_PetShape",
+                        hint_key="language.UI.ui_PetShapeHint",
+                        storage_key=STORAGE_PET_SHAPE,
+                    ),
+                    SettingSpec.select(
+                        "color",
+                        "green",
+                        "果肉色",
+                        color_options,
+                        label_key="language.UI.ui_PetColor",
+                        hint_key="language.UI.ui_PetColorHint",
+                        storage_key=STORAGE_PET_COLOR,
+                    ),
+                    SettingSpec.number(
+                        "size",
+                        220,
+                        "宠物尺寸(px)",
+                        minimum=96,
+                        maximum=480,
+                        label_key="language.UI.ui_PetSize",
+                        hint_key="language.UI.ui_PetSizeHint",
+                        storage_key=STORAGE_PET_SIZE,
+                    ),
+                    SettingSpec.number(
+                        "deco_scale",
+                        1.32,
+                        "特效层缩放",
+                        minimum=0.55,
+                        maximum=1.5,
+                        step=0.05,
+                        decimals=2,
+                        label_key="language.UI.ui_PetDecoScale",
+                        hint_key="language.UI.ui_PetDecoScaleHint",
+                        storage_key=STORAGE_PET_DECO,
+                    ),
+                ),
+            ),
+        ),
+    )
 
 
 def build_core_pages() -> tuple[SettingsPage, ...]:
@@ -292,7 +426,7 @@ def build_core_pages() -> tuple[SettingsPage, ...]:
         ),
     )
 
-    return (appearance, interface, window)
+    return (appearance, interface, window, _pet_page())
 
 
 __all__ = [

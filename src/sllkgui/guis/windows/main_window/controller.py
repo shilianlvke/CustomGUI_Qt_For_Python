@@ -165,6 +165,9 @@ class SettingsController:
             except Exception as exc:
                 self._logger.warning(f"自定义主题切换失败，回退到基座主题循环: {exc}")
         self._theme_manager.cycle()
+        from .pet_bridge import on_theme_cycled
+
+        on_theme_cycled(str(self._theme_manager.current()))
 
     # ------------------------------------------------------------------
     # 独立设置窗口
@@ -196,6 +199,9 @@ class SettingsController:
         window.open_settings()
         self._sync_settings_button(True)
         self._record_event("ui.settings_window_open", category="ui", payload={})
+        from .pet_bridge import on_settings_opened
+
+        on_settings_opened()
         return True
 
     def open_settings_page(self, plugin_id: str, page_id: str = "") -> bool:
@@ -305,10 +311,14 @@ class SettingsController:
                 )
             )
             self._apply_background(path, fit)
+        from .pet_bridge import on_layout_changed
+
         if "core.interface.menu_mode" in changes:
             self._apply_menu_mode(str(changes["core.interface.menu_mode"]))
+            on_layout_changed(str(changes["core.interface.menu_mode"]))
         if "core.interface.drawer_mode" in changes:
             self._apply_drawer_mode(str(changes["core.interface.drawer_mode"]))
+            on_layout_changed(str(changes["core.interface.drawer_mode"]))
         if "core.interface.language" in changes:
             from sllkgui.guis.language_service import apply_language
 
@@ -538,6 +548,9 @@ class MainWindowController:
         if anchor is None:
             return False
         self._handle_search_button(anchor)
+        from .pet_bridge import on_search_opened
+
+        on_search_opened()
         return True
 
     def _handle_settings_button(self):

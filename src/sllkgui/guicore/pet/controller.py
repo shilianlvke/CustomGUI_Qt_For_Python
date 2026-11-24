@@ -38,7 +38,7 @@ from .events import (
     EVT_STATE_CHANGED,
     pet_bus,
 )
-from .settings import DEFAULTS, KEY_PREFIX, PET_NAMESPACE, register_pet_page
+from .settings import DEFAULTS, KEY_PREFIX, PET_NAMESPACE, STORAGE_KEYS, register_pet_page
 from .shortcuts import install_pet_shortcuts, uninstall_pet_shortcuts
 
 if TYPE_CHECKING:
@@ -189,9 +189,11 @@ class MihoutaoPetController:
         migrate_legacy_pet_preferences()
 
     def _on_settings_changed(self, changes: dict[str, Any]) -> None:
-        """设置页保存后的统一同步入口（键为短键）。"""
-        for key, value in changes.items():
-            if key not in DEFAULTS:
+        """设置页保存后的统一同步入口（core 命名空间回调给的是 storage_key）。"""
+        by_storage = {storage: key for key, storage in STORAGE_KEYS.items()}
+        for changed_key, value in changes.items():
+            key = changed_key if changed_key in DEFAULTS else by_storage.get(changed_key)
+            if key is None:
                 continue
             normalized = _normalize(key, value, DEFAULTS[key])
             if normalized is not None:

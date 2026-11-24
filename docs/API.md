@@ -429,7 +429,7 @@ pet.spin(); pet.hop(); pet.burst()
 pet.shutdown()                 # 幂等
 ```
 
-偏好写在 `<data_root>/settings/plugins/sllkgui.pet.yaml`（统一设置系统管理）。
+偏好写在 `<data_root>/settings/user.yaml` 的 `pet_*` 键（基座原生设置，出现在设置窗口原生分类）。
 
 桌面宠物还提供进程级事件总线，供基座与插件通过事件控制宠物：
 
