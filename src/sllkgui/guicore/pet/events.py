@@ -35,6 +35,11 @@ CMD_STATE = "pet.command.state"
 CMD_SHAPE = "pet.command.shape"
 CMD_COLOR = "pet.command.color"
 CMD_SETTING = "pet.command.setting"
+#: 瞬态情绪反应：切到 ``state``，``hold_ms`` 毫秒后回到操作前的常态。
+#: ``hold_ms <= 0``（或 ``hold: true``）表示保持到显式解除，用于"设置窗口
+#: 打开期间保持好奇"这类有明确起止的场景。基座操作一律走它，避免把宠物
+#: 永久钉在某次操作的情绪上；用户显式选情绪仍用 :data:`CMD_STATE`。
+CMD_REACT = "pet.command.react"
 
 #: 状态事件：宠物控制器发布，供基座/插件观察
 EVT_READY = "pet.event.ready"
@@ -57,6 +62,7 @@ EVENT_TYPES: frozenset[str] = frozenset(
         CMD_SHAPE,
         CMD_COLOR,
         CMD_SETTING,
+        CMD_REACT,
         EVT_READY,
         EVT_STATE_CHANGED,
         EVT_SHAPE_CHANGED,
@@ -75,6 +81,7 @@ REQUIRED_PAYLOAD: dict[str, tuple[str, ...]] = {
     CMD_SHAPE: ("shape",),
     CMD_COLOR: ("color",),
     CMD_SETTING: ("key", "value"),
+    CMD_REACT: ("state",),
 }
 
 

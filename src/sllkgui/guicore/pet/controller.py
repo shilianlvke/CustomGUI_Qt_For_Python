@@ -25,6 +25,7 @@ from .events import (
     CMD_COLOR,
     CMD_HIDE,
     CMD_HOP,
+    CMD_REACT,
     CMD_SETTING,
     CMD_SHAPE,
     CMD_SHOW,
@@ -36,6 +37,7 @@ from .events import (
     EVT_SETTING_CHANGED,
     EVT_SHAPE_CHANGED,
     EVT_STATE_CHANGED,
+    EVT_VISIBILITY_CHANGED,
     pet_bus,
 )
 from .settings import DEFAULTS, KEY_PREFIX, PET_NAMESPACE, STORAGE_KEYS, register_pet_page
@@ -255,6 +257,7 @@ class MihoutaoPetController:
             CMD_SHAPE,
             CMD_COLOR,
             CMD_SETTING,
+            CMD_REACT,
         ):
             self._unsub_events.append(self._event_handle.subscribe(topic, self._on_command))
 
@@ -299,6 +302,11 @@ class MihoutaoPetController:
                 if key in DEFAULTS:
                     self.set_setting(key, event.get("value"))
                     self._publish(EVT_SETTING_CHANGED, {"key": key, "value": self.preferences[key]})
+            elif topic == CMD_REACT:
+                name = str(event.get("state", ""))
+                hold_ms = _coerce_hold(event.get("hold_ms"), bool(event.get("hold")))
+                if self.react(name, hold_ms=hold_ms):
+                    self._publish(EVT_STATE_CHANGED, {"state": name, "transient": True})
         except Exception as exc:  # noqa: BLE001 - 单个命令失败不影响总线与其它订阅者
             Logger.warning(f"宠物命令处理失败 {topic}: {exc}")
 
@@ -331,15 +339,24 @@ class MihoutaoPetController:
     def show(self) -> None:
         window = self._ensure_window()
         if window is not None:
+            was_visible = window.isVisible()
             window.start()
+            if not was_visible:
+                self._publish(EVT_VISIBILITY_CHANGED, {"visible": True})
 
     def hide(self, *, run_task: bool = True) -> None:
+        was_visible = self.window is not None and self.window.isVisible()
         if self.window is not None:
             self.window.stop()
+        if self.engine is not None:
+            # 隐藏时取消未到期的反应，再显示时不会跳回过期情绪
+            self.engine.clear_react()
         if run_task:
             self.set_setting("show_pet", False)
         else:
             self.preferences["show_pet"] = False
+        if was_visible:
+            self._publish(EVT_VISIBILITY_CHANGED, {"visible": False})
 
     def toggle(self) -> None:
         if self.window is not None and self.window.isVisible():
@@ -382,9 +399,20 @@ class MihoutaoPetController:
             self.engine.burst_once()
 
     def set_state(self, name: str) -> None:
+        """用户显式选择情绪：保持，直到下次显式切换。"""
         if self.engine is not None:
             self.engine.set_mode("hold")
             self.engine.set_state(name)
+
+    def react(self, name: str, *, hold_ms: float = 1600) -> bool:
+        """瞬态情绪反应：``hold_ms`` 后自动回到反应前的常态。
+
+        基座操作（搜索、插件安装、切页等）用它，避免把宠物永久钉在某次
+        操作的情绪上。``hold_ms <= 0`` 表示保持到下次显式切换。
+        """
+        if self.engine is None:
+            return False
+        return bool(self.engine.react(name, hold_ms=hold_ms))
 
     def set_shape(self, shape_id: str) -> None:
         if shape_id in SHAPES:
@@ -407,6 +435,15 @@ class MihoutaoPetController:
         """窗口位置变化只更新内存值，避免拖拽期间高频落盘。"""
         self.preferences["pos_x"] = int(x)
         self.preferences["pos_y"] = int(y)
+
+
+def _coerce_hold(raw: Any, hold: bool) -> float:
+    """把事件载荷里的 ``hold_ms`` 归一成毫秒；``hold=True`` 表示保持。"""
+    if hold:
+        return 0.0
+    if isinstance(raw, bool) or not isinstance(raw, (int, float)):
+        return 1600.0
+    return float(raw)
 
 
 def _normalize(key: str, raw: Any, default: Any) -> Any:

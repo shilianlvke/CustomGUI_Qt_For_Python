@@ -197,6 +197,13 @@ class MihoutaoEngine:
         self.shadow_id = "shadow-mihoutao"
         #: 主题强调色覆盖：仅作用于未显式声明 ring 的状态，保留原型语义
         self.accent_color: str | None = None
+        #: 瞬态反应：基座操作触发的临时情绪，到期后回到 ambient_state。
+        #: 与 set_state 的"保持"语义区分，避免宠物被一次搜索永久卡在 searching。
+        self.ambient_state = "curious"
+        #: 反应前的运行模式（onboarding / hold），到期后原样恢复
+        self.ambient_mode = self.mode
+        self.reacting = False
+        self.react_until = 0.0
 
         self.set_color(self.color_id)
         self.set_state("curious")
@@ -217,6 +224,63 @@ class MihoutaoEngine:
         self.eye_t.t = 1.0
 
     def set_state(self, name: str) -> None:
+        """切换到指定情绪（保持语义）。
+
+        这是**用户显式选择**的入口（右键菜单、``CMD_STATE``、设置恢复），
+        因此会先解除进行中的瞬态反应：否则反应到期会把用户刚选的情绪覆盖
+        掉，表现为"选了没生效"。
+        """
+        if name not in STATES:
+            return
+        self.reacting = False
+        self.react_until = 0.0
+        self.ambient_state = name
+        self._apply_state(name)
+
+    def set_mode(self, mode: str) -> None:
+        self.mode = mode
+        if mode == "onboarding":
+            self.mood_n = 0
+            self.set_state("idle")
+
+    def react(self, name: str, hold_ms: float = 1500) -> bool:
+        """瞬态情绪反应：立刻切到 ``name``，``hold_ms`` 后回到操作前的常态。
+
+        与 :meth:`set_state` 的区别是"到期自动还原"：基座操作（搜索、插件安装
+        等）只需要宠物给一个可感知的反馈，随后宠物应回到原本的常态，而不是被
+        最后一次操作永久钉住。
+
+        - ``hold_ms <= 0`` 表示"保持"：不设到期时间，等 :meth:`clear_react`
+          或下一次 :meth:`react` / :meth:`set_state` 解除。设置窗口打开时用它，
+          这样好奇状态一直持续到窗口关闭。
+        - 反应期间再次调用**不**覆盖常态快照（``ambient_state`` 始终是用户/
+          生命周期设定的那个值），只延长到期时间。
+        - 反应期间临时离开 onboarding，否则 1.2s 的情绪轮播会把反馈立刻盖掉。
+
+        返回是否真的切换成功（非法状态名返回 ``False``，不改变任何状态）。
+        """
+        if name not in STATES:
+            return False
+        if not self.reacting:
+            self.ambient_state = self.state
+            self.ambient_mode = self.mode
+        self.mode = "hold"
+        self.reacting = True
+        self._apply_state(name)
+        self.react_until = 0.0 if hold_ms <= 0 else self.t + float(hold_ms)
+        return True
+
+    def clear_react(self) -> None:
+        """取消瞬态反应并回到常态（幂等）。"""
+        if not self.reacting:
+            return
+        self.reacting = False
+        self.react_until = 0.0
+        self._apply_state(self.ambient_state)
+        self.mode = self.ambient_mode
+
+    def _apply_state(self, name: str) -> None:
+        """真正切换情绪与表现，不改写反应状态（由上面两个入口共用）。"""
         if name not in STATES:
             return
         self.state = name
@@ -238,12 +302,6 @@ class MihoutaoEngine:
             self.shake_at = self.t
         self.trick_at = self.t + random.uniform(2200, 4200)
         self.mood_n += 1
-
-    def set_mode(self, mode: str) -> None:
-        self.mode = mode
-        if mode == "onboarding":
-            self.mood_n = 0
-            self.set_state("idle")
 
     def set_shape(self, name: str) -> None:
         if name not in SHAPES:
@@ -330,6 +388,12 @@ class MihoutaoEngine:
             self.eye_idx = (self.eye_idx + 1) % len(cfg["eyes"])
             self.morph(cfg["eyes"][self.eye_idx])
             self.eye_next_at = t + random.uniform(cfg["hold"][0], cfg["hold"][1])
+
+        # 瞬态反应到期：回到操作前的常态，让基座反馈是"一次"而不是"永久"。
+        # react_until == 0 表示"保持"（如设置窗口打开期间），不自动到期。
+        if self.reacting and self.react_until > 0 and t >= self.react_until:
+            self.clear_react()
+            self.state_at = t
 
         if self.mode == "onboarding" and t - self.state_at > 1200:
             moods = SPEC["onboarding"]

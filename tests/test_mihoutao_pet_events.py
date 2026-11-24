@@ -30,7 +30,8 @@ def bus():
 
 def test_topic_naming_and_registry():
     """命名规范：pet.<域>.<动作>，全部登记在 EVENT_TYPES。"""
-    assert len(EVENT_TYPES) == 16
+    # 10 条保持型命令 + CMD_REACT 瞬态反应 + 6 条状态事件 = 17
+    assert len(EVENT_TYPES) == 17
     for topic in EVENT_TYPES:
         assert topic.startswith("pet.")
         assert is_valid_topic(topic)
@@ -164,7 +165,7 @@ def test_ready_event_on_start(qapp, tmp_path, monkeypatch):
 def test_all_command_constants_covered():
     """所有命令常量都登记为合法类型。"""
     command_names = [name for name in dir(ev) if name.startswith("CMD_")]
-    assert len(command_names) == 10
+    assert len(command_names) == 11
     for name in command_names:
         assert getattr(ev, name) in EVENT_TYPES
     event_names = [name for name in dir(ev) if name.startswith("EVT_")]
