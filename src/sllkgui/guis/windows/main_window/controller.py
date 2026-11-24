@@ -124,6 +124,9 @@ class PageRouterController:
             category="ui",
             payload={"button_id": btn_name, "page": page_name, "title": title},
         )
+        from .pet_bridge import on_page_switched
+
+        on_page_switched(btn_name)
 
 
 class SettingsController:
@@ -226,6 +229,9 @@ class SettingsController:
         self._settings_window = None
         self._sync_settings_button(False)
         self._record_event("ui.settings_window_close", category="ui", payload={})
+        from .pet_bridge import on_settings_closed
+
+        on_settings_closed()
 
     def _forget_settings_window(self, *_args) -> None:
         self._settings_window = None
@@ -289,6 +295,9 @@ class SettingsController:
                 self._theme_manager.apply(str(changes[KEY_THEME]))
             finally:
                 self._previewing_theme = False
+            from .pet_bridge import on_theme_changed
+
+            on_theme_changed(str(changes[KEY_THEME]))
         if "core.appearance.transparency" in changes:
             set_acrylic_transparency(int(changes["core.appearance.transparency"]))
             self.refresh_acrylic()
@@ -326,6 +335,10 @@ class SettingsController:
                 apply_language(str(changes["core.interface.language"]), self._window)
             except Exception as exc:  # noqa: BLE001 - 语言应用失败不应关闭设置窗口
                 self._logger.warning(f"应用语言失败: {exc}")
+            else:
+                from .pet_bridge import on_language_changed
+
+                on_language_changed(str(changes["core.interface.language"]))
             # 语言切换会重建主窗口页面；设置窗口保持打开，并在原位刷新文案，
             # 避免用户保存后还要重新打开、重新定位到刚才的配置页。
             window = self._settings_window
@@ -459,6 +472,8 @@ class MainWindowController:
         self._record_event = event_recorder
         self._logger = logger
         self._button_use_case = button_use_case or MainWindowButtonUseCase()
+        #: 搜索面板刚命中跳转：收起时不再补"回到常态"反馈（见 _on_search_palette_closed）
+        self._search_navigated = False
         self.page_router = PageRouterController(window=window, main_functions=main_functions)
         self.settings_controller = SettingsController(window=window, plugin_titles=self._plugin_titles)
         self.column_controller = ColumnController(window=window, main_functions=main_functions)
@@ -523,13 +538,32 @@ class MainWindowController:
         if palette is None:
             palette = CSearchPalette(self._window)
             palette.selected.connect(self._open_search_result)
+            # 收起（含点外部关闭）时结束搜索状态，避免宠物一直停在 searching
+            palette.closed.connect(self._on_search_palette_closed)
             self._search_palette = palette
         palette.show_for(anchor)
+        from .pet_bridge import on_search_opened
+
+        on_search_opened()
+
+    def _on_search_palette_closed(self) -> None:
+        """搜索面板收起：宠物给一次收起反馈后回到常态。
+
+        命中结果时不再额外发收起反馈：选中会先触发切页反应，
+        再补一条"回到常态"会把刚给出的页面反馈立刻盖掉。
+        """
+        if self._search_navigated:
+            self._search_navigated = False
+            return
+        from .pet_bridge import on_search_closed
+
+        on_search_closed()
 
     def _open_search_result(self, btn_name: str) -> None:
         route = self.page_router.route_for(btn_name)
         if route is None:
             return
+        self._search_navigated = True
         page_name, title = route
         self.page_router.switch_page(btn_name, page_name, title)
 
@@ -544,9 +578,6 @@ class MainWindowController:
         if anchor is None:
             return False
         self._handle_search_button(anchor)
-        from .pet_bridge import on_search_opened
-
-        on_search_opened()
         return True
 
     def _handle_settings_button(self):

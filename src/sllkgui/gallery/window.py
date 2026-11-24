@@ -98,6 +98,8 @@ class GalleryWindow(QMainWindow):
         self.ui.setup_ui(self)
         runtime.set_navigation(self.open_route, lambda: self)
         self._force_close = False
+        #: 上次关闭是"收进托盘"：用于让宠物只响应真正的恢复操作
+        self._hidden_to_tray = False
         #: 选择性重载期间暂存的 Surface 状态：route -> save_state() 返回值
         self._surface_state_cache: dict[str, object] = {}
         self._dev_watcher = None
@@ -542,7 +544,14 @@ class GalleryWindow(QMainWindow):
         if self.runtime.is_reloading():
             QTimer.singleShot(300, lambda value=root: self._on_dev_plugin_changed(value))
             return
+        from sllkgui.guis.windows.main_window.pet_bridge import (
+            on_plugin_operation,
+            on_plugin_operation_started,
+        )
+
+        on_plugin_operation_started("reload", plugin_id=record.plugin_id)
         result = self.reload_plugin_in_place(record.plugin_id, reason="dev-watch")
+        on_plugin_operation("reload", plugin_id=record.plugin_id, ok=bool(result.ok))
         if not result.ok:
             self._notify_failure(
                 record.plugin_id,
@@ -752,6 +761,9 @@ class GalleryWindow(QMainWindow):
 
     def quit_application(self) -> None:
         self._force_close = True
+        from sllkgui.guis.windows.main_window.pet_bridge import on_quit
+
+        on_quit()
         self.close()
         from PySide6.QtWidgets import QApplication
 
@@ -799,6 +811,11 @@ class GalleryWindow(QMainWindow):
             event.ignore()
             self._trim_ui_caches()
             self.hide()
+            # 标记"收进托盘"，供 showEvent 区分托盘恢复与启动首次显示
+            self._hidden_to_tray = True
+            from sllkgui.guis.windows.main_window.pet_bridge import on_window_hidden
+
+            on_window_hidden()
             record_event("window.hidden_to_tray", category="gallery", payload={"mode": self.runtime.mode})
             return
         try:
@@ -828,6 +845,14 @@ class GalleryWindow(QMainWindow):
         # 每次显示都会重建任务栏按钮；延后到窗口完成映射后再设一次图标，
         # 避免按钮沿用系统默认图标。
         QTimer.singleShot(0, lambda: _reapply_taskbar_icon(self))
+        # 只有"从托盘恢复"才算用户操作；启动时的首次显示不上报，
+        # 否则会打断宠物启动期的 onboarding 情绪轮播。
+        restored = getattr(self, "_hidden_to_tray", False)
+        self._hidden_to_tray = False
+        if restored:
+            from sllkgui.guis.windows.main_window.pet_bridge import on_window_shown
+
+            on_window_shown()
 
     def _trim_ui_caches(self) -> None:
         """托盘隐藏时释放纯 UI 缓存，重新显示会自动重建。
