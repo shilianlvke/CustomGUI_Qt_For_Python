@@ -3,11 +3,11 @@
 项目遵循[语义化版本](https://semver.org/lang/zh-CN/)：major 版本允许破坏性变更并显式列出；
 minor 与 patch 保持向后兼容。
 
-当前版本：`4.4.0`（见 `src/sllkgui/_version.py`），对应 tag `base-v4.4.0`。
+当前版本：`4.4.1`（见 `src/sllkgui/_version.py`），对应 tag `base-v4.4.1`。
 
 ---
 
-## 未发布
+## 4.4.1（2026-11-24）
 
 ### 修复
 
@@ -18,6 +18,8 @@ minor 与 patch 保持向后兼容。
   （滑入动画的旧终点覆盖了重排结果）。同步修正：`margin` 现在作用于卡片可见边缘
   而非含透明阴影的控件外框；无自定义标题栏的宿主不再凭空下沉 56px；窗口尺寸 /
   显示 / 跨屏变化时立即重排。回归用例见 `tests/test_toast_placement.py`。
+- **文档与代码同步**：`docs/COMPONENTS.md` 的 `guicore` 公开名数量补到实际值（163 → 167，
+  宠物相关 4 个导出在此前两个版本已加入但未同步），`test_public_api_consistency.py` 恢复通过。
 
 ### 变更
 

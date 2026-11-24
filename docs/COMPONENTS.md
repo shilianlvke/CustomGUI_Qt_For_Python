@@ -1,6 +1,6 @@
 # 组件速查
 
-`sllkgui.guicore` 顶层导出 163 个公开名，其中 `custom_ui` 命名空间 105 个；
+`sllkgui.guicore` 顶层导出 167 个公开名，其中 `custom_ui` 命名空间 105 个；
 另有窗口部件、材质工具、`Styles`、字体、任务与回调工具。
 两个数字由 `tests/test_public_api_consistency.py` 与 `__all__` 实时校验，新增导出时请同步更新本行。
 全部组件由设计令牌驱动，主题切换后重绘即生效。
