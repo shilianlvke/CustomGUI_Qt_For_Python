@@ -3,11 +3,11 @@
 项目遵循[语义化版本](https://semver.org/lang/zh-CN/)：major 版本允许破坏性变更并显式列出；
 minor 与 patch 保持向后兼容。
 
-当前版本：`4.4.1`（见 `src/sllkgui/_version.py`），对应 tag `base-v4.4.1`。
+当前版本：`4.4.2`（见 `src/sllkgui/_version.py`），对应 tag `base-v4.4.2`。
 
 ---
 
-## 未发布
+## 4.4.2（2026-11-24）
 
 ### 修复
 
