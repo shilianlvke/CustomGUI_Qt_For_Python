@@ -19,6 +19,7 @@
 | [TRAY.md](TRAY.md) | 托盘所有权、槽位裁决、插件动作协议 | 写托盘动作的人 |
 | [SHORTCUTS.md](SHORTCUTS.md) | 快捷键作用域、优先级、冲突策略与插件协议 | 写快捷键的人 |
 | [PET.md](PET.md) | 基座原生桌面宠物：形态判定、结构、与原型的一致性校验 | 维护桌面宠物的人 |
+| [PET_EVENTS.md](PET_EVENTS.md) | 桌面宠物事件总线与协议：命名、载荷、行为类型、范围与扩展 | 经事件控制宠物的插件作者 |
 | [contributing.md](contributing.md) | 环境、分层规则、代码约定、测试、提交与 tag 发版 | 贡献者 |
 | [CHANGE_PLAN.md](CHANGE_PLAN.md) | 1.0.0 时期的一次性规划矩阵与变更追溯（已归档） | 做变更追溯的人 |
 | [MANUAL_QA.md](MANUAL_QA.md) | 历史人工验收档案：视觉与交互问题清单（0.6.0 基线） | 回归时人工复测的人 |

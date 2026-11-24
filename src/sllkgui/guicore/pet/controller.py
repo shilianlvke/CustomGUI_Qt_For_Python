@@ -1,6 +1,7 @@
 """宠物控制器：常驻窗口的生命周期、基座设置同步与能力接入。
 
 统一接入点：
+- 事件：经 pet_bus 订阅 pet.command.* 控制宠物、发布 pet.event.* 汇报状态；
 - 设置：注册 plugin.sllkgui.pet 设置页，值由 SettingsStore 读写；
   通过 settings_change_bus 接收保存后的变化，即时同步到引擎/窗口；
 - 主题：订阅 ThemeManager，用强调色覆盖默认描边/徽标色；
@@ -12,12 +13,31 @@
 
 from __future__ import annotations
 
+from collections.abc import Callable
 from typing import TYPE_CHECKING, Any
 
 from sllkgui.appcore import Language, Logger, get_theme_manager, settings_change_bus
 from sllkgui.appcore.settings import SettingsSession
 
-from .engine.core import PALETTE, SHAPES, MihoutaoEngine
+from .engine.core import PALETTE, SHAPES, STATES, MihoutaoEngine
+from .events import (
+    CMD_BURST,
+    CMD_COLOR,
+    CMD_HIDE,
+    CMD_HOP,
+    CMD_SETTING,
+    CMD_SHAPE,
+    CMD_SHOW,
+    CMD_SPIN,
+    CMD_STATE,
+    CMD_TOGGLE,
+    EVT_COLOR_CHANGED,
+    EVT_READY,
+    EVT_SETTING_CHANGED,
+    EVT_SHAPE_CHANGED,
+    EVT_STATE_CHANGED,
+    pet_bus,
+)
 from .settings import DEFAULTS, KEY_PREFIX, PET_NAMESPACE, register_pet_page
 from .shortcuts import install_pet_shortcuts, uninstall_pet_shortcuts
 
@@ -39,6 +59,8 @@ class MihoutaoPetController:
         self._unsub_theme = None
         self._unsub_language = None
         self._theme_manager = None
+        self._unsub_events: list[Callable[[], None]] = []
+        self._event_handle = None
 
     # ------------------------------------------------------------------
     # 生命周期
@@ -91,6 +113,8 @@ class MihoutaoPetController:
         if bool(self.preferences["show_pet"]):
             self.show()
         install_pet_shortcuts(self)
+        self._subscribe_events()
+        self._publish(EVT_READY, {"visible": bool(self.window and self.window.isVisible())})
 
     def shutdown(self) -> None:
         """幂等释放：停计时器、退订、注销快捷键并销毁窗口。"""
@@ -103,6 +127,13 @@ class MihoutaoPetController:
                 except Exception as exc:  # noqa: BLE001 - 退订失败不阻断退出
                     Logger.debug(f"宠物能力退订失败: {exc}")
         self._unsub_settings = self._unsub_theme = self._unsub_language = None
+        for unsubscribe in self._unsub_events:
+            try:
+                unsubscribe()
+            except Exception as exc:  # noqa: BLE001 - 退订失败不阻断退出
+                Logger.debug(f"宠物事件订阅退订失败: {exc}")
+        self._unsub_events.clear()
+        self._event_handle = None
         uninstall_pet_shortcuts()
         if self.window is not None:
             try:
@@ -212,6 +243,70 @@ class MihoutaoPetController:
                     Logger.debug(f"宠物托盘文案刷新失败 {action_id}: {exc}")
         # 快捷键说明随语言更新（同一 owner 覆盖注册，不会重复叠加）
         install_pet_shortcuts(self)
+
+    # ------------------------------------------------------------------
+    # 事件协议：命令订阅与状态发布
+    # ------------------------------------------------------------------
+    def _subscribe_events(self) -> None:
+        """订阅全部命令事件；退订闭包集中保存，shutdown 统一释放。"""
+        self._event_handle = pet_bus().handle("sllkgui.base")
+        for topic in (
+            CMD_SHOW,
+            CMD_HIDE,
+            CMD_TOGGLE,
+            CMD_SPIN,
+            CMD_HOP,
+            CMD_BURST,
+            CMD_STATE,
+            CMD_SHAPE,
+            CMD_COLOR,
+            CMD_SETTING,
+        ):
+            self._unsub_events.append(self._event_handle.subscribe(topic, self._on_command))
+
+    @staticmethod
+    def _publish(topic: str, payload: dict[str, Any] | None = None) -> None:
+        """以基座身份发布状态/响应事件；总线保证不向调用方抛异常。"""
+        pet_bus().handle("sllkgui.base").publish(topic, payload)
+
+    def _on_command(self, topic: str, event: dict[str, Any]) -> None:
+        """统一命令入口：校验载荷后调用控制器动作，异常隔离。"""
+        try:
+            if topic == CMD_SHOW:
+                self.set_setting("show_pet", True)
+                self.show()
+            elif topic == CMD_HIDE:
+                self.hide()
+            elif topic == CMD_TOGGLE:
+                self.toggle()
+            elif topic == CMD_SPIN:
+                self.spin()
+            elif topic == CMD_HOP:
+                self.hop()
+            elif topic == CMD_BURST:
+                self.burst()
+            elif topic == CMD_STATE:
+                name = str(event.get("state", ""))
+                if name in STATES:
+                    self.set_state(name)
+                    self._publish(EVT_STATE_CHANGED, {"state": name})
+            elif topic == CMD_SHAPE:
+                value = str(event.get("shape", ""))
+                if value in SHAPES:
+                    self.set_shape(value)
+                    self._publish(EVT_SHAPE_CHANGED, {"shape": value})
+            elif topic == CMD_COLOR:
+                value = str(event.get("color", ""))
+                if value in PALETTE:
+                    self.set_color(value)
+                    self._publish(EVT_COLOR_CHANGED, {"color": value})
+            elif topic == CMD_SETTING:
+                key = str(event.get("key", ""))
+                if key in DEFAULTS:
+                    self.set_setting(key, event.get("value"))
+                    self._publish(EVT_SETTING_CHANGED, {"key": key, "value": self.preferences[key]})
+        except Exception as exc:  # noqa: BLE001 - 单个命令失败不影响总线与其它订阅者
+            Logger.warning(f"宠物命令处理失败 {topic}: {exc}")
 
     # ------------------------------------------------------------------
     # 窗口

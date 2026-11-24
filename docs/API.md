@@ -429,7 +429,21 @@ pet.spin(); pet.hop(); pet.burst()
 pet.shutdown()                 # 幂等
 ```
 
-偏好写在 `<data_root>/settings/pet.yaml`，与基座 `user.yaml` 分离；读写失败只告警。
+偏好写在 `<data_root>/settings/plugins/sllkgui.pet.yaml`（统一设置系统管理）。
+
+桌面宠物还提供进程级事件总线，供基座与插件通过事件控制宠物：
+
+```python
+from sllkgui.guicore import pet_bus
+from sllkgui.guicore.pet.events import CMD_SPIN, EVT_STATE_CHANGED
+
+events = pet_bus().handle("com.example.my_plugin")
+unsubscribe = events.subscribe(EVT_STATE_CHANGED, lambda topic, payload: print(payload))
+events.publish(CMD_SPIN)
+unsubscribe()
+```
+
+事件命名、载荷格式、行为类型与扩展规则见 [PET_EVENTS.md](PET_EVENTS.md)。
 
 ## 14. 版本与兼容
 

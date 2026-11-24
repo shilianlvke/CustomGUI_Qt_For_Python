@@ -141,6 +141,8 @@ from .fonts import install_fonts as install_fonts
 from .fonts import install_system_fonts as install_system_fonts
 from .pet import MihoutaoPetController as MihoutaoPetController
 from .pet import PetWindow as PetWindow
+from .pet.events import PetEventBus as PetEventBus
+from .pet.events import pet_bus as pet_bus
 from .shortcuts import (
     PRIORITY_BASE,
     PRIORITY_LOW,
@@ -338,7 +340,9 @@ __all__ = [
     "single_shot",
     "ui_callback",
     "MihoutaoPetController",
+    "PetEventBus",
     "PetWindow",
+    "pet_bus",
     "ProgressUpdate",
     "TaskWorker",
     "WorkerSignals",
