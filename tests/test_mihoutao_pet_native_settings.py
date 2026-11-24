@@ -7,7 +7,7 @@ import yaml
 
 from sllkgui.appcore import settings_registry
 from sllkgui.guicore.pet.controller import MihoutaoPetController
-from sllkgui.guicore.pet.events import CMD_HOP, CMD_STATE, pet_bus, reset_pet_bus
+from sllkgui.guicore.pet.events import CMD_HOP, CMD_REACT, pet_bus, reset_pet_bus
 from sllkgui.guicore.pet.settings import DEFAULTS, register_pet_page
 
 
@@ -71,14 +71,16 @@ def test_base_operations_publish_pet_events(qapp, tmp_path, monkeypatch):
 
     seen = []
     handle = pet_bus().handle("observer")
-    handle.subscribe(CMD_STATE, lambda topic, payload: seen.append((topic, payload)))
+    # 基座操作用瞬态反应（CMD_REACT）而不是保持型 CMD_STATE：
+    # 用户点一次搜索不该让宠物永久停在 searching。
+    handle.subscribe(CMD_REACT, lambda topic, payload: seen.append((topic, payload)))
     handle.subscribe(CMD_HOP, lambda topic, payload: seen.append((topic, payload)))
 
     assert on_theme_cycled("dracula") is True
     assert on_settings_opened() is True
     assert on_search_opened() is True
     assert on_layout_changed("overlay") is True
-    states = [payload["state"] for topic, payload in seen if topic == CMD_STATE]
+    states = [payload["state"] for topic, payload in seen if topic == CMD_REACT]
     assert "happy" in states and "curious" in states and "searching" in states
     assert any(topic == CMD_HOP for topic, _ in seen)
     assert all(payload["from"] == "sllkgui.base" for _, payload in seen)
