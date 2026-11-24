@@ -354,6 +354,40 @@ def test_menu_items_group_plugins_and_append_base(qapp):
     ]
 
 
+def test_base_action_without_plugin_name_never_renders_blank_submenu(qapp):
+    """基座自有动作（无 plugin_id/plugin_name）不得产生标题空白的子菜单。
+
+    多块共存时块会折叠成子菜单，块名为空就会渲染出一个「文案缺失」的
+    空标题子菜单——桌面宠物的托盘项曾因此不可辨识。
+    """
+    service = TrayService()
+    handle = TrayHandle(service, "p1", (Permission.TRAY,), "P1")
+    handle.add_action("a", "A", lambda: None)
+    service.attach_window(lambda: None, lambda: None, lambda: None)
+    # 不传 plugin_id/plugin_name：模拟基座自有动作
+    service.add_action("pet.toggle", "T", lambda: None, order=10)
+
+    items = service.menu_items()
+    submenus = [item for item in items if getattr(item, "items", None)]
+    assert submenus, "多块共存时应折叠成子菜单"
+    assert all(str(item.label).strip() for item in submenus), "子菜单标题不能为空"
+
+
+def test_set_action_group_name_refreshes_submenu_title(qapp):
+    """语言切换后就地刷新块名（子菜单标题），无需重新注册动作。"""
+    service = TrayService()
+    handle = TrayHandle(service, "p1", (Permission.TRAY,), "P1")
+    handle.add_action("a", "A", lambda: None)
+    service.attach_window(lambda: None, lambda: None, lambda: None)
+    service.add_action("pet.toggle", "T", lambda: None, order=10, plugin_name="桌面宠物")
+    assert [i.label for i in service.menu_items() if getattr(i, "items", None)] == ["桌面宠物", "P1"]
+
+    service.set_action_group_name("pet.toggle", "Desktop pet")
+    labels = [i.label for i in service.menu_items() if getattr(i, "items", None)]
+    assert "Desktop pet" in labels
+    assert "桌面宠物" not in labels
+
+
 def test_menu_trigger_dispatches_plugin_action(qapp):
     service = TrayService()
     called: list[str] = []

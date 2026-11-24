@@ -17,6 +17,15 @@ from sllkgui.appcore import Language
 
 from .engine.core import GROUPS, PALETTE, SHAPES, MihoutaoEngine, canvas_scale
 
+#: 规格表里的分组英文标签 → 语言键后缀。spec.json 与原型同源、标签不可改，
+#: 因此用这张固定映射把「规格」和「显示文案」解耦。
+_GROUP_KEY: dict[str, str] = {
+    "Lifecycle": "lifecycle",
+    "Reactions": "reactions",
+    "Agent morphs": "agentmorphs",
+    "Product lifecycle": "productlifecycle",
+}
+
 
 class PetWindow(QWidget):
     """常驻桌面的透明宠物窗口。
@@ -51,8 +60,8 @@ class PetWindow(QWidget):
         self.setAttribute(Qt.WidgetAttribute.WA_NoSystemBackground, True)
         self.setFixedSize(self._size, self._size)
         self.setMouseTracking(True)
-        self.setWindowTitle(self._text("PetSettingsTitle", "猕猴桃桌面宠物"))
-        self.setToolTip(self._text("PetTooltip", "猕猴桃桌面宠物 · 左键拖拽 / 双击跳跃 / 右键菜单"))
+        self.setWindowTitle(self._text("PetSettingsTitle", "桌面宠物"))
+        self.setToolTip(self._text("PetTooltip", "桌面宠物 · 左键拖拽 / 双击跳跃 / 右键菜单"))
 
         self._timer = QTimer(self)
         self._timer.setInterval(16)
@@ -64,10 +73,21 @@ class PetWindow(QWidget):
         """读取基座语言资源键，缺失时回退到内置中文。"""
         return str(Language.resolve_key("language.UI.ui_" + key, fallback))
 
+    @classmethod
+    def _state_text(cls, name: str) -> str:
+        """情绪状态显示名（``idle`` → 空闲）；缺失时回落为状态名本身。"""
+        return cls._text("PetState_" + name, name)
+
+    @classmethod
+    def _group_text(cls, label: str) -> str:
+        """分组显示名；未登记的分组沿用规格表标签，绝不显示空白。"""
+        suffix = _GROUP_KEY.get(label)
+        return cls._text("PetGroup_" + suffix, label) if suffix else label
+
     def refresh_texts(self) -> None:
         """语言切换后刷新标题与提示（菜单为即时构建，下次打开即为新文案）。"""
-        self.setWindowTitle(self._text("PetSettingsTitle", "猕猴桃桌面宠物"))
-        self.setToolTip(self._text("PetTooltip", "猕猴桃桌面宠物 · 左键拖拽 / 双击跳跃 / 右键菜单"))
+        self.setWindowTitle(self._text("PetSettingsTitle", "桌面宠物"))
+        self.setToolTip(self._text("PetTooltip", "桌面宠物 · 左键拖拽 / 双击跳跃 / 右键菜单"))
 
     def _place_initial(self) -> None:
         screen = QApplication.primaryScreen()
@@ -152,24 +172,33 @@ class PetWindow(QWidget):
         self.engine.hop_once()
 
     def _show_menu(self, pos: QPoint) -> None:
+        self._build_menu().exec(pos)
+
+    def _build_menu(self) -> QMenu:
+        """构建右键菜单（不弹出）。
+
+        构建与弹出分离：菜单文案要在语言切换后立即重建，测试也需要
+        在不进入模态事件循环的前提下断言每一项的文案。
+        """
         menu = QMenu(self)
+        # 分组与状态名都走语言资源：spec.json 的英文标签只用于查键，不上屏。
         for group in GROUPS:
-            sub = menu.addMenu(group["label"])
+            sub = menu.addMenu(self._group_text(group["label"]))
             for name in group["states"]:
-                action = sub.addAction(name)
+                action = sub.addAction(self._state_text(name))
                 action.setCheckable(True)
                 action.setChecked(self.engine.state == name)
                 action.triggered.connect(lambda _checked=False, n=name: self._set_state(n))
         menu.addSeparator()
         shapes_menu = menu.addMenu(self._text("PetMenuShapes", "果形"))
         for shape_id, shape in SHAPES.items():
-            action = shapes_menu.addAction(shape["label"])
+            action = shapes_menu.addAction(self._text("PetShape_" + shape_id, str(shape["label"])))
             action.setCheckable(True)
             action.setChecked(self.engine.shape_name == shape_id)
             action.triggered.connect(lambda _checked=False, s=shape_id: self._set_shape(s))
         colors_menu = menu.addMenu(self._text("PetMenuColors", "果肉色"))
         for color_id, pal in PALETTE.items():
-            action = colors_menu.addAction(pal["label"])
+            action = colors_menu.addAction(self._text("PetColor_" + color_id, str(pal["label"])))
             action.setCheckable(True)
             action.setChecked(self.engine.color_id == color_id)
             action.triggered.connect(lambda _checked=False, c=color_id: self._set_color(c))
@@ -184,7 +213,7 @@ class PetWindow(QWidget):
         pin.triggered.connect(self._set_pinned)
         menu.addSeparator()
         menu.addAction(self._text("PetMenuQuit", "退出宠物"), lambda: self.on_quit() if self.on_quit else self.stop())
-        menu.exec(pos)
+        return menu
 
     def _set_state(self, name: str) -> None:
         self.engine.set_mode("hold")

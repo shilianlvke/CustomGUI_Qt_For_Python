@@ -78,13 +78,21 @@ class MihoutaoPetController:
             Logger.debug("跳过宠物托盘动作：基座托盘尚未就绪")
             return
         for action_id, key, fallback, callback, order in (
-            ("pet.toggle", "language.UI.ui_PetShortcutToggle", "显示/隐藏猕猴桃", self.toggle, 10),
-            ("pet.spin", "language.UI.ui_PetShortcutSpin", "猕猴桃转一圈", self.spin, 20),
-            ("pet.hop", "language.UI.ui_PetShortcutHop", "猕猴桃跳一下", self.hop, 30),
+            ("pet.toggle", "language.UI.ui_PetShortcutToggle", "显示/隐藏宠物", self.toggle, 10),
+            ("pet.spin", "language.UI.ui_PetShortcutSpin", "宠物转一圈", self.spin, 20),
+            ("pet.hop", "language.UI.ui_PetShortcutHop", "宠物跳一下", self.hop, 30),
         ):
             text = str(Language.resolve_key(key, fallback))
             try:
-                tray.add_action(action_id, text, callback, order=order)
+                # 必须给 plugin_name：多块共存时块会折叠成子菜单，
+                # 空块名会渲染出一个标题空白的子菜单（文案缺失）。
+                tray.add_action(
+                    action_id,
+                    text,
+                    callback,
+                    order=order,
+                    plugin_name=str(Language.resolve_key("language.UI.ui_PetTrayGroup", "桌面宠物")),
+                )
             except (AttributeError, TypeError) as exc:
                 Logger.debug(f"宠物托盘动作注册失败 {action_id}: {exc}")
                 continue
@@ -228,13 +236,17 @@ class MihoutaoPetController:
         if self.window is not None:
             self.window.refresh_texts()
         if self._tray is not None:
+            group_name = str(Language.resolve_key("language.UI.ui_PetTrayGroup", "桌面宠物"))
             for action_id, key, fallback in (
-                ("pet.toggle", "language.UI.ui_PetShortcutToggle", "显示/隐藏猕猴桃"),
-                ("pet.spin", "language.UI.ui_PetShortcutSpin", "猕猴桃转一圈"),
-                ("pet.hop", "language.UI.ui_PetShortcutHop", "猕猴桃跳一下"),
+                ("pet.toggle", "language.UI.ui_PetShortcutToggle", "显示/隐藏宠物"),
+                ("pet.spin", "language.UI.ui_PetShortcutSpin", "宠物转一圈"),
+                ("pet.hop", "language.UI.ui_PetShortcutHop", "宠物跳一下"),
             ):
                 try:
                     self._tray.set_action_text(action_id, str(Language.resolve_key(key, fallback)))
+                    # 块名（子菜单标题）同样随语言刷新，否则切换语言后
+                    # 托盘里仍留着上一门语言的「桌面宠物」。
+                    self._tray.set_action_group_name(action_id, group_name)
                 except (AttributeError, TypeError) as exc:
                     Logger.debug(f"宠物托盘文案刷新失败 {action_id}: {exc}")
         # 快捷键说明随语言更新（同一 owner 覆盖注册，不会重复叠加）

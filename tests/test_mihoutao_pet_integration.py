@@ -96,13 +96,60 @@ def test_pet_language_keys():
     """四种语言都提供宠物键，切换语言后文案键可解析。"""
     from sllkgui.appcore import AppLanguages
 
-    expected = 33
+    # 33 个基础键 + 73 个菜单键（托盘分组、4 个情绪分组、39 状态、18 果形、11 果肉色）
+    expected = 33 + 73
     for locale in ("zh_cn", "zh_tw", "en_us", "ja_jp"):
         table = AppLanguages[locale].data
         ui = table.get("UI", {})
         keys = [key for key in ui if key.startswith("ui_Pet")]
         assert len(keys) == expected, locale
-    assert AppLanguages["en_us"].data["UI"]["ui_PetSettingsTitle"] == "Mihoutao Desktop Pet"
+    # 产品名统一为「桌面宠物」，不再把内部代号暴露到界面
+    assert AppLanguages["en_us"].data["UI"]["ui_PetSettingsTitle"] == "Desktop pet"
+    assert AppLanguages["zh_cn"].data["UI"]["ui_PetSettingsTitle"] == "桌面宠物"
+
+
+def test_pet_menu_texts_are_localized(qapp):
+    """右键菜单的每个分组/状态/果形/果肉色都有译文，且不出现裸 key。"""
+    from sllkgui.appcore import AppLanguages
+    from sllkgui.guicore.pet.engine.core import GROUPS, PALETTE, SHAPES
+    from sllkgui.guicore.pet.pet_window import _GROUP_KEY
+
+    for locale in ("zh_cn", "zh_tw", "en_us", "ja_jp"):
+        ui = AppLanguages[locale].data.get("UI", {})
+        missing = [g["label"] for g in GROUPS if "ui_PetGroup_" + _GROUP_KEY[g["label"]] not in ui]
+        assert not missing, f"{locale} 缺少分组文案: {missing}"
+        missing = [s for s in SHAPES if "ui_PetShape_" + s not in ui]
+        assert not missing, f"{locale} 缺少果形文案: {missing}"
+        missing = [c for c in PALETTE if "ui_PetColor_" + c not in ui]
+        assert not missing, f"{locale} 缺少果肉色文案: {missing}"
+        missing = [n for g in GROUPS for n in g["states"] if "ui_PetState_" + n not in ui]
+        assert not missing, f"{locale} 缺少情绪文案: {missing}"
+        assert ui.get("ui_PetTrayGroup"), locale
+
+
+def test_pet_context_menu_has_no_blank_or_raw_labels(qapp):
+    """右键菜单不出现空白项，也不出现未翻译的英文分组名。"""
+    from sllkgui.guicore.pet.engine.core import MihoutaoEngine
+    from sllkgui.guicore.pet.pet_window import PetWindow
+
+    window = PetWindow(MihoutaoEngine())
+    try:
+        menu = window._build_menu()
+        labels = [action.text() for action in menu.actions() if not action.isSeparator()]
+        assert labels, "菜单不应为空"
+        assert all(label.strip() for label in labels), f"存在空白文案: {labels}"
+        # spec.json 里的原型英文分组名不得直接上屏
+        for raw in ("Lifecycle", "Reactions", "Agent morphs", "Product lifecycle"):
+            assert raw not in labels, f"分组名未本地化: {raw}"
+        # 子菜单内部同样不允许空白项
+        for action in menu.actions():
+            sub = action.menu()
+            if sub is None:
+                continue
+            inner = [child.text() for child in sub.actions()]
+            assert all(text.strip() for text in inner), f"{action.text()} 子菜单存在空白项"
+    finally:
+        window.close()
 
 
 def test_pet_accent_color(qapp):

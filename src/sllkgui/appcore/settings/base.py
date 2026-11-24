@@ -137,7 +137,9 @@ def _pet_page() -> SettingsPage:
     shape_options, color_options = _pet_options()
     return SettingsPage(
         page_id=PAGE_PET,
-        title="猕猴桃桌面宠物",
+        # 产品名统一为「桌面宠物」：与托盘菜单、宠物右键菜单一致，
+        # 不再把内部代号（猕猴桃）暴露到界面上。
+        title="桌面宠物",
         hint="常驻桌面宠物的展示、外观与交互。",
         title_key="language.UI.ui_PetSettingsTitle",
         hint_key="language.UI.ui_PetSettingsHint",

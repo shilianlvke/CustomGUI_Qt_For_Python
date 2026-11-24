@@ -138,7 +138,11 @@ def _group_blocks(actions: Iterable[TrayAction]) -> list[_Block]:
     for action in actions:
         block = blocks.get(action.plugin_id)
         if block is None:
-            block = _Block(action.plugin_id, action.plugin_name or action.plugin_id)
+            # 块名不能为空：多块共存时块会折叠成子菜单，空块名会渲染出
+            # 一个标题空白的子菜单（菜单项「文案缺失」）。基座自有动作没有
+            # plugin_id/plugin_name，这里兜底成基座标签。
+            name = action.plugin_name or action.plugin_id or _tray_text("UI.ui_TrayBaseActions", "基座")
+            block = _Block(action.plugin_id, name)
             blocks[action.plugin_id] = block
         block.actions.append(action)
     ordered = sorted(blocks.values(), key=_block_key)
@@ -409,6 +413,13 @@ class TrayService:
         submenu: bool | None = None,
         enabled: bool = True,
     ) -> None:
+        """注册一条托盘动作。
+
+        ``plugin_name`` 决定菜单里的块名（子菜单标题）：多块共存时块会折叠成
+        子菜单，块名为空就会渲染出一个**标题空白**的子菜单。基座自有动作
+        （如桌面宠物）不传 ``plugin_id``，因此必须显式给出 ``plugin_name``，
+        否则会踩到这个问题。
+        """
         self._actions[action_id] = TrayAction(
             action_id=action_id,
             text=text,
@@ -428,6 +439,14 @@ class TrayService:
         if action is None or action.text == text:
             return
         action.text = text
+        self._rebuild_menu()
+
+    def set_action_group_name(self, action_id: str, name: str) -> None:
+        """更新动作所属块名（子菜单标题），用于语言切换后就地刷新文案。"""
+        action = self._actions.get(action_id)
+        if action is None or action.plugin_name == name:
+            return
+        action.plugin_name = name
         self._rebuild_menu()
 
     def set_action_enabled(self, action_id: str, enabled: bool) -> None:
