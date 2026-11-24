@@ -21,8 +21,11 @@
 ```text
 src/sllkgui/guicore/pet/
 ├── __init__.py          # 公开面：MihoutaoPetController / PetWindow
-├── controller.py        # 生命周期、偏好读写、托盘动作
-├── pet_window.py        # 无边框/置顶/透明窗口 + 右键菜单
+├── controller.py        # 生命周期、基座能力统一接入与状态同步
+├── settings.py          # 基座统一设置页（plugin.sllkgui.pet）
+├── shortcuts.py         # 基座快捷键注册表接入与冲突提示
+├── legacy.py            # 旧 pet.yaml 一次性迁移
+├── pet_window.py        # 无边框/置顶/透明窗口 + 右键菜单（随语言刷新）
 └── engine/
     ├── core.py          # 角色引擎：几何 / 眼型 / 装饰 / 弹簧 / 状态机
     └── spec.json        # 规格唯一真源，与原型 window.MIHOUTAO_SPEC 逐字段一致
@@ -49,26 +52,41 @@ src/sllkgui/guicore/pet/
 
 | 操作 | 效果 |
 | --- | --- |
-| 左键拖拽 | 移动宠物，位置写入偏好 |
+| 左键拖拽 | 移动宠物 |
 | 双击 | 跳一下（`hopOnce`） |
 | 右键 | 菜单：39 态 / 18 果形 / 11 色 / 转圈 / 跳跃 / 粒子 / 置顶 / 退出 |
-| 托盘 | 显示隐藏、转一圈、跳一下 |
+| 托盘 | 显示隐藏、转一圈、跳一下（基座托盘就绪时才注册） |
+| 快捷键 | Ctrl/⌘+Alt+P 显隐、R 转圈、J 跳跃、B 粒子 |
+
+## 基座基础能力接入
+
+| 基础项 | 接入方式 |
+| --- | --- |
+| 设置页 | `plugin.sllkgui.pet` 命名空间注册到统一设置系统；设置窗口「猕猴桃桌面宠物」页含 7 项配置 |
+| 配置读写 | SettingsSession / SettingsStore 统一读写；`settings_change_bus` 保存后即时同步 |
+| 快捷键 | `shortcut_registry` 的 `sllkgui.pet` owner；冲突时拒绝注册并 toast 提示 |
+| 主题色 | 订阅 ThemeManager，强调色覆盖默认描边/徽标；状态显式配色保持原型 |
+| 语言 | 订阅 Language，标题/tooltip/菜单/托盘/快捷键说明随语言刷新 |
+| 生命周期 | start 注册、shutdown 逐一退订并注销快捷键/托盘动作，全部幂等 |
+
+快捷键与托盘动作使用基座已有机制：快捷键冲突不会覆盖基座锁定项；托盘只在基座托盘处于激活状态时添加动作，避免重复拉起托盘。
 
 ## 偏好
 
-写在 `<data_root>/settings/pet.yaml`（与 `user.yaml` 分离，避免污染基座 schema）：
+统一写在 `<data_root>/settings/plugins/sllkgui.pet.yaml`（由基座 SettingsStore 管理）：
 
 ```yaml
 show_pet: true        # 是否显示
-follow_pointer: true  # 眼睛跟随鼠标
 pinned: true          # 窗口置顶
+follow_pointer: true  # 眼睛跟随鼠标
 shape: blob           # 果形 id
 color: green          # 果肉色 id
 size: 220             # 窗口边长 px（96–480）
 deco_scale: 1.32      # 特效层缩放（0.55–1.5）
-pos_x / pos_y: null   # 上次位置
 ```
 
+旧版 `<data_root>/settings/pet.yaml` 在首次启动时会迁移到上述文件并改名 `.migrated` 备份，只迁移一次。
+窗口位置 `pos_x/pos_y` 仅保存在内存中，避免拖拽期间高频写盘。
 读写失败只告警，绝不阻断启动；非法值回落默认。
 
 ## 降级行为

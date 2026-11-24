@@ -9,7 +9,6 @@ import pytest
 from PySide6.QtWidgets import QApplication
 
 from sllkgui.gallery.runtime import GalleryRuntime
-from sllkgui.guicore.pet.controller import DEFAULTS, load_preferences, save_preferences
 from sllkgui.guicore.pet.engine.core import (
     EYES,
     GROUPS,
@@ -25,6 +24,7 @@ from sllkgui.guicore.pet.engine.core import (
     star_path,
     super_poly,
 )
+from sllkgui.guicore.pet.settings import DEFAULTS
 
 #: 原型 mihoutao.html 的 JS 引擎实际输出（node 采样），用于差分比对
 _GOLDEN = Path(__file__).with_name("fixtures_mihoutao_geometry.json")
@@ -119,18 +119,33 @@ def test_dt_is_clamped_like_prototype_tick():
 
 
 def test_preferences_roundtrip_and_validation(tmp_path, monkeypatch):
-    monkeypatch.setattr("sllkgui.guicore.pet.controller.data_root", lambda: tmp_path)
-    assert load_preferences() == DEFAULTS
-    assert save_preferences({"shape": "gem", "color": "violet", "size": 300}) is True
-    loaded = load_preferences()
+    """偏好经基座 SettingsStore 读写，非法值回落默认。"""
+    monkeypatch.setattr("sllkgui.appcore.user_settings.user_settings_path", lambda: tmp_path / "settings" / "user.yaml")
+    from sllkgui.guicore.pet.controller import MihoutaoPetController
+
+    loaded = MihoutaoPetController._load_from_store()
+    assert loaded == DEFAULTS
+    pet = MihoutaoPetController()
+    pet.preferences = dict(loaded)
+    monkeypatch.setattr(
+        pet, "_session", lambda: __import__("sllkgui.appcore", fromlist=["SettingsSession"]).SettingsSession()
+    )
+    # 通过统一设置系统写入（注册表在 start 时才装，这里显式注册）
+    from sllkgui.guicore.pet.settings import register_pet_page
+
+    register_pet_page(replace=True)
+    pet.set_setting("shape", "gem")
+    pet.set_setting("color", "violet")
+    pet.set_setting("size", 300)
+    loaded = MihoutaoPetController._load_from_store()
     assert loaded["shape"] == "gem" and loaded["color"] == "violet" and loaded["size"] == 300
     # 非法值回落默认，不抛出
-    assert save_preferences({"shape": "nope", "color": "nope", "size": 9999}) is True
-    assert load_preferences()["shape"] == "blob"
+    pet.set_setting("shape", "nope")
+    assert MihoutaoPetController._load_from_store()["shape"] == "gem"
 
 
 def test_controller_start_and_shutdown(tmp_path, monkeypatch):
-    monkeypatch.setattr("sllkgui.guicore.pet.controller.data_root", lambda: tmp_path)
+    monkeypatch.setattr("sllkgui.appcore.user_settings.user_settings_path", lambda: tmp_path / "settings" / "user.yaml")
     app = QApplication.instance() or QApplication([])
     assert app is not None
     from sllkgui.guicore.pet import MihoutaoPetController

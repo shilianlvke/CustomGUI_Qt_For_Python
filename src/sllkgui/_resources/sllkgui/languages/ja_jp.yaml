@@ -261,6 +261,40 @@ UI:
   ui_TrayQuit: 終了
   ui_TrayMorePlugins: その他のプラグイン
 
+  # 桌面宠物
+  ui_PetSettingsTitle: "キウイデスクトップペット"
+  ui_PetSettingsHint: "常駐デスクトップペットの表示・外観・操作。"
+  ui_PetSectionDisplay: "表示"
+  ui_PetSectionDisplayHint: "ペットの表示とウィンドウ動作を制御します。"
+  ui_PetShow: "ペットを表示"
+  ui_PetShowHint: "起動時にペットを自動表示します。"
+  ui_PetPinned: "常に最前面"
+  ui_PetPinnedHint: "ペットウィンドウを常に最前面に保持します。"
+  ui_PetFollow: "目がポインターを追跡"
+  ui_PetFollowHint: "ペットの視線がマウスポインターを追います。"
+  ui_PetSectionAppearance: "外観"
+  ui_PetSectionAppearanceHint: "果形、果肉色、エフェクトの大きさ。"
+  ui_PetShape: "果形"
+  ui_PetShapeHint: "ペットの断面形状を選択します。"
+  ui_PetColor: "果肉色"
+  ui_PetColorHint: "ペットの果肉の色調を選択します。"
+  ui_PetSize: "ペットサイズ(px)"
+  ui_PetSizeHint: "ペットウィンドウの一辺のピクセル数。"
+  ui_PetDecoScale: "エフェクト倍率"
+  ui_PetDecoScaleHint: "装飾レイヤー（レーダー、きらめき等）の倍率。"
+  ui_PetShortcutToggle: "ペットの表示/非表示"
+  ui_PetShortcutSpin: "ペットを回転"
+  ui_PetShortcutHop: "ペットをジャンプ"
+  ui_PetShortcutBurst: "パーティクル"
+  ui_PetMenuStates: "感情状態"
+  ui_PetMenuShapes: "果形"
+  ui_PetMenuColors: "果肉色"
+  ui_PetMenuSpin: "回転"
+  ui_PetMenuHop: "ジャンプ"
+  ui_PetMenuBurst: "パーティクル"
+  ui_PetMenuPin: "最前面に固定"
+  ui_PetMenuQuit: "ペットを終了"
+  ui_PetTooltip: "キウイペット · ドラッグ / ダブルクリックでジャンプ / 右クリックでメニュー"
 TEXT:
   home_page_welcome: こんにちは！SllkGUI です ~
   login: SllkGUI にログイン

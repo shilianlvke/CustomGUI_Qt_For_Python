@@ -7,6 +7,12 @@ minor 与 patch 保持向后兼容。
 
 ---
 
+## 未发布
+
+### 变更
+
+- **桌面宠物统一接入基座基础能力**：宠物设置页改用 `plugin.sllkgui.pet` 命名空间注册到统一设置系统（7 项配置），值由 SettingsStore 读写、settings_change_bus 保存后即时同步；旧 `settings/pet.yaml` 一次性迁移并备份。快捷键经 `shortcut_registry` 注册（冲突拒绝并 toast 提示），主题强调色与语言切换通过订阅实时响应，托盘动作、快捷键说明与窗口文案随语言刷新；所有订阅在 shutdown 时幂等退订。详见 [桌面宠物](docs/PET.md)。
+
 ## 4.3.0（2026-11-24）
 
 ### 新增

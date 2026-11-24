@@ -195,6 +195,8 @@ class MihoutaoEngine:
         self.saccade_at = 1200.0
         self.saccade = [0.0, 0.0]
         self.shadow_id = "shadow-mihoutao"
+        #: 主题强调色覆盖：仅作用于未显式声明 ring 的状态，保留原型语义
+        self.accent_color: str | None = None
 
         self.set_color(self.color_id)
         self.set_state("curious")
@@ -273,6 +275,10 @@ class MihoutaoEngine:
             k = self.deco_scale
             spots = [(0, -1.17), (-1.09, -0.65), (1.09, -0.56), (0.92, 0.56), (-0.94, 0.61)]
             self.sparkle_spots = [(x * k, y * k) for x, y in spots]
+
+    def set_accent_color(self, color: str | None) -> None:
+        """设置主题强调色；传 None 恢复原型默认（影响描边与徽标底色）。"""
+        self.accent_color = color or None
 
     def set_follow_pointer(self, value: bool) -> None:
         self.follow_pointer = bool(value)
@@ -449,7 +455,7 @@ class MihoutaoEngine:
                 d += f"{'L' if i else 'M'}{x + sign * dx + gx:.4f} {y + gy + dy:.4f}"
             return d + "Z"
 
-        ring = cfg.get("ring", SKIN)
+        ring = cfg.get("ring") or self.accent_color or SKIN
         k = self.deco_scale
         deco_back = self._render_deco_back(t, k)
         deco_front = self._render_deco_front(t, k)
@@ -501,7 +507,7 @@ class MihoutaoEngine:
         kind = self.deco_kind
         ink = SKIN
         cfg = STATES[self.state]
-        ring = cfg.get("ring", "#B24A3C")
+        ring = cfg.get("ring") or self.accent_color or "#B24A3C"
         fade = clamp((t - self.state_at) / 260, 0, 1)
         if kind == "dots":
             a0 = (t / 900) * math.tau

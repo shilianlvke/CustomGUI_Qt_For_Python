@@ -261,6 +261,40 @@ UI:
   # Bucket for plugin actions beyond the tools budget
   ui_TrayMorePlugins: More plugins
 
+  # 桌面宠物
+  ui_PetSettingsTitle: "Mihoutao Desktop Pet"
+  ui_PetSettingsHint: "Display, appearance and interaction of the always-on-top desktop pet."
+  ui_PetSectionDisplay: "Display"
+  ui_PetSectionDisplayHint: "Control pet visibility and window behavior."
+  ui_PetShow: "Show pet"
+  ui_PetShowHint: "Show the pet when the base starts."
+  ui_PetPinned: "Keep on top"
+  ui_PetPinnedHint: "Always keep the pet window above other windows."
+  ui_PetFollow: "Eyes follow pointer"
+  ui_PetFollowHint: "The pet gaze follows the mouse pointer."
+  ui_PetSectionAppearance: "Appearance"
+  ui_PetSectionAppearanceHint: "Body shape, flesh color and effect scale."
+  ui_PetShape: "Body shape"
+  ui_PetShapeHint: "Geometry of the pet cross-section."
+  ui_PetColor: "Flesh color"
+  ui_PetColorHint: "Color tone of the pet flesh."
+  ui_PetSize: "Pet size (px)"
+  ui_PetSizeHint: "Side length of the pet window in pixels."
+  ui_PetDecoScale: "Effect scale"
+  ui_PetDecoScaleHint: "Scale of decoration layers (radar, sparkles, etc.)."
+  ui_PetShortcutToggle: "Show/hide pet"
+  ui_PetShortcutSpin: "Spin pet"
+  ui_PetShortcutHop: "Hop pet"
+  ui_PetShortcutBurst: "Pet particle burst"
+  ui_PetMenuStates: "Moods"
+  ui_PetMenuShapes: "Shapes"
+  ui_PetMenuColors: "Colors"
+  ui_PetMenuSpin: "Spin"
+  ui_PetMenuHop: "Hop"
+  ui_PetMenuBurst: "Burst"
+  ui_PetMenuPin: "Keep on top"
+  ui_PetMenuQuit: "Exit pet"
+  ui_PetTooltip: "Mihoutao pet · drag / double-click to hop / right-click for menu"
 TEXT:
   home_page_welcome: Hello! I am SllkGUI ~
   login: Log in to SllkGUI

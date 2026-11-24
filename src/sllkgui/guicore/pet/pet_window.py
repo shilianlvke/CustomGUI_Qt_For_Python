@@ -13,6 +13,8 @@ from PySide6.QtGui import QCursor, QMouseEvent, QPainter, QPixmap
 from PySide6.QtSvg import QSvgRenderer
 from PySide6.QtWidgets import QApplication, QMenu, QWidget
 
+from sllkgui.appcore import Language
+
 from .engine.core import GROUPS, PALETTE, SHAPES, MihoutaoEngine, canvas_scale
 
 
@@ -49,13 +51,23 @@ class PetWindow(QWidget):
         self.setAttribute(Qt.WidgetAttribute.WA_NoSystemBackground, True)
         self.setFixedSize(self._size, self._size)
         self.setMouseTracking(True)
-        self.setWindowTitle("猕猴桃桌面宠物")
-        self.setToolTip("猕猴桃桌面宠物 · 左键拖拽 / 双击跳跃 / 右键菜单")
+        self.setWindowTitle(self._text("PetSettingsTitle", "猕猴桃桌面宠物"))
+        self.setToolTip(self._text("PetTooltip", "猕猴桃桌面宠物 · 左键拖拽 / 双击跳跃 / 右键菜单"))
 
         self._timer = QTimer(self)
         self._timer.setInterval(16)
         self._timer.timeout.connect(self._tick)
         self._place_initial()
+
+    @staticmethod
+    def _text(key: str, fallback: str) -> str:
+        """读取基座语言资源键，缺失时回退到内置中文。"""
+        return str(Language.resolve_key("language.UI.ui_" + key, fallback))
+
+    def refresh_texts(self) -> None:
+        """语言切换后刷新标题与提示（菜单为即时构建，下次打开即为新文案）。"""
+        self.setWindowTitle(self._text("PetSettingsTitle", "猕猴桃桌面宠物"))
+        self.setToolTip(self._text("PetTooltip", "猕猴桃桌面宠物 · 左键拖拽 / 双击跳跃 / 右键菜单"))
 
     def _place_initial(self) -> None:
         screen = QApplication.primaryScreen()
@@ -149,29 +161,29 @@ class PetWindow(QWidget):
                 action.setChecked(self.engine.state == name)
                 action.triggered.connect(lambda _checked=False, n=name: self._set_state(n))
         menu.addSeparator()
-        shapes_menu = menu.addMenu("果形")
+        shapes_menu = menu.addMenu(self._text("PetMenuShapes", "果形"))
         for shape_id, shape in SHAPES.items():
             action = shapes_menu.addAction(shape["label"])
             action.setCheckable(True)
             action.setChecked(self.engine.shape_name == shape_id)
             action.triggered.connect(lambda _checked=False, s=shape_id: self._set_shape(s))
-        colors_menu = menu.addMenu("果肉色")
+        colors_menu = menu.addMenu(self._text("PetMenuColors", "果肉色"))
         for color_id, pal in PALETTE.items():
             action = colors_menu.addAction(pal["label"])
             action.setCheckable(True)
             action.setChecked(self.engine.color_id == color_id)
             action.triggered.connect(lambda _checked=False, c=color_id: self._set_color(c))
         menu.addSeparator()
-        menu.addAction("转一圈", lambda: self.engine.spin_once())
-        menu.addAction("跳一下", lambda: self.engine.hop_once())
-        menu.addAction("粒子", lambda: self.engine.burst_once())
+        menu.addAction(self._text("PetMenuSpin", "转一圈"), lambda: self.engine.spin_once())
+        menu.addAction(self._text("PetMenuHop", "跳一下"), lambda: self.engine.hop_once())
+        menu.addAction(self._text("PetMenuBurst", "粒子"), lambda: self.engine.burst_once())
         menu.addSeparator()
-        pin = menu.addAction("保持置顶")
+        pin = menu.addAction(self._text("PetMenuPin", "保持置顶"))
         pin.setCheckable(True)
         pin.setChecked(bool(self.windowFlags() & Qt.WindowType.WindowStaysOnTopHint))
         pin.triggered.connect(self._set_pinned)
         menu.addSeparator()
-        menu.addAction("退出宠物", lambda: self.on_quit() if self.on_quit else self.stop())
+        menu.addAction(self._text("PetMenuQuit", "退出宠物"), lambda: self.on_quit() if self.on_quit else self.stop())
         menu.exec(pos)
 
     def _set_state(self, name: str) -> None:

@@ -261,6 +261,40 @@ UI:
   ui_TrayQuit: 結束
   ui_TrayMorePlugins: 更多外掛
 
+  # 桌面宠物
+  ui_PetSettingsTitle: "獼猴桃桌面寵物"
+  ui_PetSettingsHint: "常駐桌面寵物的展示、外觀與互動。"
+  ui_PetSectionDisplay: "展示"
+  ui_PetSectionDisplayHint: "控制寵物是否顯示以及視窗行為。"
+  ui_PetShow: "顯示寵物"
+  ui_PetShowHint: "啟動基座時自動顯示寵物。"
+  ui_PetPinned: "視窗置頂"
+  ui_PetPinnedHint: "始終保持寵物視窗在其他視窗之上。"
+  ui_PetFollow: "眼睛跟隨指標"
+  ui_PetFollowHint: "寵物視線跟隨滑鼠指標移動。"
+  ui_PetSectionAppearance: "外觀"
+  ui_PetSectionAppearanceHint: "果形、果肉色與特效層大小。"
+  ui_PetShape: "果形"
+  ui_PetShapeHint: "選擇寵物切面的幾何形狀。"
+  ui_PetColor: "果肉色"
+  ui_PetColorHint: "選擇寵物果肉的色調。"
+  ui_PetSize: "寵物尺寸(px)"
+  ui_PetSizeHint: "寵物視窗的邊長像素數。"
+  ui_PetDecoScale: "特效層縮放"
+  ui_PetDecoScaleHint: "裝飾層（雷達、星芒等）的縮放比例。"
+  ui_PetShortcutToggle: "顯示/隱藏寵物"
+  ui_PetShortcutSpin: "寵物轉一圈"
+  ui_PetShortcutHop: "寵物跳一下"
+  ui_PetShortcutBurst: "寵物粒子特效"
+  ui_PetMenuStates: "情緒狀態"
+  ui_PetMenuShapes: "果形"
+  ui_PetMenuColors: "果肉色"
+  ui_PetMenuSpin: "轉一圈"
+  ui_PetMenuHop: "跳一下"
+  ui_PetMenuBurst: "粒子"
+  ui_PetMenuPin: "保持置頂"
+  ui_PetMenuQuit: "退出寵物"
+  ui_PetTooltip: "獼猴桃桌面寵物 · 左鍵拖曳 / 雙擊跳躍 / 右鍵選單"
 TEXT:
   home_page_welcome: 你好！我是 SllkGUI ~
   login: 登入 SllkGUI

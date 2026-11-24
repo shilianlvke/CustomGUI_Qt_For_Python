@@ -1,115 +1,32 @@
-"""宠物控制器：常驻窗口的生命周期、偏好持久化与托盘动作。
+"""宠物控制器：常驻窗口的生命周期、基座设置同步与能力接入。
 
-与插件解耦：基座窗口层在启动后调用 start()，关闭时调用 shutdown()。
-偏好写在 <data_root>/settings/pet.yaml（与 user.yaml 分离，避免污染基座 schema），
-读写失败只告警，绝不影响启动或主窗口。
+统一接入点：
+- 设置：注册 plugin.sllkgui.pet 设置页，值由 SettingsStore 读写；
+  通过 settings_change_bus 接收保存后的变化，即时同步到引擎/窗口；
+- 主题：订阅 ThemeManager，用强调色覆盖默认描边/徽标色；
+- 语言：订阅 Language，刷新菜单、tooltip、托盘与快捷键说明；
+- 快捷键：经 shortcut_registry 注册，冲突时降级并提示；
+- 托盘：沿用基座托盘服务注册动作。
+所有订阅在 shutdown() 中逐一退订，保证生命周期一致。
 """
 
 from __future__ import annotations
 
 from typing import TYPE_CHECKING, Any
 
-import yaml
-
-from sllkgui.appcore import Logger, user_settings_path
+from sllkgui.appcore import Language, Logger, get_theme_manager, settings_change_bus
+from sllkgui.appcore.settings import SettingsSession
 
 from .engine.core import PALETTE, SHAPES, MihoutaoEngine
+from .settings import DEFAULTS, KEY_PREFIX, PET_NAMESPACE, register_pet_page
+from .shortcuts import install_pet_shortcuts, uninstall_pet_shortcuts
 
 if TYPE_CHECKING:
     from .pet_window import PetWindow
 
-SETTINGS_VERSION = 1
-
-DEFAULTS: dict[str, Any] = {
-    "show_pet": True,
-    "follow_pointer": True,
-    "pinned": True,
-    "shape": "blob",
-    "color": "green",
-    "size": 220,
-    "deco_scale": 1.32,
-    "pos_x": None,
-    "pos_y": None,
-}
-
-
-def data_root():
-    """可写数据根：从基座公开的 user.yaml 路径反推。
-
-    表现层不允许 import appcore.sysx 内部模块（见
-    tests/test_architecture_boundaries.py），此处与
-    settings_window.pages._data_root 采用同样的公开推导方式。
-    """
-    return user_settings_path().parent.parent
-
-
-def settings_path():
-    """宠物偏好文件路径（随数据根走，清理数据目录即重置）。"""
-    return data_root() / "settings" / "pet.yaml"
-
-
-def load_preferences() -> dict[str, Any]:
-    """读取偏好：缺失/损坏/非法一律回落默认值，绝不抛给调用方。"""
-    data = dict(DEFAULTS)
-    path = settings_path()
-    if not path.is_file():
-        return data
-    try:
-        raw = yaml.safe_load(path.read_text(encoding="utf-8"))
-    except (OSError, yaml.YAMLError) as exc:
-        Logger.warning(f"宠物偏好读取失败，使用默认值: {path}: {exc}")
-        return data
-    if not isinstance(raw, dict):
-        return data
-    for key, default in DEFAULTS.items():
-        value = raw.get(key, default)
-        if key in ("size",):
-            if isinstance(value, bool) or not isinstance(value, int):
-                continue
-            value = max(96, min(480, value))
-        elif key == "deco_scale":
-            if isinstance(value, bool) or not isinstance(value, (int, float)):
-                continue
-            value = max(0.55, min(1.5, float(value)))
-        elif key in ("pos_x", "pos_y"):
-            if value is not None and (isinstance(value, bool) or not isinstance(value, int)):
-                continue
-        elif key == "shape":
-            if value not in SHAPES:
-                continue
-        elif key == "color":
-            if value not in PALETTE:
-                continue
-        elif isinstance(default, bool) and not isinstance(value, bool):
-            continue
-        data[key] = value
-    return data
-
-
-def save_preferences(values: dict[str, Any]) -> bool:
-    """原子写入偏好；失败只告警并返回 False。"""
-    path = settings_path()
-    payload = {**DEFAULTS, **{k: v for k, v in values.items() if k in DEFAULTS}}
-    payload["schema_version"] = SETTINGS_VERSION
-    tmp = path.with_suffix(".yaml.tmp")
-    try:
-        path.parent.mkdir(parents=True, exist_ok=True)
-        tmp.write_text(yaml.safe_dump(payload, allow_unicode=True, sort_keys=True), encoding="utf-8")
-        import os
-
-        os.replace(tmp, path)
-    except (OSError, yaml.YAMLError) as exc:
-        Logger.warning(f"宠物偏好保存失败: {path}: {exc}")
-        try:
-            tmp.unlink(missing_ok=True)
-        except OSError:
-            pass
-        return False
-    return True
-
 
 class MihoutaoPetController:
-    """宠物宿主：持有引擎与窗口，暴露给托盘 / 设置页的动作。"""
+    """宠物宿主：持有引擎与窗口，统一接入基座各项基础能力。"""
 
     def __init__(self) -> None:
         self.preferences: dict[str, Any] = dict(DEFAULTS)
@@ -118,17 +35,30 @@ class MihoutaoPetController:
         self._tray: Any = None
         self._tray_actions: list[str] = []
         self._started = False
+        self._unsub_settings = None
+        self._unsub_theme = None
+        self._unsub_language = None
+        self._theme_manager = None
 
+    # ------------------------------------------------------------------
+    # 生命周期
+    # ------------------------------------------------------------------
     def configure(self, *, tray: Any = None) -> None:
         """注入托盘服务并注册动作（托盘不可用时静默跳过）。"""
         self._tray = tray
-        if tray is None:
+        # 基座托盘由运行时常驻拉起；宠物只往已有菜单里加动作，
+        # 不应重复触发 ensure_visible（既有托盘测试正是这条契约）。
+        if tray is None or not callable(getattr(tray, "is_active", None)):
             return
-        for action_id, text, callback, order in (
-            ("pet.toggle", "显示/隐藏猕猴桃", self.toggle, 10),
-            ("pet.spin", "猕猴桃转一圈", self.spin, 20),
-            ("pet.hop", "猕猴桃跳一下", self.hop, 30),
+        if not tray.is_active():
+            Logger.debug("跳过宠物托盘动作：基座托盘尚未就绪")
+            return
+        for action_id, key, fallback, callback, order in (
+            ("pet.toggle", "language.UI.ui_PetShortcutToggle", "显示/隐藏猕猴桃", self.toggle, 10),
+            ("pet.spin", "language.UI.ui_PetShortcutSpin", "猕猴桃转一圈", self.spin, 20),
+            ("pet.hop", "language.UI.ui_PetShortcutHop", "猕猴桃跳一下", self.hop, 30),
         ):
+            text = str(Language.resolve_key(key, fallback))
             try:
                 tray.add_action(action_id, text, callback, order=order)
             except (AttributeError, TypeError) as exc:
@@ -137,20 +67,155 @@ class MihoutaoPetController:
             self._tray_actions.append(action_id)
 
     def start(self) -> None:
-        """启动宠物：读偏好、建引擎；按偏好决定是否立即显示。"""
+        """启动宠物：注册设置页、订阅能力、读偏好、建引擎。"""
         if self._started:
             return
         self._started = True
-        self.preferences = load_preferences()
+
+        register_pet_page(replace=True)
+        self._migrate_legacy_preferences()
+        self.preferences = self._load_from_store()
+
+        self._unsub_settings = settings_change_bus().subscribe(PET_NAMESPACE, self._on_settings_changed)
+        self._theme_manager = get_theme_manager()
+        self._unsub_theme = self._theme_manager.subscribe(self._apply_theme)
+        self._unsub_language = Language.subscribe(self._apply_language)
+
         self.engine = MihoutaoEngine(
             shape=str(self.preferences["shape"]),
             color=str(self.preferences["color"]),
         )
+        self._apply_theme()
         self.engine.set_deco_scale(float(self.preferences["deco_scale"]))
         self.engine.set_follow_pointer(bool(self.preferences["follow_pointer"]))
         if bool(self.preferences["show_pet"]):
             self.show()
+        install_pet_shortcuts(self)
 
+    def shutdown(self) -> None:
+        """幂等释放：停计时器、退订、注销快捷键并销毁窗口。"""
+        if not self._started:
+            return
+        for unsubscribe in (self._unsub_settings, self._unsub_theme, self._unsub_language):
+            if unsubscribe is not None:
+                try:
+                    unsubscribe()
+                except Exception as exc:  # noqa: BLE001 - 退订失败不阻断退出
+                    Logger.debug(f"宠物能力退订失败: {exc}")
+        self._unsub_settings = self._unsub_theme = self._unsub_language = None
+        uninstall_pet_shortcuts()
+        if self.window is not None:
+            try:
+                self.window.stop()
+                self.window.close()
+            except RuntimeError:
+                pass
+            self.window = None
+        self.engine = None
+        if self._tray is not None:
+            for action_id in self._tray_actions:
+                try:
+                    self._tray.remove_action(action_id)
+                except (AttributeError, RuntimeError):
+                    pass
+        self._tray_actions.clear()
+        self._started = False
+
+    # ------------------------------------------------------------------
+    # 设置读写与同步
+    # ------------------------------------------------------------------
+    @staticmethod
+    def _session() -> SettingsSession:
+        return SettingsSession()
+
+    @staticmethod
+    def _load_from_store() -> dict[str, Any]:
+        """从基座 SettingsStore 读取宠物偏好，缺失/损坏回落默认。"""
+        values = dict(DEFAULTS)
+        try:
+            session = MihoutaoPetController._session()
+            page = session.registry.page("pet", namespace=PET_NAMESPACE)
+            if page is None:
+                return values
+            for key, default in DEFAULTS.items():
+                full = KEY_PREFIX + key
+                try:
+                    raw = session.value(full)
+                except Exception:  # noqa: BLE001 - 未注册键按默认处理
+                    continue
+                normalized = _normalize(key, raw, default)
+                if normalized is not None:
+                    values[key] = normalized
+        except Exception as exc:  # noqa: BLE001 - 读取失败只告警并回落默认
+            Logger.warning(f"宠物设置读取失败，使用默认值: {exc}")
+        return values
+
+    @staticmethod
+    def _migrate_legacy_preferences() -> None:
+        """把旧 settings/pet.yaml 迁移一次到统一设置存储。"""
+        from .legacy import migrate_legacy_pet_preferences
+
+        migrate_legacy_pet_preferences()
+
+    def _on_settings_changed(self, changes: dict[str, Any]) -> None:
+        """设置页保存后的统一同步入口（键为短键）。"""
+        for key, value in changes.items():
+            if key not in DEFAULTS:
+                continue
+            normalized = _normalize(key, value, DEFAULTS[key])
+            if normalized is not None:
+                self.preferences[key] = normalized
+        self._sync_all()
+
+    def _sync_all(self) -> None:
+        """把当前偏好一次性应用到引擎/窗口（设置变化与初始化共用）。"""
+        if self.engine is None:
+            return
+        p = self.preferences
+        if self.engine.shape_name != p["shape"]:
+            self.engine.set_shape(str(p["shape"]))
+        if self.engine.color_id != p["color"]:
+            self.engine.set_color(str(p["color"]))
+        self.engine.set_deco_scale(float(p["deco_scale"]))
+        self.engine.set_follow_pointer(bool(p["follow_pointer"]))
+        if self.window is not None:
+            self.window.set_pinned(bool(p["pinned"]))
+        if bool(p["show_pet"]):
+            self.show()
+        else:
+            self.hide(run_task=False)
+
+    def _apply_theme(self) -> None:
+        """主题/强调色变化：只覆盖原型默认 ring，保留状态显式配色。"""
+        if self.engine is None or self._theme_manager is None:
+            return
+        try:
+            accent = str(getattr(self._theme_manager, "accent", "") or "")
+        except Exception as exc:  # noqa: BLE001
+            Logger.debug(f"读取主题强调色失败: {exc}")
+            accent = ""
+        self.engine.set_accent_color(accent or None)
+
+    def _apply_language(self) -> None:
+        """语言切换：就地刷新窗口/托盘/快捷键文案，不重复注册动作。"""
+        if self.window is not None:
+            self.window.refresh_texts()
+        if self._tray is not None:
+            for action_id, key, fallback in (
+                ("pet.toggle", "language.UI.ui_PetShortcutToggle", "显示/隐藏猕猴桃"),
+                ("pet.spin", "language.UI.ui_PetShortcutSpin", "猕猴桃转一圈"),
+                ("pet.hop", "language.UI.ui_PetShortcutHop", "猕猴桃跳一下"),
+            ):
+                try:
+                    self._tray.set_action_text(action_id, str(Language.resolve_key(key, fallback)))
+                except (AttributeError, TypeError) as exc:
+                    Logger.debug(f"宠物托盘文案刷新失败 {action_id}: {exc}")
+        # 快捷键说明随语言更新（同一 owner 覆盖注册，不会重复叠加）
+        install_pet_shortcuts(self)
+
+    # ------------------------------------------------------------------
+    # 窗口
+    # ------------------------------------------------------------------
     def _ensure_window(self) -> PetWindow | None:
         """惰性建窗：没有 QApplication 时返回 None 而不是崩溃。"""
         if self.window is not None:
@@ -171,10 +236,6 @@ class MihoutaoPetController:
         window.on_color_changed = self.set_color
         window.on_pinned_changed = self.set_pinned
         window.set_pinned(bool(self.preferences["pinned"]))
-        pos_x = self.preferences.get("pos_x")
-        pos_y = self.preferences.get("pos_y")
-        if isinstance(pos_x, int) and isinstance(pos_y, int):
-            window.move(pos_x, pos_y)
         self.window = window
         return window
 
@@ -183,19 +244,41 @@ class MihoutaoPetController:
         if window is not None:
             window.start()
 
-    def hide(self) -> None:
+    def hide(self, *, run_task: bool = True) -> None:
         if self.window is not None:
             self.window.stop()
-        self.preferences["show_pet"] = False
-        self._persist()
+        if run_task:
+            self.set_setting("show_pet", False)
+        else:
+            self.preferences["show_pet"] = False
 
     def toggle(self) -> None:
         if self.window is not None and self.window.isVisible():
             self.hide()
         else:
-            self.preferences["show_pet"] = True
+            self.set_setting("show_pet", True)
             self.show()
-            self._persist()
+
+    # ------------------------------------------------------------------
+    # 动作与设置写入
+    # ------------------------------------------------------------------
+    def set_setting(self, key: str, value: Any) -> None:
+        """写入一个偏好：统一经 SettingsSession.save()，持久化由基座负责。"""
+        if key not in DEFAULTS:
+            return
+        normalized = _normalize(key, value, DEFAULTS[key])
+        if normalized is None:
+            return
+        self.preferences[key] = normalized
+        try:
+            session = self._session()
+            full = KEY_PREFIX + key
+            if session.registry.page("pet", namespace=PET_NAMESPACE) is not None:
+                session.set(full, normalized)
+                session.save()
+        except Exception as exc:  # noqa: BLE001 - 持久化失败不影响本次会话
+            Logger.warning(f"宠物偏好保存失败: {key}: {exc}")
+        self._sync_all()
 
     def spin(self) -> None:
         if self.engine is not None:
@@ -215,61 +298,45 @@ class MihoutaoPetController:
             self.engine.set_state(name)
 
     def set_shape(self, shape_id: str) -> None:
-        if self.engine is None or shape_id not in SHAPES:
-            return
-        self.engine.set_shape(shape_id)
-        self.preferences["shape"] = shape_id
-        self._persist()
+        if shape_id in SHAPES:
+            self.set_setting("shape", shape_id)
 
     def set_color(self, color_id: str) -> None:
-        if self.engine is None or color_id not in PALETTE:
-            return
-        self.engine.set_color(color_id)
-        self.preferences["color"] = color_id
-        self._persist()
+        if color_id in PALETTE:
+            self.set_setting("color", color_id)
 
     def set_follow_pointer(self, enabled: bool) -> None:
-        if self.engine is not None:
-            self.engine.set_follow_pointer(bool(enabled))
-        self.preferences["follow_pointer"] = bool(enabled)
-        self._persist()
+        self.set_setting("follow_pointer", bool(enabled))
 
     def set_pinned(self, enabled: bool) -> None:
-        if self.window is not None:
-            self.window.set_pinned(bool(enabled))
-        self.preferences["pinned"] = bool(enabled)
-        self._persist()
+        self.set_setting("pinned", bool(enabled))
 
     def set_deco_scale(self, value: float) -> None:
-        scale = max(0.55, min(1.5, float(value)))
-        if self.engine is not None:
-            self.engine.set_deco_scale(scale)
-        self.preferences["deco_scale"] = scale
-        self._persist()
+        self.set_setting("deco_scale", value)
 
     def _on_window_moved(self, x: int, y: int) -> None:
+        """窗口位置变化只更新内存值，避免拖拽期间高频落盘。"""
         self.preferences["pos_x"] = int(x)
         self.preferences["pos_y"] = int(y)
-        self._persist()
 
-    def _persist(self) -> None:
-        save_preferences(dict(self.preferences))
 
-    def shutdown(self) -> None:
-        """幂等释放：停计时器、销毁窗口、摘托盘动作。"""
-        if self.window is not None:
-            try:
-                self.window.stop()
-                self.window.close()
-            except RuntimeError:
-                pass
-            self.window = None
-        self.engine = None
-        if self._tray is not None:
-            for action_id in self._tray_actions:
-                try:
-                    self._tray.remove_action(action_id)
-                except (AttributeError, RuntimeError):
-                    pass
-        self._tray_actions.clear()
-        self._started = False
+def _normalize(key: str, raw: Any, default: Any) -> Any:
+    """按声明默认值校验偏好值；非法返回 None 表示「沿用默认」。"""
+    if key in ("size",):
+        if isinstance(raw, bool) or not isinstance(raw, int):
+            return None
+        return max(96, min(480, raw))
+    if key == "deco_scale":
+        if isinstance(raw, bool) or not isinstance(raw, (int, float)):
+            return None
+        return max(0.55, min(1.5, float(raw)))
+    if key == "shape":
+        return raw if raw in SHAPES else None
+    if key == "color":
+        return raw if raw in PALETTE else None
+    if isinstance(default, bool):
+        return bool(raw) if isinstance(raw, bool) else None
+    return None
+
+
+__all__ = ["MihoutaoPetController"]

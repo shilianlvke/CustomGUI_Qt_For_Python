@@ -261,6 +261,40 @@ UI:
   # 插件动作超出 tools 预算时的兜底桶
   ui_TrayMorePlugins: 更多插件
 
+  # 桌面宠物
+  ui_PetSettingsTitle: "猕猴桃桌面宠物"
+  ui_PetSettingsHint: "常驻桌面宠物的展示、外观与交互。"
+  ui_PetSectionDisplay: "展示"
+  ui_PetSectionDisplayHint: "控制宠物是否显示以及窗口行为。"
+  ui_PetShow: "显示宠物"
+  ui_PetShowHint: "启动基座时自动显示宠物。"
+  ui_PetPinned: "窗口置顶"
+  ui_PetPinnedHint: "始终保持宠物窗口在其它窗口之上。"
+  ui_PetFollow: "眼睛跟随指针"
+  ui_PetFollowHint: "宠物视线跟随鼠标指针移动。"
+  ui_PetSectionAppearance: "外观"
+  ui_PetSectionAppearanceHint: "果形、果肉色与特效层大小。"
+  ui_PetShape: "果形"
+  ui_PetShapeHint: "选择宠物切面的几何形状。"
+  ui_PetColor: "果肉色"
+  ui_PetColorHint: "选择宠物果肉的色调。"
+  ui_PetSize: "宠物尺寸(px)"
+  ui_PetSizeHint: "宠物窗口的边长像素数。"
+  ui_PetDecoScale: "特效层缩放"
+  ui_PetDecoScaleHint: "装饰层（雷达、星芒等）的缩放比例。"
+  ui_PetShortcutToggle: "显示/隐藏宠物"
+  ui_PetShortcutSpin: "宠物转一圈"
+  ui_PetShortcutHop: "宠物跳一下"
+  ui_PetShortcutBurst: "宠物粒子特效"
+  ui_PetMenuStates: "情绪状态"
+  ui_PetMenuShapes: "果形"
+  ui_PetMenuColors: "果肉色"
+  ui_PetMenuSpin: "转一圈"
+  ui_PetMenuHop: "跳一下"
+  ui_PetMenuBurst: "粒子"
+  ui_PetMenuPin: "保持置顶"
+  ui_PetMenuQuit: "退出宠物"
+  ui_PetTooltip: "猕猴桃桌面宠物 · 左键拖拽 / 双击跳跃 / 右键菜单"
 TEXT:
   home_page_welcome: 你好！我是 SllkGUI ~
   login: 登录到 SllkGUI
