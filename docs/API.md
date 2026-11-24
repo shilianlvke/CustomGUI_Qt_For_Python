@@ -18,7 +18,7 @@
 | `sllkgui.appcore` | 配置视图、主题、语言、设计令牌、设置 schema 与存储、错误边界、遥测 |
 | `sllkgui.plugin` | 插件作者门面：`Plugin` / `GalleryContext` / `Permission` / 设置与托盘、快捷键类型 |
 | `sllkgui.window` | 窗口骨架、Gallery 装载（`load_gallery` / `load_run`）、语言服务 |
-| `sllkgui.guicore` | 组件、窗口部件、页面基类 `CPreviewPage`、样式、字体、后台任务、回调守卫、快捷键表 |
+| `sllkgui.guicore` | 组件、窗口部件、页面基类 `CPreviewPage`、样式、字体、后台任务、回调守卫、快捷键表、桌面宠物 `MihoutaoPetController` |
 
 ## 2. 配置
 
@@ -411,7 +411,27 @@ install_fonts(["assets/font.ttf"])   # 返回成功加载的数量
 install_system_fonts()               # 注册系统字体，缓解 offscreen / 远程会话豆腐块
 ```
 
-## 13. 版本与兼容
+## 13. 桌面宠物
+
+基座原生常驻宠物（猕猴桃），启动 `sllkgui run` 时随主窗口装配；详细说明见
+[PET.md](PET.md)。
+
+```python
+from sllkgui.guicore import MihoutaoPetController
+
+pet = MihoutaoPetController()
+pet.configure(tray=...)        # 可选：挂到基座托盘上
+pet.start()                    # 读偏好、建引擎、按偏好显示
+pet.set_state("celebrate")     # 39 态之一
+pet.set_shape("gem")           # 18 果形之一
+pet.set_color("violet")        # 11 色之一
+pet.spin(); pet.hop(); pet.burst()
+pet.shutdown()                 # 幂等
+```
+
+偏好写在 `<data_root>/settings/pet.yaml`，与基座 `user.yaml` 分离；读写失败只告警。
+
+## 14. 版本与兼容
 
 - 版本单一来源：`src/sllkgui/_version.py`。`sllkgui.__version__` **先读该文件**，
   只有文件缺失时才回落到已安装元数据——反过来会让源码树显示 site-packages 里旧 wheel 的版本号。

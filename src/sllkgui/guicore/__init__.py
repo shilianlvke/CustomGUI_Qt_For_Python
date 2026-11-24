@@ -139,6 +139,8 @@ from .feedback import reset_toast_bus as reset_toast_bus
 from .feedback import toast_bus as toast_bus
 from .fonts import install_fonts as install_fonts
 from .fonts import install_system_fonts as install_system_fonts
+from .pet import MihoutaoPetController as MihoutaoPetController
+from .pet import PetWindow as PetWindow
 from .shortcuts import (
     PRIORITY_BASE,
     PRIORITY_LOW,
@@ -335,6 +337,8 @@ __all__ = [
     "safe_callback",
     "single_shot",
     "ui_callback",
+    "MihoutaoPetController",
+    "PetWindow",
     "ProgressUpdate",
     "TaskWorker",
     "WorkerSignals",

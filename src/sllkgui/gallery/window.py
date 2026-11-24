@@ -114,6 +114,8 @@ class GalleryWindow(QMainWindow):
         runtime.attach_window(self)
         # 内置快捷键与插件共用同一张表：此处注册后，插件条目只要不撞序列即可共存
         self._builtin_shortcuts = install_builtin_shortcuts(self, self.controller)
+        # 桌面宠物是基座原生常驻 UI：与托盘同属外壳，先接入托盘再启动宠物
+        self._pet = self._start_pet()
         self._start_dev_watch()
         title = "SllkGUI Gallery" if runtime.mode == "gallery" else "SllkGUI"
         self.setWindowTitle(title)
@@ -757,6 +759,31 @@ class GalleryWindow(QMainWindow):
         if app is not None:
             app.quit()
 
+    def _start_pet(self):
+        """启动基座原生桌面宠物；失败只降级为「无宠物」，不影响主窗口。"""
+        from sllkgui.guicore.pet import MihoutaoPetController
+
+        try:
+            pet = MihoutaoPetController()
+            pet.configure(tray=self.runtime.tray)
+            pet.start()
+        except Exception as exc:  # noqa: BLE001 - 宠物不可用不应阻断 Gallery
+            Logger.warning(f"桌面宠物启动失败，已跳过: {type(exc).__name__}: {exc}")
+            return None
+        record_event("pet.started", category="gallery", payload={"mode": self.runtime.mode})
+        return pet
+
+    def _stop_pet(self) -> None:
+        """释放宠物；幂等，失败只记日志。"""
+        pet = getattr(self, "_pet", None)
+        if pet is None:
+            return
+        try:
+            pet.shutdown()
+        except Exception as exc:  # noqa: BLE001 - 关闭失败不应阻塞退出
+            Logger.debug(f"桌面宠物关闭失败: {exc}")
+        self._pet = None
+
     def _refresh_tray_texts(self) -> None:
         try:
             self.runtime.tray.refresh_texts()
@@ -784,6 +811,7 @@ class GalleryWindow(QMainWindow):
             Logger.debug(f"Gallery 主题订阅清理失败: {exc}")
         # 内置快捷键绑定在本窗口上：先显式注销，再让运行时整体收尾
         uninstall_builtin_shortcuts()
+        self._stop_pet()
         self._stop_dev_watch()
         try:
             self.runtime.shutdown()

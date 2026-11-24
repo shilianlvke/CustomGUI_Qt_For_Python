@@ -1,0 +1,1089 @@
+{
+  "eyeKeys": [
+    "top",
+    "bot",
+    "exp",
+    "cy",
+    "w",
+    "tilt"
+  ],
+  "eyes": {
+    "round": {
+      "top": 0.56,
+      "bot": 0.56,
+      "exp": 2,
+      "cy": 0,
+      "w": 1,
+      "tilt": 0
+    },
+    "wide": {
+      "top": 0.7,
+      "bot": 0.64,
+      "exp": 2.1,
+      "cy": -0.04,
+      "w": 0.98,
+      "tilt": 0
+    },
+    "oval": {
+      "top": 0.6,
+      "bot": 0.44,
+      "exp": 2,
+      "cy": -0.02,
+      "w": 0.9,
+      "tilt": 0
+    },
+    "narrow": {
+      "top": 0.28,
+      "bot": 0.28,
+      "exp": 2.4,
+      "cy": 0,
+      "w": 1.05,
+      "tilt": 0
+    },
+    "focus": {
+      "top": 0.24,
+      "bot": 0.26,
+      "exp": 2.6,
+      "cy": 0,
+      "w": 0.92,
+      "tilt": -6
+    },
+    "half": {
+      "top": 0.52,
+      "bot": 0.02,
+      "exp": 2.2,
+      "cy": 0.02,
+      "w": 1,
+      "tilt": 0
+    },
+    "line": {
+      "top": 0.1,
+      "bot": 0.1,
+      "exp": 2.7,
+      "cy": 0.02,
+      "w": 1.05,
+      "tilt": 0
+    },
+    "slit": {
+      "top": 0.09,
+      "bot": 0.09,
+      "exp": 3,
+      "cy": 0,
+      "w": 1.1,
+      "tilt": -4
+    },
+    "dot": {
+      "top": 0.16,
+      "bot": 0.16,
+      "exp": 2,
+      "cy": 0,
+      "w": 0.55,
+      "tilt": 0
+    },
+    "tiny": {
+      "top": 0.22,
+      "bot": 0.22,
+      "exp": 2,
+      "cy": -0.02,
+      "w": 0.62,
+      "tilt": 0
+    },
+    "arch": {
+      "top": 0.6,
+      "bot": 0.1,
+      "exp": 2.2,
+      "cy": -0.04,
+      "w": 1,
+      "tilt": 0
+    },
+    "arch_deep": {
+      "top": 0.66,
+      "bot": 0.05,
+      "exp": 2.3,
+      "cy": -0.08,
+      "w": 1.02,
+      "tilt": 0
+    },
+    "arch_soft": {
+      "top": 0.46,
+      "bot": 0.14,
+      "exp": 2.1,
+      "cy": -0.02,
+      "w": 1,
+      "tilt": 0
+    },
+    "crescent": {
+      "top": 0.5,
+      "bot": 0.18,
+      "exp": 2.4,
+      "cy": -0.06,
+      "w": 1.05,
+      "tilt": -8
+    },
+    "sad": {
+      "top": 0.1,
+      "bot": 0.46,
+      "exp": 2,
+      "cy": 0.1,
+      "w": 1.02,
+      "tilt": 0
+    },
+    "sad_soft": {
+      "top": 0.18,
+      "bot": 0.34,
+      "exp": 2.1,
+      "cy": 0.06,
+      "w": 1,
+      "tilt": 0
+    },
+    "droop": {
+      "top": 0.14,
+      "bot": 0.3,
+      "exp": 2,
+      "cy": 0.12,
+      "w": 1,
+      "tilt": 12
+    },
+    "sleepy": {
+      "top": 0.12,
+      "bot": 0.36,
+      "exp": 2.2,
+      "cy": 0.04,
+      "w": 1.02,
+      "tilt": 4
+    },
+    "angry": {
+      "top": 0.34,
+      "bot": 0.3,
+      "exp": 2.2,
+      "cy": 0,
+      "w": 1.05,
+      "tilt": -16
+    },
+    "bump": {
+      "top": 0.42,
+      "bot": 0.42,
+      "exp": 2.8,
+      "cy": 0,
+      "w": 1,
+      "tilt": 0
+    },
+    "spark": {
+      "top": 0.36,
+      "bot": 0.36,
+      "exp": 1.25,
+      "cy": 0,
+      "w": 1,
+      "tilt": 0
+    },
+    "wink": {
+      "top": 0.12,
+      "bot": 0.1,
+      "exp": 2.5,
+      "cy": 0.06,
+      "w": 1,
+      "tilt": 0
+    },
+    "squint": {
+      "top": 0.2,
+      "bot": 0.18,
+      "exp": 2,
+      "cy": 0,
+      "w": 0.5,
+      "tilt": 24
+    },
+    "blink_half": {
+      "top": 0.06,
+      "bot": 0.06,
+      "exp": 2.4,
+      "cy": -0.02,
+      "w": 1.05,
+      "tilt": 0
+    },
+    "brow": {
+      "top": 0.32,
+      "bot": 0.04,
+      "exp": 1.9,
+      "cy": -0.14,
+      "w": 1.08,
+      "tilt": -10
+    }
+  },
+  "shapes": {
+    "blob": {
+      "rx": 1,
+      "ry": 0.94,
+      "exp": 2,
+      "rot": -14,
+      "core": 1,
+      "label": "圆果"
+    },
+    "pebble": {
+      "rx": 1.02,
+      "ry": 0.9,
+      "exp": 2.4,
+      "rot": -20,
+      "core": 1,
+      "label": "卵石"
+    },
+    "bean": {
+      "rx": 1.06,
+      "ry": 0.88,
+      "exp": 2.55,
+      "rot": -8,
+      "core": 1.04,
+      "label": "豆形"
+    },
+    "egg": {
+      "rx": 0.92,
+      "ry": 1.06,
+      "exp": 1.95,
+      "rot": -6,
+      "core": 0.98,
+      "label": "卵形"
+    },
+    "squircle": {
+      "rx": 1,
+      "ry": 0.96,
+      "exp": 2.8,
+      "rot": -12,
+      "core": 0.96,
+      "label": "方果"
+    },
+    "tablet": {
+      "rx": 1.08,
+      "ry": 0.84,
+      "exp": 3,
+      "rot": -10,
+      "core": 1.02,
+      "label": "板状"
+    },
+    "capsule": {
+      "rx": 0.96,
+      "ry": 0.98,
+      "exp": 3.4,
+      "rot": -18,
+      "core": 0.94,
+      "label": "胶囊"
+    },
+    "cylinder": {
+      "rx": 1.02,
+      "ry": 0.92,
+      "exp": 2.6,
+      "rot": -26,
+      "core": 1,
+      "label": "柱形"
+    },
+    "hex": {
+      "rx": 0.98,
+      "ry": 0.96,
+      "exp": 1.6,
+      "rot": -16,
+      "core": 0.96,
+      "label": "六角"
+    },
+    "gem": {
+      "rx": 0.96,
+      "ry": 1,
+      "exp": 3.3,
+      "rot": -18,
+      "core": 0.92,
+      "label": "方钻"
+    },
+    "crystal": {
+      "rx": 0.94,
+      "ry": 1.04,
+      "exp": 1.7,
+      "rot": -22,
+      "core": 0.94,
+      "label": "晶体"
+    },
+    "wedge": {
+      "rx": 1.04,
+      "ry": 0.9,
+      "exp": 1.55,
+      "rot": -30,
+      "core": 1.02,
+      "label": "楔形"
+    },
+    "shield": {
+      "rx": 1.02,
+      "ry": 0.92,
+      "exp": 2.25,
+      "rot": -26,
+      "core": 1.02,
+      "label": "盾形"
+    },
+    "dome": {
+      "rx": 0.98,
+      "ry": 0.98,
+      "exp": 1.85,
+      "rot": -4,
+      "core": 0.96,
+      "label": "穹顶"
+    },
+    "arch": {
+      "rx": 1,
+      "ry": 0.94,
+      "exp": 2.1,
+      "rot": -32,
+      "core": 1,
+      "label": "斜切"
+    },
+    "cloud": {
+      "rx": 1.08,
+      "ry": 0.9,
+      "exp": 2.05,
+      "rot": -12,
+      "core": 1.06,
+      "label": "云形"
+    },
+    "teardrop": {
+      "rx": 0.96,
+      "ry": 1.02,
+      "exp": 1.75,
+      "rot": -6,
+      "core": 0.94,
+      "label": "水滴"
+    },
+    "leaf": {
+      "rx": 1,
+      "ry": 1,
+      "exp": 2.15,
+      "rot": 0,
+      "core": 1,
+      "label": "正切"
+    }
+  },
+  "palette": {
+    "black": {
+      "light": "#3B4238",
+      "dark": "#2E342B",
+      "label": "墨黑"
+    },
+    "brown": {
+      "light": "#C89A6B",
+      "dark": "#B0834F",
+      "label": "栗棕"
+    },
+    "red": {
+      "light": "#E8897C",
+      "dark": "#D2705F",
+      "label": "丹红"
+    },
+    "orange": {
+      "light": "#F0AE6E",
+      "dark": "#DE9752",
+      "label": "橘橙"
+    },
+    "yellow": {
+      "light": "#EBD37A",
+      "dark": "#D8BC5C",
+      "label": "藤黄"
+    },
+    "green": {
+      "light": "#BCE39B",
+      "dark": "#9FD683",
+      "label": "果绿"
+    },
+    "cyan": {
+      "light": "#A9DCE2",
+      "dark": "#8CCAD1",
+      "label": "水青"
+    },
+    "blue": {
+      "light": "#A9C4E8",
+      "dark": "#8CA9D6",
+      "label": "靛蓝"
+    },
+    "violet": {
+      "light": "#C9B9E6",
+      "dark": "#B3A2D6",
+      "label": "紫罗"
+    },
+    "magenta": {
+      "light": "#EDB3CB",
+      "dark": "#DB98B7",
+      "label": "品红"
+    },
+    "gray": {
+      "light": "#C9CCC0",
+      "dark": "#B4B8AB",
+      "label": "灰绿"
+    }
+  },
+  "groups": [
+    {
+      "label": "Lifecycle",
+      "states": [
+        "sleeping",
+        "waking",
+        "idle",
+        "listening",
+        "thinking",
+        "searching",
+        "working"
+      ]
+    },
+    {
+      "label": "Reactions",
+      "states": [
+        "excited",
+        "surprised",
+        "suspicious",
+        "angry",
+        "drowsy",
+        "happy",
+        "curious",
+        "confused",
+        "bored",
+        "proud",
+        "shy",
+        "sad",
+        "laughing",
+        "scared",
+        "playful",
+        "celebrate"
+      ]
+    },
+    {
+      "label": "Agent morphs",
+      "states": [
+        "orbit",
+        "radar",
+        "progress"
+      ]
+    },
+    {
+      "label": "Product lifecycle",
+      "states": [
+        "spawning",
+        "humming",
+        "loading",
+        "dictating",
+        "writing",
+        "sending",
+        "receiving",
+        "uploading",
+        "notifying",
+        "alerting",
+        "dragging",
+        "bouncing",
+        "powering-down"
+      ]
+    }
+  ],
+  "states": {
+    "sleeping": {
+      "eyes": [
+        "line"
+      ],
+      "hold": [
+        6000,
+        9000
+      ],
+      "bob": 0.014,
+      "period": 4200,
+      "blink": null,
+      "deco": "zzz"
+    },
+    "waking": {
+      "eyes": [
+        "line",
+        "dot",
+        "round"
+      ],
+      "hold": [
+        420,
+        780
+      ],
+      "bob": 0.01,
+      "period": 1600,
+      "blink": null,
+      "deco": "none",
+      "stretch": true
+    },
+    "idle": {
+      "eyes": [
+        "round",
+        "narrow",
+        "round",
+        "arch_soft"
+      ],
+      "hold": [
+        1800,
+        3200
+      ],
+      "bob": 0.012,
+      "period": 3200,
+      "blink": [
+        2600,
+        6200
+      ],
+      "deco": "none"
+    },
+    "listening": {
+      "eyes": [
+        "wide",
+        "wide",
+        "dot"
+      ],
+      "hold": [
+        2200,
+        3400
+      ],
+      "bob": 0.008,
+      "period": 2600,
+      "blink": [
+        3200,
+        6000
+      ],
+      "deco": "dots"
+    },
+    "thinking": {
+      "eyes": [
+        "narrow",
+        "focus",
+        "wide"
+      ],
+      "hold": [
+        700,
+        1200
+      ],
+      "bob": 0.006,
+      "period": 1400,
+      "blink": null,
+      "deco": "dots"
+    },
+    "searching": {
+      "eyes": [
+        "wide",
+        "narrow",
+        "wide"
+      ],
+      "hold": [
+        600,
+        1000
+      ],
+      "bob": 0.006,
+      "period": 1100,
+      "blink": null,
+      "deco": "radar"
+    },
+    "working": {
+      "eyes": [
+        "narrow",
+        "focus",
+        "line"
+      ],
+      "hold": [
+        900,
+        1500
+      ],
+      "bob": 0.005,
+      "period": 1300,
+      "blink": null,
+      "deco": "progress"
+    },
+    "excited": {
+      "eyes": [
+        "wide",
+        "arch",
+        "spark"
+      ],
+      "hold": [
+        700,
+        1200
+      ],
+      "bob": 0.022,
+      "period": 900,
+      "blink": null,
+      "deco": "sparkle",
+      "hop": true
+    },
+    "surprised": {
+      "eyes": [
+        "wide",
+        "oval"
+      ],
+      "hold": [
+        2000,
+        3000
+      ],
+      "bob": 0.004,
+      "period": 2200,
+      "blink": null,
+      "deco": "badge",
+      "stretch": true
+    },
+    "suspicious": {
+      "eyes": [
+        "narrow",
+        "angry"
+      ],
+      "hold": [
+        1600,
+        2600
+      ],
+      "bob": 0.006,
+      "period": 2400,
+      "blink": null,
+      "deco": "none",
+      "tilt": 6
+    },
+    "angry": {
+      "eyes": [
+        "angry",
+        "sad_soft"
+      ],
+      "hold": [
+        1400,
+        2200
+      ],
+      "bob": 0.008,
+      "period": 1200,
+      "blink": null,
+      "deco": "badge",
+      "ring": "#E0574B",
+      "tilt": -8,
+      "shake": true
+    },
+    "drowsy": {
+      "eyes": [
+        "sleepy",
+        "half",
+        "line"
+      ],
+      "hold": [
+        3000,
+        5000
+      ],
+      "bob": 0.012,
+      "period": 3600,
+      "blink": null,
+      "deco": "zzz"
+    },
+    "happy": {
+      "eyes": [
+        "arch",
+        "arch_soft"
+      ],
+      "hold": [
+        1600,
+        2600
+      ],
+      "bob": 0.018,
+      "period": 2000,
+      "blink": null,
+      "deco": "sparkle",
+      "hop": true
+    },
+    "curious": {
+      "eyes": [
+        "wide",
+        "round",
+        "wide"
+      ],
+      "hold": [
+        1200,
+        2200
+      ],
+      "bob": 0.01,
+      "period": 2400,
+      "blink": [
+        2400,
+        5000
+      ],
+      "deco": "none",
+      "tilt": 3
+    },
+    "confused": {
+      "eyes": [
+        "focus",
+        "sad_soft",
+        "narrow"
+      ],
+      "hold": [
+        1400,
+        2400
+      ],
+      "bob": 0.008,
+      "period": 2200,
+      "blink": null,
+      "deco": "dots",
+      "tilt": -5
+    },
+    "bored": {
+      "eyes": [
+        "line",
+        "half",
+        "sleepy"
+      ],
+      "hold": [
+        3000,
+        5000
+      ],
+      "bob": 0.008,
+      "period": 3600,
+      "blink": null,
+      "deco": "none",
+      "tilt": 4
+    },
+    "proud": {
+      "eyes": [
+        "arch_deep",
+        "arch"
+      ],
+      "hold": [
+        2400,
+        3600
+      ],
+      "bob": 0.014,
+      "period": 2800,
+      "blink": null,
+      "deco": "sparkle",
+      "tilt": -4
+    },
+    "shy": {
+      "eyes": [
+        "narrow",
+        "arch_soft",
+        "droop"
+      ],
+      "hold": [
+        1800,
+        3000
+      ],
+      "bob": 0.01,
+      "period": 2400,
+      "blink": null,
+      "deco": "pulse",
+      "tilt": 5,
+      "ring": "#D98BA0"
+    },
+    "sad": {
+      "eyes": [
+        "sad",
+        "droop"
+      ],
+      "hold": [
+        3000,
+        5000
+      ],
+      "bob": 0.006,
+      "period": 3200,
+      "blink": null,
+      "deco": "none",
+      "tilt": 4
+    },
+    "laughing": {
+      "eyes": [
+        "arch_deep",
+        "arch"
+      ],
+      "hold": [
+        900,
+        1500
+      ],
+      "bob": 0.024,
+      "period": 700,
+      "blink": null,
+      "deco": "sparkle",
+      "hop": true
+    },
+    "scared": {
+      "eyes": [
+        "wide",
+        "oval",
+        "wide"
+      ],
+      "hold": [
+        900,
+        1600
+      ],
+      "bob": 0.004,
+      "period": 800,
+      "blink": null,
+      "deco": "pulse",
+      "shake": true
+    },
+    "playful": {
+      "eyes": [
+        "wink",
+        "arch",
+        "round"
+      ],
+      "hold": [
+        1200,
+        2000
+      ],
+      "bob": 0.016,
+      "period": 1500,
+      "blink": null,
+      "deco": "sparkle",
+      "tilt": 4,
+      "trick": "wiggle"
+    },
+    "celebrate": {
+      "eyes": [
+        "arch_deep",
+        "spark"
+      ],
+      "hold": [
+        900,
+        1400
+      ],
+      "bob": 0.026,
+      "period": 800,
+      "blink": null,
+      "deco": "sparkle",
+      "hop": true
+    },
+    "orbit": {
+      "eyes": [
+        "round",
+        "dot"
+      ],
+      "hold": [
+        2400,
+        3600
+      ],
+      "bob": 0.006,
+      "period": 2400,
+      "blink": null,
+      "deco": "orbit"
+    },
+    "radar": {
+      "eyes": [
+        "wide",
+        "narrow"
+      ],
+      "hold": [
+        2000,
+        3000
+      ],
+      "bob": 0.005,
+      "period": 2000,
+      "blink": null,
+      "deco": "radar"
+    },
+    "progress": {
+      "eyes": [
+        "narrow",
+        "focus"
+      ],
+      "hold": [
+        1200,
+        2000
+      ],
+      "bob": 0.005,
+      "period": 1600,
+      "blink": null,
+      "deco": "progress"
+    },
+    "spawning": {
+      "eyes": [
+        "dot",
+        "round",
+        "wide"
+      ],
+      "hold": [
+        480,
+        860
+      ],
+      "bob": 0.014,
+      "period": 1200,
+      "blink": null,
+      "deco": "pulse"
+    },
+    "humming": {
+      "eyes": [
+        "arch_soft",
+        "round"
+      ],
+      "hold": [
+        1600,
+        2400
+      ],
+      "bob": 0.016,
+      "period": 1400,
+      "blink": [
+        3000,
+        6000
+      ],
+      "deco": "none",
+      "trick": "wiggle"
+    },
+    "loading": {
+      "eyes": [
+        "narrow",
+        "line"
+      ],
+      "hold": [
+        900,
+        1400
+      ],
+      "bob": 0.004,
+      "period": 1000,
+      "blink": null,
+      "deco": "progress"
+    },
+    "dictating": {
+      "eyes": [
+        "wide",
+        "arch"
+      ],
+      "hold": [
+        1400,
+        2200
+      ],
+      "bob": 0.008,
+      "period": 1600,
+      "blink": null,
+      "deco": "dots"
+    },
+    "writing": {
+      "eyes": [
+        "focus",
+        "narrow"
+      ],
+      "hold": [
+        900,
+        1600
+      ],
+      "bob": 0.006,
+      "period": 1200,
+      "blink": null,
+      "deco": "progress",
+      "tilt": -3
+    },
+    "sending": {
+      "eyes": [
+        "arch",
+        "narrow"
+      ],
+      "hold": [
+        900,
+        1400
+      ],
+      "bob": 0.01,
+      "period": 1100,
+      "blink": null,
+      "deco": "orbit",
+      "hop": true
+    },
+    "receiving": {
+      "eyes": [
+        "wide",
+        "arch"
+      ],
+      "hold": [
+        900,
+        1400
+      ],
+      "bob": 0.01,
+      "period": 1100,
+      "blink": null,
+      "deco": "pulse"
+    },
+    "uploading": {
+      "eyes": [
+        "narrow",
+        "half"
+      ],
+      "hold": [
+        1000,
+        1800
+      ],
+      "bob": 0.006,
+      "period": 1300,
+      "blink": null,
+      "deco": "progress"
+    },
+    "notifying": {
+      "eyes": [
+        "wide",
+        "round"
+      ],
+      "hold": [
+        800,
+        1400
+      ],
+      "bob": 0.02,
+      "period": 1000,
+      "blink": null,
+      "deco": "badge",
+      "hop": true
+    },
+    "alerting": {
+      "eyes": [
+        "wide",
+        "angry"
+      ],
+      "hold": [
+        800,
+        1400
+      ],
+      "bob": 0.006,
+      "period": 900,
+      "blink": null,
+      "deco": "badge",
+      "ring": "#EF9F27",
+      "shake": true
+    },
+    "dragging": {
+      "eyes": [
+        "wide",
+        "oval"
+      ],
+      "hold": [
+        1000,
+        1600
+      ],
+      "bob": 0.004,
+      "period": 1500,
+      "blink": null,
+      "deco": "none",
+      "tilt": 3
+    },
+    "bouncing": {
+      "eyes": [
+        "arch_soft",
+        "round"
+      ],
+      "hold": [
+        800,
+        1200
+      ],
+      "bob": 0.028,
+      "period": 700,
+      "blink": null,
+      "deco": "none",
+      "hop": true
+    },
+    "powering-down": {
+      "eyes": [
+        "sleepy",
+        "line"
+      ],
+      "hold": [
+        2000,
+        3000
+      ],
+      "bob": 0.004,
+      "period": 3200,
+      "blink": null,
+      "deco": "pulse",
+      "tilt": 2
+    }
+  },
+  "onboarding": [
+    "curious",
+    "happy",
+    "shy",
+    "proud",
+    "listening",
+    "surprised",
+    "playful"
+  ]
+}

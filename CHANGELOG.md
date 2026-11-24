@@ -7,6 +7,26 @@ minor 与 patch 保持向后兼容。
 
 ---
 
+## 未发布
+
+### 新增
+
+- **基座原生桌面宠物（猕猴桃）**：把 `temp/mihoutao.html` 原型完整移植成常驻桌面宠物，
+  保留 39 情绪状态、18 种果形切面、11 色果肉调色板、8 类装饰层（点阵/雷达/进度环/
+  卫星/徽标/脉冲/星芒/zZ）与弹簧物理；无边框、置顶、透明、可拖拽，右键菜单可选状态与
+  外观，托盘提供显示隐藏与两个动作。引擎走 `QSvgRenderer`，不引入 WebEngine。
+  - 新模块 `src/sllkgui/guicore/pet/`，公开面 `MihoutaoPetController` / `PetWindow` 由
+    `sllkgui.guicore` 导出。
+  - 一致性由差分测试固化：几何函数与原型 JS 逐字符相同，规格表逐字段相同。
+  - 偏好落 `<data_root>/settings/pet.yaml`，位于基座 `user.yaml` 之外。
+  - 形态判定与理由见 [桌面宠物](docs/PET.md)。
+
+### 变更
+
+- `GalleryWindow` 在启动时装配宠物（`_start_pet`），关闭时释放（`_stop_pet`）；
+  宠物异常只降级为「无宠物」，不影响主窗口与插件加载。
+  **不改变** `surface_count()` 语义：run 模式无插件时仍为 0。
+
 ## 4.2.1（2026-11-23）
 
 ### 维护
