@@ -12,6 +12,7 @@ from __future__ import annotations
 
 from typing import TypedDict
 
+from ..user_settings import BACKGROUND_BLUR_DEFAULT, BACKGROUND_BLUR_MAX
 from .schema import SettingControl, SettingOption, SettingsPage, SettingSpec, SettingsSection
 
 
@@ -38,6 +39,7 @@ STORAGE_TRANSPARENCY = "acrylic_transparency"
 STORAGE_GLASS_STRENGTH = "glass_strength"
 STORAGE_BACKGROUND_IMAGE = "background_image"
 STORAGE_BACKGROUND_FIT = "background_fit"
+STORAGE_BACKGROUND_BLUR = "background_blur"
 STORAGE_REMEMBER_SIZE = "remember_window_size"
 # 桌面宠物（基座原生设置，走 user.yaml）
 STORAGE_PET_SHOW = "pet_show"
@@ -54,6 +56,7 @@ KEY_TRANSPARENCY = f"core.{PAGE_APPEARANCE}.transparency"
 KEY_GLASS_STRENGTH = f"core.{PAGE_APPEARANCE}.glass_strength"
 KEY_BACKGROUND_IMAGE = f"core.{PAGE_APPEARANCE}.background_image"
 KEY_BACKGROUND_FIT = f"core.{PAGE_APPEARANCE}.background_fit"
+KEY_BACKGROUND_BLUR = f"core.{PAGE_APPEARANCE}.background_blur"
 KEY_LANGUAGE = f"core.{PAGE_INTERFACE}.language"
 KEY_MENU_MODE = f"core.{PAGE_INTERFACE}.menu_mode"
 KEY_DRAWER_MODE = f"core.{PAGE_INTERFACE}.drawer_mode"
@@ -206,7 +209,7 @@ def _pet_page() -> SettingsPage:
                     ),
                     SettingSpec.number(
                         "size",
-                        220,
+                        100,
                         "宠物尺寸(px)",
                         minimum=96,
                         maximum=480,
@@ -325,6 +328,20 @@ def build_core_pages() -> tuple[SettingsPage, ...]:
                         live_preview=True,
                         storage_key=STORAGE_BACKGROUND_FIT,
                     ),
+                    SettingSpec.slider(
+                        "background_blur",
+                        int(BACKGROUND_BLUR_DEFAULT),
+                        "背景模糊",
+                        minimum=0,
+                        maximum=int(BACKGROUND_BLUR_MAX),
+                        step=1,
+                        suffix="px",
+                        hint="数值越大背景越模糊，0 表示不模糊。",
+                        label_key="language.UI.ui_BackgroundBlur",
+                        hint_key="language.UI.ui_BackgroundBlurHint",
+                        live_preview=True,
+                        storage_key=STORAGE_BACKGROUND_BLUR,
+                    ),
                 ),
             ),
         ),
@@ -432,6 +449,7 @@ def build_core_pages() -> tuple[SettingsPage, ...]:
 
 
 __all__ = [
+    "KEY_BACKGROUND_BLUR",
     "KEY_BACKGROUND_FIT",
     "KEY_BACKGROUND_IMAGE",
     "KEY_DRAWER_MODE",

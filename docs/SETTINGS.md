@@ -65,7 +65,7 @@ sllkgui/
 
 | 页面 | 内容 | 存储键 |
 | --- | --- | --- |
-| 外观 | 主题卡片、窗口透明度、亚克力质感、背景图 / 适应模式 | `theme_name` `acrylic_transparency` `glass_strength` `background_image` `background_fit` |
+| 外观 | 主题卡片、窗口透明度、亚克力质感、背景图 / 适应模式 / 模糊强度 | `theme_name` `acrylic_transparency` `glass_strength` `background_image` `background_fit` `background_blur` |
 | 界面 | 语言、左菜单模式、抽屉模式 | `language` `menu_mode` `drawer_mode` |
 | 启动与窗口 | 记住窗口尺寸 + 当前 / 最小 / 启动尺寸只读信息 | `remember_window_size` |
 | 快捷键 | 基座与插件绑定按 owner 分组展示、冲突计数 | 只读（快捷键表） |
@@ -183,7 +183,7 @@ SettingsSection(
 2. 底部操作栏显示未保存数量，可「恢复本页默认 / 放弃 / 保存」；
 3. 保存按命名空间分组写入，全部成功才清空脏值；失败保留脏值并提示；
 4. 关闭窗口时若有未保存改动，弹出「放弃并关闭 / 取消」确认；
-5. 主题、透明度、质感、背景在编辑时实时预览；放弃或关闭时按基线还原。
+5. 主题、透明度、质感、背景与背景模糊在编辑时实时预览；放弃或关闭时按基线还原。
 
 ## 8. 测试
 

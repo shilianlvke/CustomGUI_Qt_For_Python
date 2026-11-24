@@ -215,6 +215,7 @@ class MihoutaoPetController:
         self.engine.set_follow_pointer(bool(p["follow_pointer"]))
         if self.window is not None:
             self.window.set_pinned(bool(p["pinned"]))
+            self.window.set_body_size(int(p["size"]))
         if bool(p["show_pet"]):
             self.show()
         else:

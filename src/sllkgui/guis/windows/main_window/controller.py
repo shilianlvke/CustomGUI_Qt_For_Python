@@ -10,6 +10,7 @@ from PySide6.QtCore import QEvent, QObject, Qt
 from PySide6.QtWidgets import QPushButton, QWidget
 
 from sllkgui.appcore import (
+    KEY_BACKGROUND_BLUR,
     KEY_THEME,
     Language,
     Logger,
@@ -250,6 +251,8 @@ class SettingsController:
             self.refresh_styles()
         elif key in ("core.appearance.background_image", "core.appearance.background_fit"):
             self._apply_background_preview(key, value)
+        elif key == KEY_BACKGROUND_BLUR:
+            self._apply_background_blur(value)
 
     def _apply_theme_preview(self, name: str) -> None:
         self._previewing_theme = True
@@ -274,6 +277,17 @@ class SettingsController:
         setter = getattr(widget, "set_background_image", None)
         if callable(setter):
             setter(path, fit)
+
+    def _apply_background_blur(self, value) -> None:
+        """背景模糊实时预览：只改运行期背景层，切换背景图时保留。"""
+        widget = getattr(getattr(self._window, "ui", None), "window", None)
+        setter = getattr(widget, "set_background_blur", None)
+        if not callable(setter):
+            return
+        try:
+            setter(int(value))
+        except (TypeError, ValueError):
+            self._logger.debug(f"忽略非法背景模糊值: {value!r}")
 
     def _apply_menu_mode(self, mode: str) -> None:
         """应用菜单模式；持久化由 ``SettingsSession.save()`` 统一负责。"""
@@ -304,6 +318,8 @@ class SettingsController:
         if "core.appearance.glass_strength" in changes:
             set_glass_strength(int(changes["core.appearance.glass_strength"]))
             self.refresh_styles()
+        if KEY_BACKGROUND_BLUR in changes:
+            self._apply_background_blur(changes[KEY_BACKGROUND_BLUR])
         if "core.appearance.background_image" in changes or "core.appearance.background_fit" in changes:
             window = self._settings_window
             session = window.session() if window is not None else None

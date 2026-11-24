@@ -276,14 +276,26 @@ def test_background_fields_roundtrip():
     assert user_settings.save_user_settings(
         background_image="/tmp/wall.png",
         background_fit="fill",
+        background_blur=18,
         background_recent=["/tmp/a.png", "/tmp/b.png"],
     )
 
     assert user_settings.load_user_settings() == {
         "background_image": "/tmp/wall.png",
         "background_fit": "fill",
+        "background_blur": 18,
         "background_recent": ["/tmp/a.png", "/tmp/b.png"],
     }
+
+
+def test_background_blur_is_clamped_to_declared_range():
+    """手改配置越界时夹到 0..BACKGROUND_BLUR_MAX，布尔与字符串不生效。"""
+    assert user_settings.save_user_settings(background_blur=-5)
+    assert user_settings.load_user_settings()["background_blur"] == 0
+    assert user_settings.save_user_settings(background_blur=999)
+    assert user_settings.load_user_settings()["background_blur"] == user_settings.BACKGROUND_BLUR_MAX
+    assert not user_settings.save_user_settings(background_blur=True)
+    assert not user_settings.save_user_settings(background_blur="20")
 
 
 def test_background_recent_deduplicates_and_limits():
@@ -379,29 +391,32 @@ def test_write_atomic_uses_unique_temp_and_fsync(monkeypatch):
 
 
 def test_migrate_state_fills_v2_v3_defaults():
-    """FIX-02: _migrate_state 显式记录 v1→…→v5 并按需补齐各版新增默认值。"""
+    """FIX-02: _migrate_state 显式记录 v1→…→v6 并按需补齐各版新增默认值。"""
     # FIX-02: 直接调用内部迁移函数，验证跃迁记录、默认值补齐与「只补不删」。
     transitions: list[str] = []
     migrated = user_settings._migrate_state(
-        {"theme_name": "eye", "background_image": "/x.png"},
+        {"theme_name": "eye", "background_image": "/x.png", "background_blur": 9},
         version=1,
         fill_defaults=True,
         transitions=transitions,
     )
 
-    assert len(transitions) == 4, "v1->v2 -> v3 -> v4 -> v5 must be recorded"
+    assert len(transitions) == 5, "v1->v2 -> v3 -> v4 -> v5 -> v6 must be recorded"
     assert migrated["theme_name"] == "eye", "existing keys must be preserved"
     assert migrated["background_image"] == "/x.png", "existing keys must not be overwritten by defaults"
+    assert migrated["background_blur"] == 9, "existing blur must not be overwritten by v6 default"
     assert migrated["background_fit"] == user_settings.BACKGROUND_FIT_MODES[0], "v3 default must be filled"
     assert migrated["background_recent"] == [], "v3 default must be filled"
     assert migrated["remember_window_size"] is True, "v5 default must be filled"
 
     only_v3: list[str] = []
     from_v2 = user_settings._migrate_state({}, version=2, fill_defaults=True, transitions=only_v3)
-    assert len(only_v3) == 3, "v2->v3, v3->v4 and v4->v5 transitions apply for v2 input"
-    assert set(from_v2) == set(user_settings.V3_BACKGROUND_DEFAULTS) | {"remember_window_size"}, (
-        "v3 and v5 defaults must be filled"
-    )
+    assert len(only_v3) == 4, "v2->v3, v3->v4, v4->v5 and v5->v6 transitions apply for v2 input"
+    assert from_v2["background_blur"] == user_settings.BACKGROUND_BLUR_DEFAULT, "v6 default must be filled"
+    assert set(from_v2) == set(user_settings.V3_BACKGROUND_DEFAULTS) | {
+        "remember_window_size",
+        "background_blur",
+    }, "v3, v5 and v6 defaults must be filled"
     assert user_settings._migrate_state({"theme_name": "eye"}, version=1) == {"theme_name": "eye"}, (
         "incremental read must not inject defaults"
     )

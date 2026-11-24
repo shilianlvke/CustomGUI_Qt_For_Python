@@ -12,6 +12,7 @@ from sllkgui.appcore import (
     load_user_settings,
 )
 from sllkgui.appcore.settings.base import STORAGE_THEME
+from sllkgui.appcore.user_settings import BACKGROUND_BLUR_DEFAULT
 from sllkgui.guicore import CGrips, set_acrylic_transparency, set_glass_strength
 
 from .functions import MainFunctions
@@ -188,19 +189,31 @@ class SetupMainWindow:
 
     @staticmethod
     def restore_background(window, state: dict) -> bool:
-        """恢复用户选择的背景图与适应模式，返回是否成功应用到窗口。"""
+        """恢复用户选择的背景图、适应模式与模糊强度，返回背景图是否生效。
+
+        模糊值独立于背景图恢复：即使当前没有背景图（纯色 / 透明窗口），
+        也把用户设置写回 ``CWindow``，之后选图时无需重新调节；缺失或非法值
+        回落到 ``BACKGROUND_BLUR_DEFAULT``。
+        """
         path = state.get("background_image")
         fit = state.get("background_fit")
         widget = getattr(getattr(window, "ui", None), "window", None)
         setter = getattr(widget, "set_background_image", None)
-        if not callable(setter):
-            return False
-        return bool(
-            setter(
-                path if isinstance(path, str) else "",
-                fit if isinstance(fit, str) else "fill",
+        applied = False
+        if callable(setter):
+            applied = bool(
+                setter(
+                    path if isinstance(path, str) else "",
+                    fit if isinstance(fit, str) else "fill",
+                )
             )
-        )
+        blur_setter = getattr(widget, "set_background_blur", None)
+        if callable(blur_setter):
+            blur = state.get("background_blur")
+            if isinstance(blur, bool) or not isinstance(blur, int):
+                blur = BACKGROUND_BLUR_DEFAULT
+            blur_setter(blur)
+        return applied
 
     @staticmethod
     def restore_menu_mode(window, state: dict) -> None:

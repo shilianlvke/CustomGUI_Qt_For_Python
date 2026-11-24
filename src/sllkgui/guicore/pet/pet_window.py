@@ -16,6 +16,21 @@ from PySide6.QtWidgets import QApplication, QMenu, QWidget
 from sllkgui.appcore import Language
 
 from .engine.core import GROUPS, PALETTE, SHAPES, MihoutaoEngine, canvas_scale
+from .settings import DEFAULTS
+
+#: 与基座宠物设置页一致的本体尺寸范围（逻辑像素）
+PET_SIZE_MIN = 96
+PET_SIZE_MAX = 480
+
+
+def _clamp_body_size(size: int) -> int:
+    """把宠物本体尺寸夹到设置页声明的区间；非法值回落 DEFAULTS。"""
+    try:
+        value = int(size)
+    except (TypeError, ValueError):
+        return int(DEFAULTS["size"])
+    return max(PET_SIZE_MIN, min(PET_SIZE_MAX, value))
+
 
 #: 规格表里的分组英文标签 → 语言键后缀。spec.json 与原型同源、标签不可改，
 #: 因此用这张固定映射把「规格」和「显示文案」解耦。
@@ -36,13 +51,15 @@ class PetWindow(QWidget):
     - 双击触发弹跳。
     """
 
-    def __init__(self, engine: MihoutaoEngine, *, size: int = 220) -> None:
+    def __init__(self, engine: MihoutaoEngine, *, size: int | None = None) -> None:
         super().__init__(None)
         self.engine = engine
+        # 默认值只来自 DEFAULTS：设置页、控制器与窗口共用同一份配置，避免漂移。
+        body_size = _clamp_body_size(DEFAULTS["size"] if size is None else size)
         # 引擎的 viewBox 比本体大一圈（承接 overflow: visible 的装饰层），
         # 画布按同样倍率放大，本体才维持 size 指定的视觉尺寸。
-        self._size = max(64, round(size * canvas_scale()))
-        self._body_size = size
+        self._body_size = body_size
+        self._size = max(64, round(body_size * canvas_scale()))
         self._drag_offset: QPoint | None = None
         self._renderer = QSvgRenderer()
         self._pixmap = QPixmap(self._size, self._size)
@@ -117,6 +134,26 @@ class PetWindow(QWidget):
         self.setWindowFlags(flags)
         if was_visible:
             self.show()
+
+    def set_body_size(self, size: int) -> int:
+        """调整本体尺寸并立即重建画布；右下角锚定，避免放大后整体位移。
+
+        设置页保存后由控制器调用，无需重启宠物；越界值按设置页同一区间夹取。
+        """
+        body_size = _clamp_body_size(size)
+        canvas = max(64, round(body_size * canvas_scale()))
+        if canvas == self._size and body_size == self._body_size:
+            return body_size
+        right = self.x() + self._size
+        bottom = self.y() + self._size
+        self._body_size = body_size
+        self._size = canvas
+        self._pixmap = QPixmap(canvas, canvas)
+        self._pixmap.fill(Qt.transparent)
+        self.setFixedSize(canvas, canvas)
+        self.move(right - canvas, bottom - canvas)
+        self.update()
+        return body_size
 
     def _tick(self) -> None:
         now = time.monotonic()

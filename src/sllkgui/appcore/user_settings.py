@@ -49,7 +49,7 @@ _FILE_NAME = "user.yaml"
 _LEGACY_FILE = "ui_state.json"
 _SUBDIR = "settings"
 #: 用户配置显式版本号；文件缺失该键时按 v1 处理
-SCHEMA_VERSION = 5
+SCHEMA_VERSION = 6
 _SCHEMA_KEY = "schema_version"
 #: 允许持久化的字段（与 AppSettings / 外观配置一一对应）
 SUPPORTED_FIELDS = (
@@ -63,6 +63,7 @@ SUPPORTED_FIELDS = (
     "glass_strength",
     "background_image",
     "background_fit",
+    "background_blur",
     "background_recent",
     # 桌面宠物（基座原生设置页）
     "pet_show",
@@ -84,11 +85,22 @@ RUNTIME_ONLY_FIELDS = frozenset({"startup_size", "background_recent"})
 #: 背景图的适应模式（与 Windows 个性化设置一致）
 BACKGROUND_FIT_MODES = ("fill", "fit", "stretch", "tile", "center")
 
+#: 背景模糊强度，单位与窗口逻辑像素一致（0 表示不模糊）。
+#: 默认 0：升级后不改变既有背景观感，需要时由用户在设置中增强。
+BACKGROUND_BLUR_DEFAULT = 0
+#: 模糊上限：设置滑块、运行期 clamp 与配置校验共用这一个来源。
+BACKGROUND_BLUR_MAX = 60
+
 # FIX-02: v3 新增的背景字段默认值，供 v2→v3 迁移按需补齐。
 V3_BACKGROUND_DEFAULTS: dict[str, Any] = {
     "background_image": "",
     "background_fit": BACKGROUND_FIT_MODES[0],
     "background_recent": [],
+}
+
+#: v6 新增背景模糊字段的默认值，供 v5→v6 迁移按需补齐。
+V6_BACKGROUND_DEFAULTS: dict[str, Any] = {
+    "background_blur": BACKGROUND_BLUR_DEFAULT,
 }
 
 # FIX-02: 显式记录版本跃迁计划：(目标版本, 该版本新增字段默认值, 跃迁说明)。
@@ -98,6 +110,7 @@ MIGRATION_STEPS: tuple[tuple[int, dict[str, Any], str], ...] = (
     (3, V3_BACKGROUND_DEFAULTS, "v2→v3：新增 background_image / background_fit / background_recent"),
     (4, {}, "v3→v4：新增 drawer_mode（四向抽屉的 Static / Overlay 布局模式）"),
     (5, {"remember_window_size": True}, "v4→v5：新增 remember_window_size（关闭时是否写入启动尺寸）"),
+    (6, V6_BACKGROUND_DEFAULTS, "v5→v6：新增 background_blur（背景图层模糊强度，0 表示不模糊）"),
 )
 
 _LOCK = threading.Lock()
@@ -135,6 +148,11 @@ def _normalize_field(key: str, value: Any) -> Any | None:
         return None
     if key == "background_fit":
         return value if value in BACKGROUND_FIT_MODES else None
+    if key == "background_blur":
+        if isinstance(value, bool) or not isinstance(value, int):
+            return None
+        # 手改配置时夹到合法区间，避免一个越界值让整张背景直接失效。
+        return max(0, min(BACKGROUND_BLUR_MAX, value))
     if key == "background_recent":
         if not isinstance(value, (list, tuple)):
             return None
@@ -389,6 +407,8 @@ def reset_user_settings_cache() -> None:
 
 
 __all__ = [
+    "BACKGROUND_BLUR_DEFAULT",
+    "BACKGROUND_BLUR_MAX",
     "BACKGROUND_FIT_MODES",
     "RUNTIME_ONLY_FIELDS",
     "SCHEMA_VERSION",

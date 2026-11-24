@@ -18,6 +18,7 @@
     session.save()
 """
 
+from .base import KEY_BACKGROUND_BLUR as KEY_BACKGROUND_BLUR
 from .base import KEY_BACKGROUND_FIT as KEY_BACKGROUND_FIT
 from .base import KEY_BACKGROUND_IMAGE as KEY_BACKGROUND_IMAGE
 from .base import KEY_DRAWER_MODE as KEY_DRAWER_MODE
@@ -79,6 +80,7 @@ def reset_core_settings_install() -> None:
 
 __all__ = [
     "CoreSettingsBackend",
+    "KEY_BACKGROUND_BLUR",
     "KEY_BACKGROUND_FIT",
     "KEY_BACKGROUND_IMAGE",
     "KEY_DRAWER_MODE",

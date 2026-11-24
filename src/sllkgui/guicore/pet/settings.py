@@ -26,7 +26,7 @@ DEFAULTS: dict[str, Any] = {
     "pinned": True,
     "shape": "blob",
     "color": "green",
-    "size": 220,
+    "size": 100,
     "deco_scale": 1.32,
 }
 

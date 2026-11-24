@@ -2,11 +2,16 @@ from PySide6.QtCore import QEasingCurve, QPropertyAnimation, QRectF, Qt, QTimer
 from PySide6.QtGui import QColor, QPainter, QPainterPath, QPixmap
 from PySide6.QtWidgets import QApplication, QFrame, QGraphicsDropShadowEffect, QHBoxLayout, QVBoxLayout
 
-from sllkgui.appcore import AppSettings, ColorPalette, get_design_tokens, get_theme_manager, track_timing
-from sllkgui.appcore.user_settings import BACKGROUND_FIT_MODES
+from sllkgui.appcore import AppSettings, ColorPalette, Logger, get_design_tokens, get_theme_manager, track_timing
+from sllkgui.appcore.user_settings import (
+    BACKGROUND_BLUR_DEFAULT,
+    BACKGROUND_BLUR_MAX,
+    BACKGROUND_FIT_MODES,
+)
 
 from ...acrylic import acrylic_active, acrylic_transparency, apply_acrylic, glass_strength, remove_acrylic
 from ...background import background_image_active, set_background_image_active
+from ...background_blur import blur_background
 from ...styles import Styles
 
 #: 无圆角、无边框的框架状态（最大化 / 贴边时使用），对应样式表里的属性选择器
@@ -50,9 +55,10 @@ class CWindow(QFrame):
         #: 样式缓存：来源键 + 对应的 base 样式表（构造期字段需先于 apply_style 初始化）
         self._style_cache_key = None
         self._style_cache_base: str | None = None
-        #: 背景图：源路径、适应模式与缩放缓存
+        #: 背景图：源路径、适应模式、模糊强度与缩放缓存
         self._background_image = ""
         self._background_fit = "fill"
+        self._background_blur = int(BACKGROUND_BLUR_DEFAULT)
         self._background_pixmap = QPixmap()
         self._background_cache: QPixmap | None = None
         self._background_cache_key: tuple | None = None
@@ -137,6 +143,31 @@ class CWindow(QFrame):
     def background_fit(self) -> str:
         """背景图适应模式（fill / fit / stretch / tile / center）。"""
         return self._background_fit
+
+    def background_blur(self) -> int:
+        """当前背景模糊强度（逻辑像素，0 表示不模糊）。"""
+        return self._background_blur
+
+    def set_background_blur(self, strength: int) -> int:
+        """设置背景模糊强度并立即重绘；越界值夹到 ``0..BACKGROUND_BLUR_MAX``。
+
+        只改背景绘制用的缓存，不触碰任何子控件的渲染方式，因此宠物、文字
+        与前景图层始终保持清晰；没有背景图时调用也安全，不产生任何效果。
+        """
+        if isinstance(strength, bool):
+            value = int(BACKGROUND_BLUR_DEFAULT)
+        else:
+            try:
+                value = int(strength)
+            except (TypeError, ValueError):
+                value = int(BACKGROUND_BLUR_DEFAULT)
+        value = max(0, min(BACKGROUND_BLUR_MAX, value))
+        if value != self._background_blur:
+            self._background_blur = value
+            self._background_cache = None
+            self._background_cache_key = None
+            self.update()
+        return self._background_blur
 
     def set_background_image(self, path: str | None, fit: str | None = None) -> bool:
         """设置或清除窗口背景图；路径无效时回落到纯色背景。
@@ -230,7 +261,7 @@ class CWindow(QFrame):
         """按当前尺寸与适应模式缩放背景图（带缓存）。"""
         if self._background_pixmap.isNull() or self.width() <= 0 or self.height() <= 0:
             return None
-        key = (self.width(), self.height(), self._background_fit, self.devicePixelRatioF())
+        key = (self.width(), self.height(), self._background_fit, self.devicePixelRatioF(), self._background_blur)
         if self._background_cache is not None and self._background_cache_key == key:
             return self._background_cache
         width, height = self.width(), self.height()
@@ -264,6 +295,11 @@ class CWindow(QFrame):
             y = (height - scaled.height()) // 2
             painter.drawPixmap(x, y, scaled)
         painter.end()
+        if self._background_blur > 0:
+            try:
+                surface = blur_background(surface, self._background_blur)
+            except Exception as exc:  # noqa: BLE001 - 模糊失败回退清晰背景，不影响窗口可用性
+                Logger.debug(f"背景模糊失败，已回退清晰背景: {exc}")
         self._background_cache = surface
         self._background_cache_key = key
         return surface

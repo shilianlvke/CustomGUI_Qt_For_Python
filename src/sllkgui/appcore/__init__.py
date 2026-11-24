@@ -14,6 +14,7 @@ from .feedback import (
     ToastState,
 )
 from .settings import (
+    KEY_BACKGROUND_BLUR,
     KEY_BACKGROUND_FIT,
     KEY_BACKGROUND_IMAGE,
     KEY_DRAWER_MODE,
@@ -161,6 +162,7 @@ __all__ = [
     "KEY_GLASS_STRENGTH",
     "KEY_BACKGROUND_IMAGE",
     "KEY_BACKGROUND_FIT",
+    "KEY_BACKGROUND_BLUR",
     "KEY_LANGUAGE",
     "KEY_MENU_MODE",
     "KEY_DRAWER_MODE",

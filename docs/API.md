@@ -84,7 +84,7 @@ AppLanguages["zh_cn"].data
 运行时修改的外观偏好写入 `<data_root>/settings/user.yaml`（默认落在程序运行
 根目录下的 `settings/user.yaml`，可用 `configure(data_dir=...)` 或
 `SLLKGUI_DATA_DIR` 覆盖），只记录改动过的键。文件首行带
-`schema_version`（当前为 `5`）；缺失该键按 v1 读取，高于当前版本时只读取
+`schema_version`（当前为 `6`）；缺失该键按 v1 读取，高于当前版本时只读取
 已知字段并告警，**回写时保留原版本号与所有未知键、绝不降级**：
 
 | 字段 | 来源 | 写入时机 |
@@ -94,7 +94,7 @@ AppLanguages["zh_cn"].data
 | `menu_mode` | 左菜单 Static / Overlay | 点「保存」时写入 |
 | `drawer_mode` | 四向抽屉 Static / Overlay | 点「保存」时写入 |
 | `acrylic_transparency` / `glass_strength` | 材质滑块 | 点「保存」时写入 |
-| `background_image` / `background_fit` | 背景设置 | 点「保存」时写入 |
+| `background_image` / `background_fit` / `background_blur` | 背景设置 | 点「保存」时写入 |
 | `background_recent` | 最近使用的背景图 | 选择背景图时写入，最多 5 条并自动去重 |
 | `remember_window_size` | 启动与窗口 | 点「保存」时写入 |
 | `startup_size` | 窗口尺寸 | 正常关闭且「记住窗口尺寸」开启时写入（最大化/最小化/全屏跳过） |
@@ -374,11 +374,14 @@ window.set_background_image("C:/Pictures/wall.png", "fill")  # fill / fit / stre
 window.set_background_fit("fit")
 window.background_image()   # -> 路径；空字符串表示主题纯色
 window.background_fit()     # -> 当前适应模式
-window.set_background_image("")  # 清除
+window.set_background_blur(18)  # 背景模糊强度 0–60 px；0 表示不模糊
+window.background_blur()    # -> 当前强度
+window.set_background_image("")  # 清除背景图（模糊值保留，选新图时继续生效）
 ```
 
-背景图由 `CWindow.paintEvent` 绘制并按尺寸缓存缩放结果；激活时各层表面自动转为
-半透明（复用玻璃层参数并保留可读性下限），不会新增外层背景控件。
+背景图由 `CWindow.paintEvent` 绘制并按尺寸缓存缩放结果；模糊只作用于这张
+背景 pixmap，不挂到窗口或子控件，宠物、文字与前景图层保持清晰。激活时各层
+表面自动转为半透明（复用玻璃层参数并保留可读性下限），不会新增外层背景控件。
 
 预览页基类拼好页面外壳（滚动容器、卡片、分区标题），子类只需实现 `sections`：
 
