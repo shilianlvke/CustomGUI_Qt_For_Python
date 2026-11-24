@@ -49,7 +49,7 @@ _FILE_NAME = "user.yaml"
 _LEGACY_FILE = "ui_state.json"
 _SUBDIR = "settings"
 #: 用户配置显式版本号；文件缺失该键时按 v1 处理
-SCHEMA_VERSION = 6
+SCHEMA_VERSION = 7
 _SCHEMA_KEY = "schema_version"
 #: 允许持久化的字段（与 AppSettings / 外观配置一一对应）
 SUPPORTED_FIELDS = (
@@ -61,6 +61,7 @@ SUPPORTED_FIELDS = (
     "remember_window_size",
     "acrylic_transparency",
     "glass_strength",
+    "settings_acrylic",
     "background_image",
     "background_fit",
     "background_blur",
@@ -103,6 +104,11 @@ V6_BACKGROUND_DEFAULTS: dict[str, Any] = {
     "background_blur": BACKGROUND_BLUR_DEFAULT,
 }
 
+#: v7 新增「设置页亚克力」开关；默认开启，保持升级前的亚克力观感。
+V7_APPEARANCE_DEFAULTS: dict[str, Any] = {
+    "settings_acrylic": True,
+}
+
 # FIX-02: 显式记录版本跃迁计划：(目标版本, 该版本新增字段默认值, 跃迁说明)。
 # 迁移按序跨过每个目标版本，从旧版本一路演进到 SCHEMA_VERSION。
 MIGRATION_STEPS: tuple[tuple[int, dict[str, Any], str], ...] = (
@@ -111,6 +117,7 @@ MIGRATION_STEPS: tuple[tuple[int, dict[str, Any], str], ...] = (
     (4, {}, "v3→v4：新增 drawer_mode（四向抽屉的 Static / Overlay 布局模式）"),
     (5, {"remember_window_size": True}, "v4→v5：新增 remember_window_size（关闭时是否写入启动尺寸）"),
     (6, V6_BACKGROUND_DEFAULTS, "v5→v6：新增 background_blur（背景图层模糊强度，0 表示不模糊）"),
+    (7, V7_APPEARANCE_DEFAULTS, "v6→v7：新增 settings_acrylic（设置窗口亚克力开关）"),
 )
 
 _LOCK = threading.Lock()
@@ -136,6 +143,8 @@ def _normalize_field(key: str, value: Any) -> Any | None:
         if isinstance(value, bool) or not isinstance(value, int):
             return None
         return value if 0 <= value <= 100 else None
+    if key == "settings_acrylic":
+        return value if isinstance(value, bool) else None
     if key == "startup_size":
         if not isinstance(value, (list, tuple)) or len(value) != 2:
             return None

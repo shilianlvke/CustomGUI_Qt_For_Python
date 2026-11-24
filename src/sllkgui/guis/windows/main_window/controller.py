@@ -11,6 +11,7 @@ from PySide6.QtWidgets import QPushButton, QWidget
 
 from sllkgui.appcore import (
     KEY_BACKGROUND_BLUR,
+    KEY_SETTINGS_ACRYLIC,
     KEY_THEME,
     Language,
     Logger,
@@ -249,6 +250,8 @@ class SettingsController:
         elif key == "core.appearance.glass_strength":
             set_glass_strength(int(value))
             self.refresh_styles()
+        elif key == KEY_SETTINGS_ACRYLIC:
+            self._apply_settings_window_acrylic(bool(value))
         elif key in ("core.appearance.background_image", "core.appearance.background_fit"):
             self._apply_background_preview(key, value)
         elif key == KEY_BACKGROUND_BLUR:
@@ -289,6 +292,12 @@ class SettingsController:
         except (TypeError, ValueError):
             self._logger.debug(f"忽略非法背景模糊值: {value!r}")
 
+    def _apply_settings_window_acrylic(self, enabled: bool) -> None:
+        """设置页亚克力实时预览：只改当前设置窗口，不触碰主界面。"""
+        window = self._settings_window
+        if window is not None:
+            window.set_settings_acrylic(bool(enabled))
+
     def _apply_menu_mode(self, mode: str) -> None:
         """应用菜单模式；持久化由 ``SettingsSession.save()`` 统一负责。"""
         setter = getattr(MainFunctions, "set_menu_mode", None)
@@ -318,6 +327,8 @@ class SettingsController:
         if "core.appearance.glass_strength" in changes:
             set_glass_strength(int(changes["core.appearance.glass_strength"]))
             self.refresh_styles()
+        if KEY_SETTINGS_ACRYLIC in changes:
+            self._apply_settings_window_acrylic(bool(changes[KEY_SETTINGS_ACRYLIC]))
         if KEY_BACKGROUND_BLUR in changes:
             self._apply_background_blur(changes[KEY_BACKGROUND_BLUR])
         if "core.appearance.background_image" in changes or "core.appearance.background_fit" in changes:

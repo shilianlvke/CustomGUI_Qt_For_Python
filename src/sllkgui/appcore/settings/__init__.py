@@ -26,6 +26,7 @@ from .base import KEY_GLASS_STRENGTH as KEY_GLASS_STRENGTH
 from .base import KEY_LANGUAGE as KEY_LANGUAGE
 from .base import KEY_MENU_MODE as KEY_MENU_MODE
 from .base import KEY_REMEMBER_SIZE as KEY_REMEMBER_SIZE
+from .base import KEY_SETTINGS_ACRYLIC as KEY_SETTINGS_ACRYLIC
 from .base import KEY_THEME as KEY_THEME
 from .base import KEY_TRANSPARENCY as KEY_TRANSPARENCY
 from .base import build_core_pages
@@ -88,6 +89,7 @@ __all__ = [
     "KEY_LANGUAGE",
     "KEY_MENU_MODE",
     "KEY_REMEMBER_SIZE",
+    "KEY_SETTINGS_ACRYLIC",
     "KEY_THEME",
     "KEY_TRANSPARENCY",
     "PluginSettingsBackend",

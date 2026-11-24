@@ -30,6 +30,7 @@ from PySide6.QtWidgets import (
 
 from sllkgui import __version__
 from sllkgui.appcore import (
+    KEY_SETTINGS_ACRYLIC,
     AppSettings,
     Language,
     Logger,
@@ -40,14 +41,14 @@ from sllkgui.appcore import (
     settings_page_bus,
 )
 
-from ...acrylic import apply_acrylic
+from ...acrylic import acrylic_active, apply_acrylic, remove_acrylic
 from ...custom_ui.close_button import CCloseButton
 from ...custom_ui.line_edit.input_text import CInputText
 from ...custom_ui.overlay.confirm import CConfirmDialog
 from ...custom_ui.panels.settings import CEditActionBar
 from ...custom_ui.panels.side_nav import CSideNav, CSideNavGroup, CSideNavItem
 from ...custom_ui.scroll.scroll_area import CScrollArea
-from ...styles import overlay_surface_color
+from ...styles import window_surface_border, window_surface_gradient
 from .pages import AboutPage, SchemaPage, ShortcutsPage, build_plugin_empty_page
 
 _PAGE_ABOUT = "__about__"
@@ -165,6 +166,8 @@ class CSettingsWindow(QDialog):
 
         ensure_core_pages(session.registry if session is not None else None)
         self._session = session if session is not None else SettingsSession()
+        #: 设置页亚克力开关：只影响本窗口，读取用户参数体系里的持久值
+        self._settings_acrylic = bool(self._session.value(KEY_SETTINGS_ACRYLIC))
         self._host = host if host is not None else parent
         #: 插件显示名提供者：由装配层注入，guicore 不 import gallery
         self._plugin_titles_provider = plugin_titles
@@ -799,6 +802,26 @@ class CSettingsWindow(QDialog):
     def _on_theme_applied(self) -> None:
         self.update_style()
 
+    def _effective_acrylic(self) -> bool:
+        """设置页是否真正使用亚克力：用户开关与全局材质能力同时成立。"""
+        return bool(self._settings_acrylic and acrylic_active())
+
+    def set_settings_acrylic(self, enabled: bool) -> None:
+        """实时开关设置页亚克力；只影响本窗口，不改变主界面材质。"""
+        enabled = bool(enabled)
+        if enabled == self._settings_acrylic:
+            return
+        self._settings_acrylic = enabled
+        self._sync_acrylic()
+        self.update()
+
+    def _sync_acrylic(self) -> None:
+        """按当前开关挂载/移除系统级亚克力材质。"""
+        if self._effective_acrylic():
+            apply_acrylic(self)
+        else:
+            remove_acrylic(self)
+
     def update_style(self) -> None:
         tokens = get_design_tokens()
         colors = tokens.colors
@@ -834,6 +857,8 @@ class CSettingsWindow(QDialog):
             update = getattr(view, "update_style", None)
             if callable(update):
                 update()
+        if self.isVisible():
+            self._sync_acrylic()
         self.update()
 
     def update_theme_label(self) -> None:
@@ -842,13 +867,17 @@ class CSettingsWindow(QDialog):
         self.theme_label.setText(f"{label} · {Language.resolve_key('language.UI.ui_SettingsCurrentTheme', '当前主题')}")
 
     def paintEvent(self, event):  # noqa: N802 - 覆写 Qt 命名
-        """绘制窗口自身表面；不再有内层卡片或描边。"""
+        """绘制与主界面同源的窗口表面：玻璃渐变 + 同色发丝描边。"""
         tokens = get_design_tokens()
+        glass = self._effective_acrylic()
         painter = QPainter(self)
         painter.setRenderHint(QPainter.Antialiasing)
         path = QPainterPath()
         path.addRoundedRect(QRectF(self.rect()), tokens.radius.window, tokens.radius.window)
-        painter.fillPath(path, overlay_surface_color())
+        painter.fillPath(path, window_surface_gradient(QRectF(self.rect()), glass=glass))
+        painter.setBrush(Qt.BrushStyle.NoBrush)
+        painter.setPen(QPen(window_surface_border(glass), tokens.border.width))
+        painter.drawPath(path)
         painter.end()
 
     # ------------------------------------------------------------------
@@ -897,7 +926,7 @@ class CSettingsWindow(QDialog):
         if parent is not None:
             parent.installEventFilter(self)
         super().showEvent(event)
-        apply_acrylic(self)
+        self._sync_acrylic()
 
     def eventFilter(self, obj, event):  # noqa: N802 - 覆写 Qt 命名
         if obj is self.parentWidget() and event.type() == QEvent.Type.Resize and self.isVisible():
@@ -942,6 +971,7 @@ class CSettingsWindow(QDialog):
             get_theme_manager().unsubscribe(self._on_theme_applied)
         except Exception:  # noqa: BLE001 - 退订失败不阻塞关闭
             pass
+        remove_acrylic(self)
         self.closed.emit()
         super().closeEvent(event)
 

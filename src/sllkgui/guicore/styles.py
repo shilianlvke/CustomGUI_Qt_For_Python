@@ -7,7 +7,8 @@ rgba/渐变辅助函数按 acrylic 状态合成；与主题无关的几何量由
 """
 
 # 这里决定整个window的总体样式
-from PySide6.QtGui import QColor
+from PySide6.QtCore import QRectF
+from PySide6.QtGui import QColor, QLinearGradient
 
 from sllkgui.appcore import AppSettings, Logger, PathFactory, get_design_tokens
 
@@ -142,6 +143,40 @@ def overlay_border_color() -> QColor:
         return QColor(colors.border_soft)
     color = QColor(colors.text_primary)
     color.setAlpha(round(255 * 0.20))
+    return color
+
+
+def window_surface_gradient(rect: QRectF, *, glass: bool | None = None) -> QLinearGradient:
+    """窗口级底色渐变：主窗口与独立设置窗口共用同一套色阶与透明度。
+
+    ``glass`` 显式传入时按调用方自己的亚克力开关计算；``None`` 跟随全局
+    亚克力/背景图状态。设置窗口没有背景图，必须由调用方传自己的开关，
+    否则会在「设置页亚克力关闭」时仍画出半透明表面。
+    """
+    if glass is None:
+        glass = glass_surfaces()
+    colors = get_design_tokens().colors
+    top = QColor(_mix(colors.surface_canvas, colors.text_primary, 0.025))
+    bottom = QColor(_mix(colors.surface_canvas, colors.surface_sunken, 0.55))
+    if glass:
+        alpha = round(255 * glass_alpha(AppSettings.glass.window, minimum=MIN_WINDOW_GLASS_ALPHA))
+        top.setAlpha(alpha)
+        bottom.setAlpha(alpha)
+    gradient = QLinearGradient(rect.topLeft(), rect.bottomLeft())
+    gradient.setColorAt(0.0, top)
+    gradient.setColorAt(1.0, bottom)
+    return gradient
+
+
+def window_surface_border(glass: bool | None = None) -> QColor:
+    """窗口描边：玻璃模式取正文色 16%，实色模式取主题发丝线。"""
+    if glass is None:
+        glass = glass_surfaces()
+    colors = get_design_tokens().colors
+    if not glass:
+        return QColor(colors.border_soft)
+    color = QColor(colors.text_primary)
+    color.setAlpha(round(255 * 0.16))
     return color
 
 

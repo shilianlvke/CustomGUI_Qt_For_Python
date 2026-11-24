@@ -84,7 +84,7 @@ AppLanguages["zh_cn"].data
 运行时修改的外观偏好写入 `<data_root>/settings/user.yaml`（默认落在程序运行
 根目录下的 `settings/user.yaml`，可用 `configure(data_dir=...)` 或
 `SLLKGUI_DATA_DIR` 覆盖），只记录改动过的键。文件首行带
-`schema_version`（当前为 `6`）；缺失该键按 v1 读取，高于当前版本时只读取
+`schema_version`（当前为 `7`）；缺失该键按 v1 读取，高于当前版本时只读取
 已知字段并告警，**回写时保留原版本号与所有未知键、绝不降级**：
 
 | 字段 | 来源 | 写入时机 |
@@ -94,6 +94,7 @@ AppLanguages["zh_cn"].data
 | `menu_mode` | 左菜单 Static / Overlay | 点「保存」时写入 |
 | `drawer_mode` | 四向抽屉 Static / Overlay | 点「保存」时写入 |
 | `acrylic_transparency` / `glass_strength` | 材质滑块 | 点「保存」时写入 |
+| `settings_acrylic` | 设置页亚克力开关（默认 `true`） | 点「保存」时写入 |
 | `background_image` / `background_fit` / `background_blur` | 背景设置 | 点「保存」时写入 |
 | `background_recent` | 最近使用的背景图 | 选择背景图时写入，最多 5 条并自动去重 |
 | `remember_window_size` | 启动与窗口 | 点「保存」时写入 |

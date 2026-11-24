@@ -37,6 +37,7 @@ STORAGE_MENU_MODE = "menu_mode"
 STORAGE_DRAWER_MODE = "drawer_mode"
 STORAGE_TRANSPARENCY = "acrylic_transparency"
 STORAGE_GLASS_STRENGTH = "glass_strength"
+STORAGE_SETTINGS_ACRYLIC = "settings_acrylic"
 STORAGE_BACKGROUND_IMAGE = "background_image"
 STORAGE_BACKGROUND_FIT = "background_fit"
 STORAGE_BACKGROUND_BLUR = "background_blur"
@@ -54,6 +55,7 @@ STORAGE_PET_DECO = "pet_deco_scale"
 KEY_THEME = f"core.{PAGE_APPEARANCE}.theme"
 KEY_TRANSPARENCY = f"core.{PAGE_APPEARANCE}.transparency"
 KEY_GLASS_STRENGTH = f"core.{PAGE_APPEARANCE}.glass_strength"
+KEY_SETTINGS_ACRYLIC = f"core.{PAGE_APPEARANCE}.settings_acrylic"
 KEY_BACKGROUND_IMAGE = f"core.{PAGE_APPEARANCE}.background_image"
 KEY_BACKGROUND_FIT = f"core.{PAGE_APPEARANCE}.background_fit"
 KEY_BACKGROUND_BLUR = f"core.{PAGE_APPEARANCE}.background_blur"
@@ -292,6 +294,16 @@ def build_core_pages() -> tuple[SettingsPage, ...]:
                         live_preview=True,
                         storage_key=STORAGE_GLASS_STRENGTH,
                     ),
+                    SettingSpec.switch(
+                        "settings_acrylic",
+                        True,
+                        "设置页亚克力",
+                        hint="让设置窗口使用与主界面一致的亚克力材质；关闭后改为不透明主题底色。",
+                        label_key="language.UI.ui_SettingsAcrylic",
+                        hint_key="language.UI.ui_SettingsAcrylicHint",
+                        live_preview=True,
+                        storage_key=STORAGE_SETTINGS_ACRYLIC,
+                    ),
                 ),
             ),
             SettingsSection(
@@ -457,6 +469,7 @@ __all__ = [
     "KEY_LANGUAGE",
     "KEY_MENU_MODE",
     "KEY_REMEMBER_SIZE",
+    "KEY_SETTINGS_ACRYLIC",
     "KEY_THEME",
     "KEY_TRANSPARENCY",
     "PAGE_APPEARANCE",

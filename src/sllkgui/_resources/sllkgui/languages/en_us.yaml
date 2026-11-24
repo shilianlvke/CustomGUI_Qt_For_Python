@@ -230,6 +230,8 @@ UI:
   ui_TransparencyHint: Higher values reveal more of the desktop behind the window
   ui_GlassStrength: Acrylic Strength
   ui_GlassStrengthHint: "Higher values make the blur texture more visible."
+  ui_SettingsAcrylic: Settings Acrylic
+  ui_SettingsAcrylicHint: "Use the same acrylic material as the main window; disable for an opaque themed surface."
   ui_Language: Language
   ui_LanguageHint: "Choose the interface language."
   ui_MenuMode: Menu Mode

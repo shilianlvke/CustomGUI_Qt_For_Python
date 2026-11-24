@@ -230,6 +230,8 @@ UI:
   ui_TransparencyHint: 数值越大，桌面内容透出越明显
   ui_GlassStrength: 亚克力质感强度
   ui_GlassStrengthHint: "数值越大，模糊质感越明显。"
+  ui_SettingsAcrylic: 设置页亚克力
+  ui_SettingsAcrylicHint: "让设置窗口使用与主界面一致的亚克力材质；关闭后改为不透明主题底色。"
   ui_Language: 语言
   ui_LanguageHint: "选择界面显示语言。"
   ui_MenuMode: 菜单模式

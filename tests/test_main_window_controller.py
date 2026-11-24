@@ -116,6 +116,20 @@ def test_settings_controller_builds_plugin_page_item_id():
     assert opened == ["plugin::com.example.plugin::com.example.plugin"]
 
 
+def test_settings_acrylic_preview_only_updates_settings_window():
+    from sllkgui.appcore import KEY_SETTINGS_ACRYLIC
+
+    calls: list[bool] = []
+    controller = object.__new__(SettingsController)
+    controller._window = SimpleNamespace(ui=None)
+    controller._settings_window = SimpleNamespace(set_settings_acrylic=lambda enabled: calls.append(enabled))
+
+    controller._preview_setting(KEY_SETTINGS_ACRYLIC, False)
+    controller._apply_saved_settings({KEY_SETTINGS_ACRYLIC: True})
+
+    assert calls == [False, True]
+
+
 def test_save_language_keeps_settings_window_open(monkeypatch):
     from sllkgui.appcore import ThemeManager
     from sllkgui.guis import language_service

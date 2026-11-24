@@ -47,6 +47,10 @@ sllkgui/
 3.0 起基座只保留独立设置窗口这一套界面：右侧设置抽屉与左栏设置面板已删除，
 标题栏按钮、``Ctrl+,``、托盘「设置…」与展厅入口全部指向 `CSettingsWindow`。
 
+设置窗口与主窗口共用同一套窗口玻璃渐变、发丝描边和系统亚克力材质锚点；
+外观页的 `settings_acrylic`（默认开启）只控制设置窗口自身的亚克力开关，
+关闭时回落到不透明主题底色，主窗口材质与布局不受影响。
+
 ## 3. 命名空间与键
 
 | 来源 | 完整键 | 存储位置 |
@@ -65,7 +69,7 @@ sllkgui/
 
 | 页面 | 内容 | 存储键 |
 | --- | --- | --- |
-| 外观 | 主题卡片、窗口透明度、亚克力质感、背景图 / 适应模式 / 模糊强度 | `theme_name` `acrylic_transparency` `glass_strength` `background_image` `background_fit` `background_blur` |
+| 外观 | 主题卡片、窗口透明度、亚克力质感、设置页亚克力、背景图 / 适应模式 / 模糊强度 | `theme_name` `acrylic_transparency` `glass_strength` `settings_acrylic` `background_image` `background_fit` `background_blur` |
 | 界面 | 语言、左菜单模式、抽屉模式 | `language` `menu_mode` `drawer_mode` |
 | 启动与窗口 | 记住窗口尺寸 + 当前 / 最小 / 启动尺寸只读信息 | `remember_window_size` |
 | 快捷键 | 基座与插件绑定按 owner 分组展示、冲突计数 | 只读（快捷键表） |
@@ -184,6 +188,7 @@ SettingsSection(
 3. 保存按命名空间分组写入，全部成功才清空脏值；失败保留脏值并提示；
 4. 关闭窗口时若有未保存改动，弹出「放弃并关闭 / 取消」确认；
 5. 主题、透明度、质感、背景与背景模糊在编辑时实时预览；放弃或关闭时按基线还原。
+   `settings_acrylic` 为布尔开关，切换后立即挂载/移除设置窗口的系统亚克力，不留到保存后再生效。
 
 ## 8. 测试
 

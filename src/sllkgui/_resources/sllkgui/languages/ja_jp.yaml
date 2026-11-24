@@ -231,6 +231,8 @@ UI:
   ui_TransparencyHint: 値を大きくするとデスクトップがより透けて見えます
   ui_GlassStrength: アクリル質感の強さ
   ui_GlassStrengthHint: "値を大きくすると、ぼかしの質感が強くなります。"
+  ui_SettingsAcrylic: 設定画面のアクリル
+  ui_SettingsAcrylicHint: "設定ウィンドウをメイン画面と同じアクリル素材にします。オフにすると不透明なテーマ背景になります。"
   ui_Language: 言語
   ui_LanguageHint: "インターフェースの表示言語を選択します。"
   ui_MenuMode: メニューモード

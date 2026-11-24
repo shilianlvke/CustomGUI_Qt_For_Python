@@ -391,7 +391,7 @@ def test_write_atomic_uses_unique_temp_and_fsync(monkeypatch):
 
 
 def test_migrate_state_fills_v2_v3_defaults():
-    """FIX-02: _migrate_state 显式记录 v1→…→v6 并按需补齐各版新增默认值。"""
+    """FIX-02: _migrate_state 显式记录 v1→…→v7 并按需补齐各版新增默认值。"""
     # FIX-02: 直接调用内部迁移函数，验证跃迁记录、默认值补齐与「只补不删」。
     transitions: list[str] = []
     migrated = user_settings._migrate_state(
@@ -401,22 +401,24 @@ def test_migrate_state_fills_v2_v3_defaults():
         transitions=transitions,
     )
 
-    assert len(transitions) == 5, "v1->v2 -> v3 -> v4 -> v5 -> v6 must be recorded"
+    assert len(transitions) == 6, "v1->v2 -> v3 -> v4 -> v5 -> v6 -> v7 must be recorded"
     assert migrated["theme_name"] == "eye", "existing keys must be preserved"
     assert migrated["background_image"] == "/x.png", "existing keys must not be overwritten by defaults"
     assert migrated["background_blur"] == 9, "existing blur must not be overwritten by v6 default"
     assert migrated["background_fit"] == user_settings.BACKGROUND_FIT_MODES[0], "v3 default must be filled"
     assert migrated["background_recent"] == [], "v3 default must be filled"
     assert migrated["remember_window_size"] is True, "v5 default must be filled"
+    assert migrated["settings_acrylic"] is True, "v7 default must be filled"
 
     only_v3: list[str] = []
     from_v2 = user_settings._migrate_state({}, version=2, fill_defaults=True, transitions=only_v3)
-    assert len(only_v3) == 4, "v2->v3, v3->v4, v4->v5 and v5->v6 transitions apply for v2 input"
+    assert len(only_v3) == 5, "v2->v3, v3->v4, v4->v5, v5->v6 and v6->v7 transitions apply for v2 input"
     assert from_v2["background_blur"] == user_settings.BACKGROUND_BLUR_DEFAULT, "v6 default must be filled"
     assert set(from_v2) == set(user_settings.V3_BACKGROUND_DEFAULTS) | {
         "remember_window_size",
         "background_blur",
-    }, "v3, v5 and v6 defaults must be filled"
+        "settings_acrylic",
+    }, "v3, v5, v6 and v7 defaults must be filled"
     assert user_settings._migrate_state({"theme_name": "eye"}, version=1) == {"theme_name": "eye"}, (
         "incremental read must not inject defaults"
     )
