@@ -40,6 +40,24 @@ from .entries import (
 from .panels import InspectorPanel, ListPanel
 from .theme import STAT_DIVIDER_OBJECT, page_sheet
 
+#: 后台任务名 → 宠物联动动作键；未登记的任务走兜底反应（见 pet_bridge）
+PET_ACTION_BY_TASK: dict[str, str] = {
+    "plugin_store.install": "install",
+    "plugin_store.update": "update",
+    "plugin_store.rollback": "rollback",
+    "plugin_store.remove": "remove",
+    "plugin_store.source_add": "source-add",
+    "plugin_store.source_remove": "source-remove",
+    "plugin_store.source_refresh": "source-refresh",
+    "plugin_store.source_refresh_all": "source-refresh",
+    "plugin_store.dependencies": "install",
+}
+
+
+def _pet_action_of(task_name: str) -> str:
+    """把后台任务名映射成宠物联动动作键（未登记的返回空串）。"""
+    return PET_ACTION_BY_TASK.get(str(task_name), "")
+
 
 def build_plugin_store_page(window) -> QWidget:
     """原生页面工厂：由窗口装配层在首次导航时调用。"""
@@ -1290,12 +1308,39 @@ class StorePage(QWidget):
             clipboard.setText(text)
             self.ctx.log(f"错误信息已复制: {code}", "debug")
 
-    def _fail(self, code: str, message: str, exc: Exception) -> None:
+    def _fail(self, code: str, message: str, exc: Exception, *, action: str = "") -> None:
         from .copy import failure_copy
 
         self.ctx.report_error(code, message, str(exc))
         text, level = failure_copy(self.ctx, code)
         self._toast(text, level, code=code, detail=f"{message}\n{exc}")
+        if action:
+            self._pet_operation(action, ok=False)
+
+    # ------------------------------------------------------------------
+    # 桌面宠物联动
+    # ------------------------------------------------------------------
+    def _pet_operation(self, action: str, *, plugin_id: str = "", ok: bool = True) -> None:
+        """把插件管理操作的结果告诉桌面宠物（失败只记日志，不影响页面）。
+
+        走统一事件桥而不是直接引用宠物：宠物未启动时是空操作，
+        ``guis`` 也不必知道宠物实例的存在。
+        """
+        try:
+            from sllkgui.guis.windows.main_window.pet_bridge import on_plugin_operation
+
+            on_plugin_operation(action, plugin_id=plugin_id, ok=ok)
+        except Exception as exc:  # noqa: BLE001 - 宠物反馈绝不打断插件管理
+            self.ctx.log(f"宠物联动发布失败 {action}: {exc}", "debug")
+
+    def _pet_operation_started(self, action: str, *, plugin_id: str = "") -> None:
+        """长耗时操作开始：宠物进入"处理中"的瞬态反馈。"""
+        try:
+            from sllkgui.guis.windows.main_window.pet_bridge import on_plugin_operation_started
+
+            on_plugin_operation_started(action, plugin_id=plugin_id)
+        except Exception as exc:  # noqa: BLE001 - 宠物反馈绝不打断插件管理
+            self.ctx.log(f"宠物联动发布失败 {action}(start): {exc}", "debug")
 
     def _run_async(
         self,
@@ -1328,7 +1373,12 @@ class StorePage(QWidget):
 
         def failed(error: str) -> None:
             finish()
-            self._fail(error_code, f"{name} failed: {error}", RuntimeError(error))
+            self._fail(
+                error_code,
+                f"{name} failed: {error}",
+                RuntimeError(error),
+                action=_pet_action_of(name),
+            )
             single_shot(self, 0, self.refresh_all)
 
         try:
@@ -1351,10 +1401,12 @@ class StorePage(QWidget):
                 # 先补依赖再启用：避免「启用 → 加载失败 → 让用户再找原因」
                 self._ensure_ready(plugin_id, then=lambda: self._set_plugin_enabled(plugin_id, True))
                 return
+        action = "enable" if enabled else "disable"
+        self._pet_operation_started(action, plugin_id=plugin_id)
         try:
             result = manager.set_enabled(plugin_id, enabled) or {}
         except Exception as exc:  # noqa: BLE001 - 页面必须保持可用
-            self._fail("PLUGIN_STORE_TOGGLE_FAILED", f"切换插件状态失败: {exc}", exc)
+            self._fail("PLUGIN_STORE_TOGGLE_FAILED", f"切换插件状态失败: {exc}", exc, action=action)
             # 失败时把开关拨回真实状态，不刷新整页。
             actual = self._plugin_enabled(plugin_id)
             self._sync_item_state(plugin_id, not enabled if actual is None else actual)
@@ -1377,6 +1429,7 @@ class StorePage(QWidget):
                 "（同时停用 {count} 个依赖插件）",
             ).format(count=len(dependents))
         self.set_status(message, "success")
+        self._pet_operation(action, plugin_id=plugin_id)
         self._reload_one(plugin_id, "enable" if enabled else "disable", load=enabled)
 
     def _update_plugin(self, plugin_id: str) -> None:
@@ -1394,8 +1447,10 @@ class StorePage(QWidget):
             else:
                 message = self.ctx.text("status.up_to_date", "「{name}」已是最新版本").format(name=name)
             self.set_status(message, "success")
+            self._pet_operation("update", plugin_id=plugin_id)
             self._ensure_ready(plugin_id, then=lambda: self._reload_one(plugin_id, "update"))
 
+        self._pet_operation_started("update", plugin_id=plugin_id)
         self._run_async(
             name="plugin_store.update",
             fn=lambda: manager.update(plugin_id, hot_reload=True),
@@ -1419,8 +1474,10 @@ class StorePage(QWidget):
                 ),
                 "success",
             )
+            self._pet_operation("rollback", plugin_id=plugin_id)
             self._ensure_ready(plugin_id, then=lambda: self._reload_one(plugin_id, "rollback"))
 
+        self._pet_operation_started("rollback", plugin_id=plugin_id)
         self._run_async(
             name="plugin_store.rollback",
             fn=lambda: manager.rollback(plugin_id, hot_reload=True),
@@ -1451,8 +1508,10 @@ class StorePage(QWidget):
             if self._selection.get("installed") == plugin_id:
                 self._selection["installed"] = ""
             self.set_status(self.ctx.text("status.remove_done", "已卸载「{name}」").format(name=name), "success")
+            self._pet_operation("remove", plugin_id=plugin_id)
             self._reload_one(plugin_id, "remove", load=False)
 
+        self._pet_operation_started("remove", plugin_id=plugin_id)
         self._run_async(
             name="plugin_store.remove",
             fn=lambda: manager.remove(plugin_id),
@@ -1474,11 +1533,14 @@ class StorePage(QWidget):
             _declared, missing = self._plugin_dependencies(plugin_id)
             if missing:
                 # 安装即隐含同意补全其声明依赖：先装依赖再加载，不额外打断。
+                self._pet_operation("install", plugin_id=plugin_id)
                 self._ensure_ready(plugin_id, then=lambda: self._reload_one(plugin_id, "install"))
                 return
             self.set_status(self.ctx.text("status.install_done", "已安装「{name}」").format(name=name), "success")
+            self._pet_operation("install", plugin_id=plugin_id)
             self._reload_one(plugin_id, "install")
 
+        self._pet_operation_started("install", plugin_id=plugin_id)
         self._run_async(
             name="plugin_store.install",
             fn=lambda: manager.install(plugin_id, source_id=str(record.get("source") or "")),
@@ -1616,7 +1678,9 @@ class StorePage(QWidget):
             self.add_source = False
             self._selection["sources"] = str(getattr(record, "source_id", "") or "")
             self.set_status(self.ctx.text("sources.added", "已添加来源。"), "success")
+            self._pet_operation("source-add")
 
+        self._pet_operation_started("source-add")
         self._run_async(
             name="plugin_store.source_add",
             fn=lambda: sources.add(url, refresh=True),
@@ -1630,24 +1694,28 @@ class StorePage(QWidget):
         sources = self._sources()
         if sources is None:
             return
+        self._pet_operation_started("source-refresh")
         self._run_async(
             name="plugin_store.source_refresh",
             fn=lambda: sources.refresh(source_id),
             busy_text=self.ctx.text("status.refreshing", "正在刷新来源…"),
             success_message=lambda _result: self.ctx.text("status.source_refreshed", "来源已刷新"),
             error_code="PLUGIN_STORE_SOURCE_REFRESH_FAILED",
+            on_done=lambda _result: self._pet_operation("source-refresh"),
         )
 
     def _refresh_sources(self) -> None:
         sources = self._sources()
         if sources is None:
             return
+        self._pet_operation_started("source-refresh")
         self._run_async(
             name="plugin_store.source_refresh_all",
             fn=lambda: sources.refresh_all(),
             busy_text=self.ctx.text("status.refreshing", "正在刷新来源…"),
             success_message=lambda _result: self.ctx.text("status.source_refreshed", "来源已刷新"),
             error_code="PLUGIN_STORE_SOURCE_FAILED",
+            on_done=lambda _result: self._pet_operation("source-refresh"),
         )
 
     def _refresh_installed(self) -> None:
@@ -1655,6 +1723,7 @@ class StorePage(QWidget):
             return
         self.refresh_all()
         self.set_status(self.ctx.text("status.list_refreshed", "插件列表已刷新"), "success")
+        self._pet_operation("refresh")
 
     def _remove_source(self, source_id: str) -> None:
         sources = self._sources()
@@ -1677,7 +1746,9 @@ class StorePage(QWidget):
             if self._selection.get("sources") == source_id:
                 self._selection["sources"] = ""
             self.set_status(self.ctx.text("status.action_done", "操作完成"), "success")
+            self._pet_operation("source-remove")
 
+        self._pet_operation_started("source-remove")
         self._run_async(
             name="plugin_store.source_remove",
             fn=lambda: sources.remove(source_id),
@@ -1693,15 +1764,17 @@ class StorePage(QWidget):
         sources = self._sources()
         if sources is None:
             return
+        action = "source-add" if enabled else "source-remove"
         try:
             sources.set_enabled(source_id, enabled)
         except Exception as exc:  # noqa: BLE001
-            self._fail("PLUGIN_STORE_SOURCE_TOGGLE_FAILED", f"切换源状态失败: {exc}", exc)
+            self._fail("PLUGIN_STORE_SOURCE_TOGGLE_FAILED", f"切换源状态失败: {exc}", exc, action=action)
             self._sync_item_state(source_id, not enabled)
             return
         self._sync_item_state(source_id, enabled)
         self.refresh_stats()
         self.set_status(self.ctx.text("status.action_done", "操作完成"), "success")
+        self._pet_operation(action)
 
     # ------------------------------------------------------------------
     # 语言 / 主题
@@ -1740,6 +1813,10 @@ class StorePage(QWidget):
         window = self.ctx.parent_window()
         if window is None:
             return
+        # 这里不发宠物反馈：``_reload_one`` 是每个操作（启停/安装/更新/卸载）的
+        # 收尾子步骤，调用方已经报过结果。再插一条 loading → happy 会把刚给出的
+        # 成功反馈立刻盖掉，用户只看到一串闪烁。独立的重新加载（dev-watch）
+        # 在 GalleryWindow 侧上报。
         reloader = getattr(window, "reload_plugin_in_place", None)
         if callable(reloader):
 
@@ -1834,4 +1911,4 @@ class StorePage(QWidget):
             self.ctx.log(f"恢复插件管理页状态失败: {exc}", "warning")
 
 
-__all__ = ["PageContext", "StorePage", "build_plugin_store_page"]
+__all__ = ["PET_ACTION_BY_TASK", "PageContext", "StorePage", "build_plugin_store_page"]
